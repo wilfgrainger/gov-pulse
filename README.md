@@ -20,6 +20,12 @@ The repository-level GitHub Pages setting must remain disabled. A `public/CNAME`
 
 See [the control-plane architecture](./docs/architecture/free-tier-feed-control-plane.md) and [ADR-0001](./docs/architecture/decisions/0001-cloudflare-first-data-plane.md).
 
+## Code and licensing
+
+The repository is public so readers and contributors can inspect the site, evidence contracts, source-specific validation, tests and deployment configuration, raise traceable issues and follow material decisions. A public repository is an inspection and accountability route; it is not, by itself, a blanket permission to reuse the software.
+
+This repository does not currently declare a project-wide open-source licence. The named publishers, government data, fonts and other third-party materials retain their own licence terms. Add an explicit project licence before describing the software as open source or granting broad reuse rights.
+
 ## Public evidence contract
 
 Each supported section has a source-owned observation period, publication or release date, retrieval time, revision state and evidence class. A later technical check does not renew the age of unchanged evidence.

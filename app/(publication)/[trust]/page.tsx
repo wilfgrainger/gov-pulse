@@ -164,6 +164,28 @@ export default async function TrustPageRoute({
               </section>
             ))}
           </div>
+          {trust === "about" ? (
+            <section id="open-code" className="mt-10 border border-black/15 bg-white p-6 md:p-8">
+              <p className="text-sm font-semibold text-accent">Public code and accountability</p>
+              <h2 className="mt-3 font-display text-3xl leading-tight md:text-4xl">
+                Inspect how the service is built.
+              </h2>
+              <p className="mt-4 max-w-3xl text-sm leading-6 text-gray-700">
+                The public repository contains the site, evidence contracts, source-specific validation, tests and deployment configuration. It is there so readers and contributors can inspect the rules behind the publication, raise a traceable issue and follow material decisions.
+              </p>
+              <p className="mt-4 max-w-3xl text-sm leading-6 text-gray-700">
+                The repository is public for inspection, but it does not currently declare a project-wide open-source licence. That means this transparency statement is not a blanket permission to reuse the software. The named publishers, government data, fonts and other third-party materials keep their own licence terms.
+              </p>
+              <a
+                className="mt-6 inline-flex min-h-11 items-center border border-foreground px-5 py-3 text-sm font-semibold hover:bg-foreground hover:text-white"
+                href="https://github.com/wilfgrainger/gov-pulse"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Inspect the public repository
+              </a>
+            </section>
+          ) : null}
           {trust === "contact" ? (
             <a
               className="mt-10 inline-flex min-h-11 items-center border border-foreground px-5 py-3 text-sm font-semibold hover:bg-foreground hover:text-white"

@@ -97,6 +97,16 @@ export default function SiteFooter() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <a
+                  href="https://github.com/wilfgrainger/gov-pulse"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-white/20 underline-offset-4 transition-colors hover:decoration-white"
+                >
+                  Code and decisions
+                </a>
+              </li>
             </ul>
           </nav>
         </div>
