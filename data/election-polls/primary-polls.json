@@ -1,0 +1,35 @@
+{
+  "polls": [
+    {
+      "id": "yougov-2026-07-05-06-mrp-headline",
+      "pollster": "YouGov",
+      "commissioner": "YouGov",
+      "title": "Westminster voting intention from constituency vote projected by YouGov MRP",
+      "questionText": "Westminster voting intention from constituency vote projected by YouGov's MRP model",
+      "publicationDate": "2026-07-06",
+      "fieldworkStart": "2026-07-05",
+      "fieldworkEnd": "2026-07-06",
+      "sampleSize": 2285,
+      "geography": "Great Britain",
+      "population": "GB adults",
+      "mode": "Online panel; headline voting intention modelled using MRP",
+      "headlineMethod": "Headline voting intention from constituency vote projected by YouGov's MRP model",
+      "parties": {
+        "conservative": 20,
+        "labour": 20,
+        "liberalDemocrats": 13,
+        "reformUK": 24,
+        "green": 13,
+        "snp": 3,
+        "plaidCymru": 1,
+        "yourParty": 1,
+        "restoreBritain": 3,
+        "other": 2
+      },
+      "sourceUrl": "https://ygo-assets-websites-editorial-emea.yougov.net/documents/VotingIntention_MRP_Results_260706_w.pdf",
+      "methodologyUrl": "https://yougov.co.uk/about/panel-methodology",
+      "bpcMember": true,
+      "uncertainty": "YouGov states that, based on recent election polling performance, party support estimates have an approximate 9-in-10 interval of plus or minus four percentage points and a 2-in-3 interval of plus or minus two points."
+    }
+  ]
+}

@@ -1,0 +1,135 @@
+name: Pull Request Validation
+
+on:
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-validation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      lane: ${{ steps.lane.outputs.lane }}
+    steps:
+      - name: Checkout full PR history
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Enforce UTF-8 and LF
+        run: node scripts/check-text-policy.mjs --changed
+
+      - name: Reject lockfile-only rewrites
+        run: node scripts/check-lockfile-policy.mjs
+
+      - name: Enforce Cloudflare architecture
+        run: node scripts/check-static-architecture.mjs
+
+      - name: Validate source-repair evidence
+        run: node scripts/check-source-repair-backlog.mjs
+
+      - name: Validate source ownership
+        run: node scripts/check-source-ownership.mjs
+
+      - name: Enforce focused change complexity
+        run: node scripts/check-change-complexity.mjs
+
+      - name: Validate PR description
+        run: node scripts/check-pr-description.mjs
+
+      - name: Select validation lane
+        id: lane
+        run: node scripts/classify-pr-validation.mjs
+
+  docs:
+    needs: classify
+    if: needs.classify.outputs.lane == 'docs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Confirm documentation guards passed
+        run: echo "Documentation validation passed without dependency installation."
+
+  full-quality:
+    needs: classify
+    if: needs.classify.outputs.lane == 'full'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Verify toolchain
+        run: npm run toolchain:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit and Worker tests
+        run: npm run test
+
+      - name: Static production build
+        run: npm run build:check
+        env:
+          STATIC_EXPORT: "true"
+          NEXT_PUBLIC_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run deterministic browser tests
+        env:
+          CI: "true"
+          PLAYWRIGHT_PORT: "4173"
+        run: npm run test:e2e
+
+      - name: Upload failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: validation-failure-pr-${{ github.event.pull_request.number }}
+          path: |
+            build-output.log
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 3
+
+  quality:
+    if: always()
+    needs: [classify, docs, full-quality]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm selected validation lane passed
+        env:
+          LANE: ${{ needs.classify.outputs.lane }}
+          CLASSIFY_RESULT: ${{ needs.classify.result }}
+          DOCS_RESULT: ${{ needs.docs.result }}
+          FULL_QUALITY_RESULT: ${{ needs.full-quality.result }}
+        run: |
+          set -euo pipefail
+          test "$CLASSIFY_RESULT" = "success"
+          if [ "$LANE" = "docs" ]; then
+            test "$DOCS_RESULT" = "success"
+          elif [ "$LANE" = "full" ]; then
+            test "$FULL_QUALITY_RESULT" = "success"
+          else
+            echo "Unknown validation lane: $LANE"
+            exit 1
+          fi

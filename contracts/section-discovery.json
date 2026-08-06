@@ -1,0 +1,160 @@
+{
+  "site": {
+    "origin": "https://public-data.org",
+    "name": "public-data.org",
+    "title": "public-data.org — UK Public Evidence",
+    "description": "Independent UK public evidence with clear dates, definitions and direct source routes."
+  },
+  "sections": {
+    "pm-approval": {
+      "title": "Prime minister approval",
+      "description": "Why public-data.org currently withdraws prime minister approval evidence until a reproducible primary-poll series is available.",
+      "category": "Politics",
+      "kind": "withdrawn",
+      "sourceKey": "pmApproval",
+      "sameAs": []
+    },
+    "election-polls": {
+      "title": "UK election polling",
+      "description": "Latest verified Great Britain voting-intention polls, shown individually with fieldwork, sample and primary-source links.",
+      "category": "Politics",
+      "kind": "dataset",
+      "sourceKey": "electionPolling",
+      "sameAs": [
+        "https://www.britishpollingcouncil.org/objects-and-rules/",
+        "https://yougov.com/en-gb/topics/topic/British_Politics"
+      ]
+    },
+    "betting-odds": {
+      "title": "UK political betting markets",
+      "description": "Timestamped UK political market prices with raw reciprocal percentages and clear commercial-market caveats.",
+      "category": "Politics",
+      "kind": "dataset",
+      "sourceKey": "bettingOdds",
+      "sameAs": ["https://www.oddschecker.com/politics"]
+    },
+    "govt-approval": {
+      "title": "Political polarisation measure",
+      "description": "Why the former political polarisation score is withdrawn until its inputs, formula and uncertainty are reproducible.",
+      "category": "Politics",
+      "kind": "withdrawn",
+      "sourceKey": "polarizationMeter",
+      "sameAs": []
+    },
+    "gov-trust-trend": {
+      "title": "Government satisfaction trend",
+      "description": "Why the former hard-coded government satisfaction series and event annotations are withdrawn.",
+      "category": "Politics",
+      "kind": "withdrawn",
+      "sourceKey": "trendLines",
+      "sameAs": []
+    },
+    "national-debt": {
+      "title": "UK national debt",
+      "description": "Latest UK public sector net debt observation, percentage of GDP, publication period and direct ONS source.",
+      "category": "Economy",
+      "kind": "dataset",
+      "sourceKey": "nationalDebt",
+      "sameAs": ["https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance"]
+    },
+    "gdp": {
+      "title": "UK GDP growth",
+      "description": "Latest ONS monthly GDP estimate with the monthly, three-month and annual movements kept separate.",
+      "category": "Economy",
+      "kind": "dataset",
+      "sourceKey": "gdpTracker",
+      "sameAs": ["https://www.ons.gov.uk/economy/grossdomesticproductgdp"]
+    },
+    "economy": {
+      "title": "UK inflation, Bank Rate and unemployment",
+      "description": "Latest CPI inflation, Bank Rate and unemployment evidence, each retaining its own period and publication date.",
+      "category": "Economy",
+      "kind": "dataset",
+      "sourceKey": "sentimentPulse",
+      "sameAs": [
+        "https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7g7/mm23",
+        "https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp",
+        "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/unemployment/timeseries/mgsx/lms"
+      ]
+    },
+    "tax": {
+      "title": "UK government receipts",
+      "description": "Latest central government receipts observation from the ONS public sector finances release.",
+      "category": "Economy",
+      "kind": "dataset",
+      "sourceKey": "taxRevenue",
+      "sameAs": ["https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance"]
+    },
+    "government-contracts": {
+      "title": "UK government contracts",
+      "description": "The 100 largest comparable disclosed GBP awards in the latest complete Find a Tender window, with independent scrutiny.",
+      "category": "Public money",
+      "kind": "dataset",
+      "sourceKey": "governmentContracts",
+      "sameAs": ["https://www.find-tender.service.gov.uk/"]
+    },
+    "employment": {
+      "title": "UK employment and unemployment",
+      "description": "Latest official employment, unemployment, economic inactivity and vacancies evidence with separate periods.",
+      "category": "Economy",
+      "kind": "dataset",
+      "sourceKey": "employmentStats",
+      "sameAs": ["https://www.ons.gov.uk/employmentandlabourmarket"]
+    },
+    "crime-stats": {
+      "title": "Crime in England and Wales",
+      "description": "Crime Survey estimates, police-recorded offences and court timeliness shown as separate official evidence systems.",
+      "category": "Society",
+      "kind": "dataset",
+      "sourceKey": "crimeStatistics",
+      "sameAs": [
+        "https://www.ons.gov.uk/peoplepopulationandcommunity/crimeandjustice",
+        "https://www.gov.uk/government/collections/crime-outcomes-in-england-and-wales-statistics",
+        "https://www.gov.uk/government/collections/criminal-court-statistics"
+      ]
+    },
+    "nhs": {
+      "title": "NHS waiting times in England",
+      "description": "Latest NHS England referral-to-treatment waiting-list evidence, including the publication period and direct source.",
+      "category": "Society",
+      "kind": "dataset",
+      "sourceKey": "nhsStats",
+      "sameAs": ["https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/"]
+    },
+    "migration": {
+      "title": "UK long-term international migration",
+      "description": "Latest ONS long-term immigration, emigration and net migration estimates with the observation period shown.",
+      "category": "Society",
+      "kind": "dataset",
+      "sourceKey": "migrationStats",
+      "sameAs": ["https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration"]
+    },
+    "early-years": {
+      "title": "Early years evidence in England",
+      "description": "Child vaccination and school-readiness indicators in England with dated official sources and historical context.",
+      "category": "Society",
+      "kind": "dataset",
+      "sourceKey": "earlyYears",
+      "sameAs": [
+        "https://www.gov.uk/government/statistics/cover-of-vaccination-evaluated-rapidly-cover-programme-annual-reports/vaccination-coverage-statistics-for-children-aged-up-to-5-years-england-cover-programme-report-april-2024-to-march-2025",
+        "https://explore-education-statistics.service.gov.uk/find-statistics/early-years-foundation-stage-profile-results/2024-25"
+      ]
+    },
+    "uk-regions": {
+      "title": "UK regional comparison",
+      "description": "Why the former mixed-geography regional comparison is withdrawn until a reproducible official dataset is available.",
+      "category": "Data",
+      "kind": "withdrawn",
+      "sourceKey": "geographicHeatmap",
+      "sameAs": []
+    },
+    "policy-links": {
+      "title": "Policy relationship matrix",
+      "description": "Why the former policy relationship matrix is withdrawn until its survey inputs and method are reproducible.",
+      "category": "Data",
+      "kind": "withdrawn",
+      "sourceKey": "echoChamberMap",
+      "sameAs": []
+    }
+  }
+}

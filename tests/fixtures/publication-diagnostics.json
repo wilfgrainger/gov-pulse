@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "registryVersion": "test",
+    "sources": {
+      "upstream": {
+        "status": "error",
+        "cacheState": "missing",
+        "fetchedAt": null,
+        "error": "Official source returned 503 with internal connector details"
+      },
+      "parser": {
+        "status": "error",
+        "cacheState": "missing",
+        "fetchedAt": null,
+        "error": "Invalid JSON response from upstream"
+      },
+      "stale": {
+        "status": "stale",
+        "cacheState": "stale",
+        "fetchedAt": "2026-07-01T00:00:00.000Z"
+      },
+      "history": {
+        "status": "ok",
+        "cacheState": "fresh",
+        "fetchedAt": "2026-07-19T00:00:00.000Z"
+      }
+    }
+  },
+  "stale": {
+    "__observation": {
+      "status": "current"
+    }
+  },
+  "history": {
+    "__observation": {
+      "status": "current"
+    },
+    "history": []
+  }
+}

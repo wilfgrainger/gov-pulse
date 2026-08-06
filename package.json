@@ -1,0 +1,64 @@
+{
+  "name": "gov-pulse",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@11.13.0",
+  "engines": {
+    "node": "24.17.0",
+    "npm": "11.13.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "build:check": "node scripts/generate-build-snapshot-module.mjs --optional-missing && node scripts/check-build-output.mjs",
+    "start": "next start",
+    "lint": "eslint",
+    "text:check": "node scripts/check-text-policy.mjs --changed",
+    "toolchain:check": "node scripts/check-toolchain.mjs",
+    "hosting:check": "node scripts/check-hosting-boundary.mjs",
+    "test": "npm run hosting:check && vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:live": "node scripts/snapshot-canary.mjs",
+    "snapshot:build": "node scripts/build-static-snapshot.mjs",
+    "snapshot:diagnostics": "node scripts/generate-publication-diagnostics.mjs",
+    "worker:dev": "npx wrangler dev --config worker/wrangler.toml",
+    "worker:deploy": "npx wrangler deploy --config worker/wrangler.toml",
+    "worker:tail": "npx wrangler tail --config worker/wrangler.toml"
+  },
+  "dependencies": {
+    "framer-motion": "^12.42.2",
+    "next": "16.2.11",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "recharts": "^3.9.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.2.10",
+    "jsdom": "^29.1.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.111.0"
+  },
+  "overrides": {
+    "@babel/core": "^7.29.7",
+    "picomatch": "^4.0.5",
+    "postcss": "^8.5.19",
+    "minimatch@3.1.5": {
+      "brace-expansion": "^1.1.16"
+    },
+    "minimatch@10.2.4": {
+      "brace-expansion": "^5.0.7"
+    }
+  }
+}

@@ -1,0 +1,228 @@
+{
+  "version": "2026-08-02.1",
+  "parentIssue": 208,
+  "dataPlaneIssue": 257,
+  "reliabilityIssue": 288,
+  "publicationArtifact": "cloudflare-kv:v14:publication:public",
+  "publicRoute": "/data/metrics-snapshot.json",
+  "livePublicationKey": "v12:publication:current",
+  "publicPublicationKey": "v14:publication:public",
+  "browserConsumer": "app/lib/useMetrics.ts",
+  "sources": [
+    {
+      "section": "sentimentPulse",
+      "collector": "worker/economic-indicators.js",
+      "normalizer": "worker/economic-indicators.js",
+      "entrypoint": "worker/queued-publication-entry.js",
+      "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
+      "storage": "KV section fragment, canonical current publication and prepared public artifact",
+      "fallback": "last-known-good evidence only while each named series remains inside its own currentness policy"
+    },
+    {
+      "section": "gdpTracker",
+      "collector": "worker/economy-evidence.js",
+      "normalizer": "worker/economy-evidence.js",
+      "entrypoint": "worker/queued-publication-entry.js",
+      "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
+      "storage": "KV section fragment, canonical current publication and prepared public artifact",
+      "fallback": "last-known-good named ONS edition only while its observation and retrieval clocks remain current"
+    },
+    {
+      "section": "employmentStats",
+      "collector": "worker/economy-evidence.js",
+      "normalizer": "worker/economy-evidence.js",
+      "entrypoint": "worker/queued-publication-entry.js",
+      "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
+      "storage": "KV section fragment, canonical current publication and prepared public artifact",
+      "fallback": "last-known-good named ONS edition only while its component periods and retrieval clock remain current"
+    },
+    {
+      "section": "nationalDebt",
+      "collector": "worker/national-debt.js",
+      "normalizer": "worker/national-debt.js",
+      "entrypoint": "worker/queued-publication-entry.js",
+      "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
+      "storage": "KV section fragment, canonical current publication and prepared public artifact",
+      "fallback": "last-known-good matched HF6W and HF6X observation only inside the public-finance currentness window"
+    },
+    {
+      "section": "taxRevenue",
+      "collector": "worker/live-tax-revenue-collector.js",
+      "normalizer": "worker/live-tax-revenue-collector.js",
+      "entrypoint": "worker/queued-publication-entry.js",
+      "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
+      "storage": "KV section fragment, canonical current publication and prepared public artifact",
+      "fallback": "last-known-good ONS bulletin and ANBV-reconciled observation only inside the public-finance currentness window"
+    },
+    {
+      "section": "migrationStats",
+      "collector": "worker/migration.js",
+      "normalizer": "worker/migration.js",
+      "entrypoint": "worker/queued-publication-entry.js",
+      "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
+      "storage": "KV section fragment, canonical current publication and prepared public artifact",
+      "fallback": "last-known-good named ONS edition only while the publication check and observation remain current"
+    },
+    {
+      "section": "electionPolling",
+      "collector": "worker/live-polling-collector.js",
+      "normalizer": "worker/election-polls.js",
+      "entrypoint": "worker/queued-publication-entry.js",
+      "schedule": "daily Cloudflare Cron run through public-data-jobs Queue and deployment bootstrap when no ready publication exists",
+      "storage": "KV section fragment, canonical current publication and prepared public artifact",
+      "fallback": "previous verified primary poll publication for no more than 14 days; no secondary average"
+    },
+    {
+      "section": "nhsStats",
+      "collector": "worker/live-nhs-publication-collector.js",
+      "normalizer": "worker/nhs-rtt.js",
+      "entrypoint": "worker/queued-publication-entry.js",
+      "schedule": "daily Cloudflare Cron run through public-data-jobs Queue and deployment bootstrap when no ready publication exists",
+      "storage": "KV section fragment, canonical current publication and prepared public artifact",
+      "fallback": "previous verified NHS RTT press notice and workbook publication only inside the 45-day currentness window"
+    },
+    {
+      "section": "bettingOdds",
+      "collector": "worker/live-betting-collector.js",
+      "normalizer": "worker/betting-markets.js",
+      "entrypoint": "worker/queued-publication-entry.js",
+      "schedule": "Cloudflare Cron every three hours through public-data-jobs Queue",
+      "storage": "optional KV section fragment and prepared public artifact when all named markets are current",
+      "fallback": "previous complete three-market snapshot for no more than four hours"
+    },
+    {
+      "section": "crimeStatistics",
+      "collector": "worker/crime-statistics.js",
+      "normalizer": "contracts/crime-statistics.js",
+      "entrypoint": "worker/queued-publication-entry.js",
+      "schedule": "daily Cloudflare Queue validation of the versioned named-source publication",
+      "storage": "optional KV section fragment and prepared public artifact when the publication contract is current",
+      "fallback": "fail closed when the versioned ONS, Home Office or Ministry of Justice evidence is stale or invalid"
+    }
+  ],
+  "publicationSources": [
+    {
+      "section": "governmentContracts",
+      "collector": "worker/government-contracts-bootstrap.js",
+      "normalizer": "contracts/government-contracts.js",
+      "entrypoint": "worker/queued-publication-entry.js",
+      "schedule": "one bounded daily Cloudflare Queue job",
+      "storage": "seven complete UTC-day KV shards and current top-100 comparable GBP award record",
+      "fallback": "previous canonical top-100 only while its 72-hour publication window remains current"
+    }
+  ],
+  "staticSources": [
+    {
+      "section": "earlyYears",
+      "consumer": "app/components/EarlyYearsStats.tsx",
+      "sourceClass": "official-data",
+      "publishers": [
+        "UK Health Security Agency",
+        "Department for Education"
+      ],
+      "publications": [
+        "COVER vaccination coverage statistics for children aged up to 5 years, England, April 2024 to March 2025",
+        "Early years foundation stage profile results, 2024/25"
+      ],
+      "observationPeriod": "2024/25",
+      "sourceUrls": [
+        "https://www.gov.uk/government/statistics/cover-of-vaccination-evaluated-rapidly-cover-programme-annual-reports/vaccination-coverage-statistics-for-children-aged-up-to-5-years-england-cover-programme-report-april-2024-to-march-2025",
+        "https://explore-education-statistics.service.gov.uk/find-statistics/early-years-foundation-stage-profile-results/2024-25"
+      ],
+      "automation": "static",
+      "fallback": "dated checked-in publication values; no silent refresh or synthetic replacement"
+    }
+  ],
+  "withdrawnSources": [
+    {
+      "section": "pmApproval",
+      "collector": null,
+      "normalizer": null,
+      "consumer": "app/components/PMApproval.tsx",
+      "schedule": "none",
+      "storage": "none",
+      "fallback": "withdrawn; no current value"
+    },
+    {
+      "section": "polarizationMeter",
+      "collector": null,
+      "normalizer": null,
+      "consumer": "app/components/PolarizationMeter.tsx",
+      "schedule": "none",
+      "storage": "none",
+      "fallback": "withdrawn; no derived score"
+    },
+    {
+      "section": "trendLines",
+      "collector": null,
+      "normalizer": null,
+      "consumer": "app/components/TrendLines.tsx",
+      "schedule": "none",
+      "storage": "none",
+      "fallback": "withdrawn; no embedded trend"
+    },
+    {
+      "section": "geographicHeatmap",
+      "collector": null,
+      "normalizer": null,
+      "consumer": "app/components/GeographicHeatmap.tsx",
+      "schedule": "none",
+      "storage": "none",
+      "fallback": "withdrawn; no reproducible regional comparison"
+    },
+    {
+      "section": "echoChamberMap",
+      "collector": null,
+      "normalizer": null,
+      "consumer": "app/components/EchoChamberMap.tsx",
+      "schedule": "none",
+      "storage": "none",
+      "fallback": "withdrawn; no reproducible relationship matrix"
+    }
+  ],
+  "withdrawnRoutes": [
+    {
+      "route": "pm-approval",
+      "source": "pmApproval",
+      "consumer": "app/components/PMApproval.tsx"
+    },
+    {
+      "route": "govt-approval",
+      "source": "polarizationMeter",
+      "consumer": "app/components/PolarizationMeter.tsx"
+    },
+    {
+      "route": "gov-trust-trend",
+      "source": "trendLines",
+      "consumer": "app/components/TrendLines.tsx"
+    },
+    {
+      "route": "uk-regions",
+      "source": "geographicHeatmap",
+      "consumer": "app/components/GeographicHeatmap.tsx"
+    },
+    {
+      "route": "policy-links",
+      "source": "echoChamberMap",
+      "consumer": "app/components/EchoChamberMap.tsx"
+    }
+  ],
+  "simplification": {
+    "retiredCollectorImplementations": 1,
+    "retiredCollectorLines": 1368,
+    "retiredPaths": [
+      "fetch_intel.py",
+      "public/daily_threat_data.json"
+    ],
+    "removedDedicatedWorkflows": [
+      ".github/workflows/update-election-polls.yml",
+      ".github/workflows/update-nhs-rtt.yml",
+      ".github/workflows/update-betting-odds.yml"
+    ],
+    "workflowFilesRemoved": 3,
+    "workflowLinesRemoved": 144,
+    "ciJobsRemoved": 3,
+    "scheduledRunsPerDayRemoved": 2,
+    "testFilesRemoved": 0
+  }
+}

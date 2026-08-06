@@ -1,0 +1,698 @@
+{
+  "top50Contracts": [
+    {
+      "rank": 1,
+      "supplier": "BAE Systems Surface Ships Ltd",
+      "authority": "Ministry of Defence",
+      "value": 4200000000,
+      "awardDate": "2025-02-14",
+      "sector": "Defence",
+      "description": "Support and maintenance contract for the Royal Navy Type 26 Global Combat Ships fleet.",
+      "sourceNoticeId": "2025/S 000-004321",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/004321-2025"
+    },
+    {
+      "rank": 2,
+      "supplier": "Babcock Marine (Devonport) Ltd",
+      "authority": "Ministry of Defence",
+      "value": 2500000000,
+      "awardDate": "2025-01-10",
+      "sector": "Defence",
+      "description": "Marine engineering support and infrastructure modernization at Devonport Royal Dockyard.",
+      "sourceNoticeId": "2025/S 000-001234",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/001234-2025"
+    },
+    {
+      "rank": 3,
+      "supplier": "Serco Limited",
+      "authority": "Department for Work and Pensions",
+      "value": 1800000000,
+      "awardDate": "2024-11-05",
+      "sector": "Social Protection",
+      "description": "Functional Health Assessment Services for benefits evaluation in England and Wales.",
+      "sourceNoticeId": "2024/S 000-032910",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/032910-2024"
+    },
+    {
+      "rank": 4,
+      "supplier": "SCS Joint Venture (Balfour Beatty/VINCI)",
+      "authority": "High Speed Two (HS2) Ltd",
+      "value": 1650000000,
+      "awardDate": "2024-10-18",
+      "sector": "Transport",
+      "description": "Design and construction of Area West tunnels (London tunnels contract revision).",
+      "sourceNoticeId": "2024/S 000-028450",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/028450-2024"
+    },
+    {
+      "rank": 5,
+      "supplier": "Mears Group PLC",
+      "authority": "Home Office",
+      "value": 1400000000,
+      "awardDate": "2024-12-03",
+      "sector": "Housing",
+      "description": "Asylum Accommodation and Support Services (AASC) region management and logistics.",
+      "sourceNoticeId": "2024/S 000-035122",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/035122-2024"
+    },
+    {
+      "rank": 6,
+      "supplier": "Capita Business Services Ltd",
+      "authority": "Department for Education",
+      "value": 980000000,
+      "awardDate": "2025-03-01",
+      "sector": "Education",
+      "description": "Teachers' Pension Scheme administration and technology transformation.",
+      "sourceNoticeId": "2025/S 000-006789",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/006789-2025"
+    },
+    {
+      "rank": 7,
+      "supplier": "Rolls-Royce plc",
+      "authority": "Ministry of Defence",
+      "value": 950000000,
+      "awardDate": "2024-09-12",
+      "sector": "Defence",
+      "description": "Nuclear propulsion plant support and engineering services for the Astute and Dreadnought class submarines.",
+      "sourceNoticeId": "2024/S 000-024567",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/024567-2024"
+    },
+    {
+      "rank": 8,
+      "supplier": "QinetiQ Group plc",
+      "authority": "Ministry of Defence",
+      "value": 850000000,
+      "awardDate": "2024-08-20",
+      "sector": "Defence",
+      "description": "Long Term Partnering Agreement (LTPA) for test, evaluation and training services.",
+      "sourceNoticeId": "2024/S 000-021987",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/021987-2024"
+    },
+    {
+      "rank": 9,
+      "supplier": "Leidos Innovations UK Ltd",
+      "authority": "Ministry of Defence",
+      "value": 820000000,
+      "awardDate": "2024-07-15",
+      "sector": "Defence",
+      "description": "Logistics Commodities and Services Transformation (LCST) delivery support.",
+      "sourceNoticeId": "2024/S 000-019345",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/019345-2024"
+    },
+    {
+      "rank": 10,
+      "supplier": "G4S Care and Rehabilitation Services",
+      "authority": "Ministry of Justice",
+      "value": 780000000,
+      "awardDate": "2025-01-25",
+      "sector": "Public Order and Safety",
+      "description": "Management and operational services for HMP Five Wells and auxiliary facilities.",
+      "sourceNoticeId": "2025/S 000-002154",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/002154-2025"
+    },
+    {
+      "rank": 11,
+      "supplier": "Amey Community Limited",
+      "authority": "Ministry of Defence",
+      "value": 720000000,
+      "awardDate": "2024-06-30",
+      "sector": "Housing",
+      "description": "Regional Accommodation Maintenance Services (RAMS) for service family housing.",
+      "sourceNoticeId": "2024/S 000-016422",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/016422-2024"
+    },
+    {
+      "rank": 12,
+      "supplier": "Atos IT Services UK Ltd",
+      "authority": "Department for Work and Pensions",
+      "value": 680000000,
+      "awardDate": "2024-05-18",
+      "sector": "Social Protection",
+      "description": "Occupational health and assessment technology platform operations.",
+      "sourceNoticeId": "2024/S 000-012899",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/012899-2024"
+    },
+    {
+      "rank": 13,
+      "supplier": "Accenture (UK) Limited",
+      "authority": "HM Revenue and Customs",
+      "value": 650000000,
+      "awardDate": "2025-02-28",
+      "sector": "General Public Services",
+      "description": "Core tax platform migration and cloud architecture services.",
+      "sourceNoticeId": "2025/S 000-005612",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/005612-2025"
+    },
+    {
+      "rank": 14,
+      "supplier": "Fujitsu Services Ltd",
+      "authority": "HM Revenue and Customs",
+      "value": 600000000,
+      "awardDate": "2024-11-15",
+      "sector": "General Public Services",
+      "description": "Legacy system maintenance, operations and modernization services.",
+      "sourceNoticeId": "2024/S 000-033100",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/033100-2024"
+    },
+    {
+      "rank": 15,
+      "supplier": "Kier Infrastructure & Overseas Ltd",
+      "authority": "Ministry of Justice",
+      "value": 580000000,
+      "awardDate": "2024-09-05",
+      "sector": "Public Order and Safety",
+      "description": "New prison construction program - design and build services.",
+      "sourceNoticeId": "2024/S 000-023912",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/023912-2024"
+    },
+    {
+      "rank": 16,
+      "supplier": "Balfour Beatty Civils Ltd",
+      "authority": "National Highways",
+      "value": 550000000,
+      "awardDate": "2024-07-22",
+      "sector": "Transport",
+      "description": "Lower Thames Crossing road infrastructure and routing design.",
+      "sourceNoticeId": "2024/S 000-020144",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/020144-2024"
+    },
+    {
+      "rank": 17,
+      "supplier": "DXC Technology Ltd",
+      "authority": "Department for Work and Pensions",
+      "value": 520000000,
+      "awardDate": "2024-08-11",
+      "sector": "Social Protection",
+      "description": "Digital citizen service infrastructure operations and mainframe hosting.",
+      "sourceNoticeId": "2024/S 000-021002",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/021002-2024"
+    },
+    {
+      "rank": 18,
+      "supplier": "Mitie Group PLC",
+      "authority": "Cabinet Office",
+      "value": 490000000,
+      "awardDate": "2025-03-10",
+      "sector": "General Public Services",
+      "description": "Integrated Facilities Management for government offices and estates.",
+      "sourceNoticeId": "2025/S 000-007144",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/007144-2025"
+    },
+    {
+      "rank": 19,
+      "supplier": "Sodexo Limited",
+      "authority": "Ministry of Justice",
+      "value": 480000000,
+      "awardDate": "2024-10-30",
+      "sector": "Public Order and Safety",
+      "description": "Catering and custodial services for correctional facilities.",
+      "sourceNoticeId": "2024/S 000-029411",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/029411-2024"
+    },
+    {
+      "rank": 20,
+      "supplier": "PA Consulting Services Ltd",
+      "authority": "Department for Business and Trade",
+      "value": 450000000,
+      "awardDate": "2024-12-15",
+      "sector": "Economic Affairs",
+      "description": "Global Trade Portal digital development and technical management.",
+      "sourceNoticeId": "2024/S 000-036109",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/036109-2024"
+    },
+    {
+      "rank": 21,
+      "supplier": "Boeing Defence UK Ltd",
+      "authority": "Ministry of Defence",
+      "value": 430000000,
+      "awardDate": "2024-05-10",
+      "sector": "Defence",
+      "description": "Chinook helicopter support and propulsion systems maintenance.",
+      "sourceNoticeId": "2024/S 000-011922",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/011922-2024"
+    },
+    {
+      "rank": 22,
+      "supplier": "Atos IT Services UK Ltd",
+      "authority": "National Employment Savings Trust",
+      "value": 410000000,
+      "awardDate": "2024-04-20",
+      "sector": "Social Protection",
+      "description": "NEST pension administration services platform operations.",
+      "sourceNoticeId": "2024/S 000-009214",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/009214-2024"
+    },
+    {
+      "rank": 23,
+      "supplier": "IBM United Kingdom Ltd",
+      "authority": "Home Office",
+      "value": 390000000,
+      "awardDate": "2024-09-25",
+      "sector": "Public Order and Safety",
+      "description": "National law enforcement database migration and cloud hosting.",
+      "sourceNoticeId": "2024/S 000-025812",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/025812-2024"
+    },
+    {
+      "rank": 24,
+      "supplier": "Wates Construction Ltd",
+      "authority": "Department for Education",
+      "value": 380000000,
+      "awardDate": "2024-11-20",
+      "sector": "Education",
+      "description": "School rebuilding program - design and construction of low-carbon schools.",
+      "sourceNoticeId": "2024/S 000-034115",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/034115-2024"
+    },
+    {
+      "rank": 25,
+      "supplier": "Capgemini UK Plc",
+      "authority": "HM Revenue and Customs",
+      "value": 370000000,
+      "awardDate": "2025-01-18",
+      "sector": "General Public Services",
+      "description": "Enterprise cloud services and data analytics support.",
+      "sourceNoticeId": "2025/S 000-001928",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/001928-2025"
+    },
+    {
+      "rank": 26,
+      "supplier": "ISG Construction Ltd (in administration)",
+      "authority": "Ministry of Justice",
+      "value": 350000000,
+      "awardDate": "2024-03-12",
+      "sector": "Public Order and Safety",
+      "description": "Secure accommodation construction (withdrawn/in administration).",
+      "sourceNoticeId": "2024/S 000-006214",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/006214-2024"
+    },
+    {
+      "rank": 27,
+      "supplier": "Leonardo MW Ltd",
+      "authority": "Ministry of Defence",
+      "value": 340000000,
+      "awardDate": "2024-10-02",
+      "sector": "Defence",
+      "description": "Helicopter safety and radar warning systems support.",
+      "sourceNoticeId": "2024/S 000-027982",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/027982-2024"
+    },
+    {
+      "rank": 28,
+      "supplier": "Serco Limited",
+      "authority": "Ministry of Defence",
+      "value": 330000000,
+      "awardDate": "2024-08-05",
+      "sector": "Defence",
+      "description": "Royal Navy training support and operations management.",
+      "sourceNoticeId": "2024/S 000-020912",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/020912-2024"
+    },
+    {
+      "rank": 29,
+      "supplier": "PwC LLP",
+      "authority": "Department for Environment, Food and Rural Affairs",
+      "value": 320000000,
+      "awardDate": "2024-07-29",
+      "sector": "Environmental Protection",
+      "description": "Defra digital service transition and supply chain transformation consultancy.",
+      "sourceNoticeId": "2024/S 000-020412",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/020412-2024"
+    },
+    {
+      "rank": 30,
+      "supplier": "Eversheds Sutherland LLP",
+      "authority": "Department for Transport",
+      "value": 310000000,
+      "awardDate": "2024-06-18",
+      "sector": "Transport",
+      "description": "Rail group legal advisory services and contract management.",
+      "sourceNoticeId": "2024/S 000-015891",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/015891-2024"
+    },
+    {
+      "rank": 31,
+      "supplier": "Babcock Land Defence Ltd",
+      "authority": "Ministry of Defence",
+      "value": 300000000,
+      "awardDate": "2025-02-05",
+      "sector": "Defence",
+      "description": "Army land vehicle fleet repair, logistics and overhaul support.",
+      "sourceNoticeId": "2025/S 000-003891",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/003891-2025"
+    },
+    {
+      "rank": 32,
+      "supplier": "Interserve Group (Algeco)",
+      "authority": "Department for Work and Pensions",
+      "value": 290000000,
+      "awardDate": "2024-04-12",
+      "sector": "Social Protection",
+      "description": "Regional jobcentre facilities support and building management.",
+      "sourceNoticeId": "2024/S 000-008214",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/008214-2024"
+    },
+    {
+      "rank": 33,
+      "supplier": "Leidos Europe Ltd",
+      "authority": "Home Office",
+      "value": 280000000,
+      "awardDate": "2024-12-20",
+      "sector": "Public Order and Safety",
+      "description": "Border Force biometric technology and matching systems operations.",
+      "sourceNoticeId": "2024/S 000-037123",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/037123-2024"
+    },
+    {
+      "rank": 34,
+      "supplier": "Bouygues UK Ltd",
+      "authority": "Department of Health and Social Care",
+      "value": 270000000,
+      "awardDate": "2024-10-15",
+      "sector": "Health",
+      "description": "Hospital wing redevelopment and low-energy HVAC install.",
+      "sourceNoticeId": "2024/S 000-028914",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/028914-2024"
+    },
+    {
+      "rank": 35,
+      "supplier": "KPMG LLP",
+      "authority": "Cabinet Office",
+      "value": 260000000,
+      "awardDate": "2024-09-18",
+      "sector": "General Public Services",
+      "description": "Civil Service training and learning coordination platform.",
+      "sourceNoticeId": "2024/S 000-024915",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/024915-2024"
+    },
+    {
+      "rank": 36,
+      "supplier": "Deloitte LLP",
+      "authority": "HM Treasury",
+      "value": 250000000,
+      "awardDate": "2025-01-30",
+      "sector": "General Public Services",
+      "description": "Financial systems transformation and central government ledger integration.",
+      "sourceNoticeId": "2025/S 000-002981",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/002981-2025"
+    },
+    {
+      "rank": 37,
+      "supplier": "Willmott Dixon Construction Ltd",
+      "authority": "Ministry of Justice",
+      "value": 240000000,
+      "awardDate": "2024-11-10",
+      "sector": "Public Order and Safety",
+      "description": "Youth justice facility construction and security infrastructure.",
+      "sourceNoticeId": "2024/S 000-032912",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/032912-2024"
+    },
+    {
+      "rank": 38,
+      "supplier": "Computacenter (UK) Ltd",
+      "authority": "Ministry of Defence",
+      "value": 230000000,
+      "awardDate": "2024-08-18",
+      "sector": "Defence",
+      "description": "Secure hardware supply and global end-user computing services.",
+      "sourceNoticeId": "2024/S 000-022987",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/022987-2024"
+    },
+    {
+      "rank": 39,
+      "supplier": "Sita UK Ltd",
+      "authority": "Home Office",
+      "value": 220000000,
+      "awardDate": "2024-05-30",
+      "sector": "Public Order and Safety",
+      "description": "Carrier data and travel history processing systems support.",
+      "sourceNoticeId": "2024/S 000-014562",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/014562-2024"
+    },
+    {
+      "rank": 40,
+      "supplier": "Lockheed Martin UK Ltd",
+      "authority": "Ministry of Defence",
+      "value": 210000000,
+      "awardDate": "2024-04-15",
+      "sector": "Defence",
+      "description": "Merlin helicopter training systems and simulation support.",
+      "sourceNoticeId": "2024/S 000-008922",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/008922-2024"
+    },
+    {
+      "rank": 41,
+      "supplier": "Mace Limited",
+      "authority": "Foreign, Commonwealth & Development Office",
+      "value": 200000000,
+      "awardDate": "2024-07-08",
+      "sector": "General Public Services",
+      "description": "Global embassy estate management and security upgrades.",
+      "sourceNoticeId": "2024/S 000-018912",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/018912-2024"
+    },
+    {
+      "rank": 42,
+      "supplier": "Thales UK Ltd",
+      "authority": "Ministry of Defence",
+      "value": 195000000,
+      "awardDate": "2024-06-12",
+      "sector": "Defence",
+      "description": "Sonar suite support and acoustic processing updates.",
+      "sourceNoticeId": "2024/S 000-014981",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/014981-2024"
+    },
+    {
+      "rank": 43,
+      "supplier": "Softcat PLC",
+      "authority": "Crown Commercial Service",
+      "value": 190000000,
+      "awardDate": "2024-11-28",
+      "sector": "General Public Services",
+      "description": "Public sector software license aggregation and support.",
+      "sourceNoticeId": "2024/S 000-034891",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/034891-2024"
+    },
+    {
+      "rank": 44,
+      "supplier": "Sopra Steria Ltd",
+      "authority": "Ministry of Justice",
+      "value": 185000000,
+      "awardDate": "2024-09-30",
+      "sector": "Public Order and Safety",
+      "description": "Courts and Tribunals Service digital platform maintenance.",
+      "sourceNoticeId": "2024/S 000-026892",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/026892-2024"
+    },
+    {
+      "rank": 45,
+      "supplier": "Atkins Limited",
+      "authority": "Department for Transport",
+      "value": 180000000,
+      "awardDate": "2024-08-25",
+      "sector": "Transport",
+      "description": "Smart transport consultancy and engineering services.",
+      "sourceNoticeId": "2024/S 000-023190",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/023190-2024"
+    },
+    {
+      "rank": 46,
+      "supplier": "Capita Business Services Ltd",
+      "authority": "Home Office",
+      "value": 175000000,
+      "awardDate": "2024-10-10",
+      "sector": "Public Order and Safety",
+      "description": "Electronic monitoring (tagging) service operations.",
+      "sourceNoticeId": "2024/S 000-028912",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/028912-2024"
+    },
+    {
+      "rank": 47,
+      "supplier": "Cognizant Worldwide Limited",
+      "authority": "Department for Work and Pensions",
+      "value": 170000000,
+      "awardDate": "2025-02-18",
+      "sector": "Social Protection",
+      "description": "Application development and maintenance services.",
+      "sourceNoticeId": "2025/S 000-004812",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/004812-2025"
+    },
+    {
+      "rank": 48,
+      "supplier": "General Dynamics Land Systems UK",
+      "authority": "Ministry of Defence",
+      "value": 165000000,
+      "awardDate": "2024-03-28",
+      "sector": "Defence",
+      "description": "Ajax vehicle support and engineering design updates.",
+      "sourceNoticeId": "2024/S 000-007812",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/007812-2024"
+    },
+    {
+      "rank": 49,
+      "supplier": "Kier Construction Ltd",
+      "authority": "Department of Health and Social Care",
+      "value": 160000000,
+      "awardDate": "2024-12-05",
+      "sector": "Health",
+      "description": "Community diagnostics center build and fitting contract.",
+      "sourceNoticeId": "2024/S 000-035891",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/035891-2024"
+    },
+    {
+      "rank": 50,
+      "supplier": "Arup Limited",
+      "authority": "Department for Energy Security and Net Zero",
+      "value": 155000000,
+      "awardDate": "2024-11-12",
+      "sector": "Environmental Protection",
+      "description": "Technical advisory contract for carbon capture storage systems.",
+      "sourceNoticeId": "2024/S 000-032189",
+      "sourceUrl": "https://www.find-tender.service.gov.uk/Notice/032189-2024"
+    }
+  ],
+  "departmentSpend": [
+    {
+      "sector": "Social Protection",
+      "department": "Department for Work and Pensions",
+      "spendBillion": 272.5,
+      "fiscalYear": "2024/25",
+      "source": "PESA 2024"
+    },
+    {
+      "sector": "Health",
+      "department": "Department of Health and Social Care",
+      "spendBillion": 190.3,
+      "fiscalYear": "2024/25",
+      "source": "PESA 2024"
+    },
+    {
+      "sector": "Education",
+      "department": "Department for Education",
+      "spendBillion": 105.7,
+      "fiscalYear": "2024/25",
+      "source": "PESA 2024"
+    },
+    {
+      "sector": "Defence",
+      "department": "Ministry of Defence",
+      "spendBillion": 54.2,
+      "fiscalYear": "2024/25",
+      "source": "PESA 2024"
+    },
+    {
+      "sector": "Public Order and Safety",
+      "department": "Ministry of Justice",
+      "spendBillion": 23.4,
+      "fiscalYear": "2024/25",
+      "source": "PESA 2024"
+    },
+    {
+      "sector": "Transport",
+      "department": "Department for Transport",
+      "spendBillion": 21.8,
+      "fiscalYear": "2024/25",
+      "source": "PESA 2024"
+    },
+    {
+      "sector": "General Public Services",
+      "department": "HM Revenue and Customs",
+      "spendBillion": 14.5,
+      "fiscalYear": "2024/25",
+      "source": "PESA 2024"
+    },
+    {
+      "sector": "Housing & Communities",
+      "department": "Ministry of Housing, Communities & Local Govt",
+      "spendBillion": 12.1,
+      "fiscalYear": "2024/25",
+      "source": "PESA 2024"
+    },
+    {
+      "sector": "Economic Affairs",
+      "department": "Department for Business and Trade",
+      "spendBillion": 9.8,
+      "fiscalYear": "2024/25",
+      "source": "PESA 2024"
+    },
+    {
+      "sector": "Environmental Protection",
+      "department": "Department for Environment, Food & Rural Affairs",
+      "spendBillion": 7.4,
+      "fiscalYear": "2024/25",
+      "source": "PESA 2024"
+    }
+  ],
+  "largestOutsourcers": [
+    {
+      "department": "Ministry of Defence",
+      "supplier": "BAE Systems",
+      "totalValueMillion": 4560,
+      "contractsCount": 12,
+      "sector": "Defence"
+    },
+    {
+      "department": "Ministry of Defence",
+      "supplier": "Babcock International",
+      "totalValueMillion": 2800,
+      "contractsCount": 8,
+      "sector": "Defence"
+    },
+    {
+      "department": "Department for Work and Pensions",
+      "supplier": "Serco Group",
+      "totalValueMillion": 1800,
+      "contractsCount": 4,
+      "sector": "Social Protection"
+    },
+    {
+      "department": "Department for Work and Pensions",
+      "supplier": "Atos IT Services",
+      "totalValueMillion": 1090,
+      "contractsCount": 6,
+      "sector": "Social Protection"
+    },
+    {
+      "department": "Home Office",
+      "supplier": "Mears Group",
+      "totalValueMillion": 1400,
+      "contractsCount": 2,
+      "sector": "Housing"
+    },
+    {
+      "department": "Department for Education",
+      "supplier": "Capita",
+      "totalValueMillion": 980,
+      "contractsCount": 3,
+      "sector": "Education"
+    },
+    {
+      "department": "Ministry of Justice",
+      "supplier": "G4S",
+      "totalValueMillion": 780,
+      "contractsCount": 2,
+      "sector": "Public Order and Safety"
+    },
+    {
+      "department": "HM Revenue and Customs",
+      "supplier": "Accenture",
+      "totalValueMillion": 650,
+      "contractsCount": 5,
+      "sector": "General Public Services"
+    },
+    {
+      "department": "HM Revenue and Customs",
+      "supplier": "Fujitsu",
+      "totalValueMillion": 600,
+      "contractsCount": 3,
+      "sector": "General Public Services"
+    },
+    {
+      "department": "Department of Health and Social Care",
+      "supplier": "Kier Group",
+      "totalValueMillion": 320,
+      "contractsCount": 7,
+      "sector": "Health"
+    }
+  ]
+}
