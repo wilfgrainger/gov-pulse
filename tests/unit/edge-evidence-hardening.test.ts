@@ -52,11 +52,11 @@ describe("edge evidence hardening", () => {
     const deploy = fs.readFileSync(".github/workflows/deploy.yml", "utf8");
     const validation = fs.readFileSync(".github/workflows/pr-validation.yml", "utf8");
     const webWrangler = fs.readFileSync("worker/web-wrangler.toml", "utf8");
-    const openNext = fs.readFileSync("worker/open-next.config.ts", "utf8");
+    const openNext = fs.readFileSync("worker/open-next.config.template", "utf8");
 
     for (const workflow of [deploy, validation]) {
       expect(workflow).toMatch(/npm install --no-save --package-lock=false @opennextjs\/cloudflare@1\.20\.2/);
-      expect(workflow).toMatch(/cp worker\/open-next\.config\.ts open-next\.config\.ts/);
+      expect(workflow).toMatch(/cp worker\/open-next\.config\.template open-next\.config\.ts/);
       expect(workflow).toMatch(/npx --no-install opennextjs-cloudflare build/);
     }
     expect(deploy).toMatch(/npx --no-install opennextjs-cloudflare deploy/);
