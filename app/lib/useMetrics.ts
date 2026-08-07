@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
 import { filterCurrentSnapshot } from "@/worker/publication-currentness";
 import { DATA_SOURCES, REFRESH_INTERVAL_MS } from "./config";
+import { useInitialMetricsSnapshot } from "./MetricsSnapshotProvider";
 import {
   fetchMetricsSnapshot,
   isCompatibleMetricsSnapshot,
@@ -235,40 +235,41 @@ export function currentMetricsResultFromSnapshot<T>(
 
 export function useMetrics<T>(section: string, fallback: T): MetricsResult<T> {
   const fallbackRef = useRef(fallback);
+  const initialSnapshot = useInitialMetricsSnapshot();
   const sourceMeta = DATA_SOURCES[section];
   const shouldFetchLive =
     sourceMeta?.automation === "automated" && process.env.NODE_ENV === "production";
-  const [buildSnapshotResult] = useState<MetricsResult<T> | null>(() =>
+  const [initialSnapshotResult] = useState<MetricsResult<T> | null>(() =>
     metricsResultFromSnapshot(
-      BUILD_METRICS_SNAPSHOT,
+      initialSnapshot,
       section,
       fallback,
       sourceMeta?.freshnessWindowMs
     )
   );
-  const buildSnapshotResultRef = useRef(buildSnapshotResult);
+  const initialSnapshotResultRef = useRef(initialSnapshotResult);
 
   useEffect(() => {
     fallbackRef.current = fallback;
   }, [fallback]);
 
   const [result, setResult] = useState<MetricsResult<T>>(
-    () => buildSnapshotResult ?? fallbackResult(fallback)
+    () => initialSnapshotResult ?? fallbackResult(fallback)
   );
 
   useEffect(() => {
     if (!shouldFetchLive) return;
 
     let active = true;
-    const readerBuildResult = currentMetricsResultFromSnapshot(
-      BUILD_METRICS_SNAPSHOT,
+    const readerInitialResult = currentMetricsResultFromSnapshot(
+      initialSnapshot,
       section,
       fallbackRef.current,
       sourceMeta?.freshnessWindowMs
     );
-    buildSnapshotResultRef.current = readerBuildResult;
+    initialSnapshotResultRef.current = readerInitialResult;
     queueMicrotask(() => {
-      if (active) setResult(readerBuildResult ?? fallbackResult(fallbackRef.current));
+      if (active) setResult(readerInitialResult ?? fallbackResult(fallbackRef.current));
     });
 
     const applyData = (
@@ -339,11 +340,11 @@ export function useMetrics<T>(section: string, fallback: T): MetricsResult<T> {
           return;
         }
       } catch {
-        // Retain the reader-current build snapshot below when refresh fails.
+        // Retain the request-time server snapshot below when refresh fails.
       }
 
       if (active) {
-        setResult(buildSnapshotResultRef.current ?? fallbackResult(fallbackRef.current));
+        setResult(initialSnapshotResultRef.current ?? fallbackResult(fallbackRef.current));
       }
     };
 
@@ -353,7 +354,7 @@ export function useMetrics<T>(section: string, fallback: T): MetricsResult<T> {
       active = false;
       clearInterval(interval);
     };
-  }, [section, shouldFetchLive, sourceMeta?.freshnessWindowMs]);
+  }, [initialSnapshot, section, shouldFetchLive, sourceMeta?.freshnessWindowMs]);
 
   return result;
 }
