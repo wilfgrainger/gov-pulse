@@ -1,3 +1,4 @@
+// Regression contract for the request-time evidence migration.
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 import { FEED_REGISTRY } from "../../worker/feed-registry.js";
