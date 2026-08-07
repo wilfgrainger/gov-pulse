@@ -25,7 +25,6 @@ describe("edge evidence hardening", () => {
 
   it("keeps the retired worker implementation replaced by a small compatibility core", () => {
     const compatibility = fs.readFileSync("worker/index.js", "utf8");
-    expect(compatibility.split(/\r?\n/)).toHaveLength(expect.any(Number));
     expect(compatibility.length).toBeLessThan(12_000);
     expect(compatibility).toContain("Internal compatibility core");
     expect(compatibility).not.toMatch(/Wikipedia/i);
