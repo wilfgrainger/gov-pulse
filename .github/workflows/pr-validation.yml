@@ -61,7 +61,7 @@ jobs:
     needs: classify
     if: needs.classify.outputs.lane == 'full'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -84,10 +84,17 @@ jobs:
       - name: Unit and Worker tests
         run: npm run test
 
-      - name: Static production build
+      - name: Static Pages seed build
         run: npm run build:check
         env:
           STATIC_EXPORT: "true"
+          NEXT_PUBLIC_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+
+      - name: Build request-time Cloudflare web Worker
+        run: >-
+          npx --yes @opennextjs/cloudflare@1.20.2 build
+          --config worker/web-wrangler.toml
+        env:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
 
       - name: Install Playwright Chromium
