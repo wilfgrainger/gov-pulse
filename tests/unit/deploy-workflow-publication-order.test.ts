@@ -33,13 +33,19 @@ describe("production publication order", () => {
       "node scripts/fetch-cloudflare-publication-candidate.mjs"
     );
     const serverBuild = web.indexOf("npm run build:check");
-    const openNextBuild = web.indexOf("@opennextjs/cloudflare@1.20.2 build");
-    const openNextDeploy = web.indexOf("@opennextjs/cloudflare@1.20.2 deploy");
+    const adapterInstall = web.indexOf(
+      "npm install --no-save --package-lock=false @opennextjs/cloudflare@1.20.2"
+    );
+    const stagedConfig = web.indexOf("cp worker/open-next.config.ts open-next.config.ts");
+    const openNextBuild = web.indexOf("opennextjs-cloudflare build");
+    const openNextDeploy = web.indexOf("opennextjs-cloudflare deploy");
     const productionVerify = web.indexOf("node scripts/verify-production.mjs");
 
     expect(fetchCandidate).toBeGreaterThan(-1);
     expect(serverBuild).toBeGreaterThan(fetchCandidate);
-    expect(openNextBuild).toBeGreaterThan(serverBuild);
+    expect(adapterInstall).toBeGreaterThan(serverBuild);
+    expect(stagedConfig).toBeGreaterThan(adapterInstall);
+    expect(openNextBuild).toBeGreaterThan(stagedConfig);
     expect(openNextDeploy).toBeGreaterThan(openNextBuild);
     expect(productionVerify).toBeGreaterThan(openNextDeploy);
     expect(web).toContain(
@@ -66,7 +72,8 @@ describe("production publication order", () => {
     const validation = jobBody("validate-and-build");
     expect(validation).toContain("npm run test");
     expect(validation).toContain("npm run build:check");
-    expect(validation).toContain("@opennextjs/cloudflare@1.20.2 build");
+    expect(validation).toContain("@opennextjs/cloudflare@1.20.2");
+    expect(validation).toContain("opennextjs-cloudflare build");
   });
 
   it("verifies the data Worker deployment carries the exact release SHA", () => {
