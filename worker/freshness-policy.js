@@ -16,8 +16,8 @@ export function applyFreshnessPolicy(descriptors) {
     throw new Error("Worker descriptors must be an object");
   }
 
-  const policySections = Object.keys(SECTION_FRESH_TTL_SECONDS);
-  const descriptorSections = Object.keys(descriptors);
+  const policySections = Object.keys(SECTION_FRESH_TTL_SECONDS).sort();
+  const descriptorSections = Object.keys(descriptors).sort();
 
   for (const section of policySections) {
     if (!descriptors[section]) {
