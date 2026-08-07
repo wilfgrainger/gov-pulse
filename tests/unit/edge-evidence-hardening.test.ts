@@ -6,14 +6,11 @@ import { FEED_REGISTRY } from "../../worker/feed-registry.js";
 describe("edge evidence hardening", () => {
   it("stores active retrieval-currentness policy in the feed registry", () => {
     for (const [section, definition] of Object.entries(FEED_REGISTRY)) {
-      expect(
-        definition,
-        `${section} must own a positive retrievalMaxAgeMs policy`,
-      ).toHaveProperty("retrievalMaxAgeMs");
-      expect(
-        (definition as { retrievalMaxAgeMs?: number }).retrievalMaxAgeMs,
-      ).toSatisfy((value: unknown) =>
-        typeof value === "number" && Number.isFinite(value) && value > 0
+      expect(definition, `${section} must own a positive retrievalMaxAgeMs policy`).toHaveProperty(
+        "retrievalMaxAgeMs"
+      );
+      expect((definition as { retrievalMaxAgeMs?: number }).retrievalMaxAgeMs).toSatisfy(
+        (value: unknown) => typeof value === "number" && Number.isFinite(value) && value > 0
       );
     }
   });
@@ -52,6 +49,8 @@ describe("edge evidence hardening", () => {
     expect(deploy).toMatch(/@opennextjs\/cloudflare@1\.20\.2 deploy/);
     expect(deploy).toMatch(/Pages seed/i);
     expect(webWrangler).toMatch(/name\s*=\s*"public-data-web"/);
+    expect(webWrangler).toMatch(/main\s*=\s*"\.\.\/\.open-next\/worker\.js"/);
+    expect(webWrangler).toMatch(/directory\s*=\s*"\.\.\/\.open-next\/assets"/);
     expect(webWrangler).toMatch(/nodejs_compat/);
     expect(webWrangler).toMatch(/global_fetch_strictly_public/);
     expect(webWrangler).toMatch(/public-data\.org\/\*/);
