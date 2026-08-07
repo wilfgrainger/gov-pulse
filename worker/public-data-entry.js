@@ -265,23 +265,35 @@ async function healthResponse(request, env) {
     );
   }
 
-  const result = await currentPublicSnapshot(env);
-  if (!result) {
+  // Readiness is deliberately stricter than data delivery. Migration and Pages
+  // fallbacks can keep readers supplied, but only a valid prepared KV artifact
+  // proves the current publication pipeline is ready.
+  const prepared = await readPreparedPublicArtifact(env);
+  if (!prepared) {
     return json(
       { status: "bootstrapping", ready: false },
       { head: request.method === "HEAD" }
     );
   }
 
-  const state = result.snapshot?.meta?.publicationState;
-  if (state === "degraded") {
+  let snapshot;
+  try {
+    snapshot = JSON.parse(prepared.body);
+  } catch {
+    return json(
+      { status: "bootstrapping", ready: false },
+      { head: request.method === "HEAD" }
+    );
+  }
+
+  if (snapshot.meta?.publicationState === "degraded") {
     return json(
       {
         status: "degraded",
         ready: true,
         degraded: true,
         missingRequiredSections:
-          result.snapshot.meta.missingRequiredSections ?? [],
+          snapshot.meta.missingRequiredSections ?? [],
       },
       { head: request.method === "HEAD" }
     );
