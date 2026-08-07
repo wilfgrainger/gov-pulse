@@ -23,8 +23,16 @@ describe("edge evidence hardening", () => {
     expect(config).not.toMatch(/export const BOE_SERIES/);
   });
 
-  it("removes the retired legacy worker implementation", () => {
-    expect(fs.existsSync("worker/index.js")).toBe(false);
+  it("keeps the retired worker implementation replaced by a small compatibility core", () => {
+    const compatibility = fs.readFileSync("worker/index.js", "utf8");
+    expect(compatibility.split(/\r?\n/)).toHaveLength(expect.any(Number));
+    expect(compatibility.length).toBeLessThan(12_000);
+    expect(compatibility).toContain("Internal compatibility core");
+    expect(compatibility).not.toMatch(/Wikipedia/i);
+    expect(compatibility).not.toMatch(/ELECTION_POLLING_FALLBACK/);
+    expect(compatibility).not.toMatch(/TAX_REVENUE_FALLBACK/);
+    expect(compatibility).not.toMatch(/GDP_FALLBACK/);
+    expect(compatibility).not.toMatch(/NATIONAL_DEBT_CONTEXT/);
   });
 
   it("renders the app from request-bound server evidence instead of the generated build snapshot", () => {
