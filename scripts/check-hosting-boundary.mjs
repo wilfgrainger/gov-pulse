@@ -5,6 +5,7 @@ const root = process.cwd();
 const workflowDirectory = join(root, ".github", "workflows");
 const deploymentWorkflow = join(workflowDirectory, "deploy.yml");
 const webWorkerConfig = join(root, "worker", "web-wrangler.toml");
+const openNextConfig = join(root, "worker", "open-next.config.ts");
 const violations = [];
 
 function repositoryPath(path) {
@@ -39,13 +40,33 @@ if (!existsSync(webWorkerConfig)) {
   );
 }
 
+if (!existsSync(openNextConfig)) {
+  violations.push("worker/open-next.config.ts is required for the pinned OpenNext build.");
+} else {
+  requireText(
+    openNextConfig,
+    /static-assets-incremental-cache/,
+    "OpenNext must use the free, read-only static-assets incremental cache."
+  );
+}
+
 if (!existsSync(deploymentWorkflow)) {
   violations.push(".github/workflows/deploy.yml is required for the Cloudflare production release.");
 } else {
   requireText(
     deploymentWorkflow,
-    /@opennextjs\/cloudflare@1\.20\.2 deploy[\s\S]*--config worker\/web-wrangler\.toml/,
-    "The production workflow must deploy the Next.js frontend with the pinned OpenNext adapter."
+    /npm install --no-save --package-lock=false @opennextjs\/cloudflare@1\.20\.2/,
+    "The production workflow must install the exact pinned OpenNext adapter without lockfile churn."
+  );
+  requireText(
+    deploymentWorkflow,
+    /cp worker\/open-next\.config\.ts open-next\.config\.ts/,
+    "The production workflow must stage the reviewed OpenNext config at the project root."
+  );
+  requireText(
+    deploymentWorkflow,
+    /npx --no-install opennextjs-cloudflare deploy[\s\S]*--config worker\/web-wrangler\.toml/,
+    "The production workflow must deploy the Next.js frontend with the staged pinned OpenNext adapter."
   );
   requireText(
     deploymentWorkflow,
