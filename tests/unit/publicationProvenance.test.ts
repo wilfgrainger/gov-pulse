@@ -1,3 +1,4 @@
+// RED contract for the public-safe edition provenance shown on the homepage.
 import { describe, expect, it } from "vitest";
 import { publicationProvenanceFromSnapshot } from "../../app/lib/publicationProvenance";
 import { FEED_REGISTRY_VERSION } from "../../worker/feed-registry";
