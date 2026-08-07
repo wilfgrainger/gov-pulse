@@ -5,6 +5,7 @@ import SectionNav from "./components/SectionNav";
 import SiteFooter from "./components/SiteFooter";
 import SocialShare from "./components/SocialShare";
 import { selectNationalEvidenceEdition } from "./lib/nationalEvidence";
+import { publicationProvenanceFromSnapshot } from "./lib/publicationProvenance";
 import { readServerMetricsSnapshot } from "./lib/serverMetricsSnapshot";
 import { SECTIONS } from "./lib/sections";
 
@@ -25,7 +26,12 @@ const trustPrinciples = [
 
 export default async function Home() {
   const snapshot = await readServerMetricsSnapshot();
+  const appRevision = process.env.NEXT_PUBLIC_COMMIT_SHA ?? null;
   const initialEdition = selectNationalEvidenceEdition(snapshot);
+  const initialProvenance = publicationProvenanceFromSnapshot(
+    snapshot,
+    appRevision
+  );
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -39,7 +45,11 @@ export default async function Home() {
 
       <main id="main-content">
         <HomepageIntro />
-        <NationalEvidenceEdition initialEdition={initialEdition} />
+        <NationalEvidenceEdition
+          initialEdition={initialEdition}
+          initialProvenance={initialProvenance}
+          appRevision={appRevision}
+        />
 
         <div className="mx-auto max-w-7xl px-4 pb-12 md:px-6 md:pb-16">
           <section aria-labelledby="trust-public-data" className="border-y border-[#172234] bg-[#fffdf8]">
