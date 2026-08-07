@@ -36,7 +36,9 @@ describe("production publication order", () => {
     const adapterInstall = web.indexOf(
       "npm install --no-save --package-lock=false @opennextjs/cloudflare@1.20.2"
     );
-    const stagedConfig = web.indexOf("cp worker/open-next.config.ts open-next.config.ts");
+    const stagedConfig = web.indexOf(
+      "cp worker/open-next.config.template open-next.config.ts"
+    );
     const openNextBuild = web.indexOf("opennextjs-cloudflare build");
     const openNextDeploy = web.indexOf("opennextjs-cloudflare deploy");
     const productionVerify = web.indexOf("node scripts/verify-production.mjs");
