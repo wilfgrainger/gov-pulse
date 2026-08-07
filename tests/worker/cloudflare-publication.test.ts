@@ -36,7 +36,11 @@ function kvEnv(initial: Record<string, unknown> = {}) {
       METRICS_CACHE: {
         get: vi.fn(async (key: string) => store.get(key) ?? null),
         put: vi.fn(async (key: string, value: string) => {
-          store.set(key, JSON.parse(value));
+          try {
+            store.set(key, JSON.parse(value));
+          } catch {
+            store.set(key, value);
+          }
         }),
       },
     },
@@ -187,13 +191,15 @@ describe("Cloudflare Free data publication", () => {
     expect(result.publication.gdpTracker).toEqual(fragment.data);
     expect(result.publication.meta.publicationMode).toBe("queue-free-tier");
     expect(result.publication.meta.delivery).toBe("published-snapshot");
+    expect(result.publication.meta.publicationState).toBe("ready");
+    expect(result.publication.meta.missingRequiredSections).toEqual([]);
     expect(result.publication.meta.publicationDiagnostics).toEqual(
       expect.any(Object),
     );
     expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(result.publication);
   });
 
-  it("retains the prior candidate when a required section is no longer current", async () => {
+  it("publishes a degraded edition without retaining an expired required value", async () => {
     const current = snapshot();
     current.meta.sources.nhsStats.fetchedAt = "2026-04-01T00:00:00.000Z";
     const { env, store } = kvEnv({ [PUBLICATION_CURRENT_KEY]: current });
@@ -202,9 +208,14 @@ describe("Cloudflare Free data publication", () => {
       now: new Date("2026-07-18T03:30:00.000Z"),
     });
 
-    expect(result.incomplete).toBe(true);
-    expect(result.status.missingRequired).toContain("nhsStats");
-    expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(current);
+    expect(result.incomplete).not.toBe(true);
+    expect(result.status.status).toBe("degraded");
+    expect(result.status.missingRequiredSections).toEqual(["nhsStats"]);
+    expect(result.publication.meta.publicationState).toBe("degraded");
+    expect(result.publication.meta.missingRequiredSections).toEqual(["nhsStats"]);
+    expect(result.publication.nhsStats).toBeUndefined();
+    expect(result.publication.meta.sources.nhsStats).toBeUndefined();
+    expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(result.publication);
   });
 
   it("preserves the edition clock while storing refreshed retrieval clocks", async () => {
@@ -240,7 +251,7 @@ describe("Cloudflare Free data publication", () => {
     expect(result.publication.meta.generatedAt).toBe(first.publication.meta.generatedAt);
     expect(result.publication.meta.fetchedAt).toBe(first.publication.meta.fetchedAt);
     expect(
-      store.get(PUBLICATION_CURRENT_KEY).meta.sources.migrationStats.fetchedAt
+      (store.get(PUBLICATION_CURRENT_KEY) as ReturnType<typeof snapshot>).meta.sources.migrationStats.fetchedAt
     ).toBe("2026-07-17T11:30:00.000Z");
   });
 
