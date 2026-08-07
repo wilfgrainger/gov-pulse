@@ -30,15 +30,18 @@ describe("edge evidence hardening", () => {
     expect(fs.existsSync("worker/index.js")).toBe(false);
   });
 
-  it("renders the homepage from request-time server evidence instead of the generated build snapshot", () => {
+  it("renders the app from request-bound server evidence instead of the generated build snapshot", () => {
     const page = fs.readFileSync("app/page.tsx", "utf8");
     const layout = fs.readFileSync("app/layout.tsx", "utf8");
     const hook = fs.readFileSync("app/lib/useMetrics.ts", "utf8");
+    const serverReader = fs.readFileSync("app/lib/serverMetricsSnapshot.ts", "utf8");
     expect(page).toMatch(/readServerMetricsSnapshot/);
     expect(page).not.toMatch(/BUILD_METRICS_SNAPSHOT/);
     expect(layout).toMatch(/MetricsSnapshotProvider/);
     expect(hook).toMatch(/useInitialMetricsSnapshot/);
     expect(hook).not.toMatch(/BUILD_METRICS_SNAPSHOT/);
+    expect(serverReader).toMatch(/await connection\(\)/);
+    expect(serverReader).toMatch(/cache: "no-store"|requestSnapshot/);
   });
 
   it("deploys an OpenNext web worker while keeping Pages only as the seed fallback", () => {
