@@ -94,7 +94,7 @@ jobs:
         run: npm install --no-save --package-lock=false @opennextjs/cloudflare@1.20.2
 
       - name: Stage OpenNext adapter config
-        run: cp worker/open-next.config.ts open-next.config.ts
+        run: cp worker/open-next.config.template open-next.config.ts
 
       - name: Build request-time Cloudflare web Worker
         run: >-
