@@ -32,24 +32,25 @@ describe("edge evidence hardening", () => {
 
   it("renders the homepage from request-time server evidence instead of the generated build snapshot", () => {
     const page = fs.readFileSync("app/page.tsx", "utf8");
+    const layout = fs.readFileSync("app/layout.tsx", "utf8");
+    const hook = fs.readFileSync("app/lib/useMetrics.ts", "utf8");
     expect(page).toMatch(/readServerMetricsSnapshot/);
     expect(page).not.toMatch(/BUILD_METRICS_SNAPSHOT/);
+    expect(layout).toMatch(/MetricsSnapshotProvider/);
+    expect(hook).toMatch(/useInitialMetricsSnapshot/);
+    expect(hook).not.toMatch(/BUILD_METRICS_SNAPSHOT/);
   });
 
   it("deploys an OpenNext web worker while keeping Pages only as the seed fallback", () => {
-    const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
     const deploy = fs.readFileSync(".github/workflows/deploy.yml", "utf8");
-    const webWrangler = fs.existsSync("web/wrangler.toml")
-      ? fs.readFileSync("web/wrangler.toml", "utf8")
-      : "";
+    const webWrangler = fs.readFileSync("worker/web-wrangler.toml", "utf8");
 
-    expect(packageJson.scripts).toHaveProperty("build:web");
-    expect(packageJson.scripts).toHaveProperty("deploy:web");
-    expect(packageJson.dependencies).toHaveProperty("@opennextjs/cloudflare");
-    expect(deploy).toMatch(/build:web/);
-    expect(deploy).toMatch(/deploy:web/);
+    expect(deploy).toMatch(/@opennextjs\/cloudflare@1\.20\.2 build/);
+    expect(deploy).toMatch(/@opennextjs\/cloudflare@1\.20\.2 deploy/);
     expect(deploy).toMatch(/Pages seed/i);
     expect(webWrangler).toMatch(/name\s*=\s*"public-data-web"/);
+    expect(webWrangler).toMatch(/nodejs_compat/);
+    expect(webWrangler).toMatch(/global_fetch_strictly_public/);
     expect(webWrangler).toMatch(/public-data\.org\/\*/);
   });
 });
