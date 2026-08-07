@@ -61,7 +61,7 @@ jobs:
     needs: classify
     if: needs.classify.outputs.lane == 'full'
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -90,9 +90,15 @@ jobs:
           STATIC_EXPORT: "true"
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
 
+      - name: Install pinned OpenNext adapter without lockfile churn
+        run: npm install --no-save --package-lock=false @opennextjs/cloudflare@1.20.2
+
+      - name: Stage OpenNext adapter config
+        run: cp worker/open-next.config.ts open-next.config.ts
+
       - name: Build request-time Cloudflare web Worker
         run: >-
-          npx --yes @opennextjs/cloudflare@1.20.2 build
+          npx --no-install opennextjs-cloudflare build
           --config worker/web-wrangler.toml
         env:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
