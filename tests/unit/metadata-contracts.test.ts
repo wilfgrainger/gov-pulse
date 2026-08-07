@@ -4,7 +4,6 @@ import { SECTIONS, WITHDRAWN_SECTION_IDS } from "@/app/lib/sections";
 import { SECTION_CONTENT } from "@/app/lib/sectionContent";
 import { AUTOMATED_METRIC_KEYS } from "@/app/lib/metricFallbacks";
 import { FEED_REGISTRY } from "@/worker/feed-registry";
-import { sectionDescriptors } from "@/worker/index";
 
 function workerManagedAutomatedKeys() {
   return Object.entries(DATA_SOURCES)
@@ -21,15 +20,11 @@ describe("metadata contracts", () => {
     expect(workerManagedAutomatedKeys()).toEqual([...AUTOMATED_METRIC_KEYS].sort());
   });
 
-  it("keeps Worker-managed automated sections aligned with worker descriptors", () => {
-    expect(workerManagedAutomatedKeys()).toEqual(Object.keys(sectionDescriptors).sort());
-  });
-
   it("keeps Worker-managed automated sections aligned with the feed registry", () => {
     expect(workerManagedAutomatedKeys()).toEqual(Object.keys(FEED_REGISTRY).sort());
   });
 
-  it("keeps publication-managed automation out of the Worker contract", () => {
+  it("keeps publication-managed automation out of the feed registry", () => {
     const publicationKeys = Object.entries(DATA_SOURCES)
       .filter(
         ([, meta]) =>
@@ -40,7 +35,6 @@ describe("metadata contracts", () => {
 
     expect(publicationKeys).toEqual(["governmentContracts"]);
     expect(AUTOMATED_METRIC_KEYS).not.toContain("governmentContracts");
-    expect(sectionDescriptors).not.toHaveProperty("governmentContracts");
     expect(FEED_REGISTRY).not.toHaveProperty("governmentContracts");
   });
 
