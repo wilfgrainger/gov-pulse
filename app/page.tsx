@@ -4,8 +4,8 @@ import NationalEvidenceEdition from "./components/NationalEvidenceEdition";
 import SectionNav from "./components/SectionNav";
 import SiteFooter from "./components/SiteFooter";
 import SocialShare from "./components/SocialShare";
-import { BUILD_METRICS_SNAPSHOT } from "./generated/metricsSnapshot";
 import { selectNationalEvidenceEdition } from "./lib/nationalEvidence";
+import { readServerMetricsSnapshot } from "./lib/serverMetricsSnapshot";
 import { SECTIONS } from "./lib/sections";
 
 const trustPrinciples = [
@@ -23,8 +23,9 @@ const trustPrinciples = [
   },
 ] as const;
 
-export default function Home() {
-  const initialEdition = selectNationalEvidenceEdition(BUILD_METRICS_SNAPSHOT);
+export default async function Home() {
+  const snapshot = await readServerMetricsSnapshot();
+  const initialEdition = selectNationalEvidenceEdition(snapshot);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
