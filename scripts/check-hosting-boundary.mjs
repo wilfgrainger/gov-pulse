@@ -5,7 +5,7 @@ const root = process.cwd();
 const workflowDirectory = join(root, ".github", "workflows");
 const deploymentWorkflow = join(workflowDirectory, "deploy.yml");
 const webWorkerConfig = join(root, "worker", "web-wrangler.toml");
-const openNextConfig = join(root, "worker", "open-next.config.ts");
+const openNextConfig = join(root, "worker", "open-next.config.template");
 const violations = [];
 
 function repositoryPath(path) {
@@ -41,7 +41,7 @@ if (!existsSync(webWorkerConfig)) {
 }
 
 if (!existsSync(openNextConfig)) {
-  violations.push("worker/open-next.config.ts is required for the pinned OpenNext build.");
+  violations.push("worker/open-next.config.template is required for the pinned OpenNext build.");
 } else {
   requireText(
     openNextConfig,
@@ -60,8 +60,8 @@ if (!existsSync(deploymentWorkflow)) {
   );
   requireText(
     deploymentWorkflow,
-    /cp worker\/open-next\.config\.ts open-next\.config\.ts/,
-    "The production workflow must stage the reviewed OpenNext config at the project root."
+    /cp worker\/open-next\.config\.template open-next\.config\.ts/,
+    "The production workflow must materialise the reviewed OpenNext template at the project root."
   );
   requireText(
     deploymentWorkflow,
