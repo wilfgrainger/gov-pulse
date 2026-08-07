@@ -1,4 +1,6 @@
 const ONS_GENERATOR = "https://www.ons.gov.uk/generator?format=csv&uri=";
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
 
 function onsSeries(seriesId, datasetId, topicPath, label) {
   return {
@@ -23,6 +25,7 @@ export const FEED_REGISTRY = Object.freeze({
     refreshCadence: "daily",
     publicationCadence: "series-specific: monthly and event-driven",
     operationalStatus: "active",
+    retrievalMaxAgeMs: 36 * HOUR_MS,
     upstreams: [
       {
         publisher: "Office for National Statistics",
@@ -62,6 +65,7 @@ export const FEED_REGISTRY = Object.freeze({
     refreshCadence: "daily",
     publicationCadence: "monthly",
     operationalStatus: "active",
+    retrievalMaxAgeMs: 36 * HOUR_MS,
     upstreams: [
       {
         publisher: "Office for National Statistics",
@@ -81,6 +85,7 @@ export const FEED_REGISTRY = Object.freeze({
     refreshCadence: "daily",
     publicationCadence: "monthly",
     operationalStatus: "active",
+    retrievalMaxAgeMs: 36 * HOUR_MS,
     upstreams: [
       {
         publisher: "Office for National Statistics",
@@ -100,6 +105,7 @@ export const FEED_REGISTRY = Object.freeze({
     refreshCadence: "daily",
     publicationCadence: "monthly",
     operationalStatus: "active",
+    retrievalMaxAgeMs: 40 * DAY_MS,
     upstreams: [
       onsSeries(
         "HF6W",
@@ -124,6 +130,7 @@ export const FEED_REGISTRY = Object.freeze({
     refreshCadence: "daily",
     publicationCadence: "monthly",
     operationalStatus: "active",
+    retrievalMaxAgeMs: 36 * HOUR_MS,
     upstreams: [
       {
         publisher: "Office for National Statistics",
@@ -143,6 +150,7 @@ export const FEED_REGISTRY = Object.freeze({
     refreshCadence: "daily",
     publicationCadence: "periodic",
     operationalStatus: "active",
+    retrievalMaxAgeMs: 36 * HOUR_MS,
     upstreams: [
       {
         publisher: "Office for National Statistics",
@@ -168,6 +176,7 @@ export const FEED_REGISTRY = Object.freeze({
     refreshCadence: "daily",
     publicationCadence: "as published",
     operationalStatus: "active",
+    retrievalMaxAgeMs: 14 * DAY_MS,
     upstreams: [
       {
         publisher: "YouGov",
@@ -193,6 +202,7 @@ export const FEED_REGISTRY = Object.freeze({
     refreshCadence: "daily",
     publicationCadence: "monthly",
     operationalStatus: "active",
+    retrievalMaxAgeMs: 45 * DAY_MS,
     upstreams: [
       {
         publisher: "NHS England",
@@ -212,6 +222,7 @@ export const FEED_REGISTRY = Object.freeze({
     refreshCadence: "every 3 hours",
     publicationCadence: "continuous market repricing",
     operationalStatus: "active",
+    retrievalMaxAgeMs: 4 * HOUR_MS,
     publicationRequirement: "optional",
     upstreams: [
       {
@@ -245,6 +256,7 @@ export const FEED_REGISTRY = Object.freeze({
     refreshCadence: "daily",
     publicationCadence: "periodic",
     operationalStatus: "active",
+    retrievalMaxAgeMs: 36 * HOUR_MS,
     publicationRequirement: "optional",
     upstreams: [
       {
@@ -268,6 +280,25 @@ export const FEED_REGISTRY = Object.freeze({
     ],
   },
 });
+
+// Government contracts is a publication-layer source rather than a normal feed,
+// but its currentness policy lives beside the feed registry so the publication
+// boundary has one runtime owner for every public section.
+export const PUBLICATION_SOURCE_REGISTRY = Object.freeze({
+  governmentContracts: {
+    section: "governmentContracts",
+    retrievalMaxAgeMs: 72 * HOUR_MS,
+    publicationRequirement: "optional",
+  },
+});
+
+export function retrievalMaxAgeMsForSection(section) {
+  return (
+    FEED_REGISTRY[section]?.retrievalMaxAgeMs ??
+    PUBLICATION_SOURCE_REGISTRY[section]?.retrievalMaxAgeMs ??
+    null
+  );
+}
 
 export function registrySnapshot() {
   return {
