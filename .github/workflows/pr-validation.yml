@@ -75,9 +75,6 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Install locked OpenNext toolchain
-        run: npm ci --prefix worker
-
       - name: Verify toolchain
         run: npm run toolchain:check
 
@@ -92,6 +89,9 @@ jobs:
         env:
           STATIC_EXPORT: "true"
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install locked OpenNext toolchain
+        run: npm ci --prefix worker
 
       - name: Stage OpenNext adapter config
         run: cp worker/open-next.config.template open-next.config.ts
