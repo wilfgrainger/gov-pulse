@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import publicWorker, { isCompleteSnapshot } from "@/worker/public-data-entry";
 import {
   FEED_REGISTRY_VERSION,
@@ -33,6 +33,10 @@ function degradedSnapshot(now = new Date("2026-08-07T12:00:00.000Z")) {
   };
 }
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("degraded public publication", () => {
   it("accepts an explicitly degraded snapshot only when the missing manifest matches", () => {
     const valid = degradedSnapshot();
@@ -45,6 +49,8 @@ describe("degraded public publication", () => {
 
   it("serves degraded evidence but does not report deployment readiness", async () => {
     const now = new Date("2026-08-07T12:00:00.000Z");
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
     const snapshot = degradedSnapshot(now);
     const artifact = buildPublicSnapshotArtifact(snapshot, now);
     const env = {
