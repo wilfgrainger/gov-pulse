@@ -7,7 +7,7 @@ import {
   INTERNATIONAL_COMPARISON_KEY,
   readInternationalComparison,
   refreshInternationalComparison,
-} from "@/worker/international-comparison-publication";
+} from "@/worker/international-comparison-store";
 import { jobsForDay } from "@/worker/queued-publication-entry";
 import {
   COMPARISON_COUNTRIES,
