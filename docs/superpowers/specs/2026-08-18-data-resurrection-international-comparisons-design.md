@@ -1,6 +1,6 @@
 # Data Resurrection and International Comparisons Design
 
-Status: Approved design, pending implementation-plan approval
+Status: Approved design, pending written-spec review
 Date: 18 August 2026
 Repository: `wilfgrainger/gov-pulse`
 Target: public-data.org
@@ -115,7 +115,7 @@ The first release contains exactly seven measures.
 
 **Calculation:** `(gross debt % GDP / 100) * GDP current USD / population`.
 
-The output must retain whether the selected IMF observation is historical estimate or projection. The first public comparison should prefer the latest common historical/estimated year with adequate coverage rather than silently mixing actuals and future forecasts. A projection may be shown only when explicitly labelled.
+The output must retain whether each selected IMF country observation is historical, estimated or projected. The first public comparison should prefer the latest common non-projection year with adequate coverage. A projection may be shown only when explicitly labelled, and projection observations must not be mixed into a historical ranking.
 
 Primary reference: `https://www.imf.org/external/datamapper/datasets/WEO`
 
@@ -212,11 +212,13 @@ interface ComparisonMeasure {
   label: string;
   definition: string;
   unit: "USD per resident";
-  observationYear: number;
-  valueType: "historical" | "estimate" | "projection";
+  selectedObservationYear: number;
+  rankDirection: "highest-first";
   comparableCountryCount: number;
   countries: Array<{
     country: CountryId;
+    observationYear: number | null;
+    valueType: "historical" | "estimate" | "projection" | null;
     value: number | null;
     rank: number | null;
     source: SourceProvenance | null;
@@ -227,12 +229,14 @@ interface ComparisonMeasure {
 
 The implementation may refine exact field names, but the following invariants are mandatory:
 
-- every value has a country, observation year, unit and source provenance;
+- every non-null value has a country, observation year, value type, unit and source provenance;
+- only observations matching the measure's selected observation year and comparison basis are eligible for ranking;
+- rank means **highest amount per resident first** for all seven v1 measures;
 - rank is computed only over non-null comparable values;
 - ties use a documented competition-ranking rule;
 - the UK denominator equals the actual number of comparable observations;
 - unavailable countries retain an exclusion reason when known;
-- historical, estimated and projected observations are not silently mixed;
+- historical, estimated and projected observations are not silently mixed in one ranking;
 - calculation inputs are retained or reproducible for derived per-capita values;
 - no aggregate overall score exists.
 
@@ -335,12 +339,14 @@ Add tests for:
 - fixed 13-country universe;
 - per-metric missing-country coverage;
 - rank denominator calculation;
+- descending highest-first ranking;
 - ties;
 - no rank for null values;
 - ODA countries outside comparable donor coverage not becoming zero;
 - social-spending overlap caveat retained;
 - healthcare labelled total CHE rather than government/NHS spending;
-- historical/estimate/projection classification;
+- country-level historical/estimate/projection classification;
+- rejection of mixed-period/mixed-basis observations from a ranking;
 - per-capita transformation math and population units;
 - source provenance and observation year on every non-null value;
 - absence of a combined score;
