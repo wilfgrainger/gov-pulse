@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { AUTOMATED_METRIC_KEYS } from "@/app/lib/metricFallbacks";
 import { decorateJsonResponse } from "@/worker/entry";
-import { sectionDescriptors } from "@/worker/index";
 import {
   FEED_REGISTRY,
   FEED_REGISTRY_VERSION,
@@ -15,7 +15,9 @@ import {
 
 describe("feed registry", () => {
   it("covers every automated Worker section exactly once", () => {
-    expect(Object.keys(FEED_REGISTRY).sort()).toEqual(Object.keys(sectionDescriptors).sort());
+    expect(Object.keys(FEED_REGISTRY).sort()).toEqual(
+      [...AUTOMATED_METRIC_KEYS].sort()
+    );
   });
 
   it("provides direct HTTPS provenance for every feed", () => {
@@ -112,12 +114,10 @@ describe("registry response decoration", () => {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-
     const result = await decorateJsonResponse(
       new Request("https://worker.example/health"),
       original
     );
-
     expect(result).toBe(original);
     expect(await result.text()).toBe("{");
   });
@@ -131,13 +131,11 @@ describe("registry response decoration", () => {
         "Content-Encoding": "gzip",
       },
     });
-
     const result = await decorateJsonResponse(
       new Request("https://worker.example/health"),
       original
     );
     const payload = await result.json();
-
     expect(payload.registryVersion).toBe(FEED_REGISTRY_VERSION);
     expect(payload.feedCount).toBe(Object.keys(FEED_REGISTRY).length);
     expect(result.headers.has("Content-Length")).toBe(false);
@@ -149,12 +147,10 @@ describe("registry response decoration", () => {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-
     const result = await decorateJsonResponse(
       new Request("https://worker.example/health"),
       original
     );
-
     expect(result).toBe(original);
     expect(await result.json()).toEqual(["ok"]);
   });

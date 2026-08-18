@@ -11,6 +11,10 @@ import {
   type SignalHistoryPoint,
   type SignalPresentation,
 } from "@/app/lib/nationalEvidence";
+import {
+  publicationProvenanceFromSnapshot,
+  type PublicationProvenance,
+} from "@/app/lib/publicationProvenance";
 
 const STATE_LABELS: Record<EvidenceState, string> = {
   current: "Current verified",
@@ -137,6 +141,49 @@ function EditionSummary({ edition }: { edition: Edition }) {
         <dd>{edition.counts.unavailable}</dd>
       </div>
     </dl>
+  );
+}
+
+function EditionProvenance({
+  provenance,
+}: {
+  provenance: PublicationProvenance;
+}) {
+  const stateLabel =
+    provenance.publicationState === "ready"
+      ? "Ready edition"
+      : provenance.publicationState === "degraded"
+        ? "Degraded edition"
+        : "Publication state unreported";
+
+  return (
+    <div
+      aria-label="Publication provenance"
+      className="mt-3 flex flex-wrap justify-end gap-x-3 gap-y-1 text-xs leading-5 text-gray-500"
+    >
+      <span
+        className={
+          provenance.publicationState === "degraded"
+            ? "font-semibold text-[#744600]"
+            : ""
+        }
+      >
+        {stateLabel}
+      </span>
+      {provenance.registryVersion ? (
+        <span>Registry {provenance.registryVersion}</span>
+      ) : null}
+      {provenance.appRevision ? (
+        <span>App {provenance.appRevision}</span>
+      ) : null}
+      {provenance.publicationState === "degraded" &&
+      provenance.missingRequiredCount > 0 ? (
+        <span>
+          {provenance.missingRequiredCount} required{" "}
+          {provenance.missingRequiredCount === 1 ? "feed" : "feeds"} unavailable
+        </span>
+      ) : null}
+    </div>
   );
 }
 
@@ -332,16 +379,28 @@ function ReadingGuide() {
 
 export default function NationalEvidenceEdition({
   initialEdition,
+  initialProvenance,
+  appRevision = null,
 }: {
   initialEdition: Edition;
+  initialProvenance?: PublicationProvenance;
+  appRevision?: string | null;
 }) {
   const [edition, setEdition] = useState(initialEdition);
+  const [provenance, setProvenance] = useState(
+    initialProvenance ?? publicationProvenanceFromSnapshot(null, appRevision)
+  );
 
   useEffect(() => {
     let active = true;
     fetchMetricsSnapshot()
       .then(({ payload }) => {
-        if (active) setEdition(selectNationalEvidenceEdition(payload));
+        if (active) {
+          setEdition(selectNationalEvidenceEdition(payload));
+          setProvenance(
+            publicationProvenanceFromSnapshot(payload, appRevision)
+          );
+        }
       })
       .catch(() => {
         // The server-rendered edition remains useful when the browser refresh fails.
@@ -349,7 +408,7 @@ export default function NationalEvidenceEdition({
     return () => {
       active = false;
     };
-  }, []);
+  }, [appRevision]);
 
   return (
     <section
@@ -369,10 +428,10 @@ export default function NationalEvidenceEdition({
               The latest evidence, first.
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-gray-600 md:text-base">
-              Separate measures, separate publication clocks. The lead is
-              selected for public usefulness from available evidence, its
-              currentness is shown explicitly, and unlike measures are never
-              combined into one score.
+              Separate measures, separate publication clocks. The lead follows a
+              fixed publication priority across these signals; that ordering is a
+              navigation rule, not a claim that unlike measures can be ranked or
+              combined.
             </p>
           </div>
           <div>
@@ -382,6 +441,7 @@ export default function NationalEvidenceEdition({
                 ? `Edition checked ${edition.generatedAt}`
                 : "Publication check time unavailable"}
             </p>
+            <EditionProvenance provenance={provenance} />
           </div>
         </div>
 
@@ -402,8 +462,9 @@ export default function NationalEvidenceEdition({
               </h3>
             </div>
             <p className="text-sm leading-6 text-gray-600">
-              Eight measures chosen for public usefulness. Open any card for
-              its definition, evidence class, history and primary source.
+              Eight separately dated measures form a compact national reading
+              list. Open any card for its definition, evidence class, history and
+              primary source.
             </p>
           </div>
           <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

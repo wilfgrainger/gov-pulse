@@ -249,21 +249,13 @@ async function publishFromCaches(env, options = {}) {
     throw new Error("Publication snapshot has no current source-owned evidence");
   }
 
-  const missingRequired = missingRequiredSections(currentCandidate);
-  if (missingRequired.length > 0) {
-    const status = {
-      status: "incomplete",
-      generatedAt: current?.meta?.generatedAt ?? null,
-      includedSections: Object.keys(currentCandidate.meta.sources).sort(),
-      missingRequired,
-      budget: FREE_TIER_BUDGET,
-    };
-    await kvPut(env, PUBLICATION_STATUS_KEY, status);
-    return { publication: current, status, changed: false, incomplete: true };
-  }
-
+  const missingRequired = missingRequiredSections(currentCandidate).sort();
   currentCandidate.meta.publicationMode = "queue-free-tier";
   currentCandidate.meta.freeTierBudget = FREE_TIER_BUDGET;
+  currentCandidate.meta.publicationState =
+    missingRequired.length > 0 ? "degraded" : "ready";
+  currentCandidate.meta.missingRequiredSections = missingRequired;
+
   const publication = preserveEditionClock(currentCandidate, current);
   const changed = !current || !samePublicationEvidence(publication, current);
   publication.meta.delivery = "published-snapshot";
@@ -287,9 +279,15 @@ async function publishFromCaches(env, options = {}) {
   }
 
   const status = {
-    status: changed ? "published" : "no-change",
+    status:
+      missingRequired.length > 0
+        ? "degraded"
+        : changed
+          ? "published"
+          : "no-change",
     generatedAt: publication.meta.generatedAt,
     includedSections: Object.keys(publication.meta.sources).sort(),
+    ...(missingRequired.length > 0 ? { missingRequired } : {}),
     budget: FREE_TIER_BUDGET,
   };
   await kvPut(env, PUBLICATION_STATUS_KEY, status);

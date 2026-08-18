@@ -18,16 +18,62 @@ const DEFAULT_SEED_URL =
 const PUBLIC_CACHE_CONTROL =
   "public, max-age=300, s-maxage=300, stale-while-revalidate=3600";
 
-function isCompleteSnapshot(snapshot) {
-  return (
-    isSnapshot(snapshot) &&
-    snapshot.meta.registryVersion === FEED_REGISTRY_VERSION &&
-    REQUIRED_PUBLISHED_SECTION_IDS.every(
-      (section) =>
-        snapshot.meta.sources[section] &&
-        Object.prototype.hasOwnProperty.call(snapshot, section)
-    )
+function requiredMissingFrom(snapshot) {
+  if (!snapshot?.meta?.sources || typeof snapshot.meta.sources !== "object") {
+    return [...REQUIRED_PUBLISHED_SECTION_IDS];
+  }
+  return REQUIRED_PUBLISHED_SECTION_IDS.filter(
+    (section) =>
+      !snapshot.meta.sources[section] ||
+      !Object.prototype.hasOwnProperty.call(snapshot, section)
   );
+}
+
+function sameStringSet(left, right) {
+  if (!Array.isArray(left) || !Array.isArray(right)) return false;
+  return (
+    JSON.stringify([...left].sort()) === JSON.stringify([...right].sort())
+  );
+}
+
+function withPublicationState(snapshot) {
+  if (!isSnapshot(snapshot) || snapshot.meta.registryVersion !== FEED_REGISTRY_VERSION) {
+    return null;
+  }
+  const normalized = structuredClone(snapshot);
+  const missingRequiredSections = requiredMissingFrom(normalized);
+  normalized.meta.publicationState =
+    missingRequiredSections.length > 0 ? "degraded" : "ready";
+  normalized.meta.missingRequiredSections = missingRequiredSections;
+  return normalized;
+}
+
+function isCompleteSnapshot(snapshot) {
+  if (!isSnapshot(snapshot) || snapshot.meta.registryVersion !== FEED_REGISTRY_VERSION) {
+    return false;
+  }
+
+  const missingRequiredSections = requiredMissingFrom(snapshot);
+  if (snapshot.meta.publicationState === "ready") {
+    return (
+      missingRequiredSections.length === 0 &&
+      sameStringSet(snapshot.meta.missingRequiredSections ?? [], [])
+    );
+  }
+  if (snapshot.meta.publicationState === "degraded") {
+    return (
+      missingRequiredSections.length > 0 &&
+      sameStringSet(
+        snapshot.meta.missingRequiredSections,
+        missingRequiredSections
+      ) &&
+      Object.keys(snapshot.meta.sources).length > 0
+    );
+  }
+
+  // Backward compatibility for a complete pre-state snapshot. Missing required
+  // evidence never qualifies without an explicit degraded manifest.
+  return missingRequiredSections.length === 0;
 }
 
 function publicHeaders(cacheControl = "no-store") {
@@ -83,11 +129,13 @@ async function readPreparedPublicArtifact(env, now = new Date()) {
     return null;
   }
 
-  const currentSnapshot = filterCurrentSnapshot(preparedSnapshot, now);
+  const currentSnapshot = withPublicationState(
+    filterCurrentSnapshot(preparedSnapshot, now)
+  );
   if (!isCompleteSnapshot(currentSnapshot)) return null;
 
   return {
-    body: record.value,
+    body: JSON.stringify(currentSnapshot),
     generatedAt:
       typeof record.metadata?.generatedAt === "string"
         ? record.metadata.generatedAt
@@ -114,9 +162,11 @@ async function fetchSeedSnapshot(env, fetchImpl = fetch, now = new Date()) {
       return null;
     }
     assertSameHttpsHost(response, url, "Pages seed");
-    const candidate = filterCurrentSnapshot(
-      await readResponseJson(response, { label: "Pages seed JSON" }),
-      now,
+    const candidate = withPublicationState(
+      filterCurrentSnapshot(
+        await readResponseJson(response, { label: "Pages seed JSON" }),
+        now,
+      )
     );
     return isCompleteSnapshot(candidate) ? candidate : null;
   } catch {
@@ -130,7 +180,9 @@ async function currentPublicArtifact(env, options = {}) {
   if (prepared) return prepared;
 
   try {
-    const current = filterCurrentSnapshot(await readCurrentPublication(env), now);
+    const current = withPublicationState(
+      filterCurrentSnapshot(await readCurrentPublication(env), now)
+    );
     if (isCompleteSnapshot(current)) {
       const snapshot = publicSnapshot(current);
       return {
@@ -140,7 +192,7 @@ async function currentPublicArtifact(env, options = {}) {
       };
     }
   } catch {
-    // A complete Pages seed is the bounded bootstrap and outage fallback.
+    // A current Pages seed is the bounded bootstrap and outage fallback.
   }
 
   const seed = await fetchSeedSnapshot(env, options.fetchImpl ?? fetch, now);
@@ -213,13 +265,42 @@ async function healthResponse(request, env) {
     );
   }
 
+  // Readiness is deliberately stricter than data delivery. Migration and Pages
+  // fallbacks can keep readers supplied, but only a valid prepared KV artifact
+  // proves the current publication pipeline is ready.
   const prepared = await readPreparedPublicArtifact(env);
-  const ready = Boolean(prepared);
+  if (!prepared) {
+    return json(
+      { status: "bootstrapping", ready: false },
+      { head: request.method === "HEAD" }
+    );
+  }
+
+  let snapshot;
+  try {
+    snapshot = JSON.parse(prepared.body);
+  } catch {
+    return json(
+      { status: "bootstrapping", ready: false },
+      { head: request.method === "HEAD" }
+    );
+  }
+
+  if (snapshot.meta?.publicationState === "degraded") {
+    return json(
+      {
+        status: "degraded",
+        ready: false,
+        degraded: true,
+        missingRequiredSections:
+          snapshot.meta.missingRequiredSections ?? [],
+      },
+      { head: request.method === "HEAD" }
+    );
+  }
+
   return json(
-    {
-      status: ready ? "ready" : "bootstrapping",
-      ready,
-    },
+    { status: "ready", ready: true },
     { head: request.method === "HEAD" }
   );
 }
@@ -266,5 +347,6 @@ export {
   isCompleteSnapshot,
   preparedMetadataIsCurrent,
   readPreparedPublicArtifact,
+  withPublicationState,
 };
 export default publicDataWorker;

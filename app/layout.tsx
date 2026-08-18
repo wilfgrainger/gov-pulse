@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { BRAND_NAME, SITE_DESCRIPTION, SITE_SOCIAL_DESCRIPTION, SITE_TITLE } from "@/app/lib/siteCopy";
 import { serializeJsonLd, SITE_DISCOVERY } from "@/app/lib/discovery";
+import { MetricsSnapshotProvider } from "@/app/lib/MetricsSnapshotProvider";
+import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
+import { BRAND_NAME, SITE_DESCRIPTION, SITE_SOCIAL_DESCRIPTION, SITE_TITLE } from "@/app/lib/siteCopy";
 import "./globals.css";
 
 const bodyFont = localFont({
@@ -70,11 +72,13 @@ const publicationStructuredData = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialSnapshot = await readServerMetricsSnapshot();
+
   return (
     <html lang="en" className={bodyFont.variable} data-scroll-behavior="smooth">
       <body>
@@ -82,7 +86,9 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(publicationStructuredData) }}
         />
-        {children}
+        <MetricsSnapshotProvider snapshot={initialSnapshot}>
+          {children}
+        </MetricsSnapshotProvider>
       </body>
     </html>
   );

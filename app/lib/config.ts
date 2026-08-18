@@ -1,66 +1,11 @@
 // Verified data delivery configuration.
 
-// Production uses one same-origin, schema-checked snapshot path. The static
-// build supplies the seed; the Cloudflare data worker publishes later editions.
+// The browser uses one same-origin, schema-checked snapshot path. Runtime
+// publisher identity and currentness policy live in worker/feed-registry.js.
 export const METRICS_SNAPSHOT_PATH = `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/data/metrics-snapshot.json`;
 
-// Published evidence changes daily; hourly refresh avoids wasteful five-minute polling.
+// Published evidence changes daily; hourly client revalidation avoids wasteful polling.
 export const REFRESH_INTERVAL_MS = 60 * 60 * 1000;
-
-// Public UK data source endpoints.
-
-// ONS CSV Generator (no auth required) replaces the retired api.ons.gov.uk.
-export const ONS_CSV_BASE = "https://www.ons.gov.uk/generator?format=csv&uri=";
-
-// Bank of England Statistical Interactive Database (no auth required)
-export const BOE_API_BASE = "https://www.bankofengland.co.uk/boeapps/database";
-
-// ONS time series definitions.
-export const ONS_SERIES = {
-  CPI_ANNUAL_RATE: {
-    seriesId: "D7G7",
-    datasetId: "MM23",
-    topicPath: "/economy/inflationandpriceindices/timeseries/d7g7/mm23",
-  },
-  CPIH_ANNUAL_RATE: {
-    seriesId: "L55O",
-    datasetId: "MM23",
-    topicPath: "/economy/inflationandpriceindices/timeseries/l55o/mm23",
-  },
-  UNEMPLOYMENT_RATE: {
-    seriesId: "MGSX",
-    datasetId: "LMS",
-    topicPath:
-      "/employmentandlabourmarket/peoplenotinwork/unemployment/timeseries/mgsx/lms",
-  },
-  EMPLOYMENT_RATE: {
-    seriesId: "LF24",
-    datasetId: "LMS",
-    topicPath:
-      "/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/timeseries/lf24/lms",
-  },
-  GDP_QUARTERLY: {
-    seriesId: "IHYQ",
-    datasetId: "PN2",
-    topicPath: "/economy/grossdomesticproductgdp/timeseries/ihyq/pn2",
-  },
-  GDP_INDEX: {
-    seriesId: "ABMI",
-    datasetId: "PN2",
-    topicPath: "/economy/grossdomesticproductgdp/timeseries/abmi/pn2",
-  },
-  NET_BORROWING: {
-    seriesId: "J5II",
-    datasetId: "PSF",
-    topicPath:
-      "/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/j5ii/psf",
-  },
-} as const;
-
-// Bank of England series.
-export const BOE_SERIES = {
-  BANK_RATE: "IUDBEDR",
-} as const;
 
 export type DataAutomation =
   | "automated"
@@ -117,7 +62,8 @@ const DAY_MS = 24 * HOUR_MS;
 
 export const INTERACTIVE_ONLY_SECTIONS = ["politicalCompass"] as const;
 
-// Data source metadata for UI and documentation.
+// UI copy only. Runtime source identity and publication currentness are owned by
+// worker/feed-registry.js and are checked separately in source-ownership tests.
 export const DATA_SOURCES: Record<string, DataSourceDefinition> = {
   pmApproval: {
     name: "PM Approval",
@@ -140,7 +86,7 @@ export const DATA_SOURCES: Record<string, DataSourceDefinition> = {
   },
   bettingOdds: {
     name: "Political Betting Markets",
-    frequency: "every 2 hours",
+    frequency: "every 3 hours",
     sources: ["Oddschecker public politics markets"],
     automation: "automated",
     evidenceClass: "market-signal",

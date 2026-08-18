@@ -1,21 +1,23 @@
+import {
+  FEED_REGISTRY,
+  PUBLICATION_SOURCE_REGISTRY,
+  retrievalMaxAgeMsForSection,
+} from "./feed-registry.js";
+
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
 const ISO_UTC_INSTANT = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/;
 
-const RETRIEVAL_MAX_AGE_MS = Object.freeze({
-  sentimentPulse: 36 * HOUR_MS,
-  gdpTracker: 36 * HOUR_MS,
-  employmentStats: 36 * HOUR_MS,
-  taxRevenue: 36 * HOUR_MS,
-  nationalDebt: 40 * DAY_MS,
-  migrationStats: 36 * HOUR_MS,
-  crimeStatistics: 36 * HOUR_MS,
-  electionPolling: 14 * DAY_MS,
-  nhsStats: 45 * DAY_MS,
-  bettingOdds: 4 * HOUR_MS,
-  governmentContracts: 72 * HOUR_MS,
-});
+// Compatibility export for diagnostics/tests. Policy ownership lives in
+// feed-registry.js; this object is derived rather than maintained separately.
+const RETRIEVAL_MAX_AGE_MS = Object.freeze(
+  Object.fromEntries(
+    [...Object.entries(FEED_REGISTRY), ...Object.entries(PUBLICATION_SOURCE_REGISTRY)].map(
+      ([section, definition]) => [section, definition.retrievalMaxAgeMs]
+    )
+  )
+);
 
 function isRecord(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -37,7 +39,7 @@ function sectionCurrentness(section, data, source, now = new Date()) {
     return { current: false, reason: "invalid-record" };
   }
 
-  const retrievalLimit = RETRIEVAL_MAX_AGE_MS[section];
+  const retrievalLimit = retrievalMaxAgeMsForSection(section);
   if (!Number.isFinite(retrievalLimit)) {
     return { current: false, reason: "missing-policy" };
   }
@@ -124,7 +126,10 @@ function sectionCurrentness(section, data, source, now = new Date()) {
 function sectionValidityDeadline(section, data, source, now = new Date()) {
   if (!sectionCurrentness(section, data, source, now).current) return null;
 
-  const deadlines = [parsedTime(source.fetchedAt) + RETRIEVAL_MAX_AGE_MS[section]];
+  const retrievalLimit = retrievalMaxAgeMsForSection(section);
+  if (!Number.isFinite(retrievalLimit)) return null;
+
+  const deadlines = [parsedTime(source.fetchedAt) + retrievalLimit];
   const explicitExpiry = parsedTime(data.expiresAt);
   if (explicitExpiry !== null) deadlines.push(explicitExpiry);
 
