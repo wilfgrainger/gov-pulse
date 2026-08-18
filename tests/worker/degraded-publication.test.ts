@@ -114,16 +114,17 @@ describe("degraded public publication", () => {
       [PUBLICATION_CURRENT_KEY, current],
       ["v12:publication:section:gdpTracker", gdpFragment],
     ]);
+    const put = vi.fn(async (key: string, value: string) => {
+      try {
+        store.set(key, JSON.parse(value));
+      } catch {
+        store.set(key, value);
+      }
+    });
     const env = {
       METRICS_CACHE: {
         get: vi.fn(async (key: string) => store.get(key) ?? null),
-        put: vi.fn(async (key: string, value: string) => {
-          try {
-            store.set(key, JSON.parse(value));
-          } catch {
-            store.set(key, value);
-          }
-        }),
+        put,
       },
     };
 
@@ -145,6 +146,10 @@ describe("degraded public publication", () => {
     expect(published.meta.sources).not.toHaveProperty("nhsStats");
     expect(published.meta.publicationState).toBe("degraded");
     expect(published.meta.missingRequiredSections).toContain("nhsStats");
-    expect(store.get(PUBLIC_SNAPSHOT_KEY)).toEqual(expect.any(String));
+    expect(put).toHaveBeenCalledWith(
+      PUBLIC_SNAPSHOT_KEY,
+      expect.any(String),
+      expect.objectContaining({ metadata: expect.any(Object) })
+    );
   });
 });
