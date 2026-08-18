@@ -33,18 +33,25 @@ visible focus and reduced-motion behaviour.
 
 ## Architecture
 
-The product has two deliberately small planes:
+The product has three deliberately small delivery planes:
 
-1. Cloudflare Pages serves the static Next.js export built from `app/`,
-   `public/`, `data/`, `contracts/` and the checked-in build configuration.
-   The browser consumes the same-origin `/data/metrics-snapshot.json` contract;
-   Pages owns section JSON/CSV downloads and normal site routes.
+1. Cloudflare Worker `public-data-web`, built from the Next.js application with
+   the pinned OpenNext adapter, owns normal `public-data.org/*` application
+   requests. Evidence-bearing pages are rendered at request time so crawlers,
+   link unfurlers, no-JavaScript clients and browsers receive the same
+   currentness decision. Static application assets are served from the same
+   Worker bundle.
 2. Cloudflare Worker `worker/public-data-entry.js` owns the runtime data plane.
-   Its only public routes are `/data/metrics-snapshot.json` and
-   `/data/health.json`; all other paths return 404. The Worker also receives
-   Cron and Queue events but exposes no collector or operational route.
+   Its only public HTTP routes are the more-specific
+   `/data/metrics-snapshot.json` and `/data/health.json`; all other paths return
+   404. The Worker also receives Cron and Queue events but exposes no collector
+   or operational route.
+3. Cloudflare Pages retains a bounded static seed/fallback export. It is not the
+   normal application plane. The data Worker may use a validated Pages seed only
+   inside the documented fallback boundary, and the deployment workflow keeps
+   the seed current after a successful web deployment.
 
-The Worker runs the Cloudflare Free plan schedule in `worker/wrangler.toml`: the daily
+The data Worker runs the Cloudflare Free plan schedule in `worker/wrangler.toml`: the daily
 Cron (`17 3 * * *`) refreshes generic, external and procurement evidence; the
 three-hour Cron (`47 */3 * * *`) refreshes betting markets. A single
 `public-data-jobs` Queue runs one bounded job at a time with retry limits.
@@ -55,15 +62,24 @@ The publication path is:
 
 `Cron -> Queue jobs -> source collectors -> validation/normalisation -> KV
 fragments -> run terminals -> finaliser -> atomic prepared public artifact ->
-same-origin browser response`
+request-time public delivery`
 
-Finalisation is run-scoped and idempotent. A run publishes only when every
-required job succeeded and every included section passes its own wall-clock
-currentness policy. A failed job remains pending until its bounded deadline;
-it is not treated as successful merely because it has become terminal. If no
-complete current artifact exists, the public route returns a generic 503 or a
-validated Pages seed within the documented bounded fallback. Never publish a
-partial or stale edition as ready.
+Finalisation is run-scoped and idempotent. The canonical prepared publication is
+atomic: a run publishes it only when every required job succeeded and every
+included section passes its wall-clock currentness policy. A failed job remains
+pending until its bounded deadline; it is not treated as successful merely
+because it has become terminal.
+
+Public delivery is deliberately more resilient than canonical finalisation. At
+request time the data boundary may derive a `degraded` edition from the last
+verified publication by removing any section that no longer passes currentness.
+The degraded response must declare `meta.publicationState = "degraded"` and an
+exact `missingRequiredSections` manifest. It may contain only current,
+source-owned evidence: never retain an expired value, invent a replacement or
+label a degraded edition `ready`. `/data/health.json` reports `ready: false` for
+a degraded edition. A complete current prepared artifact reports `ready: true`.
+If no current evidence remains, return the generic unavailable response or a
+validated Pages seed within the bounded fallback.
 
 ## Evidence registry and contracts
 
@@ -98,8 +114,10 @@ The external collectors are intentionally source-specific:
 
 The browser data contract is consumed by `app/lib/useMetrics.ts` and rendered
 by the section components and `app/components/NationalEvidenceEdition.tsx`.
-Do not make the browser call Worker internals, expose cache keys, or embed
-secrets, account identifiers, private repository details or deployment routes.
+The root layout supplies the request-time server snapshot before client
+revalidation. Do not make the browser call Worker internals, expose cache keys,
+or embed secrets, account identifiers, private repository details or deployment
+routes.
 
 ## Security and failure boundaries
 
@@ -111,32 +129,35 @@ Do not add Vercel, paid Cloudflare products, tracking or personal-data collectio
 an explicit recorded need. Public errors are generic and operational details
 stay in private logs.
 
-When a source, Queue, KV binding, publication artifact or Pages deployment is
-unavailable, preserve the last verified artifact only inside its configured
-window; otherwise show an honest unavailable state. A green build, a Worker
-deployment or a DNS response alone is not a live-data claim. Claim production
-only after exact-head checks and the affected public journey are observed.
+When a source, Queue, KV binding, publication artifact, web Worker or Pages seed
+is unavailable, preserve a previously verified value only inside its configured
+window; otherwise remove it and show an honest unavailable/degraded state. A
+green build, a Worker deployment or a DNS response alone is not a live-data
+claim. Claim production only after exact-head checks and the affected public
+journey are observed.
 
 ## Delivery and verification
 
 `main` is the release branch. `.github/workflows/pr-validation.yml` runs the
-focused architecture/source guards, lint, unit and Worker tests, static export
-and deterministic browser checks as appropriate. `.github/workflows/deploy.yml`
-validates once, reconciles the Queue, deploys the Worker, bootstraps/verifies a
-ready artifact, deploys Pages and verifies the exact revision, live snapshot
-and Pages-owned downloads. Manual dispatch is recovery only.
+focused architecture/source guards, lint, unit and Worker tests, deterministic
+Pages seed build, pinned OpenNext Worker build and browser checks as appropriate.
+`.github/workflows/deploy.yml` validates once, reconciles the Queue, deploys the
+data Worker, bootstraps/verifies a prepared artifact, deploys the request-time
+web Worker, verifies the exact revision and live snapshot, then refreshes the
+bounded Pages seed. Manual dispatch is recovery only.
 
 Before handoff run the smallest falsifying test for the change, then the
-affected Worker/component tests, lint, static production build, browser checks
-and production verifier. Inspect `git status` and exact `HEAD`; preserve
+affected Worker/component tests, lint, both production build modes, browser
+checks and production verifier. Inspect `git status` and exact `HEAD`; preserve
 untracked user files. Do not push, merge, deploy or delete material outside the
 requested scope without explicit authority.
 
 ## Repository map
 
-- `app/`: static Next.js routes, editorial components and browser contract use.
-- `worker/`: Worker entrypoints, collectors, normalisers, currentness,
-  publication finalisation, Wrangler configuration and Cloudflare bindings.
+- `app/`: Next.js routes, editorial components and browser contract use.
+- `worker/`: data Worker entrypoints, web-Worker/OpenNext configuration,
+  collectors, normalisers, currentness, publication finalisation and Cloudflare
+  bindings.
 - `contracts/`: strict evidence and publication schemas.
 - `data/`: checked-in source snapshots and static section downloads.
 - `scripts/`: build snapshot, source discovery, diagnostics, release and
@@ -145,7 +166,7 @@ requested scope without explicit authority.
 - `.agents/PROGRESS.md`: current checked-out/live investigation only; it is
   deliberately volatile and is not a substitute for this guide.
 
-Retired concepts include wildcard Worker APIs, direct browser collectors,
-routine scheduled GitHub data retrieval, synthetic national scores, combined
-crime totals, withdrawn visualisations and the old multi-file hourly-agent
-programme. Remove obsolete paths rather than documenting them as active.
+Retired concepts include wildcard data APIs, direct browser collectors, routine
+scheduled GitHub data retrieval, synthetic national scores, combined crime
+totals, withdrawn visualisations and the old multi-file hourly-agent programme.
+Remove obsolete paths rather than documenting them as active.
