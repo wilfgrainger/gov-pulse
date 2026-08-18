@@ -14,8 +14,28 @@ export interface SectionDiscovery {
   sameAs: string[];
 }
 
+const EXTRA_SECTION_DISCOVERY: Record<string, SectionDiscovery> = {
+  "uk-in-context": {
+    title: "UK in context",
+    description:
+      "Compare UK government debt, overseas aid, defence, public social spending, total healthcare spending, tax revenue and debt interest per resident across a fixed 13-country group.",
+    category: "Public money",
+    kind: "dataset",
+    sourceKey: "internationalComparison",
+    sameAs: [
+      "https://www.imf.org/external/datamapper/datasets/WEO",
+      "https://www.oecd.org/en/data/datasets/social-expenditure-database-socx.html",
+      "https://www.sipri.org/databases/milex",
+      "https://www.who.int/data/gho/data/indicators/indicator-details/GHO/current-health-expenditure-%28che%29-per-capita-in-us%24",
+    ],
+  },
+};
+
 export const SITE_DISCOVERY = discovery.site;
-export const SECTION_DISCOVERY = discovery.sections as Record<string, SectionDiscovery>;
+export const SECTION_DISCOVERY = {
+  ...(discovery.sections as Record<string, SectionDiscovery>),
+  ...EXTRA_SECTION_DISCOVERY,
+};
 export const PUBLIC_SECTION_IDS = Object.keys(SECTION_DISCOVERY);
 
 export function sectionPath(id: string) {
@@ -23,7 +43,7 @@ export function sectionPath(id: string) {
 }
 
 export function socialImagePath(id: string) {
-  return `/social/${id}.svg`;
+  return id === "uk-in-context" ? "/social/home.svg" : `/social/${id}.svg`;
 }
 
 export function absoluteUrl(path: string) {
@@ -97,6 +117,17 @@ export function structuredDataForSection(id: string) {
       ...common,
       "@type": "Article",
       articleSection: section.category,
+    };
+  }
+
+  if (section.sourceKey === "internationalComparison") {
+    return {
+      ...common,
+      "@type": "Dataset",
+      spatialCoverage: "International comparison centred on the United Kingdom",
+      sameAs: section.sameAs,
+      measurementTechnique:
+        "Source-specific per-resident comparison with per-measure country coverage and provenance",
     };
   }
 
