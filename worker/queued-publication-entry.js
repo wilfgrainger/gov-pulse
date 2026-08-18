@@ -428,8 +428,15 @@ async function finaliseRun(runId, env, options = {}) {
 
   const successful = terminals.filter((terminal) => terminal.status === "success");
   let publicationResult = null;
-  if (complete) {
-    publicationResult = await publishFromCaches(env, { ...options, now });
+  if (complete || successful.length > 0) {
+    try {
+      publicationResult = await publishFromCaches(env, { ...options, now });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (complete || message !== "Publication snapshot has no current source-owned evidence") {
+        throw error;
+      }
+    }
   }
 
   const finalStatus = !complete
