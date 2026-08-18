@@ -236,7 +236,7 @@ export default async function InternationalComparison() {
               <strong className="text-[#172234]">Ranking method:</strong> highest amount per resident first, with tied values sharing a competition rank.
             </p>
             <p>
-              <strong className="text-[#172234]">Coverage:</strong> countries without a genuinely comparable observation are excluded from that measure's denominator, never treated as zero.
+              <strong className="text-[#172234]">Coverage:</strong> countries without a genuinely comparable observation are excluded from the denominator for that measure, never treated as zero.
             </p>
           </div>
           <div className="mt-10 space-y-10">
