@@ -2,6 +2,8 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import publicWorker, { isCompleteSnapshot } from "@/worker/public-data-entry";
+import { publishFromCaches } from "@/worker/queued-publication-entry";
+import { PUBLICATION_CURRENT_KEY } from "@/worker/publication-entry";
 import {
   FEED_REGISTRY_VERSION,
   REQUIRED_PUBLISHED_SECTION_IDS,
@@ -85,5 +87,56 @@ describe("degraded public publication", () => {
       degraded: true,
       missingRequiredSections: ["nhsStats"],
     });
+  });
+
+  it("publishes fresh successful fragments even when another required feed has expired", async () => {
+    const now = new Date("2026-08-07T12:00:00.000Z");
+    const current = degradedSnapshot(now);
+    current.meta.sources.nhsStats = {
+      status: "ok",
+      cacheState: "fresh",
+      fetchedAt: "2026-04-01T00:00:00.000Z",
+    };
+    current.nhsStats = { value: "expired-nhs" };
+
+    const refreshedAt = "2026-08-07T11:30:00.000Z";
+    const gdpFragment = {
+      section: "gdpTracker",
+      data: { value: "fresh-gdp" },
+      source: {
+        status: "ok",
+        cacheState: "fresh",
+        fetchedAt: refreshedAt,
+      },
+      fetchedAt: refreshedAt,
+    };
+    const store = new Map<string, unknown>([
+      [PUBLICATION_CURRENT_KEY, current],
+      ["v12:publication:section:gdpTracker", gdpFragment],
+    ]);
+    const env = {
+      METRICS_CACHE: {
+        get: vi.fn(async (key: string) => store.get(key) ?? null),
+        put: vi.fn(async (key: string, value: string) => {
+          try {
+            store.set(key, JSON.parse(value));
+          } catch {
+            store.set(key, value);
+          }
+        }),
+      },
+    };
+
+    const result = await publishFromCaches(env, { now });
+    const published = store.get(PUBLICATION_CURRENT_KEY) as Record<string, any>;
+
+    expect(result.status.status).toBe("degraded");
+    expect(result.changed).toBe(true);
+    expect(published.gdpTracker).toEqual(gdpFragment.data);
+    expect(published).not.toHaveProperty("nhsStats");
+    expect(published.meta.sources).not.toHaveProperty("nhsStats");
+    expect(published.meta.publicationState).toBe("degraded");
+    expect(published.meta.missingRequiredSections).toContain("nhsStats");
+    expect(store.get(PUBLIC_SNAPSHOT_KEY)).toEqual(expect.any(String));
   });
 });
