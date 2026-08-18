@@ -54,17 +54,23 @@ describe("production publication order", () => {
     expect(web).toContain("NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}");
   });
 
-  it("updates Pages only as a bounded seed after the web Worker is verified", () => {
-    const pages = jobBody("deploy-pages-seed");
+  it("refreshes Pages as a bounded seed in the same runner after the web Worker is verified", () => {
+    const web = jobBody("deploy-web");
+    const productionVerify = web.indexOf("node scripts/verify-production.mjs");
+    const seedBuild = web.lastIndexOf("npm run build:check");
+    const pagesDeploy = web.indexOf("npx wrangler pages deploy ./out");
+    const seedVerify = web.indexOf(
+      "https://public-data-org.pages.dev/data/sections/gdpTracker.json"
+    );
 
-    expect(pages).toContain("needs: [validate-and-build, deploy-worker, deploy-web]");
-    expect(pages).toContain("STATIC_EXPORT: \"true\"");
-    expect(pages).toContain("npx wrangler pages deploy ./out");
-    expect(pages).toContain("https://public-data-org.pages.dev/data/sections/gdpTracker.json");
-    expect(pages).not.toContain("verify-production.mjs \"https://public-data.org/\"");
+    expect(workflow).not.toContain("\n  deploy-pages-seed:\n");
+    expect(seedBuild).toBeGreaterThan(productionVerify);
+    expect(pagesDeploy).toBeGreaterThan(seedBuild);
+    expect(seedVerify).toBeGreaterThan(pagesDeploy);
+    expect(web).toContain("STATIC_EXPORT: \"true\"");
   });
 
-  it("validates from source and a locked OpenNext toolchain instead of promoting an earlier artifact", () => {
+  it("validates from source and a locked OpenNext toolchain without Actions artifact storage", () => {
     expect(workflow).not.toContain("actions/upload-artifact");
     expect(workflow).not.toContain("actions/download-artifact");
     expect(workflow).not.toContain("static-export-${{ github.sha }}");
@@ -75,6 +81,7 @@ describe("production publication order", () => {
     const adapterInstall = validation.indexOf("npm ci --prefix worker");
     const openNextBuild = validation.indexOf("opennextjs-cloudflare build");
 
+    expect(validation).toContain("timeout-minutes: 20");
     expect(tests).toBeGreaterThan(-1);
     expect(staticBuild).toBeGreaterThan(tests);
     expect(adapterInstall).toBeGreaterThan(staticBuild);
