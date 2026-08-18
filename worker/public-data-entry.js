@@ -290,7 +290,7 @@ async function healthResponse(request, env) {
     return json(
       {
         status: "degraded",
-        ready: true,
+        ready: false,
         degraded: true,
         missingRequiredSections:
           snapshot.meta.missingRequiredSections ?? [],
