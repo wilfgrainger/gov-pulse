@@ -94,7 +94,12 @@ jobs:
         run: npm ci --prefix worker
 
       - name: Stage OpenNext adapter config
-        run: cp worker/open-next.config.template open-next.config.ts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p node_modules/@opennextjs
+          ln -s "$PWD/worker/node_modules/@opennextjs/cloudflare" node_modules/@opennextjs/cloudflare
+          cp worker/open-next.config.template open-next.config.ts
 
       - name: Build request-time Cloudflare web Worker
         run: >-
