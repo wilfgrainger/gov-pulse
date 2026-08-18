@@ -66,6 +66,7 @@ const migrationHistory = [
 ];
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -184,6 +185,8 @@ describe("national debt cache migration", () => {
   });
 
   it("replaces a legacy KV record with the verified official connector payload", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-14T00:00:00Z"));
     const store = new Map<string, unknown>([
       [
         "v10:section:nationalDebt",
