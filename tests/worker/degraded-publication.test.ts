@@ -43,7 +43,7 @@ describe("degraded public publication", () => {
     expect(isCompleteSnapshot(dishonest)).toBe(false);
   });
 
-  it("reports a usable degraded prepared artifact without exposing internals", async () => {
+  it("serves degraded evidence but does not report deployment readiness", async () => {
     const now = new Date("2026-08-07T12:00:00.000Z");
     const snapshot = degradedSnapshot(now);
     const artifact = buildPublicSnapshotArtifact(snapshot, now);
@@ -58,6 +58,13 @@ describe("degraded public publication", () => {
       },
     };
 
+    const data = await publicWorker.fetch(
+      new Request("https://public-data.org/data/metrics-snapshot.json"),
+      env
+    );
+    expect(data.status).toBe(200);
+    expect((await data.json()).meta.publicationState).toBe("degraded");
+
     const health = await publicWorker.fetch(
       new Request("https://public-data.org/data/health.json"),
       env
@@ -66,7 +73,7 @@ describe("degraded public publication", () => {
     expect(health.status).toBe(200);
     expect(await health.json()).toEqual({
       status: "degraded",
-      ready: true,
+      ready: false,
       degraded: true,
       missingRequiredSections: ["nhsStats"],
     });
