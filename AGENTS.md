@@ -44,8 +44,8 @@ The product has three deliberately small delivery planes:
 2. Cloudflare Worker `worker/public-data-entry.js` owns the runtime data plane.
    Its only public HTTP routes are the more-specific
    `/data/metrics-snapshot.json` and `/data/health.json`; all other paths return
-   404. The Worker also receives Cron and Queue events but exposes no collector
-   or operational route.
+   404. The application and browser continue to consume these as same-origin
+   public contracts; no collector or operational route is exposed.
 3. Cloudflare Pages retains a bounded static seed/fallback export. It is not the
    normal application plane. The data Worker may use a validated Pages seed only
    inside the documented fallback boundary, and the deployment workflow keeps
