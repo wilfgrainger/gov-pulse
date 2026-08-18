@@ -128,7 +128,15 @@ describe("degraded public publication", () => {
     };
 
     const result = await publishFromCaches(env, { now });
-    const published = store.get(PUBLICATION_CURRENT_KEY) as Record<string, any>;
+    const published = store.get(PUBLICATION_CURRENT_KEY) as {
+      gdpTracker?: unknown;
+      nhsStats?: unknown;
+      meta: {
+        sources: Record<string, unknown>;
+        publicationState?: string;
+        missingRequiredSections?: string[];
+      };
+    };
 
     expect(result.status.status).toBe("degraded");
     expect(result.changed).toBe(true);
