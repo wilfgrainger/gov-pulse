@@ -29,13 +29,11 @@ describe("production publication order", () => {
     const web = jobBody("deploy-web");
 
     expect(web).toContain("needs: [validate-and-build, deploy-worker]");
+    const adapterInstall = web.indexOf("npm ci --prefix worker");
     const fetchCandidate = web.indexOf(
       "node scripts/fetch-cloudflare-publication-candidate.mjs"
     );
     const serverBuild = web.indexOf("npm run build:check");
-    const adapterInstall = web.indexOf(
-      "npm install --no-save --package-lock=false @opennextjs/cloudflare@1.20.2"
-    );
     const stagedConfig = web.indexOf(
       "cp worker/open-next.config.template open-next.config.ts"
     );
@@ -43,10 +41,10 @@ describe("production publication order", () => {
     const openNextDeploy = web.indexOf("opennextjs-cloudflare deploy");
     const productionVerify = web.indexOf("node scripts/verify-production.mjs");
 
-    expect(fetchCandidate).toBeGreaterThan(-1);
+    expect(adapterInstall).toBeGreaterThan(-1);
+    expect(fetchCandidate).toBeGreaterThan(adapterInstall);
     expect(serverBuild).toBeGreaterThan(fetchCandidate);
-    expect(adapterInstall).toBeGreaterThan(serverBuild);
-    expect(stagedConfig).toBeGreaterThan(adapterInstall);
+    expect(stagedConfig).toBeGreaterThan(serverBuild);
     expect(openNextBuild).toBeGreaterThan(stagedConfig);
     expect(openNextDeploy).toBeGreaterThan(openNextBuild);
     expect(productionVerify).toBeGreaterThan(openNextDeploy);
@@ -66,16 +64,21 @@ describe("production publication order", () => {
     expect(pages).not.toContain("verify-production.mjs \"https://public-data.org/\"");
   });
 
-  it("does not promote an earlier validation build as the release artifact", () => {
+  it("validates from source and a locked OpenNext toolchain instead of promoting an earlier artifact", () => {
     expect(workflow).not.toContain("actions/upload-artifact");
     expect(workflow).not.toContain("actions/download-artifact");
     expect(workflow).not.toContain("static-export-${{ github.sha }}");
 
     const validation = jobBody("validate-and-build");
-    expect(validation).toContain("npm run test");
-    expect(validation).toContain("npm run build:check");
-    expect(validation).toContain("@opennextjs/cloudflare@1.20.2");
-    expect(validation).toContain("opennextjs-cloudflare build");
+    const tests = validation.indexOf("npm run test");
+    const staticBuild = validation.indexOf("npm run build:check");
+    const adapterInstall = validation.indexOf("npm ci --prefix worker");
+    const openNextBuild = validation.indexOf("opennextjs-cloudflare build");
+
+    expect(tests).toBeGreaterThan(-1);
+    expect(staticBuild).toBeGreaterThan(tests);
+    expect(adapterInstall).toBeGreaterThan(staticBuild);
+    expect(openNextBuild).toBeGreaterThan(adapterInstall);
   });
 
   it("verifies the data Worker deployment carries the exact release SHA", () => {
