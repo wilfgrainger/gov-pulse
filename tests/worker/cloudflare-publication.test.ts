@@ -197,7 +197,7 @@ describe("Cloudflare Free data publication", () => {
     expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(result.publication);
   });
 
-  it("keeps the canonical edition complete when a required section expires", async () => {
+  it("publishes an atomic degraded edition when a required section expires", async () => {
     const current = snapshot();
     current.meta.sources.nhsStats.fetchedAt = "2026-04-01T00:00:00.000Z";
     const { env, store } = kvEnv({ [PUBLICATION_CURRENT_KEY]: current });
@@ -206,10 +206,12 @@ describe("Cloudflare Free data publication", () => {
       now: new Date("2026-07-18T03:30:00.000Z"),
     });
 
-    expect(result.incomplete).toBe(true);
-    expect(result.status.status).toBe("incomplete");
+    expect(result.status.status).toBe("degraded");
     expect(result.status.missingRequired).toContain("nhsStats");
-    expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(current);
+    expect(result.publication).not.toHaveProperty("nhsStats");
+    expect(result.publication.meta.sources).not.toHaveProperty("nhsStats");
+    expect(result.publication.meta.publicationState).toBe("degraded");
+    expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(result.publication);
   });
 
   it("preserves the edition clock while storing refreshed retrieval clocks", async () => {
