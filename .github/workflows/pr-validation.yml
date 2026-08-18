@@ -62,9 +62,13 @@ jobs:
     if: needs.classify.outputs.lane == 'full'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: write
     steps:
-      - name: Checkout
+      - name: Checkout PR head
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -78,13 +82,17 @@ jobs:
       - name: Generate worker OpenNext lock candidate
         run: npm install --package-lock-only --ignore-scripts --prefix worker
 
-      - name: Upload worker OpenNext lock candidate
-        uses: actions/upload-artifact@v7
-        with:
-          name: worker-opennext-lock-pr-${{ github.event.pull_request.number }}
-          path: worker/package-lock.json
-          if-no-files-found: error
-          retention-days: 1
+      - name: Commit generated worker lock
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add worker/package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "build: lock OpenNext worker toolchain"
+            git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+          fi
 
       - name: Verify toolchain
         run: npm run toolchain:check
