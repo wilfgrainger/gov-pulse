@@ -94,6 +94,7 @@ test("topics panel exposes the complete evidence library and closes with Escape"
   const panel = page.locator("#all-topic-navigation");
   await expect(panel.getByRole("heading", { name: "Choose a public question." })).toBeVisible();
   await expect(panel.getByRole("link", { name: "Government receipts" })).toBeVisible();
+  await expect(panel.getByRole("link", { name: "UK in context" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(panel).toHaveCount(0);
   await expect(topics).toBeFocused();
@@ -160,7 +161,7 @@ test("mobile journeys preserve touch targets and avoid horizontal overflow", asy
   ).toBeVisible();
   await assertNoHorizontalOverflow(page);
 
-  for (const path of ["/section/economy", "/section/nhs", "/section/migration", "/sources", "/corrections"]) {
+  for (const path of ["/section/economy", "/section/nhs", "/section/migration", "/section/uk-in-context", "/sources", "/corrections"]) {
     await page.goto(`.${path}`);
     await expect(page.locator("main")).toBeVisible();
     await assertNoHorizontalOverflow(page);
@@ -182,6 +183,7 @@ test("all section pages render cleanly with truthful publication status", async 
     "/section/economy",
     "/section/tax",
     "/section/employment",
+    "/section/uk-in-context",
     "/section/government-contracts",
     "/section/crime-stats",
     "/section/nhs",
@@ -193,6 +195,11 @@ test("all section pages render cleanly with truthful publication status", async 
     await page.goto(`.${path}`);
     await expect(page.locator("main")).toBeVisible();
     await assertTruthfulStatusBar(page);
+    if (path === "/section/uk-in-context") {
+      await expect(page.getByRole("heading", { name: /What does Britain spend and owe per citizen/i })).toBeVisible();
+      await expect(page.getByRole("row", { name: /Government debt outstanding/i })).toBeVisible();
+      await expect(page.getByRole("row", { name: /Debt interest/i })).toBeVisible();
+    }
 
     if (path === "/section/betting-odds") {
       const unavailable = page.getByRole("heading", {
