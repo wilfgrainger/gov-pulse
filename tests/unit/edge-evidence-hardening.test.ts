@@ -48,18 +48,24 @@ describe("edge evidence hardening", () => {
     expect(serverReader).toMatch(/cache: "no-store"|requestSnapshot/);
   });
 
-  it("deploys a pinned OpenNext web worker while keeping Pages only as the seed fallback", () => {
+  it("deploys OpenNext from a worker-local lockfile while keeping Pages only as the seed fallback", () => {
     const deploy = fs.readFileSync(".github/workflows/deploy.yml", "utf8");
     const validation = fs.readFileSync(".github/workflows/pr-validation.yml", "utf8");
     const webWrangler = fs.readFileSync("worker/web-wrangler.toml", "utf8");
     const openNext = fs.readFileSync("worker/open-next.config.template", "utf8");
+    const workerPackage = JSON.parse(fs.readFileSync("worker/package.json", "utf8"));
+    const workerLock = JSON.parse(fs.readFileSync("worker/package-lock.json", "utf8"));
+
+    expect(workerPackage.devDependencies?.["@opennextjs/cloudflare"]).toBe("1.20.2");
+    expect(workerLock.packages?.[""]?.devDependencies?.["@opennextjs/cloudflare"]).toBe("1.20.2");
 
     for (const workflow of [deploy, validation]) {
-      expect(workflow).toMatch(/npm install --no-save --package-lock=false @opennextjs\/cloudflare@1\.20\.2/);
+      expect(workflow).not.toMatch(/npm install --no-save --package-lock=false @opennextjs\/cloudflare/);
+      expect(workflow).toMatch(/npm ci --prefix worker/);
+      expect(workflow).toMatch(/worker\/node_modules\/\.bin\/opennextjs-cloudflare build/);
       expect(workflow).toMatch(/cp worker\/open-next\.config\.template open-next\.config\.ts/);
-      expect(workflow).toMatch(/npx --no-install opennextjs-cloudflare build/);
     }
-    expect(deploy).toMatch(/npx --no-install opennextjs-cloudflare deploy/);
+    expect(deploy).toMatch(/worker\/node_modules\/\.bin\/opennextjs-cloudflare deploy/);
     expect(deploy).toMatch(/Pages seed/i);
     expect(openNext).toMatch(/static-assets-incremental-cache/);
     expect(openNext).not.toMatch(/r2-incremental-cache/);
