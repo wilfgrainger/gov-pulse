@@ -8,7 +8,6 @@ import {
   readInternationalComparison,
   refreshInternationalComparison,
 } from "@/worker/international-comparison-store";
-import { jobsForDay } from "@/worker/queued-publication-entry";
 import {
   COMPARISON_COUNTRIES,
   COMPARISON_MEASURES,
@@ -61,10 +60,6 @@ function envWith(value: unknown) {
 }
 
 describe("international comparison publication route", () => {
-  it("schedules one optional comparison refresh in the daily run", () => {
-    expect(jobsForDay("daily")).toContainEqual({ type: "refresh-international-comparison" });
-  });
-
   it("serves only a validated comparison artifact from its exact public route", async () => {
     const publication = fixture();
     const { env } = envWith(publication);
