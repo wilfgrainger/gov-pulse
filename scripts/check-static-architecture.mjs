@@ -14,10 +14,6 @@ const EXPECTED_DATA_ROUTES = Object.freeze([
     zone_name: "public-data.org",
   }),
 ]);
-const EXPECTED_WEB_ROUTE = Object.freeze({
-  pattern: "public-data.org/*",
-  zone_name: "public-data.org",
-});
 
 function filesUnder(directory) {
   if (!fs.existsSync(directory)) return [];
@@ -63,7 +59,7 @@ function routeSignature(route) {
   return `${route.pattern ?? ""}|${route.zone_name ?? ""}`;
 }
 
-function commonIngressFindings(config) {
+export function unsupportedWorkerIngress(config) {
   const findings = [];
   if (/^\s*workers_dev\s*=\s*true\s*$/mi.test(config)) {
     findings.push("workers.dev must remain disabled");
@@ -74,11 +70,7 @@ function commonIngressFindings(config) {
   if (/^\s*(?:route|routes|custom_domains?)\s*=/mi.test(config)) {
     findings.push("top-level or array route declarations are not supported");
   }
-  return findings;
-}
 
-export function unsupportedWorkerIngress(config) {
-  const findings = commonIngressFindings(config);
   const routes = workerRouteTables(config);
   if (routes.length !== EXPECTED_DATA_ROUTES.length) {
     findings.push(
@@ -92,7 +84,7 @@ export function unsupportedWorkerIngress(config) {
     const keys = Object.keys(route).sort();
     if (keys.join(",") !== expectedKeys.join(",")) {
       findings.push(
-        `public data Worker routes must contain only ${expectedKeys.join(" and ")}`
+        `public Worker routes must contain only ${expectedKeys.join(" and ")}`
       );
     }
   }
@@ -101,32 +93,8 @@ export function unsupportedWorkerIngress(config) {
   const expectedSignatures = EXPECTED_DATA_ROUTES.map(routeSignature).sort();
   if (actualSignatures.join("\n") !== expectedSignatures.join("\n")) {
     findings.push(
-      "public data Worker routes must be the exact snapshot and health paths"
+      "public Worker routes must be the exact snapshot and health paths"
     );
-  }
-  return findings;
-}
-
-export function unsupportedWebWorkerIngress(config) {
-  const findings = commonIngressFindings(config);
-  const routes = workerRouteTables(config);
-  if (routes.length !== 1) {
-    findings.push(`expected exactly one web [[routes]] table; found ${routes.length}`);
-    return findings;
-  }
-  const route = routes[0];
-  const keys = Object.keys(route).sort();
-  if (keys.join(",") !== "pattern,zone_name") {
-    findings.push("public web Worker route must contain only pattern and zone_name");
-  }
-  if (routeSignature(route) !== routeSignature(EXPECTED_WEB_ROUTE)) {
-    findings.push("public web Worker must use only the public-data.org/* catch-all route");
-  }
-  if (!/nodejs_compat/.test(config)) {
-    findings.push("public web Worker must enable nodejs_compat for OpenNext");
-  }
-  if (!/global_fetch_strictly_public/.test(config)) {
-    findings.push("public web Worker must enable global_fetch_strictly_public");
   }
   return findings;
 }
@@ -136,37 +104,22 @@ export function main(projectRoot = process.cwd()) {
   const appRoutes = unsupportedAppRoutes(projectRoot);
   if (appRoutes.length > 0) {
     findings.push(
-      "The public application must not add competing App Router API ingress:",
+      "Static frontend architecture does not support App Router API routes:",
       ...appRoutes.map((route) => `- ${route}`)
     );
   }
 
-  const dataWranglerPath = path.join(projectRoot, "worker", "wrangler.toml");
-  if (!fs.existsSync(dataWranglerPath)) {
+  const wranglerPath = path.join(projectRoot, "worker", "wrangler.toml");
+  if (!fs.existsSync(wranglerPath)) {
     findings.push("worker/wrangler.toml is required");
   } else {
     const workerIngress = unsupportedWorkerIngress(
-      fs.readFileSync(dataWranglerPath, "utf8")
+      fs.readFileSync(wranglerPath, "utf8")
     );
     if (workerIngress.length > 0) {
       findings.push(
-        "The Cloudflare data Worker may expose only snapshot and health routes:",
+        "The Cloudflare Worker may expose only snapshot and health routes:",
         ...workerIngress.map((entry) => `- ${entry}`)
-      );
-    }
-  }
-
-  const webWranglerPath = path.join(projectRoot, "worker", "web-wrangler.toml");
-  if (!fs.existsSync(webWranglerPath)) {
-    findings.push("worker/web-wrangler.toml is required");
-  } else {
-    const webIngress = unsupportedWebWorkerIngress(
-      fs.readFileSync(webWranglerPath, "utf8")
-    );
-    if (webIngress.length > 0) {
-      findings.push(
-        "The Cloudflare web Worker must own only the catch-all application route:",
-        ...webIngress.map((entry) => `- ${entry}`)
       );
     }
   }
@@ -174,14 +127,14 @@ export function main(projectRoot = process.cwd()) {
   if (findings.length > 0) {
     console.error(`${findings.join("\n")}\n`);
     console.error(
-      "Keep the two exact data routes on the data Worker and the less-specific application catch-all on the OpenNext web Worker."
+      "Keep Cloudflare Pages static and route only the exact snapshot and health paths to the Worker."
     );
     process.exitCode = 1;
     return false;
   }
 
   console.log(
-    "Architecture check passed: exact data Worker routes take precedence over the request-time OpenNext web Worker catch-all."
+    "Architecture check passed: static Pages frontend and two exact Cloudflare data routes."
   );
   return true;
 }
