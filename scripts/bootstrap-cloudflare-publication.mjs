@@ -101,6 +101,23 @@ async function hasPreparedPublication(fetchImpl, healthUrl) {
   }
 }
 
+function isDegradedPublicationHealth(health) {
+  return (
+    health?.status === "degraded" &&
+    health?.ready === false &&
+    health?.degraded === true &&
+    Array.isArray(health?.missingRequiredSections) &&
+    health.missingRequiredSections.length > 0
+  );
+}
+
+async function deploymentPublicationAvailable(fetchImpl, healthUrl, health) {
+  if (health?.ready !== true && !isDegradedPublicationHealth(health)) {
+    return false;
+  }
+  return hasPreparedPublication(fetchImpl, healthUrl);
+}
+
 async function findQueueId(fetchImpl, accountId, apiToken, queueName) {
   const response = await fetchImpl(
     `https://api.cloudflare.com/client/v4/accounts/${accountId}/queues?per_page=100`,
@@ -288,10 +305,7 @@ async function bootstrapCloudflarePublication(options = {}) {
   );
 
   const initialHealth = await readHealth(fetchImpl, healthUrl);
-  if (
-    initialHealth?.ready === true &&
-    (await hasPreparedPublication(fetchImpl, healthUrl))
-  ) {
+  if (await deploymentPublicationAvailable(fetchImpl, healthUrl, initialHealth)) {
     return { triggered: false, attempts: 0, health: initialHealth };
   }
 
@@ -324,6 +338,12 @@ async function bootstrapCloudflarePublication(options = {}) {
     if (lastHealth?.ready === true) {
       return { triggered: true, attempts: attempt, health: lastHealth };
     }
+    if (
+      isDegradedPublicationHealth(lastHealth) &&
+      (await hasPreparedPublication(fetchImpl, healthUrl))
+    ) {
+      return { triggered: true, attempts: attempt, health: lastHealth };
+    }
 
     const remainingMs = deadline - nowImpl();
     if (remainingMs <= 0) break;
@@ -349,7 +369,7 @@ async function bootstrapCloudflarePublication(options = {}) {
   }
 
   throw new Error(
-    `Cloudflare publication did not become ready within ${Math.ceil(timeoutMs / 1000)} seconds after ${attempt} bootstrap attempt${attempt === 1 ? "" : "s"}; last status=${JSON.stringify(lastHealth)}`
+    `Cloudflare publication did not become ready or publish a verified degraded edition within ${Math.ceil(timeoutMs / 1000)} seconds after ${attempt} bootstrap attempt${attempt === 1 ? "" : "s"}; last status=${JSON.stringify(lastHealth)}`
   );
 }
 
@@ -366,8 +386,8 @@ async function main() {
   });
   console.log(
     result.triggered
-      ? `Cloudflare publication bootstrap completed and is ready after ${result.attempts} attempt${result.attempts === 1 ? "" : "s"}.`
-      : "Cloudflare publication was already ready; bootstrap skipped."
+      ? `Cloudflare publication bootstrap completed after ${result.attempts} attempt${result.attempts === 1 ? "" : "s"}.`
+      : "Cloudflare prepared publication was already deployable; bootstrap skipped."
   );
 }
 
@@ -386,6 +406,7 @@ export {
   DEFAULT_TIMEOUT_MS,
   bootstrapAttemptId,
   bootstrapCloudflarePublication,
+  deploymentPublicationAvailable,
   findQueueId,
   publicationDiagnostics,
   readKvValue,
@@ -393,5 +414,6 @@ export {
   pushBootstrapMessage,
   readHealth,
   hasPreparedPublication,
+  isDegradedPublicationHealth,
   waitForReady,
 };
