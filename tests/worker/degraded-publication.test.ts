@@ -58,6 +58,8 @@ describe("degraded public publication", () => {
       },
     };
 
+    // Degraded evidence is a valid reader response, but it must not satisfy
+    // deployment/bootstrap readiness while a required publication is missing.
     const data = await publicWorker.fetch(
       new Request("https://public-data.org/data/metrics-snapshot.json"),
       env
