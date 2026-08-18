@@ -75,6 +75,17 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Generate worker OpenNext lock candidate
+        run: npm install --package-lock-only --ignore-scripts --prefix worker
+
+      - name: Upload worker OpenNext lock candidate
+        uses: actions/upload-artifact@v7
+        with:
+          name: worker-opennext-lock-pr-${{ github.event.pull_request.number }}
+          path: worker/package-lock.json
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Verify toolchain
         run: npm run toolchain:check
 
