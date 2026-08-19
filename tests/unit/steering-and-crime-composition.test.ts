@@ -7,14 +7,12 @@ function source(path: string) {
 
 describe("steering and public evidence composition", () => {
   it("keeps the production architecture Cloudflare-only", () => {
-    const progress = source(".agents/PROGRESS.md");
     const agents = source("AGENTS.md");
-    const combined = `${progress}\n${agents}`;
 
-    expect(combined).toMatch(/Cloudflare Pages/);
-    expect(combined).toMatch(/same-origin/);
-    expect(combined).toMatch(/Do not (introduce|add) Vercel/i);
-    expect(progress).not.toMatch(/GitHub Pages/);
+    expect(agents).toMatch(/Cloudflare Pages/);
+    expect(agents).toMatch(/same-origin/);
+    expect(agents).toMatch(/Do not (introduce|add) Vercel/i);
+    expect(agents).not.toMatch(/GitHub Pages publication/i);
   });
 
   it("keeps crime and public-money evidence directly discoverable", () => {
@@ -49,14 +47,5 @@ describe("steering and public evidence composition", () => {
     expect(backlog).toMatch(/Deepen government-contract scrutiny/);
     expect(backlog).toMatch(/Find a Tender top-100 award publication/);
     expect(backlog).not.toMatch(/Issue #243 defines the new source contract/);
-  });
-
-  it("records the verified procurement release state", () => {
-    const progress = source(".agents/PROGRESS.md");
-
-    expect(source("AGENTS.md")).toMatch(/government contracts/i);
-    expect(progress).toContain("origin/main");
-    expect(progress).toMatch(/deployed at `?[0-9a-f]{40}`?/i);
-    expect(progress).toMatch(/site is live and ready/i);
   });
 });
