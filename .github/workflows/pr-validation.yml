@@ -115,6 +115,7 @@ jobs:
           command -v google-chrome
           google-chrome --version
 
+      # Disposable acceptance audit against the already deployed Worker preview.
       - name: Run deterministic browser tests against deployed preview
         env:
           CI: "true"
