@@ -38,7 +38,7 @@ afterEach(() => {
 });
 
 describe("economy evidence pages", () => {
-  it("renders the current GDP release without forecasts or G7 claims", () => {
+  it("renders the current GDP release without forecasts, G7 claims or implementation history", () => {
     useMetrics.mockReturnValue(
       result({
         available: true,
@@ -73,7 +73,7 @@ describe("economy evidence pages", () => {
 
     expect(screen.getByRole("heading", { name: "UK GDP grew in May 2026 by 0.1%." })).toBeInTheDocument();
     expect(screen.getByText(/Across the latest three months, real GDP grew by 0.5%/i)).toBeInTheDocument();
-    expect(screen.getByText(/Forecast and comparison tables withdrawn/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Forecast and comparison tables withdrawn/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/2025 forecast/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/G7 comparison/i)).not.toBeInTheDocument();
   });
@@ -84,7 +84,7 @@ describe("economy evidence pages", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Current GDP estimate unavailable");
   });
 
-  it("renders aligned labour-market periods and withdraws workforce mixes", () => {
+  it("renders aligned labour-market periods without retired workforce mixes", () => {
     useMetrics.mockReturnValue(
       result({
         available: true,
@@ -140,7 +140,7 @@ describe("economy evidence pages", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Employment, unemployment and inactivity rates")).toBeInTheDocument();
     expect(screen.getAllByText("Vacancies").length).toBeGreaterThan(1);
-    expect(screen.getByText(/Workforce breakdowns withdrawn/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Workforce breakdowns withdrawn/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/PRIVATE VS PUBLIC/i)).not.toBeInTheDocument();
   });
 
@@ -162,7 +162,7 @@ describe("economy evidence pages", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Current labour-market release unavailable");
   });
 
-  it("renders one official receipts measure and withdraws tax forecasts", () => {
+  it("renders one official receipts measure without retired tax or procurement material", () => {
     useMetrics.mockReturnValue(
       result({
         available: true,
@@ -194,9 +194,12 @@ describe("economy evidence pages", () => {
       })
     ).toBeInTheDocument();
     expect(screen.getByText(/£8.2bn more than in the comparable month/i)).toBeInTheDocument();
-    expect(screen.getByText(/Tax breakdown and burden forecast withdrawn/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Tax breakdown and burden forecast withdrawn/i)).not.toBeInTheDocument();
     expect(screen.queryByText("Income Tax")).not.toBeInTheDocument();
     expect(screen.queryByText("37.7%")).not.toBeInTheDocument();
+    expect(screen.queryByText("Spending by Sector")).not.toBeInTheDocument();
+    expect(screen.queryByText("Top 50 Contracts")).not.toBeInTheDocument();
+    expect(screen.queryByText("Largest Outsourcers")).not.toBeInTheDocument();
   });
 
   it("fails closed when receipts evidence is unavailable", () => {
