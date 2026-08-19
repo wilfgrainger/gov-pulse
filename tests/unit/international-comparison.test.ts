@@ -31,6 +31,7 @@ describe("international comparison evidence contract", () => {
       { id: "CHE", name: "Switzerland" },
       { id: "POL", name: "Poland" },
     ]);
+    expect(COMPARISON_COUNTRIES.map(({ id }) => id)).not.toContain("TUR");
   });
 
   it("contains exactly the seven approved measures", () => {
