@@ -43,66 +43,53 @@ The product has three deliberately small delivery planes:
    Worker bundle.
 2. Cloudflare Worker `worker/public-data-entry.js` owns the runtime data plane.
    Its only public HTTP routes are the more-specific
-   `/data/metrics-snapshot.json`, `/data/health.json` and
-   `/data/international-comparison.json`; all other paths return 404. The
-   application and browser consume these as same-origin public contracts; no
-   collector or operational route is exposed.
+   `/data/metrics-snapshot.json` and `/data/health.json`; all other paths return
+   404. The application and browser continue to consume these as same-origin
+   public contracts; no collector or operational route is exposed.
 3. Cloudflare Pages retains a bounded static seed/fallback export. It is not the
    normal application plane. The data Worker may use a validated Pages seed only
    inside the documented fallback boundary, and the deployment workflow keeps
    the seed current after a successful web deployment.
 
 The data Worker runs the Cloudflare Free plan schedule in `worker/wrangler.toml`: the daily
-Cron (`17 3 * * *`) refreshes generic, external and procurement evidence and
-checks whether the slow-moving international comparison is due; the three-hour
-Cron (`47 */3 * * *`) refreshes betting markets. A single `public-data-jobs`
-Queue runs one bounded national job at a time with retry limits. Workers KV
-(`METRICS_CACHE`) stores section fragments, run state and terminals, the current
-publication, bounded history, the prepared public artifact and the isolated
-international comparison publication.
+Cron (`17 3 * * *`) refreshes generic, external and procurement evidence; the
+three-hour Cron (`47 */3 * * *`) refreshes betting markets. A single
+`public-data-jobs` Queue runs one bounded job at a time with retry limits.
+Workers KV (`METRICS_CACHE`) stores section fragments, run state and terminals,
+the current publication, bounded history and the prepared public artifact.
 
-The national publication path is:
+The publication path is:
 
 `Cron -> Queue jobs -> source collectors -> validation/normalisation -> KV
 fragments -> run terminals -> finaliser -> atomic prepared public artifact ->
 request-time public delivery`
 
-Finalisation is run-scoped and idempotent. A failed or missing job remains
-pending until the bounded deadline and is never treated as successful. After
-that deadline the finaliser may atomically advance the current verified subset
-from successful fragments and current source-owned evidence. Failed and missing
-job IDs remain explicit run diagnostics. Missing required evidence produces a
-`degraded` edition rather than retaining an expired value. If no current
-source-owned evidence exists, do not manufacture an edition.
+Finalisation is run-scoped and idempotent. The canonical prepared publication is
+atomic: a run publishes it only when every required job succeeded and every
+included section passes its wall-clock currentness policy. A failed job remains
+pending until its bounded deadline; it is not treated as successful merely
+because it has become terminal.
 
+Public delivery is deliberately more resilient than canonical finalisation. At
+request time the data boundary may derive a `degraded` edition from the last
+verified publication by removing any section that no longer passes currentness.
 The degraded response must declare `meta.publicationState = "degraded"` and an
 exact `missingRequiredSections` manifest. It may contain only current,
 source-owned evidence: never retain an expired value, invent a replacement or
 label a degraded edition `ready`. `/data/health.json` reports `ready: false` for
 a degraded edition. A complete current prepared artifact reports `ready: true`.
-A verified prepared degraded KV artifact may keep reader delivery and deployment
-moving while upstream recovery continues. If no current evidence remains,
-return the generic unavailable response or a validated Pages seed within the
-bounded fallback.
+If no current evidence remains, return the generic unavailable response or a
+validated Pages seed within the bounded fallback.
 
 ## Evidence registry and contracts
 
-`worker/feed-registry.js` is the source-of-truth national registry. Required
-sections are `sentimentPulse`, `gdpTracker`, `employmentStats`, `nationalDebt`,
+`worker/feed-registry.js` is the source-of-truth registry. Required sections
+are `sentimentPulse`, `gdpTracker`, `employmentStats`, `nationalDebt`,
 `taxRevenue`, `migrationStats`, `electionPolling` and `nhsStats`. Optional
 sections are `bettingOdds` and `crimeStatistics`; government contracts is a
 separate bounded publication source. Registry entries define publisher, source
 class, geography, cadence, retrieval method, freshness policy and direct source
 links.
-
-International comparisons are an optional, independent evidence family. They
-use the fixed 13-country comparison set and seven separate per-resident measures
-specified by `worker/international-comparison.js`. The comparison publication has
-its own validation, seven-day due guard, KV key and exact public route. A
-comparison source or measure failure must never change national readiness,
-required-section status or publication eligibility. Missing comparison countries
-remain unavailable and are excluded from that measure's denominator, never
-converted to zero. No overall country score is permitted.
 
 Collectors discover the latest official edition, retain observation and
 publication clocks separately, validate the source identity and shape, build
@@ -111,7 +98,7 @@ with the newest historical point and normalise through the section contract.
 The public snapshot carries registry provenance, source URLs, generated time,
 validity and section-level status. `worker/publication-currentness.js`,
 `worker/publication-entry.js` and `worker/queued-publication-entry.js` enforce
-the national publication boundary.
+the publication boundary.
 
 The external collectors are intentionally source-specific:
 
@@ -128,9 +115,9 @@ The external collectors are intentionally source-specific:
 The browser data contract is consumed by `app/lib/useMetrics.ts` and rendered
 by the section components and `app/components/NationalEvidenceEdition.tsx`.
 The root layout supplies the request-time server snapshot before client
-revalidation. `UK in context` uses its separate comparison contract. Do not make
-the browser call Worker internals, expose cache keys, or embed secrets, account
-identifiers, private repository details or deployment routes.
+revalidation. Do not make the browser call Worker internals, expose cache keys,
+or embed secrets, account identifiers, private repository details or deployment
+routes.
 
 ## Security and failure boundaries
 
