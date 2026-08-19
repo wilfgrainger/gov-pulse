@@ -1,10 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import SourcesPage, { SOURCE_GROUPS } from "@/app/sources/page";
-
-vi.mock("@/app/components/DataAutomationSummary", () => ({
-  default: () => <div>Automation summary</div>,
-}));
 
 afterEach(() => {
   cleanup();
@@ -62,7 +58,7 @@ describe("SourcesPage", () => {
     }
   });
 
-  it("describes the actual Cloudflare betting cadence and both production registers", () => {
+  it("keeps source timing and unavailable evidence visible without an operations dashboard", () => {
     const betting = SOURCE_GROUPS.flatMap((group) => group.entries).find(
       (entry) => entry.name === "Oddschecker public politics markets"
     );
@@ -72,7 +68,7 @@ describe("SourcesPage", () => {
     const { container } = render(<SourcesPage />);
     expect(container.querySelector('[data-production-marker="current-publications"]')).not.toBeNull();
     expect(container.querySelector('[data-production-marker="evidence-gaps"]')).not.toBeNull();
-    expect(screen.getByRole("heading", { name: /evidence must pass all three checks/i })).toBeInTheDocument();
+    expect(screen.queryByText(/publication gate/i)).not.toBeInTheDocument();
   });
 
   it("registers the international comparison publishers and weekly cadence", () => {
