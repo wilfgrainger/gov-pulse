@@ -148,7 +148,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     environment:
-      name: cloudflare-pages
+      name: cloudflare-internal-worker
       url: https://public-data.org/
     steps:
       - name: Checkout
