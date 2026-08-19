@@ -13,18 +13,22 @@ import {
 } from "@/worker/international-comparison-sources";
 
 describe("international comparison source transforms", () => {
-  it("pins total 2025 ODA grant equivalents and 2024 public SOCX", () => {
+  it("pins the 2026 IMF debt projection, 2025 ODA and latest common-year UK SOCX", () => {
+    expect(SOURCE_QUERIES.imfGdpPerCapita2026).toContain("NGDPDPC");
+    expect(SOURCE_QUERIES.imfGdpPerCapita2026).toContain("periods=2026");
+    expect(SOURCE_QUERIES.imfDebtPctGdp2026).toContain("GGXWDG_NGDP");
+    expect(SOURCE_QUERIES.imfDebtPctGdp2026).toContain("periods=2026");
     expect(SOURCE_QUERIES.oecdOda2025).toContain("DSD_DAC1@DF_DAC1,1.7");
     expect(SOURCE_QUERIES.oecdOda2025).toContain(".1010..1160.USD.V._Z");
     expect(SOURCE_QUERIES.oecdOda2025).toContain("startPeriod=2025");
-    expect(SOURCE_QUERIES.oecdSocx2024).toContain(".A..PT_B1GQ.ES10._T._T.?");
-    expect(SOURCE_QUERIES.oecdSocx2024).toContain("endPeriod=2024");
+    expect(SOURCE_QUERIES.oecdSocx2023).toContain(".A..PT_B1GQ.ES10._T._T.?");
+    expect(SOURCE_QUERIES.oecdSocx2023).toContain("endPeriod=2023");
   });
 
   it("parses IMF DataMapper values for fixed-country annual series", () => {
-    const payload = { values: { GGXWDG_NGDP: { GBR: { 2024: 101.2 }, USA: { 2024: 119.8 } } } };
-    expect(parseImfSeries(payload, "GGXWDG_NGDP", 2024)).toEqual(
-      new Map([["GBR", 101.2], ["USA", 119.8]])
+    const payload = { values: { GGXWDG_NGDP: { GBR: { 2026: 103.6 }, USA: { 2026: 120.1 } } } };
+    expect(parseImfSeries(payload, "GGXWDG_NGDP", 2026)).toEqual(
+      new Map([["GBR", 103.6], ["USA", 120.1]])
     );
   });
 
@@ -76,7 +80,7 @@ describe("international comparison source transforms", () => {
   });
 
   it("derives per-resident amounts only from compatible same-year inputs", () => {
-    expect(calculatePerResidentFromPercentGdp(22.1, 53_400)).toBeCloseTo(11_801.4, 1);
+    expect(calculatePerResidentFromPercentGdp(23.0, 48_000)).toBeCloseTo(11_040, 1);
     expect(calculatePerResidentFromTotal(17_200_000_000, 69_350_000)).toBeCloseTo(248.02, 1);
     expect(() => calculatePerResidentFromTotal(10, 0)).toThrow(/population/i);
   });
