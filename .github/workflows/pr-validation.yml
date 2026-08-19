@@ -1,4 +1,5 @@
 name: Pull Request Validation
+# Disposable production acceptance harness. Do not merge.
 
 on:
   pull_request:
