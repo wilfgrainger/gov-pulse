@@ -1,5 +1,6 @@
 // Disposable live-production verification. This file must not be merged.
 // It exists only to execute the live assertion from a GitHub-hosted runner.
+// The bounded retry window allows the newest production release to settle.
 import { expect, it } from "vitest";
 
 const EXPECTED_REVISION = "7430dc9fad5fd3a6491f32efc0340f1aaff86b73";
