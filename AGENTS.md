@@ -174,6 +174,10 @@ checks and production verifier. Inspect `git status` and exact `HEAD`; preserve
 untracked user files. Do not push, merge, deploy or delete material outside the
 requested scope without explicit authority.
 
+Derive current repository, pull-request and deployment state from GitHub and
+`scripts/report-github-current-state.mjs`; do not commit volatile state snapshots
+as handoff documentation.
+
 ## Repository map
 
 - `app/`: Next.js routes, editorial components and browser contract use.
@@ -185,8 +189,6 @@ requested scope without explicit authority.
 - `scripts/`: build snapshot, source discovery, diagnostics, release and
   production verification utilities.
 - `docs/architecture/`: durable architecture decisions and source ownership.
-- `.agents/PROGRESS.md`: current checked-out/live investigation only; it is
-  deliberately volatile and is not a substitute for this guide.
 
 Retired concepts include wildcard data APIs, direct browser collectors, routine
 scheduled GitHub data retrieval, synthetic national scores, combined crime
