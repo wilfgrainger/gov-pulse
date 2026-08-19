@@ -15,13 +15,15 @@ const mapOecd = (value: number) => new Map(oecdIds.map((id) => [id, value]));
 describe("international comparison publication", () => {
   it("builds seven isolated measures with truthful denominators and derivation inputs", () => {
     const bundle = comparisonSourceBundle({
+      gdpPerCapita2023: mapAll(48_000),
       gdpPerCapita2024: mapAll(50_000),
+      gdpPerCapita2026: mapAll(61_060),
       population2025: mapAll(70_000_000),
-      debtPctGdp2024: new Map(ids.map((id) => [id, id === "GBR" ? 100 : 50])),
+      debtPctGdp2026: new Map(ids.map((id) => [id, id === "GBR" ? 103.6 : 50])),
       interestPctGdp2024: new Map(ids.map((id) => [id, id === "GBR" ? 2.84 : 1])),
       odaUsd2025: new Map(oecdIds.map((id) => [id, id === "GBR" ? 17_200_000_000 : 10_000_000_000])),
       defenceUsd2025: new Map(ids.map((id) => [id, id === "GBR" ? 89_000_000_000 : 20_000_000_000])),
-      socialPctGdp2024: new Map(oecdIds.map((id) => [id, id === "GBR" ? 22.1 : 15])),
+      socialPctGdp2023: new Map(oecdIds.map((id) => [id, id === "GBR" ? 23.0 : 15])),
       healthPerCapita2024: new Map(ids.map((id) => [id, id === "GBR" ? 5_860 : 4_000])),
       taxPctGdp2024: new Map(oecdIds.map((id) => [id, id === "GBR" ? 34.4 : 30])),
     });
@@ -33,10 +35,10 @@ describe("international comparison publication", () => {
 
     expect(Object.keys(publication.measures)).toHaveLength(7);
     expect(publication.measures.governmentDebt.countries.find((item) => item.country === "GBR")).toMatchObject({
-      value: 50_000,
-      observationYear: 2024,
-      valueType: "historical",
-      calculationInputs: { percentGdp: 100, gdpPerResidentUsd: 50_000 },
+      value: 63_258.16,
+      observationYear: 2026,
+      valueType: "projection",
+      calculationInputs: { percentGdp: 103.6, gdpPerResidentUsd: 61_060 },
     });
     expect(publication.measures.officialDevelopmentAssistance.countries.find((item) => item.country === "GBR")).toMatchObject({
       observationYear: 2025,
@@ -49,8 +51,9 @@ describe("international comparison publication", () => {
       calculationInputs: { totalUsd: 89_000_000_000, population: 70_000_000 },
     });
     expect(publication.measures.publicSocialExpenditure.countries.find((item) => item.country === "GBR")).toMatchObject({
-      observationYear: 2024,
-      valueType: "estimate",
+      observationYear: 2023,
+      valueType: "historical",
+      calculationInputs: { percentGdp: 23.0, gdpPerResidentUsd: 48_000 },
     });
     expect(publication.measures.officialDevelopmentAssistance.comparableCountryCount).toBe(10);
     expect(publication.measures.officialDevelopmentAssistance.countries.find((item) => item.country === "CHN")).toMatchObject({
@@ -64,13 +67,15 @@ describe("international comparison publication", () => {
 
   it("marks only the failed metric unavailable when one source family is missing", () => {
     const bundle = comparisonSourceBundle({
+      gdpPerCapita2023: mapAll(48_000),
       gdpPerCapita2024: mapAll(50_000),
+      gdpPerCapita2026: mapAll(61_000),
       population2025: mapAll(70_000_000),
-      debtPctGdp2024: mapAll(80),
+      debtPctGdp2026: mapAll(80),
       interestPctGdp2024: mapAll(2),
       odaUsd2025: mapOecd(10_000_000_000),
       defenceUsd2025: mapAll(20_000_000_000),
-      socialPctGdp2024: mapOecd(15),
+      socialPctGdp2023: mapOecd(15),
       healthPerCapita2024: null,
       taxPctGdp2024: mapOecd(30),
     });
