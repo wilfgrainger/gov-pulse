@@ -116,11 +116,37 @@ jobs:
           google-chrome --version
 
       # Disposable external review only. Never merge this workflow change.
-      - name: Run deterministic browser tests against deployed preview
-        env:
-          CI: "true"
-          PLAYWRIGHT_BASE_URL: "https://mi-five-v2.zerobytemode.workers.dev/"
-        run: npm run test:e2e
+      - name: Diagnose deployed preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://mi-five-v2.zerobytemode.workers.dev"
+          for path in / /sources /section/uk-in-context/ /data/health.json /data/metrics-snapshot.json /data/international-comparison.json; do
+            echo "===== ${path} ====="
+            code=$(curl -sS -L --max-time 20 -D /tmp/headers -o /tmp/body -w '%{http_code}' "${base}${path}" || true)
+            echo "HTTP_STATUS=${code}"
+            grep -Ei '^(content-type|server|cf-ray|location|cache-control|x-publication-delivery):' /tmp/headers || true
+            printf 'BODY_PREFIX='
+            head -c 1600 /tmp/body | tr '\n' ' ' | tr -s ' '
+            printf '\n\n'
+          done
+
+          node --input-type=module <<'NODE'
+          import { chromium } from '@playwright/test';
+          const browser = await chromium.launch({ channel: 'chrome', headless: true });
+          const page = await browser.newPage();
+          for (const path of ['/', '/sources', '/section/uk-in-context/']) {
+            const response = await page.goto(`https://mi-five-v2.zerobytemode.workers.dev${path}`, {
+              waitUntil: 'domcontentloaded',
+              timeout: 30000,
+            });
+            const title = await page.title();
+            const h1 = await page.locator('h1').allTextContents();
+            const body = (await page.locator('body').innerText()).replace(/\s+/g, ' ').slice(0, 1000);
+            console.log(JSON.stringify({ path, status: response?.status(), finalUrl: page.url(), title, h1, body }));
+          }
+          await browser.close();
+          NODE
 
   quality:
     if: always()
