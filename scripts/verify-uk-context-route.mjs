@@ -1,4 +1,5 @@
 // Focused production smoke test used during route-recovery incidents.
+// Keep this independent from the broader release verifier for quick diagnosis.
 const url = process.argv[2] ?? "https://public-data.org/section/uk-in-context/";
 
 const response = await fetch(url, {
