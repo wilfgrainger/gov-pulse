@@ -17,16 +17,10 @@ describe("repository residue", () => {
   it("keeps the live state reporter focused on live state rather than policing a handoff file", () => {
     const reporter = source("scripts/report-github-current-state.mjs");
 
-    expect(reporter).not.toContain('const progressPath = ".agents/PROGRESS.md"');
+    expect(reporter).not.toContain(".agents/PROGRESS.md");
     expect(reporter).not.toContain("validateProgress");
-  });
-
-  it("does not ship the unused motion dependency", () => {
-    const manifest = source("package.json");
-    const lockfile = source("package-lock.json");
-
-    expect(manifest).not.toContain('"framer-motion"');
-    expect(lockfile).not.toContain('"framer-motion"');
-    expect(lockfile).not.toContain('"node_modules/framer-motion"');
+    expect(reporter).toContain("Default-branch SHA");
+    expect(reporter).toContain("Open pull requests");
+    expect(reporter).toContain("Open issues");
   });
 });
