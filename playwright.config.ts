@@ -4,6 +4,8 @@ const testPort = Number(process.env.PLAYWRIGHT_PORT ?? "4173");
 const localBaseURL = `http://127.0.0.1:${testPort}`;
 const externalBaseURL = process.env.PLAYWRIGHT_BASE_URL;
 const baseURL = externalBaseURL ?? localBaseURL;
+// GitHub-hosted Ubuntu runners already provide stable Google Chrome.
+const ciBrowserChannel = process.env.CI ? ("chrome" as const) : undefined;
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -11,6 +13,7 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "retain-on-failure",
+    channel: ciBrowserChannel,
   },
   webServer: externalBaseURL
     ? undefined

@@ -108,8 +108,12 @@ jobs:
         env:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
 
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Verify preinstalled Chrome
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v google-chrome
+          google-chrome --version
 
       - name: Run deterministic browser tests
         env:
