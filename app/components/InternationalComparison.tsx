@@ -2,6 +2,7 @@ import { readServerInternationalComparison } from "@/app/lib/serverInternational
 import {
   COMPARISON_COUNTRY_NAMES,
   COMPARISON_MEASURE_ORDER,
+  comparisonSummary,
   exclusionLabel,
   formatUsdPerResident,
   rankLabel,
@@ -9,6 +10,7 @@ import {
   valueTypeLabel,
   type ComparisonMeasure,
   type ComparisonObservation,
+  type InternationalComparisonPublication,
 } from "@/app/lib/internationalComparison";
 
 function sourceLine(observation: ComparisonObservation | null) {
@@ -48,6 +50,9 @@ function scorecardRow(measure: ComparisonMeasure) {
       <td className="px-2 py-4 text-sm text-gray-700">
         {uk ? rankLabel(measure, uk) : "Not ranked"}
       </td>
+      <td className="px-2 py-4 text-sm font-medium text-[#8a3540]">
+        {uk ? comparisonSummary(measure, uk) : "Comparison unavailable"}
+      </td>
       <td className="px-2 py-4 text-sm text-gray-700">{measure.observationYear}</td>
     </tr>
   );
@@ -69,6 +74,25 @@ function rankedCountries(measure: ComparisonMeasure) {
 
 function unavailableCountries(measure: ComparisonMeasure) {
   return measure.countries.filter((observation) => observation.value === null);
+}
+
+function strongestUkPosition(publication: InternationalComparisonPublication) {
+  return COMPARISON_MEASURE_ORDER.map((id) => publication.measures[id])
+    .map((measure) => ({ measure, uk: ukObservation(measure) }))
+    .filter(
+      (entry): entry is { measure: ComparisonMeasure; uk: ComparisonObservation } =>
+        Boolean(
+          entry.uk &&
+            entry.uk.value !== null &&
+            entry.uk.rank !== null &&
+            entry.measure.comparableCountryCount > 0
+        )
+    )
+    .sort(
+      (left, right) =>
+        (left.uk.rank ?? 999) / left.measure.comparableCountryCount -
+        (right.uk.rank ?? 999) / right.measure.comparableCountryCount
+    )[0] ?? null;
 }
 
 function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
@@ -97,6 +121,11 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
           <p className="mt-1 text-sm font-semibold text-[#8a3540]">
             {uk ? rankLabel(measure, uk) : "Not ranked"}
           </p>
+          {uk ? (
+            <p className="mt-2 text-sm font-medium leading-5 text-[#172234]">
+              {comparisonSummary(measure, uk)}.
+            </p>
+          ) : null}
           {uk ? (
             <p className="mt-2 text-xs leading-5 text-gray-600">
               {valueTypeLabel(uk.valueType)} for {uk.observationYear}. Rankings are highest amount per resident first.
@@ -173,6 +202,7 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
 
 export default async function InternationalComparison() {
   const publication = await readServerInternationalComparison();
+  const standout = publication ? strongestUkPosition(publication) : null;
 
   return (
     <div>
@@ -186,15 +216,26 @@ export default async function InternationalComparison() {
         </p>
       </div>
 
+      {standout ? (
+        <aside className="mt-6 border-l-4 border-[#8a3540] bg-[#f7f3eb] px-5 py-4" aria-label="UK comparison standout">
+          <p className="eyebrow">What jumps out</p>
+          <p className="mt-2 text-base leading-7 text-[#172234]">
+            <strong>{standout.measure.label}:</strong>{" "}
+            {rankLabel(standout.measure, standout.uk)}. {comparisonSummary(standout.measure, standout.uk)}.
+          </p>
+        </aside>
+      ) : null}
+
       <div className="mt-7 border-y border-[#172234]">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[44rem] border-collapse">
+          <table className="w-full min-w-[58rem] border-collapse">
             <caption className="sr-only">United Kingdom per-resident international comparison scorecard</caption>
             <thead>
               <tr className="text-left text-xs uppercase tracking-[0.08em] text-gray-600">
                 <th scope="col" className="py-3 pr-4">Measure</th>
                 <th scope="col" className="px-2 py-3">UK per citizen</th>
                 <th scope="col" className="px-2 py-3">UK rank</th>
+                <th scope="col" className="px-2 py-3">Comparison</th>
                 <th scope="col" className="px-2 py-3">Year</th>
               </tr>
             </thead>
@@ -214,6 +255,7 @@ export default async function InternationalComparison() {
                       </th>
                       <td className="px-2 py-4 text-sm text-gray-600">Unavailable</td>
                       <td className="px-2 py-4 text-sm text-gray-600">Not ranked</td>
+                      <td className="px-2 py-4 text-sm text-gray-600">Comparison unavailable</td>
                       <td className="px-2 py-4 text-sm text-gray-600">-</td>
                     </tr>
                   ))}
