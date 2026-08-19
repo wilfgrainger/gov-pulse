@@ -54,6 +54,13 @@ describe("production publication order", () => {
     expect(web).toContain("NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}");
   });
 
+  it("does not put the primary web deployment behind the Pages environment gate", () => {
+    const web = jobBody("deploy-web");
+    expect(web).not.toContain("environment:\n      name: cloudflare-pages");
+    expect(web).not.toContain("environment: cloudflare-pages");
+    expect(web).toContain("node scripts/verify-production.mjs");
+  });
+
   it("refreshes Pages as a bounded seed in the same runner after the web Worker is verified", () => {
     const web = jobBody("deploy-web");
     const productionVerify = web.indexOf("node scripts/verify-production.mjs");

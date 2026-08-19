@@ -35,7 +35,7 @@ const SOURCES = Object.freeze({
   oecdOda2025: Object.freeze({
     publisher: "OECD",
     url: SOURCE_QUERIES.oecdOda2025,
-    series: "DAC1: ODA grant equivalent, current USD (2025 preliminary)",
+    series: "DAC1: Official Development Assistance (ODA), grant equivalent, 2025 preliminary/current USD",
   }),
   oecdSocx2023: Object.freeze({
     publisher: "OECD",
@@ -224,10 +224,14 @@ function buildInternationalComparisonPublication(bundle, now = new Date()) {
   });
 }
 
-async function settledMap(factory) {
+async function settledMap(factory, label) {
   try {
     return await factory();
-  } catch {
+  } catch (error) {
+    console.error("International comparison source unavailable", {
+      source: label,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -246,17 +250,17 @@ async function collectInternationalComparison(fetchImpl = fetch, now = new Date(
     healthPerCapita2024,
     taxPctGdp2024,
   ] = await Promise.all([
-    settledMap(() => fetchImfSeries("NGDPDPC", 2023, fetchImpl)),
-    settledMap(() => fetchImfSeries("NGDPDPC", 2024, fetchImpl)),
-    settledMap(() => fetchImfSeries("NGDPDPC", 2026, fetchImpl)),
-    settledMap(() => fetchWorldBankSeries("SP.POP.TOTL", 2025, fetchImpl)),
-    settledMap(() => fetchImfSeries("GGXWDG_NGDP", 2026, fetchImpl)),
-    settledMap(() => fetchImfSeries("ie@FPP", 2024, fetchImpl)),
-    settledMap(() => fetchOecdSeries(SOURCE_QUERIES.oecdOda2025, 2025, fetchImpl)),
-    settledMap(() => fetchSipri2025Series(fetchImpl)),
-    settledMap(() => fetchOecdSeries(SOURCE_QUERIES.oecdSocx2023, 2023, fetchImpl)),
-    settledMap(() => fetchWorldBankSeries("SH.XPD.CHEX.PC.CD", 2024, fetchImpl)),
-    settledMap(() => fetchOecdSeries(SOURCE_QUERIES.oecdTax2024, 2024, fetchImpl)),
+    settledMap(() => fetchImfSeries("NGDPDPC", 2023, fetchImpl), "imf-gdp-2023"),
+    settledMap(() => fetchImfSeries("NGDPDPC", 2024, fetchImpl), "imf-gdp-2024"),
+    settledMap(() => fetchImfSeries("NGDPDPC", 2026, fetchImpl), "imf-gdp-2026"),
+    settledMap(() => fetchWorldBankSeries("SP.POP.TOTL", 2025, fetchImpl), "world-bank-population-2025"),
+    settledMap(() => fetchImfSeries("GGXWDG_NGDP", 2026, fetchImpl), "imf-debt-2026"),
+    settledMap(() => fetchImfSeries("ie", 2024, fetchImpl), "imf-interest-2024"),
+    settledMap(() => fetchOecdSeries(SOURCE_QUERIES.oecdOda2025, 2025, fetchImpl), "oecd-oda-2025"),
+    settledMap(() => fetchSipri2025Series(fetchImpl), "sipri-2025"),
+    settledMap(() => fetchOecdSeries(SOURCE_QUERIES.oecdSocx2023, 2023, fetchImpl), "oecd-socx-2023"),
+    settledMap(() => fetchWorldBankSeries("SH.XPD.CHEX.PC.CD", 2024, fetchImpl), "world-bank-health-2024"),
+    settledMap(() => fetchOecdSeries(SOURCE_QUERIES.oecdTax2024, 2024, fetchImpl), "oecd-tax-2024"),
   ]);
 
   return buildInternationalComparisonPublication(

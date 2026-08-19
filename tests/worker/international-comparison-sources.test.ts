@@ -2,27 +2,31 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  SIPRI_MILEX_2025_WORKBOOK_URL,
   SOURCE_QUERIES,
   calculatePerResidentFromPercentGdp,
   calculatePerResidentFromTotal,
   parseImfSeries,
-  parseOdaProfile,
   parseOecdCsvSeries,
+  parseSipriCurrentUsdCells,
   parseSipriTop40Text,
   parseWorldBankSeries,
 } from "@/worker/international-comparison-sources";
 
 describe("international comparison source transforms", () => {
-  it("pins the 2026 IMF debt projection, 2025 ODA and latest common-year UK SOCX", () => {
+  it("pins current primary sources for debt, interest, ODA, social spending and defence", () => {
     expect(SOURCE_QUERIES.imfGdpPerCapita2026).toContain("NGDPDPC");
     expect(SOURCE_QUERIES.imfGdpPerCapita2026).toContain("periods=2026");
     expect(SOURCE_QUERIES.imfDebtPctGdp2026).toContain("GGXWDG_NGDP");
     expect(SOURCE_QUERIES.imfDebtPctGdp2026).toContain("periods=2026");
+    expect(SOURCE_QUERIES.imfInterestPctGdp2024).toContain("/ie/");
+    expect(SOURCE_QUERIES.imfInterestPctGdp2024).not.toContain("ie@FPP");
     expect(SOURCE_QUERIES.oecdOda2025).toContain("DSD_DAC1@DF_DAC1,1.7");
-    expect(SOURCE_QUERIES.oecdOda2025).toContain(".1010..1160.USD.V._Z");
-    expect(SOURCE_QUERIES.oecdOda2025).toContain("startPeriod=2025");
+    expect(SOURCE_QUERIES.oecdOda2025).toContain("11010..1160.USD.V");
+    expect(SOURCE_QUERIES.oecdOda2025).toContain("endPeriod=2025");
     expect(SOURCE_QUERIES.oecdSocx2023).toContain(".A..PT_B1GQ.ES10._T._T.?");
     expect(SOURCE_QUERIES.oecdSocx2023).toContain("endPeriod=2023");
+    expect(SIPRI_MILEX_2025_WORKBOOK_URL).toMatch(/SIPRI-Milex-data-1949-2025.*\.xlsx/i);
   });
 
   it("parses IMF DataMapper values for fixed-country annual series", () => {
@@ -42,7 +46,7 @@ describe("international comparison source transforms", () => {
     expect(series.get("CHN")).toBeNull();
   });
 
-  it("parses OECD SDMX values and unit multipliers", () => {
+  it("parses OECD SDMX REF_AREA values and unit multipliers", () => {
     const csv = [
       "REF_AREA,TIME_PERIOD,UNIT_MULT,OBS_VALUE",
       "GBR,2025,6,17200",
@@ -53,6 +57,19 @@ describe("international comparison source transforms", () => {
     expect(series.get("GBR")).toBe(17_200_000_000);
     expect(series.get("USA")).toBe(29_000_000_000);
     expect(series.get("CHN")).toBeNull();
+  });
+
+  it("parses OECD DAC1 DONOR values using the same bounded SDMX transform", () => {
+    const csv = [
+      "DONOR,TIME_PERIOD,UNIT_MULT,OBS_VALUE",
+      "GBR,2025,6,17200",
+      "DEU,2025,6,32836.11",
+      "POL,2025,6,..",
+    ].join("\n");
+    const series = parseOecdCsvSeries(csv, 2025);
+    expect(series.get("GBR")).toBe(17_200_000_000);
+    expect(series.get("DEU")).toBe(32_836_110_000);
+    expect(series.get("POL")).toBeNull();
   });
 
   it("maps SIPRI 2025 published top-40 rows to the named countries", () => {
@@ -73,10 +90,22 @@ describe("international comparison source transforms", () => {
     expect(series.get("CHE")).toBe(7_600_000_000);
   });
 
-  it("extracts preliminary OECD ODA totals without assigning non-donors a zero", () => {
-    const html = `<p>The United Kingdom provided USD 17.2 billion (preliminary data) of ODA in 2025.</p>`;
-    expect(parseOdaProfile(html, 2025)).toBe(17_200_000_000);
-    expect(() => parseOdaProfile("<p>No comparable ODA amount here.</p>", 2025)).toThrow(/ODA/i);
+  it("reads the 2025 current-US-dollar column from SIPRI workbook cells in USD millions", () => {
+    const cells = new Map([
+      ["D4", "2024"],
+      ["E4", "2025"],
+      ["B10", "United Kingdom"],
+      ["D10", "81800"],
+      ["E10", "89000"],
+      ["B11", "United States"],
+      ["E11", "954000"],
+      ["B12", "China"],
+      ["E12", "336000"],
+    ]);
+    const series = parseSipriCurrentUsdCells(cells, 2025);
+    expect(series.get("GBR")).toBe(89_000_000_000);
+    expect(series.get("USA")).toBe(954_000_000_000);
+    expect(series.get("CHN")).toBe(336_000_000_000);
   });
 
   it("derives per-resident amounts only from compatible same-year inputs", () => {
