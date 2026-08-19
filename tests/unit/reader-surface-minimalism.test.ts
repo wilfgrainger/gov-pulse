@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 
+// Source-level assertions keep deleted operational UI from quietly returning.
 function source(path: string) {
   return fs.readFileSync(path, "utf8");
 }
