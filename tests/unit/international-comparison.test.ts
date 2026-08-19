@@ -26,7 +26,7 @@ describe("international comparison evidence contract", () => {
       { id: "FRA", name: "France" },
       { id: "ITA", name: "Italy" },
       { id: "ESP", name: "Spain" },
-      { id: "TUR", name: "Türkiye" },
+      { id: "IRL", name: "Ireland" },
       { id: "NLD", name: "Netherlands" },
       { id: "CHE", name: "Switzerland" },
       { id: "POL", name: "Poland" },
@@ -138,7 +138,7 @@ describe("international comparison evidence contract", () => {
       meta: {
         schemaVersion: 1,
         generatedAt: "2026-08-18T22:00:00.000Z",
-        comparisonSetId: "uk-context-13-v1",
+        comparisonSetId: "uk-context-13-v2",
         countries: COMPARISON_COUNTRIES.map(({ id }) => id),
       },
       measures,
