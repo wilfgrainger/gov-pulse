@@ -124,12 +124,65 @@ export function ordinal(value: number) {
   return `${value}th`;
 }
 
+function comparisonNoun(measure: ComparisonMeasure) {
+  return measure.id === "officialDevelopmentAssistance"
+    ? "comparable donors"
+    : "comparable countries";
+}
+
 export function rankLabel(measure: ComparisonMeasure, observation: ComparisonObservation) {
   if (observation.rank === null || observation.value === null || measure.comparableCountryCount === 0) {
     return "Not ranked";
   }
-  const noun = measure.id === "officialDevelopmentAssistance" ? "comparable donors" : "comparable countries";
-  return `${ordinal(observation.rank)} highest of ${measure.comparableCountryCount} ${noun}`;
+  return `${ordinal(observation.rank)} highest of ${measure.comparableCountryCount} ${comparisonNoun(measure)}`;
+}
+
+function naturalList(items: string[]) {
+  if (items.length === 0) return "";
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
+}
+
+export function comparisonSummary(
+  measure: ComparisonMeasure,
+  observation: ComparisonObservation
+) {
+  if (
+    observation.rank === null ||
+    observation.value === null ||
+    measure.comparableCountryCount === 0
+  ) {
+    return "Comparison unavailable";
+  }
+
+  const rankedAbove = measure.countries
+    .filter(
+      (candidate) =>
+        candidate.value !== null &&
+        candidate.rank !== null &&
+        candidate.rank < observation.rank!
+    )
+    .sort((left, right) => (left.rank ?? 999) - (right.rank ?? 999));
+
+  if (rankedAbove.length === 0) {
+    return `Highest of ${measure.comparableCountryCount} ${comparisonNoun(measure)}`;
+  }
+  if (rankedAbove.length <= 3) {
+    const names = rankedAbove.map(
+      (candidate) => COMPARISON_COUNTRY_NAMES[candidate.country]
+    );
+    return `Only ${naturalList(names)} ${names.length === 1 ? "is" : "are"} higher`;
+  }
+
+  const position = observation.rank / measure.comparableCountryCount;
+  if (position <= 1 / 3) {
+    return `Upper third of ${measure.comparableCountryCount} ${comparisonNoun(measure)}`;
+  }
+  if (position <= 2 / 3) {
+    return `Middle of ${measure.comparableCountryCount} ${comparisonNoun(measure)}`;
+  }
+  return `Lower third of ${measure.comparableCountryCount} ${comparisonNoun(measure)}`;
 }
 
 export function ukObservation(measure: ComparisonMeasure) {
