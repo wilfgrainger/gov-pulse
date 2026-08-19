@@ -204,13 +204,6 @@ export default function GDPTracker() {
         </section>
       )}
 
-      <section aria-labelledby="gdp-withdrawn-title" className="border-l-4 border-foreground pl-4">
-        <h3 id="gdp-withdrawn-title" className="text-lg font-semibold">Forecast and comparison tables withdrawn</h3>
-        <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-700">
-          The previous panel mixed ONS observations with an OBR forecast, IMF G7 estimates and structural sector values using different periods and bases. They remain unavailable until each can be reproduced from a named source and matching period.
-        </p>
-      </section>
-
       <MetricsStatus section="gdpTracker" status={metrics} />
     </div>
   );
