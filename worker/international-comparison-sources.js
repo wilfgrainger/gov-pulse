@@ -121,13 +121,17 @@ function parseOecdCsvSeries(csv, year) {
   if (lines.length < 2) throw new Error("OECD SDMX response was empty");
   const headers = csvColumns(lines[0]).map((header) => header.replace(/^\uFEFF/, ""));
   const index = Object.fromEntries(headers.map((header, position) => [header, position]));
-  for (const required of ["REF_AREA", "TIME_PERIOD", "OBS_VALUE"]) {
+  const countryColumn = index.REF_AREA ?? index.DONOR;
+  if (countryColumn === undefined) {
+    throw new Error("OECD SDMX response was missing REF_AREA or DONOR");
+  }
+  for (const required of ["TIME_PERIOD", "OBS_VALUE"]) {
     if (index[required] === undefined) throw new Error(`OECD SDMX response was missing ${required}`);
   }
   const result = new Map();
   for (const line of lines.slice(1)) {
     const row = csvColumns(line);
-    const country = row[index.REF_AREA];
+    const country = row[countryColumn];
     if (!COMPARISON_IDS.includes(country) || Number(row[index.TIME_PERIOD]) !== year) continue;
     const raw = finiteNumber(row[index.OBS_VALUE]);
     const unitMultiplier = index.UNIT_MULT === undefined ? 0 : finiteNumber(row[index.UNIT_MULT]) ?? 0;
