@@ -8,10 +8,6 @@ vi.mock("next/navigation", () => ({
   usePathname: () => usePathname(),
 }));
 
-vi.mock("@/app/components/DataHealthBar", () => ({
-  default: () => <div>Data health</div>,
-}));
-
 vi.mock("@/app/components/EvidenceSearch", () => ({
   default: ({ onNavigate }: { onNavigate?: () => void }) => (
     <div>
