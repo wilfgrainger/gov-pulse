@@ -1,5 +1,13 @@
 import { collectInternationalComparison } from './international-comparison-publication.js';
+import { SOURCE_QUERIES } from './international-comparison-sources.js';
 import { buildMigrationStats } from './migration.js';
+
+const odaResponse = await fetch(SOURCE_QUERIES.oecdOda2025, {
+  headers: { accept: 'text/csv,text/plain;q=0.9' },
+});
+const odaText = await odaResponse.text();
+console.log('LIVE_ODA_STATUS', odaResponse.status);
+console.log('LIVE_ODA_PREFIX', JSON.stringify(odaText.split(/\r?\n/).slice(0, 4)));
 
 const publication = await collectInternationalComparison(fetch, new Date());
 console.log('LIVE_COMPARISON_STATUS', JSON.stringify(publication.meta.sourceStatus));
