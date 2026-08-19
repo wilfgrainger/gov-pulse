@@ -9,7 +9,7 @@ import {
 
 const ids = COMPARISON_COUNTRIES.map(({ id }) => id);
 const mapAll = (value: number) => new Map(ids.map((id) => [id, value]));
-const oecdIds = ["GBR", "USA", "DEU", "FRA", "ITA", "ESP", "TUR", "NLD", "CHE", "POL"];
+const oecdIds = ["GBR", "USA", "DEU", "FRA", "ITA", "ESP", "IRL", "NLD", "CHE", "POL"];
 const mapOecd = (value: number) => new Map(oecdIds.map((id) => [id, value]));
 
 describe("international comparison publication", () => {

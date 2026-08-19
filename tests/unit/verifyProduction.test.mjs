@@ -51,24 +51,41 @@ const comparisonMeasureIds = [
   "taxRevenue",
   "debtInterest",
 ];
+const comparisonCountryIds = [
+  "GBR",
+  "USA",
+  "CHN",
+  "RUS",
+  "UKR",
+  "DEU",
+  "FRA",
+  "ITA",
+  "ESP",
+  "IRL",
+  "NLD",
+  "CHE",
+  "POL",
+];
+const comparisonObservations = comparisonCountryIds.map((country, index) => ({
+  country,
+  value: 1_000 - index,
+  rank: index + 1,
+}));
 const validInternationalComparison = JSON.stringify({
   meta: {
     schemaVersion: 1,
     generatedAt: "2026-08-19T09:00:00.000Z",
     checkedAt: "2026-08-19T09:00:00.000Z",
-    comparisonSetId: "uk-context-13-v1",
-    countries: ["GBR", "USA"],
+    comparisonSetId: "uk-context-13-v2",
+    countries: comparisonCountryIds,
   },
   measures: Object.fromEntries(
     comparisonMeasureIds.map((id) => [
       id,
       {
         id,
-        comparableCountryCount: 2,
-        countries: [
-          { country: "GBR", value: 1000, rank: 1 },
-          { country: "USA", value: 900, rank: 2 },
-        ],
+        comparableCountryCount: comparisonCountryIds.length,
+        countries: comparisonObservations,
       },
     ]),
   ),
@@ -158,6 +175,18 @@ describe("production deployment verifier", () => {
     expect(verifyInternationalComparisonJson(JSON.stringify(payload))).toContain(
       "international comparison is missing measure debtInterest",
     );
+  });
+
+  it("rejects stale Türkiye membership even when the set has 13 countries", () => {
+    const payload = JSON.parse(validInternationalComparison);
+    payload.meta.comparisonSetId = "uk-context-13-v1";
+    payload.meta.countries[9] = "TUR";
+    for (const measure of Object.values(payload.measures)) {
+      measure.countries[9].country = "TUR";
+    }
+    const failures = verifyInternationalComparisonJson(JSON.stringify(payload));
+    expect(failures).toContain("international comparison set identity was not found");
+    expect(failures).toContain("international comparison country universe was not found");
   });
 
   it("reports every missing homepage integrity marker", () => {

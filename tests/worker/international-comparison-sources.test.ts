@@ -2,6 +2,8 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  COMPARISON_IDS,
+  OECD_COMPARABLE_IDS,
   SIPRI_MILEX_2025_WORKBOOK_URL,
   SOURCE_QUERIES,
   calculatePerResidentFromPercentGdp,
@@ -14,8 +16,14 @@ import {
 } from "@/worker/international-comparison-sources";
 
 describe("international comparison source transforms", () => {
-  it("pins current primary sources for debt, interest, ODA, social spending and defence", () => {
+  it("pins current primary sources and the corrected Ireland comparison membership", () => {
+    expect(COMPARISON_IDS).toContain("IRL");
+    expect(COMPARISON_IDS).not.toContain("TUR");
+    expect(OECD_COMPARABLE_IDS).toContain("IRL");
+    expect(OECD_COMPARABLE_IDS).not.toContain("TUR");
     expect(SOURCE_QUERIES.imfGdpPerCapita2026).toContain("NGDPDPC");
+    expect(SOURCE_QUERIES.imfGdpPerCapita2026).toContain("/IRL/");
+    expect(SOURCE_QUERIES.imfGdpPerCapita2026).not.toContain("/TUR/");
     expect(SOURCE_QUERIES.imfGdpPerCapita2026).toContain("periods=2026");
     expect(SOURCE_QUERIES.imfDebtPctGdp2026).toContain("GGXWDG_NGDP");
     expect(SOURCE_QUERIES.imfDebtPctGdp2026).toContain("periods=2026");
@@ -23,6 +31,8 @@ describe("international comparison source transforms", () => {
     expect(SOURCE_QUERIES.imfInterestPctGdp2024).not.toContain("ie@FPP");
     expect(SOURCE_QUERIES.oecdOda2025).toContain("DSD_DAC1@DF_DAC1,1.7");
     expect(SOURCE_QUERIES.oecdOda2025).toContain("11010..1160.USD.V");
+    expect(SOURCE_QUERIES.oecdOda2025).toContain("IRL");
+    expect(SOURCE_QUERIES.oecdOda2025).not.toContain("TUR");
     expect(SOURCE_QUERIES.oecdOda2025).toContain("endPeriod=2025");
     expect(SOURCE_QUERIES.oecdSocx2023).toContain(".A..PT_B1GQ.ES10._T._T.?");
     expect(SOURCE_QUERIES.oecdSocx2023).toContain("endPeriod=2023");
@@ -80,13 +90,14 @@ describe("international comparison source transforms", () => {
       "4 4 Germany 114 88.5 29 4.4 3.5",
       "5 5 United Kingdom 89.0 81.8 8.8 3.4 2.4",
       "6 6 Ukraine [84.1] 64.7 30 3.3 31",
-      "18 18 Türkiye 30.0 25.0 20 1.2 1.9",
+      "18 18 Ireland 9.0 8.0 12 0.4 1.2",
       "19 19 Netherlands 28.9 25.2 15 1.1 2.2",
       "37 37 Switzerland 7.6 8.1 -6.2 0.3 0.7",
     ].join(" ");
     const series = parseSipriTop40Text(text);
     expect(series.get("USA")).toBe(954_000_000_000);
     expect(series.get("GBR")).toBe(89_000_000_000);
+    expect(series.get("IRL")).toBe(9_000_000_000);
     expect(series.get("CHE")).toBe(7_600_000_000);
   });
 
@@ -101,11 +112,14 @@ describe("international comparison source transforms", () => {
       ["E11", "954000"],
       ["B12", "China"],
       ["E12", "336000"],
+      ["B13", "Ireland"],
+      ["E13", "9000"],
     ]);
     const series = parseSipriCurrentUsdCells(cells, 2025);
     expect(series.get("GBR")).toBe(89_000_000_000);
     expect(series.get("USA")).toBe(954_000_000_000);
     expect(series.get("CHN")).toBe(336_000_000_000);
+    expect(series.get("IRL")).toBe(9_000_000_000);
   });
 
   it("derives per-resident amounts only from compatible same-year inputs", () => {

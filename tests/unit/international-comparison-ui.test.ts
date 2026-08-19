@@ -90,7 +90,7 @@ describe("UK in context presentation", () => {
       observation("NLD", 200, 7),
       observation("POL", 150, 8),
       observation("CHE", 100, 9),
-      observation("TUR", 50, 10),
+      observation("IRL", 50, 10),
     ];
     const oda = measure("officialDevelopmentAssistance", 10, countries);
     expect(comparisonSummary(oda, countries[4])).toBe("Middle of 10 comparable donors");

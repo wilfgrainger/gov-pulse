@@ -1,4 +1,4 @@
-const COMPARISON_SET_ID = "uk-context-13-v1";
+const COMPARISON_SET_ID = "uk-context-13-v2";
 const COMPARISON_SCHEMA_VERSION = 1;
 const UNIT_USD_PER_RESIDENT = "USD per resident";
 
@@ -12,7 +12,7 @@ const COMPARISON_COUNTRIES = Object.freeze([
   Object.freeze({ id: "FRA", name: "France" }),
   Object.freeze({ id: "ITA", name: "Italy" }),
   Object.freeze({ id: "ESP", name: "Spain" }),
-  Object.freeze({ id: "TUR", name: "Türkiye" }),
+  Object.freeze({ id: "IRL", name: "Ireland" }),
   Object.freeze({ id: "NLD", name: "Netherlands" }),
   Object.freeze({ id: "CHE", name: "Switzerland" }),
   Object.freeze({ id: "POL", name: "Poland" }),

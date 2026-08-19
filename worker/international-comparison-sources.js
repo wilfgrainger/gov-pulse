@@ -16,10 +16,10 @@ const SIPRI_MILEX_2025_WORKBOOK_URL =
   "https://www.sipri.org/sites/default/files/SIPRI-Milex-data-1949-2025_v1.2.xlsx";
 
 const COMPARISON_IDS = Object.freeze([
-  "GBR", "USA", "CHN", "RUS", "UKR", "DEU", "FRA", "ITA", "ESP", "TUR", "NLD", "CHE", "POL",
+  "GBR", "USA", "CHN", "RUS", "UKR", "DEU", "FRA", "ITA", "ESP", "IRL", "NLD", "CHE", "POL",
 ]);
 const OECD_COMPARABLE_IDS = Object.freeze([
-  "GBR", "USA", "DEU", "FRA", "ITA", "ESP", "TUR", "NLD", "CHE", "POL",
+  "GBR", "USA", "DEU", "FRA", "ITA", "ESP", "IRL", "NLD", "CHE", "POL",
 ]);
 const COUNTRY_PATH = COMPARISON_IDS.join("/");
 const WORLD_BANK_COUNTRIES = COMPARISON_IDS.join(";");
@@ -52,8 +52,7 @@ const SIPRI_COUNTRY_IDS = Object.freeze({
   France: "FRA",
   Italy: "ITA",
   Spain: "ESP",
-  Türkiye: "TUR",
-  Turkey: "TUR",
+  Ireland: "IRL",
   Netherlands: "NLD",
   Switzerland: "CHE",
   Poland: "POL",

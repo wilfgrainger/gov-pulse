@@ -42,6 +42,21 @@ const INTERNATIONAL_COMPARISON_MEASURE_IDS = [
   "taxRevenue",
   "debtInterest",
 ];
+const INTERNATIONAL_COMPARISON_COUNTRY_IDS = [
+  "GBR",
+  "USA",
+  "CHN",
+  "RUS",
+  "UKR",
+  "DEU",
+  "FRA",
+  "ITA",
+  "ESP",
+  "IRL",
+  "NLD",
+  "CHE",
+  "POL",
+];
 
 export function verifyProductionHtml(html, expectedRevision) {
   const failures = [];
@@ -198,14 +213,21 @@ export function verifyInternationalComparisonJson(text) {
     if (payload?.meta?.schemaVersion !== 1) {
       failures.push("international comparison schema version was not found");
     }
-    if (payload?.meta?.comparisonSetId !== "uk-context-13-v1") {
+    if (payload?.meta?.comparisonSetId !== "uk-context-13-v2") {
       failures.push("international comparison set identity was not found");
+    }
+    if (
+      JSON.stringify(payload?.meta?.countries) !==
+      JSON.stringify(INTERNATIONAL_COMPARISON_COUNTRY_IDS)
+    ) {
+      failures.push("international comparison country universe was not found");
     }
     if (!payload?.measures || typeof payload.measures !== "object") {
       failures.push("international comparison measures were not found");
       return failures;
     }
 
+    const expectedCountries = [...INTERNATIONAL_COMPARISON_COUNTRY_IDS].sort();
     for (const id of INTERNATIONAL_COMPARISON_MEASURE_IDS) {
       const measure = payload.measures[id];
       if (!measure || typeof measure !== "object") {
@@ -215,6 +237,10 @@ export function verifyInternationalComparisonJson(text) {
       if (!Array.isArray(measure.countries)) {
         failures.push(`international comparison measure ${id} has no country observations`);
         continue;
+      }
+      const countries = measure.countries.map((observation) => observation?.country).sort();
+      if (JSON.stringify(countries) !== JSON.stringify(expectedCountries)) {
+        failures.push(`international comparison measure ${id} has an invalid country universe`);
       }
       if (!measure.countries.some((observation) => observation?.country === "GBR")) {
         failures.push(`international comparison measure ${id} has no UK observation`);

@@ -8,7 +8,7 @@ export const COMPARISON_COUNTRY_NAMES = {
   FRA: "France",
   ITA: "Italy",
   ESP: "Spain",
-  TUR: "Türkiye",
+  IRL: "Ireland",
   NLD: "Netherlands",
   CHE: "Switzerland",
   POL: "Poland",
@@ -64,7 +64,7 @@ export interface InternationalComparisonPublication {
     schemaVersion: 1;
     generatedAt: string;
     checkedAt?: string;
-    comparisonSetId: "uk-context-13-v1";
+    comparisonSetId: "uk-context-13-v2";
     countries: ComparisonCountryId[];
     sourceStatus?: Record<string, string>;
   };
@@ -82,7 +82,7 @@ export function isInternationalComparisonPublication(
   value: unknown
 ): value is InternationalComparisonPublication {
   if (!isRecord(value) || !isRecord(value.meta) || !isRecord(value.measures)) return false;
-  if (value.meta.schemaVersion !== 1 || value.meta.comparisonSetId !== "uk-context-13-v1") return false;
+  if (value.meta.schemaVersion !== 1 || value.meta.comparisonSetId !== "uk-context-13-v2") return false;
   if (!Array.isArray(value.meta.countries)) return false;
   if (JSON.stringify(value.meta.countries) !== JSON.stringify(COUNTRY_IDS)) return false;
   if (!Number.isFinite(Date.parse(String(value.meta.generatedAt ?? "")))) return false;
