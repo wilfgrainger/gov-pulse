@@ -1,4 +1,5 @@
 // Disposable live-production verification. This file must not be merged.
+// PR metadata deliberately keeps validation pending until this assertion runs.
 import { expect, it } from "vitest";
 
 const EXPECTED_REVISION = "1c8431331df8895cbf96a5cd47d67454a8ed84d4";
