@@ -46,7 +46,7 @@ describe("international comparison source transforms", () => {
     expect(series.get("CHN")).toBeNull();
   });
 
-  it("parses OECD SDMX values and unit multipliers", () => {
+  it("parses OECD SDMX REF_AREA values and unit multipliers", () => {
     const csv = [
       "REF_AREA,TIME_PERIOD,UNIT_MULT,OBS_VALUE",
       "GBR,2025,6,17200",
@@ -57,6 +57,19 @@ describe("international comparison source transforms", () => {
     expect(series.get("GBR")).toBe(17_200_000_000);
     expect(series.get("USA")).toBe(29_000_000_000);
     expect(series.get("CHN")).toBeNull();
+  });
+
+  it("parses OECD DAC1 DONOR values using the same bounded SDMX transform", () => {
+    const csv = [
+      "DONOR,TIME_PERIOD,UNIT_MULT,OBS_VALUE",
+      "GBR,2025,6,17200",
+      "DEU,2025,6,32836.11",
+      "POL,2025,6,..",
+    ].join("\n");
+    const series = parseOecdCsvSeries(csv, 2025);
+    expect(series.get("GBR")).toBe(17_200_000_000);
+    expect(series.get("DEU")).toBe(32_836_110_000);
+    expect(series.get("POL")).toBeNull();
   });
 
   it("maps SIPRI 2025 published top-40 rows to the named countries", () => {
