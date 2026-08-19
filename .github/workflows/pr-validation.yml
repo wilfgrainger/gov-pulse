@@ -115,7 +115,7 @@ jobs:
           command -v google-chrome
           google-chrome --version
 
-      # Disposable acceptance audit against the already deployed Worker preview.
+      # Disposable external review only. Never merge this workflow change.
       - name: Run deterministic browser tests against deployed preview
         env:
           CI: "true"
