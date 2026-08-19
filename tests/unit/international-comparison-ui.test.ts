@@ -54,6 +54,7 @@ describe("UK in context presentation", () => {
     expect(formatUsdPerResident(null)).toBe("Unavailable");
   });
 
+  // Reader wording must preserve the denominator defined by the published comparison contract.
   it("uses resident terminology consistently with the comparison unit", () => {
     const component = fs.readFileSync("app/components/InternationalComparison.tsx", "utf8");
     expect(component).toContain("per resident");
