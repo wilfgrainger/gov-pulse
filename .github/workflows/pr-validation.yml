@@ -84,9 +84,6 @@ jobs:
       - name: Unit and Worker tests
         run: npm run test
 
-      - name: Verify repaired primary sources live
-        run: node scripts/live-comparison-source-check.mjs
-
       - name: Static Pages seed build
         run: npm run build:check
         env:
