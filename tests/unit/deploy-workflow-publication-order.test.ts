@@ -25,6 +25,12 @@ describe("production publication order", () => {
     expect(workflow).not.toContain("cron:");
   });
 
+  it("lets the newest production release supersede obsolete queued or in-progress releases", () => {
+    expect(workflow).toContain("group: public-data-production");
+    expect(workflow).toContain("cancel-in-progress: true");
+    expect(workflow).not.toContain("cancel-in-progress: false");
+  });
+
   it("uses one environment-gated production job for both web and data deployment", () => {
     const production = jobBody("deploy-production");
 
