@@ -23,11 +23,13 @@ const WORLD_BANK_COUNTRIES = COMPARISON_IDS.join(";");
 const OECD_COUNTRIES = OECD_COMPARABLE_IDS.join("+");
 
 const SOURCE_QUERIES = Object.freeze({
+  imfGdpPerCapita2023: `${IMF_DATAMAPPER}/NGDPDPC/${COUNTRY_PATH}?periods=2023`,
   imfGdpPerCapita2024: `${IMF_DATAMAPPER}/NGDPDPC/${COUNTRY_PATH}?periods=2024`,
-  imfDebtPctGdp2024: `${IMF_DATAMAPPER}/GGXWDG_NGDP/${COUNTRY_PATH}?periods=2024`,
+  imfGdpPerCapita2026: `${IMF_DATAMAPPER}/NGDPDPC/${COUNTRY_PATH}?periods=2026`,
+  imfDebtPctGdp2026: `${IMF_DATAMAPPER}/GGXWDG_NGDP/${COUNTRY_PATH}?periods=2026`,
   imfInterestPctGdp2024: `${IMF_DATAMAPPER}/ie@FPP/${COUNTRY_PATH}?periods=2024`,
   oecdOda2025: `${OECD_SDMX}/OECD.DCD.FSD,DSD_DAC1@DF_DAC1,1.7/${OECD_COUNTRIES}.1010..1160.USD.V._Z?startPeriod=2025&endPeriod=2025&dimensionAtObservation=AllDimensions`,
-  oecdSocx2024: `${OECD_SDMX}/OECD.ELS.SPD,DSD_SOCX_AGG@DF_SOCX_AGG,1.0/${OECD_COUNTRIES}.A..PT_B1GQ.ES10._T._T.?startPeriod=2024&endPeriod=2024&dimensionAtObservation=AllDimensions`,
+  oecdSocx2023: `${OECD_SDMX}/OECD.ELS.SPD,DSD_SOCX_AGG@DF_SOCX_AGG,1.0/${OECD_COUNTRIES}.A..PT_B1GQ.ES10._T._T.?startPeriod=2023&endPeriod=2023&dimensionAtObservation=AllDimensions`,
   oecdTax2024: `${OECD_SDMX}/OECD.CTP.TPS,DSD_REV_COMP_OECD@DF_RSOECD,/${OECD_COUNTRIES}..S13._T..PT_B1GQ.A?startPeriod=2024&endPeriod=2024&dimensionAtObservation=AllDimensions`,
   worldBankHealth2024: `${WORLD_BANK_API}/country/${WORLD_BANK_COUNTRIES}/indicator/SH.XPD.CHEX.PC.CD?date=2024&format=json&per_page=100`,
   sipriMilitary2025: SIPRI_MILEX_2025_URL,
