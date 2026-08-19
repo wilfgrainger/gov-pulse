@@ -26,6 +26,7 @@ import { samePublicationEvidence } from "../contracts/publication-evidence.js";
 import { buildPublicationDiagnostics } from "../contracts/publication-diagnostics.js";
 import { FEED_REGISTRY } from "./feed-registry.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
+import { refreshInternationalComparison } from "./international-comparison-store.js";
 
 const PUBLICATION_SECTION_PREFIX = "v12:publication:section:";
 const PUBLICATION_HISTORY_TTL_SECONDS = 14 * 24 * 60 * 60;
@@ -295,6 +296,13 @@ async function publishFromCaches(env, options = {}) {
 }
 
 async function processQueueJob(job, env, ctx, options = {}) {
+  if (job?.type === "refresh-international-comparison") {
+    const result = await refreshInternationalComparison(env, {
+      fetchImpl: options.fetchImpl ?? fetch,
+      now: options.now ?? new Date(),
+    });
+    return { type: job.type, updated: result.updated, due: result.due };
+  }
   if (job?.type === "refresh-section") {
     const record = await storeSectionFragment(String(job.section ?? ""), env, ctx);
     return { type: job.type, section: record.section, fetchedAt: record.fetchedAt };
@@ -509,6 +517,9 @@ const queuedPublicationWorker = {
               finaliseRetrySeconds: BOOTSTRAP_FINALISE_RETRY_SECONDS,
             }
           );
+          if (result.dispatched) {
+            await env.DATA_JOBS.send({ type: "refresh-international-comparison" });
+          }
           console.log("Cloudflare publication bootstrap accepted", {
             runId: result.run.runId,
             dispatched: result.dispatched,
