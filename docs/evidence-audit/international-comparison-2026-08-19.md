@@ -6,7 +6,9 @@ This audit records the source basis for the optional `UK in context` comparison 
 
 ## Fixed comparison set
 
-United Kingdom, United States, China, Russia, Ukraine, Germany, France, Italy, Spain, Türkiye, Netherlands, Switzerland and Poland.
+United Kingdom, United States, China, Russia, Ukraine, Germany, France, Italy, Spain, Ireland, Netherlands, Switzerland and Poland.
+
+The corrected comparison-set identity is `uk-context-13-v2`; the initial implementation had substituted Türkiye for the agreed Ireland membership.
 
 ## Measures and source basis
 

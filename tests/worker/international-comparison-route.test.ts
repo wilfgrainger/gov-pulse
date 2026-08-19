@@ -32,7 +32,7 @@ function fixture(now = "2026-08-18T22:00:00.000Z") {
       schemaVersion: 1,
       generatedAt: now,
       checkedAt: now,
-      comparisonSetId: "uk-context-13-v1",
+      comparisonSetId: "uk-context-13-v2",
       countries: COMPARISON_COUNTRIES.map(({ id }) => id),
     },
     measures: Object.fromEntries(
