@@ -43,9 +43,10 @@ The product has three deliberately small delivery planes:
    Worker bundle.
 2. Cloudflare Worker `worker/public-data-entry.js` owns the runtime data plane.
    Its only public HTTP routes are the more-specific
-   `/data/metrics-snapshot.json` and `/data/health.json`; all other paths return
-   404. The application and browser continue to consume these as same-origin
-   public contracts; no collector or operational route is exposed.
+   `/data/metrics-snapshot.json`, `/data/health.json`, and
+   `/data/international-comparison.json`; all other paths return 404. The
+   application and browser consume these as same-origin public contracts; no
+   collector or operational route is exposed.
 3. Cloudflare Pages retains a bounded static seed/fallback export. It is not the
    normal application plane. The data Worker may use a validated Pages seed only
    inside the documented fallback boundary, and the deployment workflow keeps
@@ -56,30 +57,38 @@ Cron (`17 3 * * *`) refreshes generic, external and procurement evidence; the
 three-hour Cron (`47 */3 * * *`) refreshes betting markets. A single
 `public-data-jobs` Queue runs one bounded job at a time with retry limits.
 Workers KV (`METRICS_CACHE`) stores section fragments, run state and terminals,
-the current publication, bounded history and the prepared public artifact.
+the current national publication, bounded history, the prepared public artifact,
+and the isolated international comparison publication.
 
-The publication path is:
+The national publication path is:
 
 `Cron -> Queue jobs -> source collectors -> validation/normalisation -> KV
 fragments -> run terminals -> finaliser -> atomic prepared public artifact ->
 request-time public delivery`
 
-Finalisation is run-scoped and idempotent. The canonical prepared publication is
-atomic: a run publishes it only when every required job succeeded and every
-included section passes its wall-clock currentness policy. A failed job remains
-pending until its bounded deadline; it is not treated as successful merely
-because it has become terminal.
+Finalisation is run-scoped and idempotent. Before the bounded retry deadline, an
+incomplete run remains pending. At the deadline, the finaliser may atomically
+publish the fresh successful source-owned fragments even when another expected
+job failed or never completed. The run remains recorded as incomplete and the
+public edition is explicitly degraded when required evidence is missing. A
+failed job is never re-labelled successful merely because the deadline elapsed.
 
-Public delivery is deliberately more resilient than canonical finalisation. At
-request time the data boundary may derive a `degraded` edition from the last
-verified publication by removing any section that no longer passes currentness.
-The degraded response must declare `meta.publicationState = "degraded"` and an
-exact `missingRequiredSections` manifest. It may contain only current,
-source-owned evidence: never retain an expired value, invent a replacement or
-label a degraded edition `ready`. `/data/health.json` reports `ready: false` for
-a degraded edition. A complete current prepared artifact reports `ready: true`.
+Public delivery applies the same fail-closed currentness boundary. A degraded
+edition must declare `meta.publicationState = "degraded"` and an exact
+`missingRequiredSections` manifest. It may contain only current, source-owned
+evidence: never retain an expired value, invent a replacement or label a
+degraded edition `ready`. `/data/health.json` reports `ready: false` for a
+degraded edition. A complete current prepared artifact reports `ready: true`.
 If no current evidence remains, return the generic unavailable response or a
 validated Pages seed within the bounded fallback.
+
+International comparison publication is deliberately isolated from national
+readiness. `worker/international-comparison-publication.js` writes the verified
+comparison edition to `v1:international-comparison:current`; the public route is
+`/data/international-comparison.json`. A seven-day due guard limits refreshes of
+this slow-moving evidence family. Bootstrap queues its refresh independently
+from the required national run, so a comparison-source failure can never block
+or downgrade the UK national publication.
 
 ## Evidence registry and contracts
 
@@ -98,7 +107,14 @@ with the newest historical point and normalise through the section contract.
 The public snapshot carries registry provenance, source URLs, generated time,
 validity and section-level status. `worker/publication-currentness.js`,
 `worker/publication-entry.js` and `worker/queued-publication-entry.js` enforce
-the publication boundary.
+the national publication boundary.
+
+The international comparison contract keeps its own country universe,
+measure-specific observation years, value status, primary source provenance,
+missingness and ranking denominator. Countries without a genuinely comparable
+observation are excluded from that measure's denominator rather than treated as
+zero. The seven measures remain separate and are never combined into an overall
+national score.
 
 The external collectors are intentionally source-specific:
 
@@ -111,13 +127,17 @@ The external collectors are intentionally source-specific:
   four-hour window and no normalised forecast.
 - Crime evidence keeps ONS, Home Office and Ministry of Justice publications
   separate and fails closed when the named versioned publication is not whole.
+- International comparisons use authoritative IMF, OECD, SIPRI and WHO/World
+  Bank publications with measure-specific years and explicit
+  historical/estimate/projection status.
 
-The browser data contract is consumed by `app/lib/useMetrics.ts` and rendered
-by the section components and `app/components/NationalEvidenceEdition.tsx`.
-The root layout supplies the request-time server snapshot before client
-revalidation. Do not make the browser call Worker internals, expose cache keys,
-or embed secrets, account identifiers, private repository details or deployment
-routes.
+The browser national-data contract is consumed by `app/lib/useMetrics.ts` and
+rendered by the section components and
+`app/components/NationalEvidenceEdition.tsx`. International comparison pages
+consume their isolated request-time comparison publication. The root layout
+supplies the request-time national server snapshot before client revalidation.
+Do not make the browser call Worker internals, expose cache keys, or embed
+secrets, account identifiers, private repository details or deployment routes.
 
 ## Security and failure boundaries
 
@@ -142,9 +162,11 @@ journey are observed.
 focused architecture/source guards, lint, unit and Worker tests, deterministic
 Pages seed build, pinned OpenNext Worker build and browser checks as appropriate.
 `.github/workflows/deploy.yml` validates once, reconciles the Queue, deploys the
-data Worker, bootstraps/verifies a prepared artifact, deploys the request-time
-web Worker, verifies the exact revision and live snapshot, then refreshes the
-bounded Pages seed. Manual dispatch is recovery only.
+data Worker, bootstraps the required national run and independently queues the
+comparison refresh, accepts a verified prepared degraded KV edition when the
+national evidence is honestly partial, deploys the request-time web Worker,
+verifies the exact revision and live snapshot, then refreshes the bounded Pages
+seed. Manual dispatch is recovery only.
 
 Before handoff run the smallest falsifying test for the change, then the
 affected Worker/component tests, lint, both production build modes, browser
