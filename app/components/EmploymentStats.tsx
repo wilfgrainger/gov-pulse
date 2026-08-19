@@ -210,13 +210,6 @@ export default function EmploymentStats() {
         </section>
       )}
 
-      <section aria-labelledby="employment-withdrawn-title" className="border-l-4 border-foreground pl-4">
-        <h3 id="employment-withdrawn-title" className="text-lg font-semibold">Workforce breakdowns withdrawn</h3>
-        <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-700">
-          The previous page mixed Labour Force Survey rates with public/private employment totals, public-sector categories and a hand-built annual trend. Those series remain unavailable until each has a named source and matching period.
-        </p>
-      </section>
-
       <MetricsStatus section="employmentStats" status={metrics} />
     </div>
   );
