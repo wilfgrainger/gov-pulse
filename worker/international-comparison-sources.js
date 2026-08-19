@@ -3,6 +3,8 @@ import { fetchResponse, readResponseText } from "./live-feed-common.js";
 const IMF_DATAMAPPER = "https://www.imf.org/external/datamapper/api/v2";
 const OECD_SDMX = "https://sdmx.oecd.org/public/rest/data";
 const WORLD_BANK_API = "https://api.worldbank.org/v2";
+const SIPRI_MILEX_2025_URL =
+  "https://www.sipri.org/publications/2026/sipri-fact-sheets/trends-world-military-expenditure-2025";
 
 const COMPARISON_IDS = Object.freeze([
   "GBR", "USA", "CHN", "RUS", "UKR", "DEU", "FRA", "ITA", "ESP", "TUR", "NLD", "CHE", "POL",
@@ -19,12 +21,30 @@ const SOURCE_QUERIES = Object.freeze({
   imfPopulation2024: `${IMF_DATAMAPPER}/LP/${COUNTRY_PATH}?periods=2024`,
   imfDebtPctGdp2024: `${IMF_DATAMAPPER}/GGXWDG_NGDP/${COUNTRY_PATH}?periods=2024`,
   imfInterestPctGdp2024: `${IMF_DATAMAPPER}/ie@FPP/${COUNTRY_PATH}?periods=2024`,
-  oecdOda2024: `${OECD_SDMX}/OECD.DCD.FSD,DSD_DAC2@DF_DAC2A,/${OECD_COUNTRIES}.DPGC.206.USD.V?startPeriod=2024&endPeriod=2024&dimensionAtObservation=AllDimensions`,
-  oecdSocx2022: `${OECD_SDMX}/OECD.ELS.SPD,DSD_SOCX_AGG@DF_SOCX_AGG,1.0/${OECD_COUNTRIES}.A..PT_B1GQ.ES10._T._T._Z?startPeriod=2022&endPeriod=2022&dimensionAtObservation=AllDimensions`,
+  oecdOda2025: `${OECD_SDMX}/OECD.DCD.FSD,DSD_DAC1@DF_DAC1,1.7/${OECD_COUNTRIES}.1010..1160.USD.V._Z?startPeriod=2025&endPeriod=2025&dimensionAtObservation=AllDimensions`,
+  oecdSocx2024: `${OECD_SDMX}/OECD.ELS.SPD,DSD_SOCX_AGG@DF_SOCX_AGG,1.0/${OECD_COUNTRIES}.A..PT_B1GQ.ES10._T._T.?startPeriod=2024&endPeriod=2024&dimensionAtObservation=AllDimensions`,
   oecdTax2024: `${OECD_SDMX}/OECD.CTP.TPS,DSD_REV_COMP_OECD@DF_RSOECD,/${OECD_COUNTRIES}..S13._T..PT_B1GQ.A?startPeriod=2024&endPeriod=2024&dimensionAtObservation=AllDimensions`,
   worldBankPopulation2024: `${WORLD_BANK_API}/country/${WORLD_BANK_COUNTRIES}/indicator/SP.POP.TOTL?date=2024&format=json&per_page=100`,
   worldBankDefence2024: `${WORLD_BANK_API}/country/${WORLD_BANK_COUNTRIES}/indicator/MS.MIL.XPND.CD?date=2024&format=json&per_page=100`,
   worldBankHealth2024: `${WORLD_BANK_API}/country/${WORLD_BANK_COUNTRIES}/indicator/SH.XPD.CHEX.PC.CD?date=2024&format=json&per_page=100`,
+  sipriMilitary2025: SIPRI_MILEX_2025_URL,
+});
+
+const SIPRI_COUNTRY_IDS = Object.freeze({
+  "United Kingdom": "GBR",
+  "United States": "USA",
+  China: "CHN",
+  Russia: "RUS",
+  Ukraine: "UKR",
+  Germany: "DEU",
+  France: "FRA",
+  Italy: "ITA",
+  Spain: "ESP",
+  Türkiye: "TUR",
+  Turkey: "TUR",
+  Netherlands: "NLD",
+  Switzerland: "CHE",
+  Poland: "POL",
 });
 
 function finiteNumber(value) {
@@ -113,6 +133,41 @@ function parseOdaProfile(html, year) {
   return billions * 1_000_000_000;
 }
 
+function parseSipriTop40Text(text) {
+  const source = String(text)
+    .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const amounts = [...source.matchAll(/\$\s*([\d,.]+)\s*(?:billion|bn|b\.)/gi)]
+    .map((match) => finiteNumber(match[1]))
+    .filter((value) => value !== null)
+    .map((value) => value * 1_000_000_000);
+  const rankedCountries = [...source.matchAll(/(?:^|\s)(\d{1,2})\.\s*(United States|United Kingdom|China|Russia|Ukraine|Germany|France|Italy|Spain|Türkiye|Turkey|Netherlands|Switzerland|Poland)\b/gi)]
+    .map((match) => ({
+      rank: Number(match[1]),
+      name: Object.keys(SIPRI_COUNTRY_IDS).find(
+        (name) => name.toLowerCase() === match[2].toLowerCase()
+      ),
+    }))
+    .filter(({ rank, name }) => Number.isInteger(rank) && Boolean(name))
+    .sort((left, right) => left.rank - right.rank);
+
+  if (amounts.length === 0 || rankedCountries.length === 0) {
+    throw new Error("SIPRI 2025 source did not expose ranked military expenditure amounts");
+  }
+  const result = new Map();
+  for (const entry of rankedCountries) {
+    const amount = amounts[entry.rank - 1];
+    if (!Number.isFinite(amount)) continue;
+    const country = SIPRI_COUNTRY_IDS[entry.name];
+    if (country) result.set(country, amount);
+  }
+  if (result.size === 0) {
+    throw new Error("SIPRI 2025 source did not expose comparison-country military expenditure");
+  }
+  return result;
+}
+
 function calculatePerResidentFromPercentGdp(percentGdp, gdpPerResident) {
   const percent = finiteNumber(percentGdp);
   const gdp = finiteNumber(gdpPerResident);
@@ -163,6 +218,7 @@ export {
   IMF_DATAMAPPER,
   OECD_COMPARABLE_IDS,
   OECD_SDMX,
+  SIPRI_MILEX_2025_URL,
   SOURCE_QUERIES,
   WORLD_BANK_API,
   calculatePerResidentFromPercentGdp,
@@ -175,5 +231,6 @@ export {
   parseImfSeries,
   parseOdaProfile,
   parseOecdCsvSeries,
+  parseSipriTop40Text,
   parseWorldBankSeries,
 };
