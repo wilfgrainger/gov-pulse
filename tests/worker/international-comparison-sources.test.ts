@@ -2,14 +2,11 @@
 
 import { describe, expect, it } from "vitest";
 import {
-  OECD_ODA_PROFILES_URL,
   SIPRI_MILEX_2025_WORKBOOK_URL,
   SOURCE_QUERIES,
   calculatePerResidentFromPercentGdp,
   calculatePerResidentFromTotal,
-  discoverOecdOdaProfileUrls,
   parseImfSeries,
-  parseOdaProfile,
   parseOecdCsvSeries,
   parseSipriCurrentUsdCells,
   parseSipriTop40Text,
@@ -24,8 +21,9 @@ describe("international comparison source transforms", () => {
     expect(SOURCE_QUERIES.imfDebtPctGdp2026).toContain("periods=2026");
     expect(SOURCE_QUERIES.imfInterestPctGdp2024).toContain("/ie/");
     expect(SOURCE_QUERIES.imfInterestPctGdp2024).not.toContain("ie@FPP");
-    expect(OECD_ODA_PROFILES_URL).toContain("development-co-operation-profiles");
-    expect(SOURCE_QUERIES.oecdOda2025).toBe(OECD_ODA_PROFILES_URL);
+    expect(SOURCE_QUERIES.oecdOda2025).toContain("DSD_DAC1@DF_DAC1,1.7");
+    expect(SOURCE_QUERIES.oecdOda2025).toContain("11010..1160.USD.V");
+    expect(SOURCE_QUERIES.oecdOda2025).toContain("endPeriod=2025");
     expect(SOURCE_QUERIES.oecdSocx2023).toContain(".A..PT_B1GQ.ES10._T._T.?");
     expect(SOURCE_QUERIES.oecdSocx2023).toContain("endPeriod=2023");
     expect(SIPRI_MILEX_2025_WORKBOOK_URL).toMatch(/SIPRI-Milex-data-1949-2025.*\.xlsx/i);
@@ -59,20 +57,6 @@ describe("international comparison source transforms", () => {
     expect(series.get("GBR")).toBe(17_200_000_000);
     expect(series.get("USA")).toBe(29_000_000_000);
     expect(series.get("CHN")).toBeNull();
-  });
-
-  it("discovers current OECD provider profiles without hardcoding publication-specific URLs", () => {
-    const html = [
-      '<a href="/en/publications/development-co-operation-profiles-2026/united-kingdom_abcd.html">United Kingdom</a>',
-      '<a href="/en/publications/development-co-operation-profiles-2026/united-states_efgh.html">United States</a>',
-      '<a href="/en/publications/development-co-operation-profiles-2026/turkiye_ijkl.html">Türkiye</a>',
-      '<a href="/en/publications/not-a-profile/poland.html">Poland</a>',
-    ].join("\n");
-    const profiles = discoverOecdOdaProfileUrls(html, OECD_ODA_PROFILES_URL);
-    expect(profiles.get("GBR")).toContain("united-kingdom_abcd.html");
-    expect(profiles.get("USA")).toContain("united-states_efgh.html");
-    expect(profiles.get("TUR")).toContain("turkiye_ijkl.html");
-    expect(profiles.has("POL")).toBe(false);
   });
 
   it("maps SIPRI 2025 published top-40 rows to the named countries", () => {
@@ -109,16 +93,6 @@ describe("international comparison source transforms", () => {
     expect(series.get("GBR")).toBe(89_000_000_000);
     expect(series.get("USA")).toBe(954_000_000_000);
     expect(series.get("CHN")).toBe(336_000_000_000);
-  });
-
-  it("extracts preliminary OECD ODA totals from both current profile phrasings", () => {
-    const provided = `<p>The United Kingdom provided USD 17.2 billion (preliminary data) of ODA in 2025.</p>`;
-    const total = `<p>Türkiye's total official development assistance (ODA) was USD 7.5 billion in 2025 (preliminary data).</p>`;
-    const bracketed = `<p>Total ODA (USD 14.5 billion, preliminary data) represented 0.48% of GNI in 2025.</p>`;
-    expect(parseOdaProfile(provided, 2025)).toBe(17_200_000_000);
-    expect(parseOdaProfile(total, 2025)).toBe(7_500_000_000);
-    expect(parseOdaProfile(bracketed, 2025)).toBe(14_500_000_000);
-    expect(() => parseOdaProfile("<p>No comparable ODA amount here.</p>", 2025)).toThrow(/ODA/i);
   });
 
   it("derives per-resident amounts only from compatible same-year inputs", () => {
