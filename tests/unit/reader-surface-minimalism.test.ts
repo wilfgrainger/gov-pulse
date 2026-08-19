@@ -14,7 +14,7 @@ describe("public reader surface", () => {
     expect(navigation).not.toContain("core releases are current");
   });
 
-  it("gets from the homepage proposition to evidence without repeated trust tutorials", () => {
+  it("keeps the source action in the hero without repeated trust tutorials", () => {
     const intro = source("app/components/HomepageIntro.tsx");
     const homepage = source("app/page.tsx");
     const edition = source("app/components/NationalEvidenceEdition.tsx");
