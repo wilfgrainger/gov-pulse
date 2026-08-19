@@ -44,7 +44,7 @@ function LeadStory({ signal }: { signal: SignalPresentation | null }) {
           Older figures are not substituted for a current publication. The topic pages show the latest available evidence and its source.
         </p>
         <Link href="/sources" prefetch={false} className="v3-secondary-action mt-7">
-          Check sources and dates
+          Browse sources
         </Link>
       </article>
     );
