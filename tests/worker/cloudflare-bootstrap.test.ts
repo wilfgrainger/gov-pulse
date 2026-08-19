@@ -40,7 +40,7 @@ function bootstrapMessage() {
 }
 
 describe("Cloudflare publication bootstrap", () => {
-  it("schedules only required sections", () => {
+  it("schedules only required national sections", () => {
     const jobs = refreshJobs("bootstrap-run", "bootstrap");
     expect(jobs).toHaveLength(8);
     expect(jobs.map((job) => job.section)).toEqual([
@@ -56,9 +56,10 @@ describe("Cloudflare publication bootstrap", () => {
     expect(jobs.some((job) => job.type === "refresh-contracts")).toBe(false);
     expect(jobs.some((job) => job.section === "bettingOdds")).toBe(false);
     expect(jobs.some((job) => job.section === "crimeStatistics")).toBe(false);
+    expect(jobs.some((job) => job.type === "refresh-international-comparison")).toBe(false);
   });
 
-  it("creates one deterministic run and dispatches it once", async () => {
+  it("creates one deterministic national run and dispatches an independent comparison refresh once", async () => {
     const { env, store, sendBatch, send } = environment();
     const first = bootstrapMessage();
     await queuedWorker.queue({ messages: [first] }, env, {});
@@ -75,19 +76,24 @@ describe("Cloudflare publication bootstrap", () => {
       },
       { delaySeconds: BOOTSTRAP_FINALISE_DELAY_SECONDS }
     );
+    expect(send).toHaveBeenCalledWith({ type: "refresh-international-comparison" });
+    expect(send).toHaveBeenCalledTimes(2);
 
     const run = store.get(`${RUN_PREFIX}${bootstrapRunId(SHA)}`) as {
       scope: string;
       dispatchedAt: string | null;
+      expectedJobIds: string[];
     };
     expect(run.scope).toBe("bootstrap");
     expect(run.dispatchedAt).toBeTruthy();
+    expect(run.expectedJobIds).toHaveLength(8);
+    expect(run.expectedJobIds).not.toContain("refresh-international-comparison");
 
     const duplicate = bootstrapMessage();
     await queuedWorker.queue({ messages: [duplicate] }, env, {});
     expect(duplicate.ack).toHaveBeenCalledOnce();
     expect(sendBatch).toHaveBeenCalledOnce();
-    expect(send).toHaveBeenCalledOnce();
+    expect(send).toHaveBeenCalledTimes(2);
   });
 
   it("rejects non-commit deployment identifiers", () => {
