@@ -1,16 +1,23 @@
 import {
   MAX_RESPONSE_BYTES,
+  absoluteUrl,
+  decodeHtml,
   fetchResponse,
+  parseAttributes,
   readResponseArrayBuffer,
   readResponseText,
 } from "./live-feed-common.js";
-import { extractPdfText } from "./live-polling-collector.js";
+import { workbookSheetCells } from "./xlsx-workbook.js";
 
 const IMF_DATAMAPPER = "https://www.imf.org/external/datamapper/api/v2";
 const OECD_SDMX = "https://sdmx.oecd.org/public/rest/data";
+const OECD_ODA_PROFILES_URL =
+  "https://www.oecd.org/en/topics/development-co-operation-profiles.html";
 const WORLD_BANK_API = "https://api.worldbank.org/v2";
 const SIPRI_MILEX_2025_URL =
   "https://www.sipri.org/sites/default/files/2026-04/2604_milex_2025.pdf";
+const SIPRI_MILEX_2025_WORKBOOK_URL =
+  "https://www.sipri.org/sites/default/files/SIPRI-Milex-data-1949-2025_v1.2.xlsx";
 
 const COMPARISON_IDS = Object.freeze([
   "GBR", "USA", "CHN", "RUS", "UKR", "DEU", "FRA", "ITA", "ESP", "TUR", "NLD", "CHE", "POL",
@@ -27,19 +34,36 @@ const SOURCE_QUERIES = Object.freeze({
   imfGdpPerCapita2024: `${IMF_DATAMAPPER}/NGDPDPC/${COUNTRY_PATH}?periods=2024`,
   imfGdpPerCapita2026: `${IMF_DATAMAPPER}/NGDPDPC/${COUNTRY_PATH}?periods=2026`,
   imfDebtPctGdp2026: `${IMF_DATAMAPPER}/GGXWDG_NGDP/${COUNTRY_PATH}?periods=2026`,
-  imfInterestPctGdp2024: `${IMF_DATAMAPPER}/ie@FPP/${COUNTRY_PATH}?periods=2024`,
-  oecdOda2025: `${OECD_SDMX}/OECD.DCD.FSD,DSD_DAC1@DF_DAC1,1.7/${OECD_COUNTRIES}.1010..1160.USD.V._Z?startPeriod=2025&endPeriod=2025&dimensionAtObservation=AllDimensions`,
+  imfInterestPctGdp2024: `${IMF_DATAMAPPER}/ie/${COUNTRY_PATH}?periods=2024`,
+  oecdOda2025: OECD_ODA_PROFILES_URL,
   oecdSocx2023: `${OECD_SDMX}/OECD.ELS.SPD,DSD_SOCX_AGG@DF_SOCX_AGG,1.0/${OECD_COUNTRIES}.A..PT_B1GQ.ES10._T._T.?startPeriod=2023&endPeriod=2023&dimensionAtObservation=AllDimensions`,
   oecdTax2024: `${OECD_SDMX}/OECD.CTP.TPS,DSD_REV_COMP_OECD@DF_RSOECD,/${OECD_COUNTRIES}..S13._T..PT_B1GQ.A?startPeriod=2024&endPeriod=2024&dimensionAtObservation=AllDimensions`,
   worldBankHealth2024: `${WORLD_BANK_API}/country/${WORLD_BANK_COUNTRIES}/indicator/SH.XPD.CHEX.PC.CD?date=2024&format=json&per_page=100`,
-  sipriMilitary2025: SIPRI_MILEX_2025_URL,
+  sipriMilitary2025: SIPRI_MILEX_2025_WORKBOOK_URL,
+});
+
+const OECD_ODA_PROFILE_COUNTRIES = Object.freeze({
+  GBR: ["united kingdom"],
+  USA: ["united states"],
+  DEU: ["germany"],
+  FRA: ["france"],
+  ITA: ["italy"],
+  ESP: ["spain"],
+  TUR: ["turkiye", "turkey"],
+  NLD: ["netherlands"],
+  CHE: ["switzerland"],
+  POL: ["poland"],
 });
 
 const SIPRI_COUNTRY_IDS = Object.freeze({
   "United Kingdom": "GBR",
+  UK: "GBR",
   "United States": "USA",
+  "United States of America": "USA",
+  USA: "USA",
   China: "CHN",
   Russia: "RUS",
+  "Russian Federation": "RUS",
   Ukraine: "UKR",
   Germany: "DEU",
   France: "FRA",
@@ -58,7 +82,8 @@ const SIPRI_COUNTRY_PATTERN = Object.keys(SIPRI_COUNTRY_IDS)
 
 function finiteNumber(value) {
   if (value === null || value === undefined || value === "" || value === "..") return null;
-  const parsed = Number(String(value).replaceAll(",", ""));
+  const normalized = String(value).trim().replace(/^\[/, "").replace(/\]$/, "").replaceAll(",", "");
+  const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
@@ -128,18 +153,43 @@ function parseOecdCsvSeries(csv, year) {
   return result;
 }
 
+function normalizedLabel(value) {
+  return decodeHtml(value)
+    .normalize("NFKD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[^a-zA-Z]+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function discoverOecdOdaProfileUrls(html, baseUrl = OECD_ODA_PROFILES_URL) {
+  const result = new Map();
+  for (const match of String(html).matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi)) {
+    const attributes = parseAttributes(match[1]);
+    if (!attributes.href || !/development-co-operation-profiles-/i.test(attributes.href)) continue;
+    const label = normalizedLabel(match[2]);
+    for (const [country, aliases] of Object.entries(OECD_ODA_PROFILE_COUNTRIES)) {
+      if (aliases.includes(label) && !result.has(country)) {
+        result.set(country, absoluteUrl(baseUrl, attributes.href));
+      }
+    }
+  }
+  return result;
+}
+
 function parseOdaProfile(html, year) {
-  const text = String(html)
-    .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;|&#160;/gi, " ")
-    .replace(/\s+/g, " ");
-  const expression = new RegExp(`provided\\s+USD\\s+([\\d.,]+)\\s+billion[^.]{0,120}ODA[^.]{0,120}in\\s+${year}`, "i");
-  const match = text.match(expression);
-  const billions = match ? finiteNumber(match[1]) : null;
-  if (billions === null) throw new Error(`OECD profile did not expose comparable ODA for ${year}`);
-  return billions * 1_000_000_000;
+  const text = decodeHtml(html);
+  const patterns = [
+    new RegExp(`provided\\s+USD\\s+([\\d.,]+)\\s+billion[^.]{0,180}ODA[^.]{0,180}(?:in\\s+)?${year}`, "i"),
+    new RegExp(`(?:total\\s+)?official development assistance\\s*\\(ODA\\)[^.]{0,180}USD\\s+([\\d.,]+)\\s+billion[^.]{0,180}${year}`, "i"),
+    new RegExp(`(?:total\\s+)?ODA\\s*\\(\\s*USD\\s+([\\d.,]+)\\s+billion[^)]*\\)[^.]{0,200}${year}`, "i"),
+  ];
+  for (const expression of patterns) {
+    const match = text.match(expression);
+    const billions = match ? finiteNumber(match[1]) : null;
+    if (billions !== null) return billions * 1_000_000_000;
+  }
+  throw new Error(`OECD profile did not expose comparable ODA for ${year}`);
 }
 
 function parseSipriTop40Text(text) {
@@ -161,6 +211,48 @@ function parseSipriTop40Text(text) {
     throw new Error("SIPRI 2025 source did not expose comparison-country military expenditure");
   }
   return result;
+}
+
+function cellParts(reference) {
+  const match = String(reference).toUpperCase().match(/^([A-Z]+)(\d+)$/);
+  return match ? { column: match[1], row: match[2] } : null;
+}
+
+function sipriCountryId(value) {
+  const normalized = normalizedLabel(value);
+  const match = Object.keys(SIPRI_COUNTRY_IDS).find(
+    (name) => normalizedLabel(name) === normalized
+  );
+  return match ? SIPRI_COUNTRY_IDS[match] : null;
+}
+
+function parseSipriCurrentUsdCells(cells, year) {
+  const yearColumns = [...cells.entries()]
+    .filter(([, value]) => Number(String(value).trim()) === year)
+    .map(([reference]) => cellParts(reference)?.column)
+    .filter(Boolean);
+  if (yearColumns.length === 0) {
+    throw new Error(`SIPRI workbook did not expose ${year}`);
+  }
+
+  let best = new Map();
+  for (const yearColumn of [...new Set(yearColumns)]) {
+    const candidate = new Map();
+    for (const [reference, label] of cells.entries()) {
+      const country = sipriCountryId(label);
+      const parts = cellParts(reference);
+      if (!country || !parts) continue;
+      const millions = finiteNumber(cells.get(`${yearColumn}${parts.row}`));
+      if (millions === null || millions <= 0) continue;
+      candidate.set(country, millions * 1_000_000);
+    }
+    if (candidate.size > best.size) best = candidate;
+  }
+
+  if (best.size === 0) {
+    throw new Error("SIPRI workbook did not expose comparison-country military expenditure");
+  }
+  return best;
 }
 
 function calculatePerResidentFromPercentGdp(percentGdp, gdpPerResident) {
@@ -208,27 +300,60 @@ async function fetchOecdSeries(url, year, fetchImpl = fetch) {
   return parseOecdCsvSeries(await fetchText(url, fetchImpl), year);
 }
 
+async function fetchOecdOda2025Series(fetchImpl = fetch) {
+  const indexHtml = await fetchText(OECD_ODA_PROFILES_URL, fetchImpl, "text/html");
+  const profiles = discoverOecdOdaProfileUrls(indexHtml, OECD_ODA_PROFILES_URL);
+  const result = new Map();
+
+  await Promise.all(
+    OECD_COMPARABLE_IDS.map(async (country) => {
+      const url = profiles.get(country);
+      if (!url) return;
+      try {
+        const html = await fetchText(url, fetchImpl, "text/html");
+        result.set(country, parseOdaProfile(html, 2025));
+      } catch {
+        // One provider profile must not erase the other independently sourced providers.
+      }
+    })
+  );
+
+  if (result.size === 0) {
+    throw new Error("OECD profiles did not expose preliminary 2025 ODA values");
+  }
+  return result;
+}
+
 async function fetchSipri2025Series(fetchImpl = fetch) {
-  const response = await fetchResponse(SIPRI_MILEX_2025_URL, fetchImpl, "application/pdf");
+  const response = await fetchResponse(
+    SIPRI_MILEX_2025_WORKBOOK_URL,
+    fetchImpl,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  );
   const bytes = await readResponseArrayBuffer(response, {
-    limit: MAX_RESPONSE_BYTES.pdf,
-    label: "SIPRI 2025 military expenditure PDF",
+    limit: MAX_RESPONSE_BYTES.workbook,
+    label: "SIPRI 2025 military expenditure workbook",
   });
-  return parseSipriTop40Text(await extractPdfText(bytes));
+  const cells = await workbookSheetCells(bytes, /current.*us\$/i);
+  return parseSipriCurrentUsdCells(cells, 2025);
 }
 
 export {
   COMPARISON_IDS,
   IMF_DATAMAPPER,
   OECD_COMPARABLE_IDS,
+  OECD_ODA_PROFILES_URL,
   OECD_SDMX,
   SIPRI_MILEX_2025_URL,
+  SIPRI_MILEX_2025_WORKBOOK_URL,
   SOURCE_QUERIES,
   WORLD_BANK_API,
   calculatePerResidentFromPercentGdp,
   calculatePerResidentFromTotal,
+  discoverOecdOdaProfileUrls,
   fetchImfSeries,
   fetchJson,
+  fetchOecdOda2025Series,
   fetchOecdSeries,
   fetchSipri2025Series,
   fetchText,
@@ -236,6 +361,7 @@ export {
   parseImfSeries,
   parseOdaProfile,
   parseOecdCsvSeries,
+  parseSipriCurrentUsdCells,
   parseSipriTop40Text,
   parseWorldBankSeries,
 };
