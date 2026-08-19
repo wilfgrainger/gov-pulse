@@ -23,6 +23,8 @@ const SOURCE_QUERIES = Object.freeze({
   imfInterestPctGdp2024: `${IMF_DATAMAPPER}/ie@FPP/${COUNTRY_PATH}?periods=2024`,
   oecdOda2025: `${OECD_SDMX}/OECD.DCD.FSD,DSD_DAC1@DF_DAC1,1.7/${OECD_COUNTRIES}.1010..1160.USD.V._Z?startPeriod=2025&endPeriod=2025&dimensionAtObservation=AllDimensions`,
   oecdSocx2024: `${OECD_SDMX}/OECD.ELS.SPD,DSD_SOCX_AGG@DF_SOCX_AGG,1.0/${OECD_COUNTRIES}.A..PT_B1GQ.ES10._T._T.?startPeriod=2024&endPeriod=2024&dimensionAtObservation=AllDimensions`,
+  oecdOda2024: `${OECD_SDMX}/OECD.DCD.FSD,DSD_DAC2@DF_DAC2A,/${OECD_COUNTRIES}.DPGC.206.USD.V?startPeriod=2024&endPeriod=2024&dimensionAtObservation=AllDimensions`,
+  oecdSocx2022: `${OECD_SDMX}/OECD.ELS.SPD,DSD_SOCX_AGG@DF_SOCX_AGG,1.0/${OECD_COUNTRIES}.A..PT_B1GQ.ES10._T._T._Z?startPeriod=2022&endPeriod=2022&dimensionAtObservation=AllDimensions`,
   oecdTax2024: `${OECD_SDMX}/OECD.CTP.TPS,DSD_REV_COMP_OECD@DF_RSOECD,/${OECD_COUNTRIES}..S13._T..PT_B1GQ.A?startPeriod=2024&endPeriod=2024&dimensionAtObservation=AllDimensions`,
   worldBankPopulation2024: `${WORLD_BANK_API}/country/${WORLD_BANK_COUNTRIES}/indicator/SP.POP.TOTL?date=2024&format=json&per_page=100`,
   worldBankDefence2024: `${WORLD_BANK_API}/country/${WORLD_BANK_COUNTRIES}/indicator/MS.MIL.XPND.CD?date=2024&format=json&per_page=100`,
