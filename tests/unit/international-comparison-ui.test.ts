@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   comparisonSummary,
@@ -51,6 +52,12 @@ describe("UK in context presentation", () => {
   it("formats amounts as rounded USD per resident without inventing a value", () => {
     expect(formatUsdPerResident(63_299.6)).toMatch(/\$63,300/);
     expect(formatUsdPerResident(null)).toBe("Unavailable");
+  });
+
+  it("uses resident terminology consistently with the comparison unit", () => {
+    const component = fs.readFileSync("app/components/InternationalComparison.tsx", "utf8");
+    expect(component).toContain("per resident");
+    expect(component).not.toContain("per citizen");
   });
 
   it("uses the actual metric denominator and calls ODA countries donors", () => {
