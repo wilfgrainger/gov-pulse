@@ -15,4 +15,4 @@ if (!/<h1[^>]*>[^<]*UK in context[^<]*<\/h1>/i.test(html) && !/UK in context/i.t
   throw new Error(`${url} did not contain the UK in context page identity`);
 }
 
-console.log(`Verified UK in context route: ${url}`);
+console.log(`Verified UK in context production page: ${url}`);
