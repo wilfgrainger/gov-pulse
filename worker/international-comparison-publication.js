@@ -12,7 +12,6 @@ import {
   calculatePerResidentFromPercentGdp,
   calculatePerResidentFromTotal,
   fetchImfSeries,
-  fetchOecdOda2025Series,
   fetchOecdSeries,
   fetchSipri2025Series,
   fetchWorldBankSeries,
@@ -36,7 +35,7 @@ const SOURCES = Object.freeze({
   oecdOda2025: Object.freeze({
     publisher: "OECD",
     url: SOURCE_QUERIES.oecdOda2025,
-    series: "Development Co-operation Profiles: 2025 preliminary ODA, current USD",
+    series: "DAC1: Official Development Assistance (ODA), grant equivalent, 2025 preliminary/current USD",
   }),
   oecdSocx2023: Object.freeze({
     publisher: "OECD",
@@ -257,7 +256,7 @@ async function collectInternationalComparison(fetchImpl = fetch, now = new Date(
     settledMap(() => fetchWorldBankSeries("SP.POP.TOTL", 2025, fetchImpl), "world-bank-population-2025"),
     settledMap(() => fetchImfSeries("GGXWDG_NGDP", 2026, fetchImpl), "imf-debt-2026"),
     settledMap(() => fetchImfSeries("ie", 2024, fetchImpl), "imf-interest-2024"),
-    settledMap(() => fetchOecdOda2025Series(fetchImpl), "oecd-oda-2025"),
+    settledMap(() => fetchOecdSeries(SOURCE_QUERIES.oecdOda2025, 2025, fetchImpl), "oecd-oda-2025"),
     settledMap(() => fetchSipri2025Series(fetchImpl), "sipri-2025"),
     settledMap(() => fetchOecdSeries(SOURCE_QUERIES.oecdSocx2023, 2023, fetchImpl), "oecd-socx-2023"),
     settledMap(() => fetchWorldBankSeries("SH.XPD.CHEX.PC.CD", 2024, fetchImpl), "world-bank-health-2024"),
