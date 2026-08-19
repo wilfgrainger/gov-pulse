@@ -76,4 +76,16 @@ describe("edge evidence hardening", () => {
     expect(webWrangler).toMatch(/global_fetch_strictly_public/);
     expect(webWrangler).toMatch(/public-data\.org\/\*/);
   });
+
+  it("prevents Cloudflare analytics injection without weakening the tracking-free CSP", () => {
+    const nextConfig = fs.readFileSync("next.config.ts", "utf8");
+    const staticHeaders = fs.readFileSync("public/_headers", "utf8");
+    const combined = `${nextConfig}\n${staticHeaders}`;
+
+    expect(nextConfig).toMatch(/no-transform/);
+    expect(staticHeaders).toMatch(/no-transform/);
+    expect(combined).not.toMatch(/cloudflareinsights/i);
+    expect(staticHeaders).toMatch(/connect-src 'self'/);
+    expect(staticHeaders).toMatch(/script-src 'self' 'unsafe-inline'/);
+  });
 });
