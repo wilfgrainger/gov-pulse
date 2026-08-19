@@ -32,6 +32,7 @@ describe("public reader surface", () => {
     expect(edition).not.toContain("Registry ");
     expect(edition).not.toContain("App ");
     expect(edition).not.toContain("Four checks before a number becomes a claim.");
+    expect(edition).not.toContain("Check sources and dates");
   });
 
   it("keeps the sources page about publishers and evidence rather than pipeline operations", () => {
