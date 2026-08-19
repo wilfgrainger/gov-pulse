@@ -11,6 +11,7 @@ export const PUBLIC_SECTION_PATHS = [
   "section/gdp/",
   "section/economy/",
   "section/tax/",
+  "section/uk-in-context/",
   "section/employment/",
   "section/government-contracts/",
   "section/crime-stats/",
@@ -30,6 +31,16 @@ export const PUBLIC_DOWNLOAD_SECTION_IDS = [
   "crimeStatistics",
   "nhsStats",
   "migrationStats",
+];
+
+const INTERNATIONAL_COMPARISON_MEASURE_IDS = [
+  "governmentDebt",
+  "officialDevelopmentAssistance",
+  "defenceSpending",
+  "publicSocialExpenditure",
+  "healthcareSpending",
+  "taxRevenue",
+  "debtInterest",
 ];
 
 export function verifyProductionHtml(html, expectedRevision) {
@@ -86,8 +97,6 @@ export function verifySourcesHtml(html) {
 
 export function verifyGdpHtml(html) {
   const failures = [];
-  // Next.js server rendering may place React hydration comments between text
-  // nodes. Remove those comments before checking the human-readable contract.
   const normalizedHtml = html.replace(/<!--[\s\S]*?-->/g, "");
 
   if (/Current GDP estimate unavailable/i.test(normalizedHtml)) {
@@ -182,6 +191,44 @@ export function verifySnapshotJson(text) {
   }
 }
 
+export function verifyInternationalComparisonJson(text) {
+  try {
+    const payload = JSON.parse(text);
+    const failures = [];
+    if (payload?.meta?.schemaVersion !== 1) {
+      failures.push("international comparison schema version was not found");
+    }
+    if (payload?.meta?.comparisonSetId !== "uk-context-13-v1") {
+      failures.push("international comparison set identity was not found");
+    }
+    if (!payload?.measures || typeof payload.measures !== "object") {
+      failures.push("international comparison measures were not found");
+      return failures;
+    }
+
+    for (const id of INTERNATIONAL_COMPARISON_MEASURE_IDS) {
+      const measure = payload.measures[id];
+      if (!measure || typeof measure !== "object") {
+        failures.push(`international comparison is missing measure ${id}`);
+        continue;
+      }
+      if (!Array.isArray(measure.countries)) {
+        failures.push(`international comparison measure ${id} has no country observations`);
+        continue;
+      }
+      if (!measure.countries.some((observation) => observation?.country === "GBR")) {
+        failures.push(`international comparison measure ${id} has no UK observation`);
+      }
+      if (!Number.isInteger(measure.comparableCountryCount) || measure.comparableCountryCount < 0) {
+        failures.push(`international comparison measure ${id} has an invalid comparable-country count`);
+      }
+    }
+    return failures;
+  } catch {
+    return ["international comparison returned invalid JSON"];
+  }
+}
+
 export function verifyDownload(text, section, extension) {
   if (!text.trim()) return [`${section}.${extension} download was empty`];
   if (extension !== "json") return [];
@@ -198,6 +245,9 @@ export function verifySitemapXml(xml) {
   if (!/<urlset\b/i.test(xml)) failures.push("sitemap urlset was not found");
   if (!/https:\/\/public-data\.org\/section\/gdp\//i.test(xml)) {
     failures.push("GDP route was not found in sitemap");
+  }
+  if (!/https:\/\/public-data\.org\/section\/uk-in-context\//i.test(xml)) {
+    failures.push("UK in context route was not found in sitemap");
   }
   if (!/https:\/\/public-data\.org\/sources\//i.test(xml)) {
     failures.push("sources route was not found in sitemap");
@@ -241,6 +291,10 @@ export async function verifyProduction({
   const gdpUrl = new URL("section/gdp/", rootUrl).toString();
   const healthUrl = new URL("data/health.json", rootUrl).toString();
   const snapshotUrl = new URL("data/metrics-snapshot.json", rootUrl).toString();
+  const internationalComparisonUrl = new URL(
+    "data/international-comparison.json",
+    rootUrl,
+  ).toString();
   const sitemapUrl = new URL("sitemap.xml", rootUrl).toString();
   const robotsUrl = new URL("robots.txt", rootUrl).toString();
   const feedUrl = new URL("feed.xml", rootUrl).toString();
@@ -258,19 +312,27 @@ export async function verifyProduction({
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
-      const [homeHtml, sourcesHtml, gdpHtml, healthJson, snapshotJson, ...remaining] =
-        await Promise.all([
-          fetchText(rootUrl, fetchImpl),
-          fetchText(sourcesUrl, fetchImpl),
-          fetchText(gdpUrl, fetchImpl),
-          fetchText(healthUrl, fetchImpl),
-          fetchText(snapshotUrl, fetchImpl),
-          ...sectionUrls.map(({ url }) => fetchText(url, fetchImpl)),
-          ...downloadUrls.map(({ url }) => fetchText(url, fetchImpl)),
-          fetchText(sitemapUrl, fetchImpl),
-          fetchText(robotsUrl, fetchImpl),
-          fetchText(feedUrl, fetchImpl),
-        ]);
+      const [
+        homeHtml,
+        sourcesHtml,
+        gdpHtml,
+        healthJson,
+        snapshotJson,
+        internationalComparisonJson,
+        ...remaining
+      ] = await Promise.all([
+        fetchText(rootUrl, fetchImpl),
+        fetchText(sourcesUrl, fetchImpl),
+        fetchText(gdpUrl, fetchImpl),
+        fetchText(healthUrl, fetchImpl),
+        fetchText(snapshotUrl, fetchImpl),
+        fetchText(internationalComparisonUrl, fetchImpl),
+        ...sectionUrls.map(({ url }) => fetchText(url, fetchImpl)),
+        ...downloadUrls.map(({ url }) => fetchText(url, fetchImpl)),
+        fetchText(sitemapUrl, fetchImpl),
+        fetchText(robotsUrl, fetchImpl),
+        fetchText(feedUrl, fetchImpl),
+      ]);
       const sectionHtml = remaining.slice(0, sectionUrls.length);
       const downloadText = remaining.slice(
         sectionUrls.length,
@@ -285,6 +347,7 @@ export async function verifyProduction({
         ...verifyGdpHtml(gdpHtml),
         ...verifyHealthJson(healthJson),
         ...verifySnapshotJson(snapshotJson),
+        ...verifyInternationalComparisonJson(internationalComparisonJson),
         ...sectionUrls.flatMap(({ path }, index) => verifySectionHtml(sectionHtml[index], path)),
         ...downloadUrls.flatMap(({ section, extension }, index) =>
           verifyDownload(downloadText[index], section, extension),
@@ -296,7 +359,7 @@ export async function verifyProduction({
 
       if (failures.length === 0) {
         log.info(
-          `Verified ${rootUrl} serves revision ${expectedRevision}, ready public data, required snapshot sections, all public section routes, server-rendered GDP evidence, discovery metadata, sitemap, robots and RSS.`,
+          `Verified ${rootUrl} serves revision ${expectedRevision}, ready public data, the international comparison publication, all public section routes including UK in context, server-rendered GDP evidence, discovery metadata, sitemap, robots and RSS.`,
         );
         return;
       }

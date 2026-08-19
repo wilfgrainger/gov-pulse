@@ -5,6 +5,7 @@ import {
   verifyHealthJson,
   verifyEvidenceFeed,
   verifyGdpHtml,
+  verifyInternationalComparisonJson,
   verifyProduction,
   verifyProductionHtml,
   verifyRobotsTxt,
@@ -19,7 +20,7 @@ const revision = "abc123";
 const validHtml = `<!doctype html><html><head><title>public-data.org — UK Public Evidence</title><meta name="public-data-revision" content="${revision}"><link rel="canonical" href="https://public-data.org/"></head><body><script type="application/ld+json">{"@type":"WebSite"}</script><h1>public-data.org</h1><a href = "https://www.ons.gov.uk">ONS</a></body></html>`;
 const validSourcesHtml = `<!doctype html><html><head><link rel="canonical" href="https://public-data.org/sources/"></head><body><main data-production-route="sources"><section data-production-marker="current-publications"></section><section data-production-marker="evidence-gaps"></section></main></body></html>`;
 const validGdpHtml = `<!doctype html><html><head><title>UK GDP growth | public-data.org</title><link rel="canonical" href="https://public-data.org/section/gdp/"><link rel="alternate" type="application/rss+xml" href="https://public-data.org/feed.xml"></head><body><script type="application/ld+json">{"@type":"Dataset"}</script><p>Latest ONS monthly estimate</p><h1>UK GDP grew in May 2026 by 0.1%.</h1><p>Published 16 July 2026. Monthly GDP is an early estimate and can be revised.</p></body></html>`;
-const validSitemap = `<?xml version="1.0"?><urlset><url><loc>https://public-data.org/sources/</loc></url><url><loc>https://public-data.org/section/gdp/</loc></url></urlset>`;
+const validSitemap = `<?xml version="1.0"?><urlset><url><loc>https://public-data.org/sources/</loc></url><url><loc>https://public-data.org/section/gdp/</loc></url><url><loc>https://public-data.org/section/uk-in-context/</loc></url></urlset>`;
 const validRobots = `User-Agent: *\nAllow: /\nSitemap: https://public-data.org/sitemap.xml\n`;
 const validFeed = `<?xml version="1.0"?><rss><channel><title>public-data.org — latest verified evidence</title><item><link>https://public-data.org/section/gdp/</link></item></channel></rss>`;
 
@@ -40,6 +41,37 @@ const validSnapshot = JSON.stringify({
     sources: Object.fromEntries(requiredSections.map((section) => [section, { status: "ok" }])),
   },
   ...Object.fromEntries(requiredSections.map((section) => [section, {}])),
+});
+const comparisonMeasureIds = [
+  "governmentDebt",
+  "officialDevelopmentAssistance",
+  "defenceSpending",
+  "publicSocialExpenditure",
+  "healthcareSpending",
+  "taxRevenue",
+  "debtInterest",
+];
+const validInternationalComparison = JSON.stringify({
+  meta: {
+    schemaVersion: 1,
+    generatedAt: "2026-08-19T09:00:00.000Z",
+    checkedAt: "2026-08-19T09:00:00.000Z",
+    comparisonSetId: "uk-context-13-v1",
+    countries: ["GBR", "USA"],
+  },
+  measures: Object.fromEntries(
+    comparisonMeasureIds.map((id) => [
+      id,
+      {
+        id,
+        comparableCountryCount: 2,
+        countries: [
+          { country: "GBR", value: 1000, rank: 1 },
+          { country: "USA", value: 900, rank: 2 },
+        ],
+      },
+    ]),
+  ),
 });
 
 function validSectionHtml(path) {
@@ -63,6 +95,7 @@ function validResponses(home = validHtml) {
     validGdpHtml,
     validHealth,
     validSnapshot,
+    validInternationalComparison,
     ...PUBLIC_SECTION_PATHS.map(validSectionHtml),
     ...PUBLIC_DOWNLOAD_SECTION_IDS.flatMap((section) =>
       ["json", "csv"].map((extension) => validDownload(section, extension)),
@@ -102,12 +135,29 @@ describe("production deployment verifier", () => {
     expect(verifyEvidenceFeed(validFeed)).toEqual([]);
   });
 
-  it("accepts ready health, complete snapshot, and section route contracts", () => {
+  it("requires UK in context in the public route and sitemap contracts", () => {
+    expect(PUBLIC_SECTION_PATHS).toContain("section/uk-in-context/");
+    expect(verifySitemapXml(validSitemap)).toEqual([]);
+    expect(verifySitemapXml(validSitemap.replace("<url><loc>https://public-data.org/section/uk-in-context/</loc></url>", ""))).toContain(
+      "UK in context route was not found in sitemap",
+    );
+  });
+
+  it("accepts ready health, complete national snapshot, international comparison and section routes", () => {
     expect(verifyHealthJson(validHealth)).toEqual([]);
     expect(verifySnapshotJson(validSnapshot)).toEqual([]);
-    expect(verifySectionHtml(validSectionHtml("section/early-years/"), "section/early-years/")).toEqual([]);
+    expect(verifyInternationalComparisonJson(validInternationalComparison)).toEqual([]);
+    expect(verifySectionHtml(validSectionHtml("section/uk-in-context/"), "section/uk-in-context/")).toEqual([]);
     expect(verifyDownload(validDownload("gdpTracker", "json"), "gdpTracker", "json")).toEqual([]);
     expect(verifyDownload(validDownload("gdpTracker", "csv"), "gdpTracker", "csv")).toEqual([]);
+  });
+
+  it("rejects an incomplete international comparison publication", () => {
+    const payload = JSON.parse(validInternationalComparison);
+    delete payload.measures.debtInterest;
+    expect(verifyInternationalComparisonJson(JSON.stringify(payload))).toContain(
+      "international comparison is missing measure debtInterest",
+    );
   });
 
   it("reports every missing homepage integrity marker", () => {
@@ -149,6 +199,7 @@ describe("production deployment verifier", () => {
     expect(verifySitemapXml("<xml></xml>")).toEqual([
       "sitemap urlset was not found",
       "GDP route was not found in sitemap",
+      "UK in context route was not found in sitemap",
       "sources route was not found in sitemap",
     ]);
     expect(verifyRobotsTxt("")).toEqual([
@@ -163,7 +214,7 @@ describe("production deployment verifier", () => {
     ]);
   });
 
-  it("verifies pages and discovery surfaces with bounded requests", async () => {
+  it("verifies pages, comparison data and discovery surfaces with bounded requests", async () => {
     const fetchImpl = vi.fn();
     for (const response of validResponses()) fetchImpl.mockResolvedValueOnce(response);
     const log = { info: vi.fn(), warn: vi.fn() };
@@ -206,21 +257,26 @@ describe("production deployment verifier", () => {
     );
     expect(fetchImpl).toHaveBeenNthCalledWith(
       6,
+      "https://example.test/gov-metrics/data/international-comparison.json",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      7,
       "https://example.test/gov-metrics/section/pm-approval/",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     expect(fetchImpl).toHaveBeenNthCalledWith(
-      41,
+      43,
       "https://example.test/gov-metrics/sitemap.xml",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     expect(fetchImpl).toHaveBeenNthCalledWith(
-      42,
+      44,
       "https://example.test/gov-metrics/robots.txt",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     expect(fetchImpl).toHaveBeenNthCalledWith(
-      43,
+      45,
       "https://example.test/gov-metrics/feed.xml",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
@@ -247,7 +303,7 @@ describe("production deployment verifier", () => {
     ).resolves.toBeUndefined();
 
     expect(fetchImpl).toHaveBeenCalledTimes(
-      (PUBLIC_SECTION_PATHS.length + PUBLIC_DOWNLOAD_SECTION_IDS.length * 2 + 8) * 2,
+      (PUBLIC_SECTION_PATHS.length + PUBLIC_DOWNLOAD_SECTION_IDS.length * 2 + 9) * 2,
     );
     expect(log.warn).toHaveBeenCalledOnce();
     expect(log.info).toHaveBeenCalledOnce();
