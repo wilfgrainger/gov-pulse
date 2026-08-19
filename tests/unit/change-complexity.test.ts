@@ -49,8 +49,8 @@ describe("change complexity budget", () => {
     expect(assessment.violations).toEqual([]);
   });
 
-  it("classifies dependency and handoff paths explicitly", () => {
+  it("classifies dependency and agent-skill paths explicitly", () => {
     expect(concernForPath("package-lock.json")).toBe("dependencies");
-    expect(concernForPath(".agents/PROGRESS.md")).toBe("governance");
+    expect(concernForPath(".agents/skills/cave-pony/SKILL.md")).toBe("governance");
   });
 });

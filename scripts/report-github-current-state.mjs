@@ -4,31 +4,12 @@ import process from "node:process";
 
 const repository = process.env.GITHUB_REPOSITORY ?? "wilfgrainger/gov-pulse";
 const token = process.env.GITHUB_TOKEN ?? "";
-const progressPath = ".agents/PROGRESS.md";
-const forbiddenStaticClaims = [
-  /Active product PR:/i,
-  /Open pull requests:/i,
-  /Open product issues:/i,
-  /only open PR/i,
-];
 
 function localSha() {
   try {
     return execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   } catch {
     return "unknown";
-  }
-}
-
-function validateProgress() {
-  const progress = fs.readFileSync(progressPath, "utf8");
-  const violations = forbiddenStaticClaims.filter((pattern) => pattern.test(progress));
-  if (violations.length > 0) {
-    console.error(
-      `${progressPath} contains manually maintained live PR/issue claims. ` +
-        "Use this report instead of storing volatile GitHub state in durable history."
-    );
-    process.exit(1);
   }
 }
 
@@ -108,7 +89,6 @@ async function render() {
   }
 }
 
-validateProgress();
 const report = await render();
 console.log(report);
 if (process.env.GITHUB_STEP_SUMMARY) {

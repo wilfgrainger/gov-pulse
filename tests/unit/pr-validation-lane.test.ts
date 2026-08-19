@@ -6,7 +6,7 @@ import {
 
 describe("PR validation lanes", () => {
   it("uses the lightweight lane only when every path is durable documentation", () => {
-    expect(validationLane(["README.md", "docs/architecture/example.md", ".agents/PROGRESS.md"])).toBe(
+    expect(validationLane(["README.md", "docs/architecture/example.md"])).toBe(
       "docs"
     );
   });
