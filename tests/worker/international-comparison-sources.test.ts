@@ -51,12 +51,22 @@ describe("international comparison source transforms", () => {
     expect(series.get("CHN")).toBeNull();
   });
 
-  it("maps SIPRI 2025 top-40 dollar amounts to the named countries", () => {
-    const text = "$954 b. $336 b. $190 b. $114 b. $89.0 b. $8.4 b. 1. United States 2. China 3. Russia 4. Germany 5. United Kingdom 6. Switzerland";
+  it("maps SIPRI 2025 published top-40 rows to the named countries", () => {
+    const text = [
+      "1 1 United States 954 997 3.4 37 3.2",
+      "2 2 China [336] 314 7.0 13 1.7",
+      "3 3 Russia [190] 149 27 7.3 6.3",
+      "4 4 Germany 114 88.5 29 4.4 3.5",
+      "5 5 United Kingdom 89.0 81.8 8.8 3.4 2.4",
+      "6 6 Ukraine [84.1] 64.7 30 3.3 31",
+      "18 18 Türkiye 30.0 25.0 20 1.2 1.9",
+      "19 19 Netherlands 28.9 25.2 15 1.1 2.2",
+      "37 37 Switzerland 7.6 8.1 -6.2 0.3 0.7",
+    ].join(" ");
     const series = parseSipriTop40Text(text);
     expect(series.get("USA")).toBe(954_000_000_000);
     expect(series.get("GBR")).toBe(89_000_000_000);
-    expect(series.get("CHE")).toBe(8_400_000_000);
+    expect(series.get("CHE")).toBe(7_600_000_000);
   });
 
   it("extracts preliminary OECD ODA totals without assigning non-donors a zero", () => {
