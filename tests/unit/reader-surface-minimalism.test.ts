@@ -21,6 +21,7 @@ describe("public reader surface", () => {
 
     expect(intro).toContain("Britain,");
     expect(intro).toContain("latest important public figures");
+    expect(intro).toContain("Check sources and dates");
     expect(intro).not.toContain("Number, period, source.");
     expect(intro).not.toContain("Evidence promises");
 
