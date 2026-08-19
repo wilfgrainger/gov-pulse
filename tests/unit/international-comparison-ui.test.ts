@@ -46,6 +46,7 @@ function measure(
   };
 }
 
+// These assertions protect the reader-facing interpretation, not a hardcoded UK rank.
 describe("UK in context presentation", () => {
   it("formats amounts as rounded USD per resident without inventing a value", () => {
     expect(formatUsdPerResident(63_299.6)).toMatch(/\$63,300/);
