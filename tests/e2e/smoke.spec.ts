@@ -194,7 +194,7 @@ test("all section pages render cleanly without global feed telemetry", async ({ 
     await expect(page.locator("main")).toBeVisible();
     await assertNoGlobalFeedTelemetry(page);
     if (path === "/section/uk-in-context") {
-      await expect(page.getByRole("heading", { name: /What does Britain spend and owe per citizen/i })).toBeVisible();
+      await expect(page.getByRole("heading", { name: /What does Britain spend and owe per resident/i })).toBeVisible();
       await expect(page.getByRole("row", { name: /Government debt outstanding/i })).toBeVisible();
       await expect(page.getByRole("row", { name: /Debt interest/i })).toBeVisible();
     }
