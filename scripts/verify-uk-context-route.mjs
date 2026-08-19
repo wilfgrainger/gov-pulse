@@ -1,3 +1,4 @@
+// Focused production smoke test used during route-recovery incidents.
 const url = process.argv[2] ?? "https://public-data.org/section/uk-in-context/";
 
 const response = await fetch(url, {
