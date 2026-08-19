@@ -209,7 +209,7 @@ export default async function InternationalComparison() {
       <div className="max-w-4xl">
         <p className="eyebrow">Selected 13-country comparison set</p>
         <h2 className="mt-2 text-3xl font-semibold tracking-tight text-[#172234]">
-          What does Britain spend and owe per citizen?
+          What does Britain spend and owe per resident?
         </h2>
         <p className="mt-4 text-base leading-7 text-gray-700">
           Seven separate measures put the UK beside the United States, China, Russia, Ukraine and eight large European economies. Each row keeps its own definition, year and comparable-country denominator. The figures are not added together into an overall score.
@@ -233,7 +233,7 @@ export default async function InternationalComparison() {
             <thead>
               <tr className="text-left text-xs uppercase tracking-[0.08em] text-gray-600">
                 <th scope="col" className="py-3 pr-4">Measure</th>
-                <th scope="col" className="px-2 py-3">UK per citizen</th>
+                <th scope="col" className="px-2 py-3">UK per resident</th>
                 <th scope="col" className="px-2 py-3">UK rank</th>
                 <th scope="col" className="px-2 py-3">Comparison</th>
                 <th scope="col" className="px-2 py-3">Year</th>
