@@ -76,6 +76,24 @@ export const SOURCE_GROUPS = [
     ],
   },
   {
+    category: "International comparisons",
+    kind: "current",
+    entries: [
+      {
+        name: "UK in context comparison sources",
+        use: "Cross-country per-resident comparisons for debt, official development assistance, defence, public social expenditure, total health spending, tax revenue and debt interest. Each measure keeps its own observation year, evidence classification and real comparison denominator.",
+        cadence: "Checked weekly; missing publisher coverage remains unavailable",
+        publishers: [
+          { name: "IMF DataMapper", url: "https://www.imf.org/external/datamapper/" },
+          { name: "OECD Data Explorer", url: "https://data-explorer.oecd.org/" },
+          { name: "SIPRI Military Expenditure Database", url: "https://www.sipri.org/databases/milex" },
+          { name: "WHO Global Health Expenditure Database", url: "https://apps.who.int/nha/database" },
+          { name: "World Bank World Development Indicators", url: "https://data.worldbank.org/" },
+        ],
+      },
+    ],
+  },
+  {
     category: "Evidence gaps",
     kind: "gap",
     entries: [
