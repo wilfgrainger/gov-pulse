@@ -115,11 +115,54 @@ jobs:
           command -v google-chrome
           google-chrome --version
 
-      - name: Run deterministic browser tests
+      - name: Inspect live production evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          const base = 'https://public-data.org';
+          for (const path of ['/data/health.json', '/data/metrics-snapshot.json', '/data/international-comparison.json']) {
+            const response = await fetch(`${base}${path}`, { headers: { accept: 'application/json' } });
+            const text = await response.text();
+            console.log(`LIVE ${path} STATUS ${response.status}`);
+            try {
+              const json = JSON.parse(text);
+              if (path.endsWith('health.json')) console.log(JSON.stringify(json, null, 2));
+              else if (path.endsWith('metrics-snapshot.json')) console.log(JSON.stringify({ meta: json.meta, sections: Object.keys(json).filter((key) => key !== 'meta') }, null, 2));
+              else {
+                const uk = json.countries?.find?.((country) => country.code === 'GBR' || country.id === 'GBR' || country.name === 'United Kingdom');
+                console.log(JSON.stringify({ meta: json.meta, uk, metricIds: json.metrics?.map?.((metric) => metric.id) }, null, 2));
+              }
+            } catch {
+              console.log(text.slice(0, 1200));
+            }
+          }
+          NODE
+
+      - name: Run deterministic browser tests against live production
         env:
           CI: "true"
-          PLAYWRIGHT_PORT: "4173"
+          PLAYWRIGHT_BASE_URL: "https://public-data.org"
         run: npm run test:e2e
+
+      - name: Print live UK in context scorecard
+        env:
+          CI: "true"
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from '@playwright/test';
+          const browser = await chromium.launch({ channel: 'chrome', headless: true });
+          const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+          const response = await page.goto('https://public-data.org/section/uk-in-context', { waitUntil: 'networkidle', timeout: 60000 });
+          console.log(`UK_CONTEXT_STATUS=${response?.status()}`);
+          console.log(`UK_CONTEXT_TITLE=${await page.title()}`);
+          console.log(`UK_CONTEXT_H1=${JSON.stringify(await page.locator('h1').allTextContents())}`);
+          console.log('UK_CONTEXT_ROWS');
+          for (const row of await page.locator('table tbody tr').allTextContents()) console.log(row.replace(/\s+/g, ' ').trim());
+          console.log('UK_CONTEXT_TEXT_PREFIX');
+          console.log((await page.locator('main').innerText()).replace(/\s+/g, ' ').slice(0, 7000));
+          await browser.close();
+          NODE
 
   quality:
     if: always()
