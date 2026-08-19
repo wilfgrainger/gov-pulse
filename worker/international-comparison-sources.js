@@ -182,7 +182,7 @@ function parseOdaProfile(html, year) {
   const patterns = [
     new RegExp(`provided\\s+USD\\s+([\\d.,]+)\\s+billion[^.]{0,180}ODA[^.]{0,180}(?:in\\s+)?${year}`, "i"),
     new RegExp(`(?:total\\s+)?official development assistance\\s*\\(ODA\\)[^.]{0,180}USD\\s+([\\d.,]+)\\s+billion[^.]{0,180}${year}`, "i"),
-    new RegExp(`(?:total\\s+)?ODA\\s*\\(\\s*USD\\s+([\\d.,]+)\\s+billion[^)]*\\)[^.]{0,200}${year}`, "i"),
+    new RegExp(`(?:total\\s+)?ODA\\s*\\(\\s*USD\\s+([\\d.,]+)\\s+billion[^)]*\\).{0,200}?${year}`, "i"),
   ];
   for (const expression of patterns) {
     const match = text.match(expression);
