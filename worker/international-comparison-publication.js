@@ -22,10 +22,10 @@ const OECD_IDS = new Set(OECD_COMPARABLE_IDS);
 const DESCRIPTORS = new Map(COMPARISON_MEASURES.map((measure) => [measure.id, measure]));
 
 const SOURCES = Object.freeze({
-  imfWEO2024: Object.freeze({
+  imfWEO2026: Object.freeze({
     publisher: "International Monetary Fund",
-    url: SOURCE_QUERIES.imfGdpPerCapita2024,
-    series: "World Economic Outlook April 2026: NGDPDPC and GGXWDG_NGDP",
+    url: SOURCE_QUERIES.imfDebtPctGdp2026,
+    series: "World Economic Outlook April 2026: 2026 NGDPDPC and GGXWDG_NGDP projections",
   }),
   imfInterest2024: Object.freeze({
     publisher: "International Monetary Fund",
@@ -37,10 +37,10 @@ const SOURCES = Object.freeze({
     url: SOURCE_QUERIES.oecdOda2025,
     series: "DAC1: ODA grant equivalent, current USD (2025 preliminary)",
   }),
-  oecdSocx2024: Object.freeze({
+  oecdSocx2023: Object.freeze({
     publisher: "OECD",
-    url: SOURCE_QUERIES.oecdSocx2024,
-    series: "SOCX: public social expenditure, % GDP (2024 estimate)",
+    url: SOURCE_QUERIES.oecdSocx2023,
+    series: "SOCX: public social expenditure, % GDP (2023 common comparable year)",
   }),
   oecdTax2024: Object.freeze({
     publisher: "OECD",
@@ -61,13 +61,15 @@ const SOURCES = Object.freeze({
 
 function comparisonSourceBundle(values = {}) {
   return {
+    gdpPerCapita2023: values.gdpPerCapita2023 ?? null,
     gdpPerCapita2024: values.gdpPerCapita2024 ?? null,
+    gdpPerCapita2026: values.gdpPerCapita2026 ?? null,
     population2025: values.population2025 ?? null,
-    debtPctGdp2024: values.debtPctGdp2024 ?? null,
+    debtPctGdp2026: values.debtPctGdp2026 ?? null,
     interestPctGdp2024: values.interestPctGdp2024 ?? null,
     odaUsd2025: values.odaUsd2025 ?? null,
     defenceUsd2025: values.defenceUsd2025 ?? null,
-    socialPctGdp2024: values.socialPctGdp2024 ?? null,
+    socialPctGdp2023: values.socialPctGdp2023 ?? null,
     healthPerCapita2024: values.healthPerCapita2024 ?? null,
     taxPctGdp2024: values.taxPctGdp2024 ?? null,
   };
@@ -151,16 +153,18 @@ function measure(id, year, observations) {
 
 function buildInternationalComparisonPublication(bundle, now = new Date()) {
   const oecdCoverage = (country) => OECD_IDS.has(country);
+  const gdp2023 = bundle.gdpPerCapita2023;
   const gdp2024 = bundle.gdpPerCapita2024;
+  const gdp2026 = bundle.gdpPerCapita2026;
   const population2025 = bundle.population2025;
 
   const measures = {
     governmentDebt: measure(
       "governmentDebt",
-      2024,
-      bundle.debtPctGdp2024 instanceof Map && gdp2024 instanceof Map
-        ? percentGdpObservations(bundle.debtPctGdp2024, gdp2024, 2024, SOURCES.imfWEO2024)
-        : sourceUnavailableObservations(2024)
+      2026,
+      bundle.debtPctGdp2026 instanceof Map && gdp2026 instanceof Map
+        ? percentGdpObservations(bundle.debtPctGdp2026, gdp2026, 2026, SOURCES.imfWEO2026, () => true, "publisher-reported-no-value", "projection")
+        : sourceUnavailableObservations(2026, () => true, "publisher-reported-no-value", "projection")
     ),
     officialDevelopmentAssistance: measure(
       "officialDevelopmentAssistance",
@@ -178,10 +182,10 @@ function buildInternationalComparisonPublication(bundle, now = new Date()) {
     ),
     publicSocialExpenditure: measure(
       "publicSocialExpenditure",
-      2024,
-      bundle.socialPctGdp2024 instanceof Map && gdp2024 instanceof Map
-        ? percentGdpObservations(bundle.socialPctGdp2024, gdp2024, 2024, SOURCES.oecdSocx2024, oecdCoverage, "not-covered-by-oecd-comparable-series", "estimate")
-        : sourceUnavailableObservations(2024, oecdCoverage, "not-covered-by-oecd-comparable-series", "estimate")
+      2023,
+      bundle.socialPctGdp2023 instanceof Map && gdp2023 instanceof Map
+        ? percentGdpObservations(bundle.socialPctGdp2023, gdp2023, 2023, SOURCES.oecdSocx2023, oecdCoverage, "not-covered-by-oecd-comparable-series")
+        : sourceUnavailableObservations(2023, oecdCoverage, "not-covered-by-oecd-comparable-series")
     ),
     healthcareSpending: measure(
       "healthcareSpending",
@@ -230,36 +234,42 @@ async function settledMap(factory) {
 
 async function collectInternationalComparison(fetchImpl = fetch, now = new Date()) {
   const [
+    gdpPerCapita2023,
     gdpPerCapita2024,
+    gdpPerCapita2026,
     population2025,
-    debtPctGdp2024,
+    debtPctGdp2026,
     interestPctGdp2024,
     odaUsd2025,
     defenceUsd2025,
-    socialPctGdp2024,
+    socialPctGdp2023,
     healthPerCapita2024,
     taxPctGdp2024,
   ] = await Promise.all([
+    settledMap(() => fetchImfSeries("NGDPDPC", 2023, fetchImpl)),
     settledMap(() => fetchImfSeries("NGDPDPC", 2024, fetchImpl)),
+    settledMap(() => fetchImfSeries("NGDPDPC", 2026, fetchImpl)),
     settledMap(() => fetchWorldBankSeries("SP.POP.TOTL", 2025, fetchImpl)),
-    settledMap(() => fetchImfSeries("GGXWDG_NGDP", 2024, fetchImpl)),
+    settledMap(() => fetchImfSeries("GGXWDG_NGDP", 2026, fetchImpl)),
     settledMap(() => fetchImfSeries("ie@FPP", 2024, fetchImpl)),
     settledMap(() => fetchOecdSeries(SOURCE_QUERIES.oecdOda2025, 2025, fetchImpl)),
     settledMap(() => fetchSipri2025Series(fetchImpl)),
-    settledMap(() => fetchOecdSeries(SOURCE_QUERIES.oecdSocx2024, 2024, fetchImpl)),
+    settledMap(() => fetchOecdSeries(SOURCE_QUERIES.oecdSocx2023, 2023, fetchImpl)),
     settledMap(() => fetchWorldBankSeries("SH.XPD.CHEX.PC.CD", 2024, fetchImpl)),
     settledMap(() => fetchOecdSeries(SOURCE_QUERIES.oecdTax2024, 2024, fetchImpl)),
   ]);
 
   return buildInternationalComparisonPublication(
     comparisonSourceBundle({
+      gdpPerCapita2023,
       gdpPerCapita2024,
+      gdpPerCapita2026,
       population2025,
-      debtPctGdp2024,
+      debtPctGdp2026,
       interestPctGdp2024,
       odaUsd2025,
       defenceUsd2025,
-      socialPctGdp2024,
+      socialPctGdp2023,
       healthPerCapita2024,
       taxPctGdp2024,
     }),
