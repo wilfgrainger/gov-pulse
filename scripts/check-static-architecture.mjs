@@ -10,6 +10,10 @@ const EXPECTED_DATA_ROUTES = Object.freeze([
     zone_name: "public-data.org",
   }),
   Object.freeze({
+    pattern: "public-data.org/data/international-comparison.json",
+    zone_name: "public-data.org",
+  }),
+  Object.freeze({
     pattern: "public-data.org/data/metrics-snapshot.json",
     zone_name: "public-data.org",
   }),
@@ -93,7 +97,7 @@ export function unsupportedWorkerIngress(config) {
   const expectedSignatures = EXPECTED_DATA_ROUTES.map(routeSignature).sort();
   if (actualSignatures.join("\n") !== expectedSignatures.join("\n")) {
     findings.push(
-      "public Worker routes must be the exact snapshot and health paths"
+      "public data Worker routes must be the exact snapshot, health and international-comparison paths"
     );
   }
   return findings;
@@ -104,7 +108,7 @@ export function main(projectRoot = process.cwd()) {
   const appRoutes = unsupportedAppRoutes(projectRoot);
   if (appRoutes.length > 0) {
     findings.push(
-      "Static frontend architecture does not support App Router API routes:",
+      "The Next application must not create duplicate App Router data APIs:",
       ...appRoutes.map((route) => `- ${route}`)
     );
   }
@@ -118,7 +122,7 @@ export function main(projectRoot = process.cwd()) {
     );
     if (workerIngress.length > 0) {
       findings.push(
-        "The Cloudflare Worker may expose only snapshot and health routes:",
+        "The Cloudflare data Worker may expose only the approved evidence contracts:",
         ...workerIngress.map((entry) => `- ${entry}`)
       );
     }
@@ -127,14 +131,14 @@ export function main(projectRoot = process.cwd()) {
   if (findings.length > 0) {
     console.error(`${findings.join("\n")}\n`);
     console.error(
-      "Keep Cloudflare Pages static and route only the exact snapshot and health paths to the Worker."
+      "Keep normal application routes on the web Worker and route only the three exact public data contracts to the data Worker."
     );
     process.exitCode = 1;
     return false;
   }
 
   console.log(
-    "Architecture check passed: static Pages frontend and two exact Cloudflare data routes."
+    "Architecture check passed: OpenNext web Worker plus three exact Cloudflare data routes, with Pages retained only as bounded seed fallback."
   );
   return true;
 }

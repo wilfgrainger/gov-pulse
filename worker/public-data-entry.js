@@ -1,4 +1,4 @@
-import queuedWorker from "./queued-publication-entry.js";
+import queuedWorker, { DAILY_CRON } from "./queued-publication-entry.js";
 import { isSnapshot, readCurrentPublication } from "./publication-entry.js";
 import {
   FEED_REGISTRY_VERSION,
@@ -9,14 +9,21 @@ import {
   PUBLIC_SNAPSHOT_KEY,
   publicSnapshot,
 } from "./public-snapshot.js";
+import {
+  readInternationalComparison,
+  refreshInternationalComparison,
+} from "./international-comparison-store.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
 
 const SNAPSHOT_PATH = "/data/metrics-snapshot.json";
 const HEALTH_PATH = "/data/health.json";
+const COMPARISON_PATH = "/data/international-comparison.json";
 const DEFAULT_SEED_URL =
   "https://public-data-org.pages.dev/data/metrics-snapshot.json";
 const PUBLIC_CACHE_CONTROL =
   "public, max-age=300, s-maxage=300, stale-while-revalidate=3600";
+const COMPARISON_CACHE_CONTROL =
+  "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400";
 
 function requiredMissingFrom(snapshot) {
   if (!snapshot?.meta?.sources || typeof snapshot.meta.sources !== "object") {
@@ -71,8 +78,6 @@ function isCompleteSnapshot(snapshot) {
     );
   }
 
-  // Backward compatibility for a complete pre-state snapshot. Missing required
-  // evidence never qualifies without an explicit degraded manifest.
   return missingRequiredSections.length === 0;
 }
 
@@ -257,6 +262,20 @@ async function snapshotResponse(request, env) {
   });
 }
 
+async function comparisonResponse(request, env) {
+  const publication = await readInternationalComparison(env);
+  if (!publication) {
+    return json(
+      { error: "Verified international comparison data is temporarily unavailable" },
+      { status: 503, head: request.method === "HEAD" }
+    );
+  }
+  return json(publication, {
+    head: request.method === "HEAD",
+    cacheControl: COMPARISON_CACHE_CONTROL,
+  });
+}
+
 async function healthResponse(request, env) {
   if (!env?.METRICS_CACHE?.getWithMetadata) {
     return json(
@@ -265,9 +284,6 @@ async function healthResponse(request, env) {
     );
   }
 
-  // Readiness is deliberately stricter than data delivery. Migration and Pages
-  // fallbacks can keep readers supplied, but only a valid prepared KV artifact
-  // proves the current publication pipeline is ready.
   const prepared = await readPreparedPublicArtifact(env);
   if (!prepared) {
     return json(
@@ -308,7 +324,7 @@ async function healthResponse(request, env) {
 const publicDataWorker = {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname !== SNAPSHOT_PATH && url.pathname !== HEALTH_PATH) {
+    if (![SNAPSHOT_PATH, HEALTH_PATH, COMPARISON_PATH].includes(url.pathname)) {
       return json({ error: "Not found" }, { status: 404 });
     }
     if (request.method === "OPTIONS") {
@@ -318,9 +334,9 @@ const publicDataWorker = {
       return json({ error: "Method not allowed" }, { status: 405 });
     }
     try {
-      return url.pathname === HEALTH_PATH
-        ? await healthResponse(request, env)
-        : await snapshotResponse(request, env);
+      if (url.pathname === HEALTH_PATH) return healthResponse(request, env);
+      if (url.pathname === COMPARISON_PATH) return comparisonResponse(request, env);
+      return snapshotResponse(request, env);
     } catch {
       return json(
         { error: "Cloudflare data service is temporarily unavailable" },
@@ -330,7 +346,16 @@ const publicDataWorker = {
   },
 
   scheduled(controller, env, ctx) {
-    return queuedWorker.scheduled(controller, env, ctx);
+    queuedWorker.scheduled(controller, env, ctx);
+    if (controller.cron === DAILY_CRON) {
+      ctx.waitUntil(
+        refreshInternationalComparison(env).catch((error) => {
+          console.error("International comparison refresh failed", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        })
+      );
+    }
   },
 
   queue(batch, env, ctx) {
@@ -339,8 +364,10 @@ const publicDataWorker = {
 };
 
 export {
+  COMPARISON_PATH,
   HEALTH_PATH,
   SNAPSHOT_PATH,
+  comparisonResponse,
   currentPublicArtifact,
   currentPublicSnapshot,
   fetchSeedSnapshot,

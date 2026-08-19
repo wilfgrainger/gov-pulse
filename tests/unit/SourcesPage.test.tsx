@@ -75,6 +75,23 @@ describe("SourcesPage", () => {
     expect(screen.getByRole("heading", { name: /evidence must pass all three checks/i })).toBeInTheDocument();
   });
 
+  it("registers the international comparison publishers and weekly cadence", () => {
+    const group = SOURCE_GROUPS.find((candidate) => candidate.category === "International comparisons");
+    const entry = group?.entries.find((candidate) => candidate.name === "UK in context comparison sources");
+
+    expect(group?.kind).toBe("current");
+    expect(entry?.cadence).toBe("Checked weekly; missing publisher coverage remains unavailable");
+    expect(entry?.publishers.map((publisher) => publisher.name)).toEqual(
+      expect.arrayContaining([
+        "IMF DataMapper",
+        "OECD Data Explorer",
+        "SIPRI Military Expenditure Database",
+        "WHO Global Health Expenditure Database",
+        "World Bank World Development Indicators",
+      ])
+    );
+  });
+
   it("lists regional and policy analysis only inside the evidence-gap group", () => {
     const gapGroup = SOURCE_GROUPS.find((group) => group.category.startsWith("Evidence gaps"));
     const currentGroups = SOURCE_GROUPS.filter((group) => !group.category.startsWith("Evidence gaps"));

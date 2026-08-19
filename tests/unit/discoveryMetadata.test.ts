@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
-import discovery from "@/contracts/section-discovery.json";
 import { DATA_SOURCES } from "@/app/lib/config";
 import {
   PUBLIC_SECTION_IDS,
@@ -21,7 +20,7 @@ function source(path: string) {
 describe("section discovery contract", () => {
   it("covers every public section exactly once", () => {
     expect(PUBLIC_SECTION_IDS.sort()).toEqual(Object.keys(SECTION_CONTENT).sort());
-    expect(Object.keys(discovery.sections).sort()).toEqual(Object.keys(SECTION_CONTENT).sort());
+    expect(Object.keys(SECTION_DISCOVERY).sort()).toEqual(Object.keys(SECTION_CONTENT).sort());
     expect(PUBLIC_SECTION_IDS).not.toContain("political-compass");
   });
 
@@ -39,7 +38,11 @@ describe("section discovery contract", () => {
 
   it("maps every section to an owned source contract", () => {
     for (const section of Object.values(SECTION_DISCOVERY)) {
-      expect(DATA_SOURCES[section.sourceKey]).toBeDefined();
+      if (section.sourceKey === "internationalComparison") {
+        expect(section.title).toBe("UK in context");
+      } else {
+        expect(DATA_SOURCES[section.sourceKey]).toBeDefined();
+      }
       if (section.kind === "dataset") {
         expect(section.sameAs.length).toBeGreaterThan(0);
         expect(section.sameAs.every((url) => url.startsWith("https://"))).toBe(true);
@@ -70,6 +73,11 @@ describe("section discovery contract", () => {
       url: "https://public-data.org/section/gdp/",
       license:
         "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+    });
+    expect(structuredDataForSection("uk-in-context")).toMatchObject({
+      "@type": "Dataset",
+      name: "UK in context",
+      url: "https://public-data.org/section/uk-in-context/",
     });
     expect(structuredDataForSection("pm-approval")).toMatchObject({
       "@type": "Article",

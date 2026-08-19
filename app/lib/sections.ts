@@ -38,6 +38,7 @@ export const SECTIONS: CategoryGroup[] = [
   {
     category: "Public money",
     sections: [
+      { id: "uk-in-context", label: "UK in context", shortLabel: "UK context" },
       { id: "government-contracts", label: "Government contracts", shortLabel: "Contracts" },
     ],
   },

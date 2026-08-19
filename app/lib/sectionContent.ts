@@ -8,6 +8,7 @@ import GDPTracker from "@/app/components/GDPTracker";
 import SentimentPulse from "@/app/components/SentimentPulse";
 import TaxRevenue from "@/app/components/TaxRevenue";
 import GovernmentContracts from "@/app/components/GovernmentContracts";
+import InternationalComparison from "@/app/components/InternationalComparison";
 import EmploymentStats from "@/app/components/EmploymentStats";
 import CrimeStatistics from "@/app/components/CrimeStatistics";
 import NHSStats from "@/app/components/NHSStats";
@@ -84,6 +85,13 @@ export const SECTION_CONTENT = {
     subtitle: "Central government receipts from the latest ONS release.",
     component: TaxRevenue,
     dataSection: "taxRevenue",
+  },
+  "uk-in-context": {
+    category: "Public money",
+    tag: "International comparison",
+    title: "UK in context",
+    subtitle: "Debt, aid, defence, welfare, healthcare, tax and debt interest compared per resident across a fixed 13-country group.",
+    component: InternationalComparison,
   },
   "government-contracts": {
     category: "Public money",
