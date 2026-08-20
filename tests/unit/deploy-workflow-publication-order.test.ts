@@ -42,6 +42,13 @@ describe("production publication order", () => {
     expect(production).toContain("url: https://public-data.org/");
   });
 
+  it("lets OpenNext perform the production Next.js build it adapts", () => {
+    const production = jobBody("deploy-production");
+
+    expect(production).toContain("opennextjs-cloudflare build");
+    expect(production).not.toContain("--skipNextBuild");
+  });
+
   it("puts the reader-facing web revision live before refreshing the data plane", () => {
     const production = jobBody("deploy-production");
     const serverBuild = production.indexOf("npm run build:check");
