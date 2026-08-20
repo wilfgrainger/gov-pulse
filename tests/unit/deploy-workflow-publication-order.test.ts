@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
+// Regression for production deploy run 32352473618.
 const workflow = readFileSync(
   resolve(process.cwd(), ".github/workflows/deploy.yml"),
   "utf8"
@@ -40,6 +41,13 @@ describe("production publication order", () => {
     expect(production).toContain("needs: validate-and-build");
     expect(production).toContain("name: cloudflare-internal-worker");
     expect(production).toContain("url: https://public-data.org/");
+  });
+
+  it("lets OpenNext perform the production Next.js build it adapts", () => {
+    const production = jobBody("deploy-production");
+
+    expect(production).toContain("opennextjs-cloudflare build");
+    expect(production).not.toContain("--skipNextBuild");
   });
 
   it("puts the reader-facing web revision live before refreshing the data plane", () => {

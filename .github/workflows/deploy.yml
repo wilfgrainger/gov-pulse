@@ -122,7 +122,6 @@ jobs:
       - name: Adapt Next.js build for Cloudflare Workers
         run: >-
           ./worker/node_modules/.bin/opennextjs-cloudflare build
-          --skipNextBuild
           --config worker/web-wrangler.toml
         env:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
