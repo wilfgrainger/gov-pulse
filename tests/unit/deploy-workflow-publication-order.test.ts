@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
+// Regression for production deploy run 32352473618.
 const workflow = readFileSync(
   resolve(process.cwd(), ".github/workflows/deploy.yml"),
   "utf8"
