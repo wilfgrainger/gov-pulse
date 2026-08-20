@@ -42,6 +42,27 @@ describe("snapshot canary diagnostics", () => {
     );
   });
 
+  it("accepts a diagnosed unavailable required source such as migration", () => {
+    const unavailable = "migrationStats";
+    expect(REQUIRED_PUBLISHED_SECTION_IDS).toContain(unavailable);
+    const verified = publishedSections.filter((section) => section !== unavailable);
+    const diagnostic = classifyPublicationDiagnostic({
+      section: unavailable,
+      source: {
+        status: "error",
+        cacheState: "expired",
+        error: "Official migration release is outside its retrieval window",
+      },
+    });
+
+    expect(
+      validatePublishedDiagnostics(
+        { meta: { publicationDiagnostics: { [unavailable]: diagnostic } } },
+        verified,
+      ),
+    ).toEqual({ [unavailable]: diagnostic });
+  });
+
   it("rejects an unavailable section with no diagnostic reason", () => {
     const unavailable = publishedSections.at(-1)!;
     const verified = publishedSections.filter((section) => section !== unavailable);
