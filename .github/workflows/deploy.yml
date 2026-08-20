@@ -106,14 +106,7 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing CLOUDFLARE_API_TOKEN"; exit 1; }
           test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Missing CLOUDFLARE_ACCOUNT_ID"; exit 1; }
 
-      - name: Fetch verified publication for web and fallback assets
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_PUBLICATION_OUTPUT: public/data/metrics-snapshot.json
-        run: node scripts/fetch-cloudflare-publication-candidate.mjs
-
-      - name: Prepare publication assets and Next.js server build
+      - name: Prepare Next.js server build
         run: npm run build:check
         env:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
@@ -206,13 +199,24 @@ jobs:
           https://public-data.org/data/sections/gdpTracker.json
           --output /dev/null
 
+      - name: Fetch complete publication for bounded Pages seed fallback
+        id: pages-seed-candidate
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_PUBLICATION_OUTPUT: public/data/metrics-snapshot.json
+        run: node scripts/fetch-cloudflare-publication-candidate.mjs
+
       - name: Build bounded Pages seed fallback
+        if: steps.pages-seed-candidate.outcome == 'success'
         run: npm run build:check
         env:
           STATIC_EXPORT: "true"
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
 
       - name: Deploy Pages seed fallback
+        if: steps.pages-seed-candidate.outcome == 'success'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -224,6 +228,7 @@ jobs:
           --commit-message "Seed fallback $GITHUB_SHA"
 
       - name: Verify Pages seed evidence download
+        if: steps.pages-seed-candidate.outcome == 'success'
         run: >-
           curl --fail --silent --show-error
           --retry 20 --retry-all-errors --retry-delay 5
