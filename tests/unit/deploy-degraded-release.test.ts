@@ -15,6 +15,7 @@ function productionBody() {
 }
 
 describe("degraded evidence must not block application releases", () => {
+  // The strict 9/9 snapshot belongs to the fallback boundary, never the Worker release boundary.
   it("deploys the web Worker before requiring a complete static fallback snapshot", () => {
     const production = productionBody();
     const webDeploy = production.indexOf("opennextjs-cloudflare deploy");
