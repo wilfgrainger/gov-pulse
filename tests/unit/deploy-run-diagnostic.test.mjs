@@ -1,4 +1,5 @@
 // Disposable diagnostic. This branch and PR must never merge.
+// Refreshed after PR metadata was brought into repository policy compliance.
 import { expect, it } from "vitest";
 
 it("prints the latest production deploy runs", async () => {
