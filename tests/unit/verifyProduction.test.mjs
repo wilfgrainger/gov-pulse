@@ -345,6 +345,9 @@ describe("production deployment verifier", () => {
     for (const response of [validGdpHtml, validSitemap, validRobots, validFeed].map(okResponse)) {
       fetchImpl.mockResolvedValueOnce(response);
     }
+    // Keep the fixture complete so the asserted /sources/ failure is deterministic
+    // even though the verifier probes independent routes in parallel.
+    fetchImpl.mockResolvedValue(okResponse(""));
     const log = { info: vi.fn(), warn: vi.fn() };
 
     await expect(

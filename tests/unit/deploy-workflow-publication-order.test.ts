@@ -44,9 +44,6 @@ describe("production publication order", () => {
 
   it("puts the reader-facing web revision live before refreshing the data plane", () => {
     const production = jobBody("deploy-production");
-    const fetchCandidate = production.indexOf(
-      "node scripts/fetch-cloudflare-publication-candidate.mjs"
-    );
     const serverBuild = production.indexOf("npm run build:check");
     const stagedConfig = production.indexOf(
       "cp worker/open-next.config.template open-next.config.ts"
@@ -60,9 +57,11 @@ describe("production publication order", () => {
     const workerVerify = production.indexOf("scripts/verify-worker-deployment.mjs");
     const bootstrap = production.indexOf("bootstrap-cloudflare-publication.mjs");
     const productionVerify = production.indexOf("node scripts/verify-production.mjs");
+    const fallbackCandidate = production.indexOf(
+      "node scripts/fetch-cloudflare-publication-candidate.mjs"
+    );
 
-    expect(fetchCandidate).toBeGreaterThan(-1);
-    expect(serverBuild).toBeGreaterThan(fetchCandidate);
+    expect(serverBuild).toBeGreaterThan(-1);
     expect(stagedConfig).toBeGreaterThan(serverBuild);
     expect(openNextBuild).toBeGreaterThan(stagedConfig);
     expect(openNextDeploy).toBeGreaterThan(openNextBuild);
@@ -71,15 +70,19 @@ describe("production publication order", () => {
     expect(workerVerify).toBeGreaterThan(dataDeploy);
     expect(bootstrap).toBeGreaterThan(workerVerify);
     expect(productionVerify).toBeGreaterThan(bootstrap);
+    expect(fallbackCandidate).toBeGreaterThan(productionVerify);
     expect(production).toContain(
       "CLOUDFLARE_PUBLICATION_OUTPUT: public/data/metrics-snapshot.json"
     );
     expect(production).toContain("NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}");
   });
 
-  it("refreshes Pages only as a bounded fallback after full production verification", () => {
+  it("refreshes Pages only as a bounded optional fallback after full production verification", () => {
     const production = jobBody("deploy-production");
     const productionVerify = production.indexOf("node scripts/verify-production.mjs");
+    const fallbackCandidate = production.indexOf(
+      "node scripts/fetch-cloudflare-publication-candidate.mjs"
+    );
     const seedBuild = production.lastIndexOf("npm run build:check");
     const pagesDeploy = production.indexOf("npx wrangler pages deploy ./out");
     const seedVerify = production.indexOf(
@@ -87,9 +90,15 @@ describe("production publication order", () => {
     );
 
     expect(workflow).not.toContain("\n  deploy-pages-seed:\n");
-    expect(seedBuild).toBeGreaterThan(productionVerify);
+    expect(fallbackCandidate).toBeGreaterThan(productionVerify);
+    expect(seedBuild).toBeGreaterThan(fallbackCandidate);
     expect(pagesDeploy).toBeGreaterThan(seedBuild);
     expect(seedVerify).toBeGreaterThan(pagesDeploy);
+    expect(production).toContain("id: pages-seed-candidate");
+    expect(production).toContain("continue-on-error: true");
+    expect(production).toContain(
+      "if: steps.pages-seed-candidate.outcome == 'success'"
+    );
     expect(production).toContain("STATIC_EXPORT: \"true\"");
   });
 
