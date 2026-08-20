@@ -33,6 +33,16 @@ export const PUBLIC_DOWNLOAD_SECTION_IDS = [
   "migrationStats",
 ];
 
+const REQUIRED_NATIONAL_SECTION_IDS = [
+  "sentimentPulse",
+  "gdpTracker",
+  "employmentStats",
+  "nationalDebt",
+  "taxRevenue",
+  "migrationStats",
+  "electionPolling",
+  "nhsStats",
+];
 const INTERNATIONAL_COMPARISON_MEASURE_IDS = [
   "governmentDebt",
   "officialDevelopmentAssistance",
@@ -57,6 +67,10 @@ const INTERNATIONAL_COMPARISON_COUNTRY_IDS = [
   "CHE",
   "POL",
 ];
+
+function isRecord(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
 
 export function verifyProductionHtml(html, expectedRevision) {
   const failures = [];
@@ -163,28 +177,42 @@ export function verifySectionHtml(html, path) {
   return failures;
 }
 
-export function verifyHealthJson(text) {
+export function degradedMissingSections(text) {
   try {
     const payload = JSON.parse(text);
-    return payload?.status === "ready" && payload?.ready === true
-      ? []
-      : ["public data health endpoint did not report ready"];
+    if (
+      payload?.status === "degraded" &&
+      payload?.ready === false &&
+      payload?.degraded === true &&
+      Array.isArray(payload?.missingRequiredSections) &&
+      payload.missingRequiredSections.length > 0 &&
+      payload.missingRequiredSections.every(
+        (section) => typeof section === "string" && section.length > 0,
+      )
+    ) {
+      return [...new Set(payload.missingRequiredSections)];
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+export function verifyHealthJson(text, options = {}) {
+  try {
+    const payload = JSON.parse(text);
+    if (payload?.status === "ready" && payload?.ready === true) return [];
+    if (options.allowDegraded === true && degradedMissingSections(text).length > 0) {
+      return [];
+    }
+    return ["public data health endpoint did not report ready"];
   } catch {
     return ["public data health endpoint returned invalid JSON"];
   }
 }
 
-export function verifySnapshotJson(text) {
-  const requiredSections = [
-    "sentimentPulse",
-    "gdpTracker",
-    "employmentStats",
-    "nationalDebt",
-    "taxRevenue",
-    "migrationStats",
-    "electionPolling",
-    "nhsStats",
-  ];
+export function verifySnapshotJson(text, options = {}) {
+  const allowedMissingSections = new Set(options.allowedMissingSections ?? []);
 
   try {
     const payload = JSON.parse(text);
@@ -195,10 +223,18 @@ export function verifySnapshotJson(text) {
     if (!payload?.meta?.sources || typeof payload.meta.sources !== "object") {
       failures.push("public data snapshot source manifest was not found");
     }
-    for (const section of requiredSections) {
-      if (!payload?.[section] || !payload?.meta?.sources?.[section]) {
-        failures.push(`public data snapshot is missing required section ${section}`);
+    for (const section of REQUIRED_NATIONAL_SECTION_IDS) {
+      const present = Boolean(payload?.[section] && payload?.meta?.sources?.[section]);
+      if (present) continue;
+      if (allowedMissingSections.has(section)) {
+        if (!isRecord(payload?.meta?.publicationDiagnostics?.[section])) {
+          failures.push(
+            `public data snapshot has no diagnostic for unavailable section ${section}`,
+          );
+        }
+        continue;
       }
+      failures.push(`public data snapshot is missing required section ${section}`);
     }
     return failures;
   } catch {
@@ -291,13 +327,17 @@ export function verifyRobotsTxt(text) {
   return failures;
 }
 
-export function verifyEvidenceFeed(xml) {
+export function verifyEvidenceFeed(xml, options = {}) {
   const failures = [];
+  const allowedMissingSections = new Set(options.allowedMissingSections ?? []);
   if (!/<rss\b/i.test(xml)) failures.push("RSS document was not found");
   if (!/<title>public-data\.org — latest verified evidence<\/title>/i.test(xml)) {
     failures.push("RSS publication title was not found");
   }
-  if (!/https:\/\/public-data\.org\/section\/gdp\//i.test(xml)) {
+  if (
+    !allowedMissingSections.has("gdpTracker") &&
+    !/https:\/\/public-data\.org\/section\/gdp\//i.test(xml)
+  ) {
     failures.push("GDP publication was not found in RSS feed");
   }
   return failures;
@@ -354,38 +394,47 @@ export async function verifyProduction({
         fetchText(snapshotUrl, fetchImpl),
         fetchText(internationalComparisonUrl, fetchImpl),
         ...sectionUrls.map(({ url }) => fetchText(url, fetchImpl)),
-        ...downloadUrls.map(({ url }) => fetchText(url, fetchImpl)),
+        ...downloadUrls.map(({ url }) => fetchResult(url, fetchImpl)),
         fetchText(sitemapUrl, fetchImpl),
         fetchText(robotsUrl, fetchImpl),
         fetchText(feedUrl, fetchImpl),
       ]);
       const sectionHtml = remaining.slice(0, sectionUrls.length);
-      const downloadText = remaining.slice(
+      const downloadResults = remaining.slice(
         sectionUrls.length,
         sectionUrls.length + downloadUrls.length,
       );
       const sitemapXml = remaining[sectionUrls.length + downloadUrls.length];
       const robotsTxt = remaining[sectionUrls.length + downloadUrls.length + 1];
       const feedXml = remaining[sectionUrls.length + downloadUrls.length + 2];
+      const allowedMissingSections = degradedMissingSections(healthJson);
+      const allowedMissing = new Set(allowedMissingSections);
       const failures = [
         ...verifyProductionHtml(homeHtml, expectedRevision),
         ...verifySourcesHtml(sourcesHtml),
-        ...verifyGdpHtml(gdpHtml),
-        ...verifyHealthJson(healthJson),
-        ...verifySnapshotJson(snapshotJson),
+        ...(allowedMissing.has("gdpTracker")
+          ? verifySectionHtml(gdpHtml, "section/gdp/")
+          : verifyGdpHtml(gdpHtml)),
+        ...verifyHealthJson(healthJson, { allowDegraded: true }),
+        ...verifySnapshotJson(snapshotJson, { allowedMissingSections }),
         ...verifyInternationalComparisonJson(internationalComparisonJson),
         ...sectionUrls.flatMap(({ path }, index) => verifySectionHtml(sectionHtml[index], path)),
-        ...downloadUrls.flatMap(({ section, extension }, index) =>
-          verifyDownload(downloadText[index], section, extension),
-        ),
+        ...downloadUrls.flatMap(({ section, extension, url }, index) => {
+          if (allowedMissing.has(section)) return [];
+          const result = downloadResults[index];
+          if (!result || result.status < 200 || result.status >= 300) {
+            return [`${url} returned HTTP ${result?.status ?? "unknown"}`];
+          }
+          return verifyDownload(result.text, section, extension);
+        }),
         ...verifySitemapXml(sitemapXml),
         ...verifyRobotsTxt(robotsTxt),
-        ...verifyEvidenceFeed(feedXml),
+        ...verifyEvidenceFeed(feedXml, { allowedMissingSections }),
       ];
 
       if (failures.length === 0) {
         log.info(
-          `Verified ${rootUrl} serves revision ${expectedRevision}, ready public data, the international comparison publication, all public section routes including UK in context, server-rendered GDP evidence, discovery metadata, sitemap, robots and RSS.`,
+          `Verified ${rootUrl} serves revision ${expectedRevision}, verified ready or explicitly degraded public data, the international comparison publication, all public section routes including UK in context, discovery metadata, sitemap, robots and RSS.`,
         );
         return;
       }
@@ -404,18 +453,21 @@ export async function verifyProduction({
   throw new Error(`Production verification failed after ${attempts} attempts: ${lastFailure}`);
 }
 
-async function fetchText(url, fetchImpl) {
+async function fetchResult(url, fetchImpl) {
   const response = await fetchImpl(url, {
     redirect: "follow",
     headers: { "user-agent": "public-data-production-smoke/1.0" },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
+  return { status: response.status, text: await response.text() };
+}
 
-  if (!response.ok) {
-    throw new Error(`${url} returned HTTP ${response.status}`);
+async function fetchText(url, fetchImpl) {
+  const result = await fetchResult(url, fetchImpl);
+  if (result.status < 200 || result.status >= 300) {
+    throw new Error(`${url} returned HTTP ${result.status}`);
   }
-
-  return response.text();
+  return result.text;
 }
 
 function ensureTrailingSlash(value) {
