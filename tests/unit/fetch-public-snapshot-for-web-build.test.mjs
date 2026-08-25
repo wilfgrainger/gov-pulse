@@ -95,10 +95,14 @@ describe("web build publication snapshot", () => {
       const result = await fetchPublicSnapshot({
         output,
         now: NOW,
+        expectedRevision: "a".repeat(40),
         fetchImpl: async () =>
           new Response(JSON.stringify(snapshot()), {
             status: 200,
-            headers: { "content-type": "application/json" },
+            headers: {
+              "content-type": "application/json",
+              "X-Public-Data-Revision": "a".repeat(40),
+            },
           }),
       });
 
@@ -110,5 +114,21 @@ describe("web build publication snapshot", () => {
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
+  });
+
+  it("rejects a snapshot that is not served by the expected data Worker revision", async () => {
+    const revision = "a".repeat(40);
+
+    await expect(
+      fetchPublicSnapshot({
+        now: NOW,
+        expectedRevision: revision,
+        fetchImpl: async () =>
+          new Response(JSON.stringify(snapshot()), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+      }),
+    ).rejects.toThrow(/data worker revision/i);
   });
 });
