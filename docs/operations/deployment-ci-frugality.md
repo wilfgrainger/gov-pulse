@@ -6,7 +6,7 @@ The current workflows keep assurance and Cloudflare mutation separate without pr
 
 Pull Request Validation has one policy/classification job and one full-quality job. The full lane installs the root lockfile once, audits production dependencies, runs governance and architecture guards, lint, unit/Worker tests, the deterministic Pages build, the locked OpenNext build and deterministic browser journeys. It has no Cloudflare credentials.
 
-Deploy public-data.org repeats validation/build in a credential-free job, then installs locked dependencies in one environment-gated production job. That job reconciles the Queue, deploys/verifies the data Worker, bootstraps publication, deploys/verifies the request-time web Worker and optionally rebuilds/deploys the Pages seed after the live production gate. No workflow artifact handoff is required for source or build output.
+Deploy public-data.org repeats validation/build in a credential-free job, then installs locked dependencies in one environment-gated production job. That job reconciles the Queue, deploys/verifies the data Worker, bootstraps publication, deploys/verifies the request-time web Worker and rebuilds/deploys the Pages seed from a verified current publication after the live production gate. No workflow artifact handoff is required for source or build output.
 
 ## Preserved boundaries
 

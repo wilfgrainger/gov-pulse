@@ -45,7 +45,7 @@ No wildcard data route, collector, Queue endpoint, operational status page or ar
 
 ### Pages seed/fallback
 
-Cloudflare Pages retains a deterministic export containing application assets and section downloads. It is not the normal custom-domain application plane. The data Worker accepts a seed only from the exact HTTPS object `https://public-data-org.pages.dev/data/metrics-snapshot.json`, only when its source evidence is complete and current, and only during the bounded bootstrap or outage fallback path.
+Cloudflare Pages retains a deterministic export containing application assets and section downloads. It is not the normal custom-domain application plane. The data Worker accepts a seed only from the exact HTTPS object `https://public-data-org.pages.dev/data/metrics-snapshot.json`, only when its source evidence is current and its `ready` or `degraded` state has an exact required-section manifest, and only during the bounded bootstrap or outage fallback path.
 
 ## National publication invariants
 

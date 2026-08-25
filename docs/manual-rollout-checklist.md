@@ -5,7 +5,7 @@ Routine data publication is automatic on Cloudflare. This checklist covers repos
 ## One-time account setup
 
 - Confirm the `public-data-org` Pages project is available as the bounded seed/fallback object source. The normal `public-data.org` application route belongs to `public-data-web`.
-- Create the protected GitHub environment `cloudflare-internal-worker`; the current combined deployment job uses it for both Worker deployments and the optional Pages seed refresh.
+- Create the protected GitHub environment `cloudflare-internal-worker`; the current combined deployment job uses it for both Worker deployments and the verified Pages seed refresh.
 - Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` to that environment. If Pages deployment is later split into its own job, use a separate `cloudflare-pages` environment for that job rather than broadening the Worker environment.
 - Restrict the token to the intended account and `public-data.org` resources while permitting Worker deployment, Worker routes, Queues, KV bindings and Pages deployment.
 - Do not manually create `public-data-jobs`; the production workflow reconciles it.
@@ -23,7 +23,7 @@ Routine data publication is automatic on Cloudflare. This checklist covers repos
    - bootstraps national publication and queues the isolated comparison refresh;
    - deploys and smoke-checks `public-data-web`;
    - verifies request-time HTML, national health/snapshot, comparison, sections and discovery surfaces;
-   - refreshes the Pages seed only after production verification, and treats that fallback refresh as optional.
+   - refreshes the Pages seed only after production verification, using a current `ready` or explicitly `degraded` publication with an exact missing-section manifest.
 3. No action is required for subsequent data refreshes. Cloudflare Cron and Queue own them.
 
 Manual workflow dispatch is recovery-only and must target the current `main` ref.
@@ -41,7 +41,7 @@ Check the exact public boundaries:
 - arbitrary data paths do not expose Worker internals;
 - the homepage uses same-origin contracts and never embeds a provider-specific public URL.
 
-`bootstrapping` is valid immediately after the first data Worker deployment. `degraded` means the public edition is honest but not deployment-ready: inspect its exact `missingRequiredSections` manifest.
+`bootstrapping` is valid immediately after the first data Worker deployment. `degraded` means the public edition is honest but not ready: inspect its exact `missingRequiredSections` manifest. The bounded Pages seed may still be refreshed from that degraded edition only after the manifest has been verified; it must never be treated as ready evidence.
 
 ## Scheduled-run checks
 
@@ -76,7 +76,7 @@ Rerun the production workflow. Its Queue reconciliation step performs `wrangler 
 - Confirm the Cron triggers and serial Queue consumer exist.
 - Inspect run terminals, Worker logs and Queue delivery failures.
 - Let the bounded publication deadline resolve; do not rebuild Pages merely to move data.
-- A complete, current Pages seed may be used only inside the fallback boundary. Partial or expired evidence remains unavailable.
+- A current Pages seed may be used only inside the fallback boundary. It may be complete and `ready`, or explicitly `degraded` with an exact missing-section manifest; partial, unmanifested or expired evidence remains unavailable.
 
 ### One source fails
 
