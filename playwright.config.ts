@@ -9,6 +9,10 @@ const ciBrowserChannel = process.env.CI ? ("chrome" as const) : undefined;
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  // Next dev writes route manifests during first compilation. A single CI
+  // worker prevents concurrent first navigations from reading a partial JSON
+  // manifest while keeping every desktop and mobile journey in the gate.
+  workers: process.env.CI ? 1 : undefined,
   timeout: 90_000,
   use: {
     baseURL,
