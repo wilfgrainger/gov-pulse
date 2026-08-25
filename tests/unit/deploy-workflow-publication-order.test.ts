@@ -75,12 +75,13 @@ describe("production publication order", () => {
     );
 
     expect(serverBuild).toBeGreaterThan(-1);
-    expect(stagedConfig).toBeGreaterThan(serverBuild);
-    expect(openNextBuild).toBeGreaterThan(stagedConfig);
-    expect(queueReconcile).toBeGreaterThan(openNextBuild);
+    expect(queueReconcile).toBeGreaterThan(-1);
     expect(dataDeploy).toBeGreaterThan(queueReconcile);
     expect(workerVerify).toBeGreaterThan(dataDeploy);
     expect(bootstrap).toBeGreaterThan(workerVerify);
+    expect(serverBuild).toBeGreaterThan(bootstrap);
+    expect(stagedConfig).toBeGreaterThan(serverBuild);
+    expect(openNextBuild).toBeGreaterThan(stagedConfig);
     expect(openNextDeploy).toBeGreaterThan(bootstrap);
     expect(contextSmoke).toBeGreaterThan(openNextDeploy);
     expect(productionVerify).toBeGreaterThan(bootstrap);
@@ -91,7 +92,35 @@ describe("production publication order", () => {
     expect(production).toContain("NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}");
   });
 
-  it("refreshes Pages only as a bounded optional fallback after full production verification", () => {
+  it("builds section downloads from the bootstrapped publication before web deployment", () => {
+    const production = jobBody("deploy-production");
+    const bootstrap = production.indexOf(
+      "node scripts/bootstrap-cloudflare-publication.mjs",
+    );
+    const webSnapshot = production.indexOf(
+      "node scripts/fetch-public-snapshot-for-web-build.mjs",
+    );
+    const firstBuild = production.indexOf("npm run build:check");
+    const webBuildStep = production.indexOf(
+      "Prepare Next.js server build with current evidence downloads",
+    );
+    const serverBuild = production.indexOf("npm run build:check", webSnapshot);
+    const openNextBuild = production.indexOf("opennextjs-cloudflare build");
+    const openNextDeploy = production.indexOf("opennextjs-cloudflare deploy");
+
+    expect(bootstrap).toBeGreaterThan(-1);
+    expect(webSnapshot).toBeGreaterThan(bootstrap);
+    expect(firstBuild).toBeGreaterThan(-1);
+    expect(webBuildStep).toBeGreaterThan(webSnapshot);
+    expect(serverBuild).toBeGreaterThan(webSnapshot);
+    expect(openNextBuild).toBeGreaterThan(serverBuild);
+    expect(openNextDeploy).toBeGreaterThan(openNextBuild);
+    expect(production).toContain(
+      "METRICS_SNAPSHOT_URL: https://public-data.org/data/metrics-snapshot.json",
+    );
+  });
+
+  it("refreshes Pages as a verified bounded fallback after full production verification", () => {
     const production = jobBody("deploy-production");
     const productionVerify = production.indexOf("node scripts/verify-production.mjs");
     const fallbackCandidate = production.indexOf(
@@ -109,9 +138,12 @@ describe("production publication order", () => {
     expect(pagesDeploy).toBeGreaterThan(seedBuild);
     expect(seedVerify).toBeGreaterThan(pagesDeploy);
     expect(production).toContain("id: pages-seed-candidate");
-    expect(production).toContain("continue-on-error: true");
+    expect(production).not.toContain("continue-on-error: true");
+    expect(production).not.toContain(
+      "if: steps.pages-seed-candidate.outcome == 'success'",
+    );
     expect(production).toContain(
-      "if: steps.pages-seed-candidate.outcome == 'success'"
+      "Fetch verified publication for bounded Pages seed fallback",
     );
     expect(production).toContain("STATIC_EXPORT: \"true\"");
   });
@@ -143,6 +175,7 @@ describe("production publication order", () => {
   it("verifies the data Worker deployment carries the exact release SHA", () => {
     const production = jobBody("deploy-production");
     expect(production).toContain('--tag "$GITHUB_SHA"');
+    expect(production).toContain('--var "PUBLIC_DATA_REVISION:$GITHUB_SHA"');
     expect(production).toContain("--json");
     expect(production).toContain("npx wrangler versions list");
     expect(production).toContain("scripts/verify-worker-deployment.mjs \"$GITHUB_SHA\"");

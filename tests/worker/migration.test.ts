@@ -71,6 +71,18 @@ describe("latest ONS migration bulletin connector", () => {
     ).toBe("https://www.ons.gov.uk/visualisations/dvc3538/fig02/data.csv");
   });
 
+  it("rejects a bulletin-provided history URL outside the ONS host", () => {
+    expect(() =>
+      discoverMigrationHistoryUrl(
+        `
+          <h5>Total long-term net migration, immigration and emigration</h5>
+          <div data-url="https://attacker.example/visualisations/dvc3538/fig02/index.html"></div>
+        `,
+        `${BULLETIN_BASE_URL}/yearendingdecember2025`
+      )
+    ).toThrow(/ONS host/i);
+  });
+
   it("parses and reconciles the latest ONS headline estimates", () => {
     const result = parseMigrationBulletin(bulletinHtml, "yearendingdecember2025");
 

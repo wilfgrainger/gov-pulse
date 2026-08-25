@@ -50,9 +50,23 @@ export function validateCandidate(value, now = new Date()) {
 
   const missing = missingRequiredSections(current);
   if (missing.length > 0) {
-    throw new Error(
-      `Cloudflare publication candidate is missing current required evidence: ${missing.join(", ")}`
-    );
+    const declaredMissing = current.meta.publicationState === "degraded"
+      ? current.meta.missingRequiredSections
+      : null;
+    if (
+      !Array.isArray(declaredMissing) ||
+      JSON.stringify([...declaredMissing].sort()) !== JSON.stringify([...missing].sort())
+    ) {
+      throw new Error(
+        `Cloudflare publication candidate is missing current required evidence: ${missing.join(", ")}`
+      );
+    }
+  } else if (
+    current.meta.publicationState === "degraded" &&
+    (!Array.isArray(current.meta.missingRequiredSections) ||
+      current.meta.missingRequiredSections.length !== 0)
+  ) {
+    throw new Error("Cloudflare publication candidate has an inconsistent degraded manifest");
   }
   return current;
 }

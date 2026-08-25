@@ -8,6 +8,7 @@ import {
   isCurrentCrimeStatisticsPayload,
   normalizeCrimeStatisticsPayload,
 } from "@/contracts/crime-statistics";
+import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 import { buildCrimeStatistics } from "@/worker/crime-statistics";
 import {
   collectCrimeStatistics,
@@ -105,7 +106,10 @@ describe("modular crime evidence contract", () => {
           status: "ok",
           cacheState: "fresh",
           fetchedAt: now.toISOString(),
-          provenance: { section: "crimeStatistics" },
+          provenance: {
+            registryVersion: FEED_REGISTRY_VERSION,
+            section: "crimeStatistics",
+          },
         },
         now
       )

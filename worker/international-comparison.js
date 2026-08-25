@@ -192,6 +192,9 @@ function buildComparisonMeasure({ id, definition, observationYear, observations 
   }
 
   const validated = observations.map((observation) => validateObservation({ ...observation }));
+  if (validated.some((observation) => observation.observationYear !== observationYear)) {
+    throw new Error("Comparison observations must use the measure observationYear");
+  }
   const ranked = rankComparisonObservations(validated);
   return {
     id,
@@ -244,7 +247,12 @@ function validateInternationalComparisonPublication(publication) {
     if (JSON.stringify([...measureCountries].sort()) !== JSON.stringify([...expectedCountries].sort())) {
       throw new Error(`International comparison measure '${id}' does not cover the fixed country universe`);
     }
-    for (const observation of measure.countries) validateObservation(observation);
+    for (const observation of measure.countries) {
+      validateObservation(observation);
+      if (observation.observationYear !== measure.observationYear) {
+        throw new Error(`International comparison measure '${id}' contains an observation year that differs from the measure year`);
+      }
+    }
     const ranked = rankComparisonObservations(measure.countries);
     const expectedRanks = new Map(ranked.map(({ country, rank }) => [country, rank]));
     for (const observation of measure.countries) {

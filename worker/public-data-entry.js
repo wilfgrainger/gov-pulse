@@ -23,6 +23,7 @@ import { approvedSeedUrl } from "./approved-seed-url.js";
 const SNAPSHOT_PATH = "/data/metrics-snapshot.json";
 const HEALTH_PATH = "/data/health.json";
 const COMPARISON_PATH = "/data/international-comparison.json";
+const REVISION_PATTERN = /^[0-9a-f]{40}$/i;
 function publicCacheControl(validUntil, now = new Date()) {
   const validUntilMs = Date.parse(String(validUntil ?? ""));
   const remainingSeconds = Math.floor((validUntilMs - now.getTime()) / 1000);
@@ -99,7 +100,13 @@ function isCompleteSnapshot(snapshot) {
   return missingRequiredSections.length === 0;
 }
 
-function publicHeaders(cacheControl = "no-store") {
+function deployedRevision(env) {
+  const revision = String(env?.PUBLIC_DATA_REVISION ?? "").trim();
+  return REVISION_PATTERN.test(revision) ? revision.toLowerCase() : null;
+}
+
+function publicHeaders(cacheControl = "no-store", env) {
+  const revision = deployedRevision(env);
   return {
     "Access-Control-Allow-Headers": "Content-Type, If-None-Match",
     "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
@@ -108,6 +115,7 @@ function publicHeaders(cacheControl = "no-store") {
     "Cross-Origin-Resource-Policy": "cross-origin",
     "Timing-Allow-Origin": "*",
     "X-Content-Type-Options": "nosniff",
+    ...(revision ? { "X-Public-Data-Revision": revision } : {}),
   };
 }
 
@@ -267,9 +275,11 @@ async function snapshotResponse(request, env) {
     byte.toString(16).padStart(2, "0")
   ).join("");
   const etag = `W/\"sha256-${digestHex}\"`;
+  const revision = deployedRevision(env);
   const headers = {
     ETag: etag,
     "X-Publication-Delivery": result.delivery,
+    ...(revision ? { "X-Public-Data-Revision": revision } : {}),
   };
   const cacheControl = publicCacheControl(result.validUntil);
   if (
@@ -278,13 +288,13 @@ async function snapshotResponse(request, env) {
   ) {
     return new Response(null, {
       status: 304,
-      headers: { ...publicHeaders(cacheControl), ...headers },
+      headers: { ...publicHeaders(cacheControl, env), ...headers },
     });
   }
   return new Response(request.method === "HEAD" ? null : result.body, {
     status: 200,
     headers: {
-      ...publicHeaders(cacheControl),
+      ...publicHeaders(cacheControl, env),
       "Content-Type": "application/json; charset=utf-8",
       ...headers,
     },

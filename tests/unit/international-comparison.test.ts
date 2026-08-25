@@ -121,6 +121,25 @@ describe("international comparison evidence contract", () => {
     ).toThrow(/valueType/i);
   });
 
+  it("rejects country observations whose year differs from the measure year", () => {
+    expect(() =>
+      buildComparisonMeasure({
+        id: "governmentDebt",
+        definition: "Gross general-government debt per resident.",
+        observationYear: 2026,
+        observations: [
+          {
+            country: "GBR",
+            value: 63_300,
+            observationYear: 2024,
+            valueType: "historical" as const,
+            source,
+          },
+        ],
+      })
+    ).toThrow(/observationYear/i);
+  });
+
   it("validates a publication without permitting a synthetic overall score", () => {
     const observations = COMPARISON_COUNTRIES.map(({ id }) => ({
       country: id,
