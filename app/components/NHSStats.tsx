@@ -106,6 +106,10 @@ function publishClockTick() {
 }
 
 function subscribeToClock(listener: () => void) {
+  // Sync the first client snapshot when the component subscribes. This keeps
+  // request-time/server rendering stable while allowing test clocks and a
+  // page that mounts after a long-lived tab to use the current client time.
+  clientNowMs = Date.now();
   clockListeners.add(listener);
   if (clockTimer === null) {
     clockTimer = setInterval(publishClockTick, CLOCK_INTERVAL_MS);
@@ -538,7 +542,7 @@ export default function NHSStats() {
 
           <section
             aria-labelledby="nhs-why-title"
-            className="border-l-4 border-foreground pl-4"
+            className="border-t border-[#d8d3c8] pt-4"
           >
             <h3 id="nhs-why-title" className="text-lg font-semibold">
               Why it matters
@@ -609,7 +613,7 @@ export default function NHSStats() {
 
       <section
         aria-labelledby="nhs-withdrawn-title"
-        className="border-l-4 border-foreground pl-4"
+        className="border-t border-[#d8d3c8] pt-4"
       >
         <h3 id="nhs-withdrawn-title" className="text-lg font-semibold">
           Unaligned health measures withdrawn

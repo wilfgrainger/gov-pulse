@@ -264,6 +264,14 @@ describe("live publisher parsers", () => {
     expect(sampleSizeFromPdfText("Sample Size: 2328 GB Adults")).toBe(2328);
   });
 
+  it("rejects a voting-intention article discovered on an unapproved host", () => {
+    expect(() =>
+      latestYouGovArticleUrl(
+        '<a href="https://example.invalid/en-gb/articles/55251-voting-intention-26-27-july-2026">Foreign</a>',
+      ),
+    ).toThrow(/approved YouGov source host/i);
+  });
+
   it("reassembles fragmented PDF TJ text arrays before reading the sample", () => {
     const text = pdfStrings(
       "[(S)-5(a)-7(m)16(p)-6(l)5(e)-7( )5(S)-5(i)5(z)-8(e)-7(:)6( )5(2)-7(3)-7(2)-7(8)-7( )5(G)-3(B)-4( )5(A)49(d)-6(u)-6(l)5(t)6(s)] TJ"

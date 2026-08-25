@@ -15,6 +15,11 @@ const eslintConfig = defineConfig([
     "playwright-report/**",
     "test-results/**",
     "tmp/**",
+    ".open-next/**",
+    "open-next.config.ts",
+    "public/social/**",
+    "worker/node_modules/**",
+    ".agents/skills/impeccable/**",
   ]),
 ]);
 

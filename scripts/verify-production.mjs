@@ -1,6 +1,9 @@
+import { readResponseText } from "../worker/response-limits.js";
+
 const DEFAULT_ATTEMPTS = 12;
 const DEFAULT_DELAY_MS = 10_000;
 const REQUEST_TIMEOUT_MS = 10_000;
+const MAX_REDIRECTS = 3;
 export const PUBLIC_SECTION_PATHS = [
   "section/pm-approval/",
   "section/election-polls/",
@@ -453,13 +456,42 @@ export async function verifyProduction({
   throw new Error(`Production verification failed after ${attempts} attempts: ${lastFailure}`);
 }
 
-async function fetchResult(url, fetchImpl) {
+async function fetchResult(url, fetchImpl, redirectCount = 0) {
   const response = await fetchImpl(url, {
-    redirect: "follow",
+    redirect: "manual",
     headers: { "user-agent": "public-data-production-smoke/1.0" },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
-  return { status: response.status, text: await response.text() };
+  if (response.status >= 300 && response.status < 400) {
+    try {
+      await response.body?.cancel();
+    } catch {
+      // Releasing a redirect response is best effort only.
+    }
+    if (redirectCount >= MAX_REDIRECTS) {
+      throw new Error(`${url} exceeded the ${MAX_REDIRECTS}-redirect limit`);
+    }
+    const location = response.headers?.get?.("location");
+    if (!location) throw new Error(`${url} returned a redirect without a location`);
+    const current = new URL(url);
+    const next = new URL(location, url);
+    if (
+      next.protocol !== "https:" ||
+      next.hostname.toLowerCase() !== current.hostname.toLowerCase() ||
+      next.port !== current.port
+    ) {
+      throw new Error(`${url} redirected away from its approved HTTPS host`);
+    }
+    return fetchResult(next.toString(), fetchImpl, redirectCount + 1);
+  }
+
+  return {
+    status: response.status,
+    text: await readResponseText(response, {
+      limit: 4 * 1024 * 1024,
+      label: `Production verifier response from ${url}`,
+    }),
+  };
 }
 
 async function fetchText(url, fetchImpl) {
@@ -477,6 +509,8 @@ function ensureTrailingSlash(value) {
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
+
+export { fetchResult };
 
 async function main() {
   const [url, expectedRevision] = process.argv.slice(2);

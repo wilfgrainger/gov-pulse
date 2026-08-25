@@ -20,6 +20,12 @@
 # next.js
 /.next/
 /out/
+/.open-next/
+/open-next.config.ts
+/public/social/
+/worker/node_modules/
+/build-output.log
+/.agents/skills/impeccable/
 
 # production
 /build

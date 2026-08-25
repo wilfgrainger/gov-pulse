@@ -49,6 +49,19 @@ describe("degraded public publication", () => {
     expect(isCompleteSnapshot(dishonest)).toBe(false);
   });
 
+  it("keeps the exact degraded manifest in the prepared public artifact", () => {
+    const artifact = buildPublicSnapshotArtifact(
+      degradedSnapshot(),
+      new Date("2026-08-07T12:00:00.000Z")
+    );
+    const published = JSON.parse(artifact.body) as {
+      meta: { publicationState?: string; missingRequiredSections?: string[] };
+    };
+
+    expect(published.meta.publicationState).toBe("degraded");
+    expect(published.meta.missingRequiredSections).toEqual(["nhsStats"]);
+  });
+
   it("serves degraded evidence but does not report deployment readiness", async () => {
     const now = new Date("2026-08-07T12:00:00.000Z");
     vi.useFakeTimers();
@@ -109,10 +122,11 @@ describe("degraded public publication", () => {
         fetchedAt: refreshedAt,
       },
       fetchedAt: refreshedAt,
+      runId: "test-run",
     };
     const store = new Map<string, unknown>([
       [PUBLICATION_CURRENT_KEY, current],
-      ["v12:publication:section:gdpTracker", gdpFragment],
+      ["v13:publication:run:test-run:section:gdpTracker", gdpFragment],
     ]);
     const put = vi.fn(async (key: string, value: string) => {
       try {
@@ -128,7 +142,7 @@ describe("degraded public publication", () => {
       },
     };
 
-    const result = await publishFromCaches(env, { now });
+    const result = await publishFromCaches(env, { now, runId: "test-run" });
     const published = store.get(PUBLICATION_CURRENT_KEY) as {
       gdpTracker?: unknown;
       nhsStats?: unknown;

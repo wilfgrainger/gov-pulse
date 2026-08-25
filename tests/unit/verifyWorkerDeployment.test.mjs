@@ -7,21 +7,48 @@ describe("Worker deployment verifier", () => {
   it("accepts the deployed commit in version metadata", () => {
     expect(
       verifyWorkerDeployment(
-        { deployments: [{ versionId: "version-1", tag: revision, message: `release ${revision}` }] },
+        {
+          versions: [
+            {
+              id: "version-1",
+              annotations: {
+                "workers/tag": revision,
+                "workers/message": `release ${revision}`,
+              },
+            },
+          ],
+        },
         revision,
       ),
     ).toEqual([]);
   });
 
   it("rejects missing, malformed or different deployment revisions", () => {
-    expect(verifyWorkerDeployment({ deployments: [] }, revision)).toEqual([
+    expect(verifyWorkerDeployment({ versions: [] }, revision)).toEqual([
       `Worker deployment metadata did not contain revision ${revision}`,
     ]);
-    expect(verifyWorkerDeployment({ tag: "not-a-sha" }, revision)).toEqual([
+    expect(
+      verifyWorkerDeployment(
+        { versions: [{ annotations: { "workers/tag": "not-a-sha" } }] },
+        revision,
+      ),
+    ).toEqual([
       `Worker deployment metadata did not contain revision ${revision}`,
     ]);
-    expect(verifyWorkerDeployment({ tag: revision }, "main")).toEqual([
+    expect(verifyWorkerDeployment({ versions: [] }, "main")).toEqual([
       "expected Worker revision must be a full Git commit SHA",
     ]);
+  });
+
+  it("does not accept a matching SHA in an unrelated field or message", () => {
+    expect(
+      verifyWorkerDeployment(
+        {
+          message: `an unrelated deployment mentions ${revision}`,
+          versions: [{ id: "different-version", annotations: {} }],
+        },
+        revision,
+      ),
+    ).toEqual([`Worker deployment metadata did not contain revision ${revision}`]);
   });
 });
