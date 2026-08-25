@@ -11,7 +11,7 @@ interface ClientOnlyChartProps {
 export default function ClientOnlyChart({
   children,
   heightClass,
-  fallbackLabel = "Interactive chart unavailable. The published figures remain available in the surrounding summary and source information.",
+  fallbackLabel = "Loading interactive chart. The published figures remain available in the surrounding summary and source information.",
 }: ClientOnlyChartProps) {
   const [mounted, setMounted] = useState(false);
   const [hasSize, setHasSize] = useState(false);

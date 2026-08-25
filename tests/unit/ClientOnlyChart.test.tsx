@@ -9,16 +9,15 @@ afterEach(() => {
 });
 
 describe("ClientOnlyChart", () => {
-  it("fails closed with an explicit message before client hydration", () => {
+  it("announces chart loading before client hydration", () => {
     const html = renderToStaticMarkup(
       <ClientOnlyChart heightClass="h-64">
         <div>Rendered chart</div>
       </ClientOnlyChart>,
     );
 
-    expect(html).toContain("Interactive chart unavailable");
+    expect(html).toContain("Loading interactive chart");
     expect(html).toContain("published figures remain available");
-    expect(html).not.toContain("Loading chart");
     expect(html).not.toContain("Rendered chart");
   });
 
