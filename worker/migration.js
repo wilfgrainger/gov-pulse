@@ -89,7 +89,20 @@ function discoverMigrationHistoryUrl(html, bulletinUrl) {
   if (!match) {
     throw new Error("ONS migration bulletin did not expose the comparable total-migration series");
   }
-  return new URL(match[1].replace(/index\.html(?:[?#].*)?$/i, "data.csv"), bulletinUrl).toString();
+  const historyUrl = new URL(
+    match[1].replace(/index\.html(?:[?#].*)?$/i, "data.csv"),
+    bulletinUrl,
+  );
+  if (
+    historyUrl.protocol !== "https:" ||
+    historyUrl.hostname !== "www.ons.gov.uk" ||
+    !historyUrl.pathname.startsWith("/visualisations/")
+  ) {
+    throw new Error("ONS migration history URL must remain on the ONS host");
+  }
+  historyUrl.search = "";
+  historyUrl.hash = "";
+  return historyUrl.toString();
 }
 
 function optionalInteger(value) {

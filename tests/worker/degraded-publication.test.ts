@@ -27,11 +27,32 @@ function degradedSnapshot(now = new Date("2026-08-07T12:00:00.000Z")) {
       sources: Object.fromEntries(
         included.map((section) => [
           section,
-          { status: "ok", cacheState: "fresh", fetchedAt },
+          {
+            status: "ok",
+            cacheState: "fresh",
+            fetchedAt,
+            provenance: {
+              registryVersion: FEED_REGISTRY_VERSION,
+              section,
+            },
+          },
         ])
       ),
     },
-    ...Object.fromEntries(included.map((section) => [section, { value: section }])),
+    ...Object.fromEntries(
+      included.map((section) => [
+        section,
+        {
+          value: section,
+          __observation: {
+            status: "current",
+            period: "July 2026",
+            observedAt: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
+            maxAgeDays: 45,
+          },
+        },
+      ])
+    ),
   };
 }
 
@@ -96,17 +117,41 @@ describe("degraded public publication", () => {
       status: "ok",
       cacheState: "fresh",
       fetchedAt: "2026-04-01T00:00:00.000Z",
+      provenance: {
+        registryVersion: FEED_REGISTRY_VERSION,
+        section: "nhsStats",
+      },
     };
-    current.nhsStats = { value: "expired-nhs" };
+    current.nhsStats = {
+      value: "expired-nhs",
+      __observation: {
+        status: "current",
+        period: "April 2026",
+        observedAt: "2026-04-01T00:00:00.000Z",
+        maxAgeDays: 45,
+      },
+    };
 
     const refreshedAt = "2026-08-07T11:30:00.000Z";
     const gdpFragment = {
       section: "gdpTracker",
-      data: { value: "fresh-gdp" },
+      data: {
+        value: "fresh-gdp",
+        __observation: {
+          status: "current",
+          period: "August 2026",
+          observedAt: "2026-08-07T10:00:00.000Z",
+          maxAgeDays: 45,
+        },
+      },
       source: {
         status: "ok",
         cacheState: "fresh",
         fetchedAt: refreshedAt,
+        provenance: {
+          registryVersion: FEED_REGISTRY_VERSION,
+          section: "gdpTracker",
+        },
       },
       fetchedAt: refreshedAt,
       runId: "test-run",

@@ -14,9 +14,10 @@ function productionBody() {
   return workflow.slice(start);
 }
 
-describe("degraded evidence must not block application releases", () => {
-  // The strict 9/9 snapshot belongs to the fallback boundary, never the Worker release boundary.
-  it("deploys the web Worker before requiring a complete static fallback snapshot", () => {
+describe("degraded evidence stays explicit across release boundaries", () => {
+  // The web Worker can serve an explicitly degraded edition, but the fallback
+  // boundary must still receive a verified current snapshot before deployment.
+  it("deploys the web Worker before validating the bounded static fallback snapshot", () => {
     const production = productionBody();
     const webDeploy = production.indexOf("opennextjs-cloudflare deploy");
     const productionVerify = production.indexOf("node scripts/verify-production.mjs");
@@ -29,13 +30,16 @@ describe("degraded evidence must not block application releases", () => {
     expect(fallbackCandidate).toBeGreaterThan(productionVerify);
   });
 
-  it("keeps a complete Pages seed refresh optional when one evidence source is unavailable", () => {
+  it("requires a verified Pages seed refresh when one evidence source is unavailable", () => {
     const production = productionBody();
 
     expect(production).toContain("id: pages-seed-candidate");
-    expect(production).toContain("continue-on-error: true");
-    expect(production).toContain(
+    expect(production).not.toContain("continue-on-error: true");
+    expect(production).not.toContain(
       "if: steps.pages-seed-candidate.outcome == 'success'",
+    );
+    expect(production).toContain(
+      "Fetch verified publication for bounded Pages seed fallback",
     );
   });
 });
