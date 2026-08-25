@@ -245,6 +245,19 @@ export function verifySnapshotJson(text, options = {}) {
   }
 }
 
+export function verifyPublicDataRevision(headers, expectedRevision) {
+  const expected = String(expectedRevision ?? "").trim().toLowerCase();
+  if (!/^[0-9a-f]{40}$/.test(expected)) {
+    return ["expected public data revision must be a full Git commit SHA"];
+  }
+  const actual = String(headers?.get?.("X-Public-Data-Revision") ?? "")
+    .trim()
+    .toLowerCase();
+  return actual === expected
+    ? []
+    : [`public data route did not serve revision ${expectedRevision}`];
+}
+
 export function verifyInternationalComparisonJson(text) {
   try {
     const payload = JSON.parse(text);
@@ -386,7 +399,7 @@ export async function verifyProduction({
         sourcesHtml,
         gdpHtml,
         healthJson,
-        snapshotJson,
+        snapshotResult,
         internationalComparisonJson,
         ...remaining
       ] = await Promise.all([
@@ -394,7 +407,7 @@ export async function verifyProduction({
         fetchText(sourcesUrl, fetchImpl),
         fetchText(gdpUrl, fetchImpl),
         fetchText(healthUrl, fetchImpl),
-        fetchText(snapshotUrl, fetchImpl),
+        fetchResult(snapshotUrl, fetchImpl),
         fetchText(internationalComparisonUrl, fetchImpl),
         ...sectionUrls.map(({ url }) => fetchText(url, fetchImpl)),
         ...downloadUrls.map(({ url }) => fetchResult(url, fetchImpl)),
@@ -403,6 +416,7 @@ export async function verifyProduction({
         fetchText(feedUrl, fetchImpl),
       ]);
       const sectionHtml = remaining.slice(0, sectionUrls.length);
+      const snapshotJson = snapshotResult.text;
       const downloadResults = remaining.slice(
         sectionUrls.length,
         sectionUrls.length + downloadUrls.length,
@@ -419,6 +433,10 @@ export async function verifyProduction({
           ? verifySectionHtml(gdpHtml, "section/gdp/")
           : verifyGdpHtml(gdpHtml)),
         ...verifyHealthJson(healthJson, { allowDegraded: true }),
+        ...(snapshotResult.status >= 200 && snapshotResult.status < 300
+          ? []
+          : [`${snapshotUrl} returned HTTP ${snapshotResult.status}`]),
+        ...verifyPublicDataRevision(snapshotResult.headers, expectedRevision),
         ...verifySnapshotJson(snapshotJson, { allowedMissingSections }),
         ...verifyInternationalComparisonJson(internationalComparisonJson),
         ...sectionUrls.flatMap(({ path }, index) => verifySectionHtml(sectionHtml[index], path)),
@@ -487,6 +505,7 @@ async function fetchResult(url, fetchImpl, redirectCount = 0) {
 
   return {
     status: response.status,
+    headers: response.headers,
     text: await readResponseText(response, {
       limit: 4 * 1024 * 1024,
       label: `Production verifier response from ${url}`,

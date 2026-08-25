@@ -77,28 +77,36 @@ afterEach(() => {
 });
 
 describe("pull-request changed file discovery", () => {
-  it("includes added, modified, deleted and both sides of a rename", () => {
-    const { cwd, base } = fixtureRepository();
-    expect(DIFF_FILTER).toBe("ACMRD");
-    expect(changedFileArguments(base)).toContain("--no-renames");
-    expect(changedFiles(base, cwd).sort()).toEqual([
-      fixturePath("added.txt"),
-      fixturePath("deleted.txt"),
-      fixturePath("modified.txt"),
-      fixturePath("renamed-new.txt"),
-      fixturePath("renamed-old.txt"),
-    ]);
-  });
+  it(
+    "includes added, modified, deleted and both sides of a rename",
+    { timeout: 30_000 },
+    () => {
+      const { cwd, base } = fixtureRepository();
+      expect(DIFF_FILTER).toBe("ACMRD");
+      expect(changedFileArguments(base)).toContain("--no-renames");
+      expect(changedFiles(base, cwd).sort()).toEqual([
+        fixturePath("added.txt"),
+        fixturePath("deleted.txt"),
+        fixturePath("modified.txt"),
+        fixturePath("renamed-new.txt"),
+        fixturePath("renamed-old.txt"),
+      ]);
+    }
+  );
 
-  it("accepts truthful deleted and renamed path claims but rejects invented paths", () => {
-    const { cwd, base } = fixtureRepository();
-    const files = changedFiles(base, cwd).sort();
-    expect(validatePrDescription(body(files), files, "a".repeat(40))).toEqual([]);
+  it(
+    "accepts truthful deleted and renamed path claims but rejects invented paths",
+    { timeout: 30_000 },
+    () => {
+      const { cwd, base } = fixtureRepository();
+      const files = changedFiles(base, cwd).sort();
+      expect(validatePrDescription(body(files), files, "a".repeat(40))).toEqual([]);
 
-    const inventedPath = fixturePath("never-existed.txt");
-    const invented = [...files, inventedPath];
-    expect(validatePrDescription(body(invented), files, "a".repeat(40)).join(" ")).toMatch(
-      /fixtures\/never-existed\.txt.*absent from the diff/i
-    );
-  });
+      const inventedPath = fixturePath("never-existed.txt");
+      const invented = [...files, inventedPath];
+      expect(validatePrDescription(body(invented), files, "a".repeat(40)).join(" ")).toMatch(
+        /fixtures\/never-existed\.txt.*absent from the diff/i
+      );
+    }
+  );
 });

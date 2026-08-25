@@ -49,6 +49,16 @@ type EvidenceModule = {
   measures: Measure[];
 };
 
+function definitionFor(module: EvidenceModule) {
+  if (module.title === "Crime experienced by households and individuals") {
+    return "Survey estimates of selected offences experienced by people and households in England and Wales, including incidents that may not be reported to the police.";
+  }
+  if (module.title === "Crimes recorded by the police") {
+    return "Offences recorded by police forces in England and Wales. Recorded volume reflects reporting, recording practice and police activity as well as underlying offending.";
+  }
+  return "Published criminal-court time measures for the named justice system, covering the period and measures listed in this module.";
+}
+
 type CrimePayload = typeof FALLBACK & {
   crimeSurvey: EvidenceModule;
   policeRecorded: EvidenceModule;
@@ -121,7 +131,7 @@ function ModuleSection({
       <CoreEvidenceExplanation
         idPrefix={module.measures[0].id}
         why={<p>{module.summary}</p>}
-        definition={<p>{module.caveat}</p>}
+        definition={<p>{definitionFor(module)}</p>}
         unit="Each row uses its own labelled unit"
         geography="England and Wales"
         interpretation={<p>Read this module independently. Figures from other crime and justice systems are not added to it.</p>}

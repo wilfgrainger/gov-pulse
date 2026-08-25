@@ -77,6 +77,14 @@ describe("edge evidence hardening", () => {
     expect(webWrangler).toMatch(/public-data\.org\/\*/);
   });
 
+  it("validates stacked pull requests instead of filtering CI to main-bound PRs", () => {
+    const validation = fs.readFileSync(".github/workflows/pr-validation.yml", "utf8");
+
+    expect(validation).toMatch(/on:\s*\r?\n\s+pull_request:\s*\r?\n\s*permissions:/);
+    expect(validation).not.toMatch(/pull_request:\s*\r?\n\s+branches:\s*\["main"\]/);
+    expect(validation).toMatch(/name: Fetch PR base ref[\s\S]*git fetch --no-tags origin "refs\/heads\/\$\{GITHUB_BASE_REF\}:refs\/remotes\/origin\/\$\{GITHUB_BASE_REF\}"/);
+  });
+
   it("prevents Cloudflare analytics injection on SSR HTML without weakening the tracking-free CSP", () => {
     const nextConfig = fs.readFileSync("next.config.ts", "utf8");
     const staticHeaders = fs.readFileSync("public/_headers", "utf8");

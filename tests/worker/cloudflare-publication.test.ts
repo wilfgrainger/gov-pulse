@@ -10,6 +10,7 @@ import queuedWorker, {
   publishFromCaches,
   refreshJobs,
 } from "@/worker/queued-publication-entry";
+import { mergePublication } from "@/worker/publication-entry";
 import { PUBLICATION_CURRENT_KEY } from "@/worker/publication-entry";
 import {
   buildContractsFromShards,
@@ -47,12 +48,36 @@ function kvEnv(initial: Record<string, unknown> = {}) {
   };
 }
 
+function publicationSource(section: string, fetchedAt: string) {
+  return {
+    status: "ok",
+    cacheState: "fresh",
+    fetchedAt,
+    provenance: {
+      registryVersion: FEED_REGISTRY_VERSION,
+      section,
+    },
+  };
+}
+
+function publicationData(section: string) {
+  return {
+    value: section,
+    __observation: {
+      status: "current",
+      period: "July 2026",
+      observedAt: "2026-07-17T00:00:00.000Z",
+      maxAgeDays: 75,
+    },
+  };
+}
+
 function snapshot() {
   const fetchedAt = "2026-07-17T10:00:00.000Z";
   const sources = Object.fromEntries(
     REQUIRED.map((section) => [
       section,
-      { status: "ok", cacheState: "fresh", fetchedAt },
+      publicationSource(section, fetchedAt),
     ])
   );
   return {
@@ -64,8 +89,11 @@ function snapshot() {
       freeTierBudget: FREE_TIER_BUDGET,
       sources,
     },
-    ...Object.fromEntries(REQUIRED.map((section) => [section, { value: section }])),
-    migrationStats: { headline: { netMigration: 171_000 } },
+    ...Object.fromEntries(REQUIRED.map((section) => [section, publicationData(section)])),
+    migrationStats: {
+      headline: { netMigration: 171_000 },
+      __observation: publicationData("migrationStats").__observation,
+    },
   };
 }
 
@@ -169,11 +197,12 @@ describe("Cloudflare Free data publication", () => {
     const current = snapshot();
     const fragment = {
       section: "gdpTracker",
-      data: { headline: { monthlyGrowth: 0.1, period: "May 2026" } },
+      data: {
+        headline: { monthlyGrowth: 0.1, period: "May 2026" },
+        __observation: publicationData("gdpTracker").__observation,
+      },
       source: {
-        status: "ok",
-        cacheState: "fresh",
-        fetchedAt: "2026-07-18T03:20:00.000Z",
+        ...publicationSource("gdpTracker", "2026-07-18T03:20:00.000Z"),
         source: "ONS GDP monthly estimate",
       },
       fetchedAt: "2026-07-18T03:20:00.000Z",
@@ -198,6 +227,33 @@ describe("Cloudflare Free data publication", () => {
       expect.any(Object),
     );
     expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(result.publication);
+  });
+
+  it("does not let a late older fragment roll back newer evidence", () => {
+    const current = snapshot();
+    current.meta.sources.gdpTracker.fetchedAt = "2026-07-18T03:30:00.000Z";
+    current.gdpTracker = { headline: { monthlyGrowth: 0.3, period: "June 2026" } };
+    const older = {
+      section: "gdpTracker",
+      data: { headline: { monthlyGrowth: 0.1, period: "May 2026" } },
+      source: {
+        ...current.meta.sources.gdpTracker,
+        fetchedAt: "2026-07-18T03:20:00.000Z",
+      },
+      fetchedAt: "2026-07-18T03:20:00.000Z",
+    };
+
+    const merged = mergePublication(
+      current,
+      [older],
+      null,
+      new Date("2026-07-18T03:40:00.000Z")
+    );
+
+    expect(merged.gdpTracker).toEqual(current.gdpTracker);
+    expect(merged.meta.sources.gdpTracker.fetchedAt).toBe(
+      "2026-07-18T03:30:00.000Z"
+    );
   });
 
   it("publishes an atomic degraded edition when a required section expires", async () => {
@@ -267,11 +323,12 @@ describe("Cloudflare Free data publication", () => {
 
     const fragment = (value: string, runId: string) => ({
       section: "gdpTracker",
-      data: { headline: { monthlyGrowth: value, period: "June 2026" } },
+      data: {
+        headline: { monthlyGrowth: value, period: "June 2026" },
+        __observation: publicationData("gdpTracker").__observation,
+      },
       source: {
-        status: "ok",
-        cacheState: "fresh",
-        fetchedAt: "2026-07-18T03:20:00.000Z",
+        ...publicationSource("gdpTracker", "2026-07-18T03:20:00.000Z"),
         source: "ONS GDP monthly estimate",
       },
       fetchedAt: "2026-07-18T03:20:00.000Z",

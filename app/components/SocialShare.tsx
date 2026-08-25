@@ -107,7 +107,7 @@ export default function SocialShare({
             target="_blank"
             rel="noopener noreferrer"
             onClick={handleShareClick(link.name)}
-            className="border border-[#cbc4b8] px-2 py-1 text-xs font-semibold transition-colors hover:bg-[#172234] hover:text-white"
+            className="inline-flex min-h-11 items-center justify-center border border-[#cbc4b8] px-2 py-1 text-xs font-semibold transition-colors hover:bg-[#172234] hover:text-white"
             aria-label={`${link.label} (opens in a new tab)`}
             title={`Share on ${link.name} (opens in a new tab)`}
           >
@@ -117,7 +117,7 @@ export default function SocialShare({
         <button
           type="button"
           onClick={handleCopyLink}
-          className="border border-[#cbc4b8] px-2 py-1 text-xs font-semibold transition-colors hover:bg-[#172234] hover:text-white"
+          className="inline-flex min-h-11 items-center justify-center border border-[#cbc4b8] px-2 py-1 text-xs font-semibold transition-colors hover:bg-[#172234] hover:text-white"
           title="Copy link"
         >
           {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy link"}
@@ -142,7 +142,7 @@ export default function SocialShare({
             target="_blank"
             rel="noopener noreferrer"
             onClick={handleShareClick(link.name)}
-            className="border border-[#172234] px-4 py-2 text-sm font-semibold transition-colors hover:bg-[#172234] hover:text-white"
+            className="inline-flex min-h-11 items-center justify-center border border-[#172234] px-4 py-2 text-sm font-semibold transition-colors hover:bg-[#172234] hover:text-white"
             aria-label={`${link.label} (opens in a new tab)`}
             title={`Share on ${link.name} (opens in a new tab)`}
           >
@@ -152,7 +152,7 @@ export default function SocialShare({
         <button
           type="button"
           onClick={handleCopyLink}
-          className={`border border-[#172234] px-4 py-2 text-sm font-semibold transition-colors ${
+          className={`inline-flex min-h-11 items-center justify-center border border-[#172234] px-4 py-2 text-sm font-semibold transition-colors ${
             copyState === "copied" ? "bg-[#172234] text-white" : "bg-white text-[#172234] hover:bg-[#172234] hover:text-white"
           }`}
           title="Copy link to clipboard"

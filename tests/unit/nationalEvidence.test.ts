@@ -139,6 +139,11 @@ describe("national evidence presentation", () => {
     expect(edition.signals.find((signal) => signal.id === "national-debt")?.value).toBe("£2.98tn");
     expect(edition.signals.find((signal) => signal.id === "nhs-waiting-list")?.value).toBe("7.39m pathways");
     expect(edition.signals.find((signal) => signal.id === "latest-poll")?.value).toBe("24% Reform UK");
+    expect(edition.signals.find((signal) => signal.id === "gdp")).toMatchObject({
+      geography: "United Kingdom",
+      unit: "percentage change",
+      publisher: "Office for National Statistics",
+    });
   });
 
   it("does not align economic series onto one shared period", () => {

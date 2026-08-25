@@ -13,8 +13,22 @@ function source(overrides: Record<string, unknown> = {}) {
     status: "ok",
     cacheState: "fresh",
     fetchedAt: "2026-08-01T10:00:00.000Z",
+    provenance: {
+      registryVersion: FEED_REGISTRY_VERSION,
+      section: "gdpTracker",
+    },
     ...overrides,
   };
+}
+
+function sectionSource(section: string, overrides: Record<string, unknown> = {}) {
+  return source({
+    ...overrides,
+    provenance: {
+      registryVersion: FEED_REGISTRY_VERSION,
+      section,
+    },
+  });
 }
 
 function data(overrides: Record<string, unknown> = {}) {
@@ -47,10 +61,42 @@ describe("publication currentness", () => {
       sectionCurrentness(
         "gdpTracker",
         { value: 1 },
-        source({ provenance: { section: "gdpTracker" } }),
+        source({
+          provenance: {
+            registryVersion: FEED_REGISTRY_VERSION,
+            section: "gdpTracker",
+          },
+        }),
         new Date("2026-08-01T11:00:00.000Z")
       ).reason
     ).toBe("missing-observation");
+  });
+
+  it("fails closed for a fresh section without source ownership or observation metadata", () => {
+    expect(
+      sectionCurrentness(
+        "gdpTracker",
+        { value: 1 },
+        source({ provenance: undefined }),
+        new Date("2026-08-01T11:00:00.000Z")
+      )
+    ).toEqual({ current: false, reason: "missing-provenance" });
+  });
+
+  it("rejects provenance belonging to a different section", () => {
+    expect(
+      sectionCurrentness(
+        "gdpTracker",
+        data(),
+        source({
+          provenance: {
+            registryVersion: FEED_REGISTRY_VERSION,
+            section: "employmentStats",
+          },
+        }),
+        new Date("2026-08-01T11:00:00.000Z")
+      )
+    ).toEqual({ current: false, reason: "wrong-provenance-section" });
   });
 
   it("rejects malformed and future retrieval clocks", () => {
@@ -77,7 +123,7 @@ describe("publication currentness", () => {
       sectionCurrentness(
         "bettingOdds",
         { value: 1, expiresAt: "2026-08-01T11:00:00.000Z" },
-        source({ fetchedAt: "2026-08-01T09:00:00.000Z" }),
+        sectionSource("bettingOdds", { fetchedAt: "2026-08-01T09:00:00.000Z" }),
         new Date("2026-08-01T11:00:00.000Z")
       ).reason
     ).toBe("explicit-expiry");
@@ -96,7 +142,7 @@ describe("publication currentness", () => {
             maxAgeDays: 45,
           },
         }),
-        source({ fetchedAt: "2026-08-04T10:00:00.000Z" }),
+        sectionSource("nhsStats", { fetchedAt: "2026-08-04T10:00:00.000Z" }),
         new Date("2026-08-04T11:00:00.000Z")
       )
     ).toEqual({ current: true, reason: "current" });
@@ -126,7 +172,7 @@ describe("publication currentness", () => {
         verifiedSections: ["gdpTracker", "bettingOdds", "orphan"],
         sources: {
           gdpTracker: source(),
-          bettingOdds: source({ fetchedAt: "2026-08-01T05:00:00.000Z" }),
+          bettingOdds: sectionSource("bettingOdds", { fetchedAt: "2026-08-01T05:00:00.000Z" }),
         },
       },
       gdpTracker: data(),
@@ -151,11 +197,11 @@ describe("publication currentness", () => {
         registryVersion: FEED_REGISTRY_VERSION,
         sources: {
           gdpTracker: source(),
-          bettingOdds: source({ fetchedAt: "2026-08-01T09:00:00.000Z" }),
+          bettingOdds: sectionSource("bettingOdds", { fetchedAt: "2026-08-01T09:00:00.000Z" }),
         },
       },
       gdpTracker: data(),
-      bettingOdds: { value: 2, expiresAt: "2026-08-01T12:30:00.000Z" },
+      bettingOdds: data({ value: 2, expiresAt: "2026-08-01T12:30:00.000Z" }),
     };
 
     expect(
@@ -167,7 +213,7 @@ describe("publication currentness", () => {
     const snapshot = {
       meta: {
         registryVersion: FEED_REGISTRY_VERSION,
-        sources: { nhsStats: source({ fetchedAt: "2026-08-04T10:00:00.000Z" }) },
+        sources: { nhsStats: sectionSource("nhsStats", { fetchedAt: "2026-08-04T10:00:00.000Z" }) },
       },
       nhsStats: data({
         expiresAt: "2026-08-23T00:00:00.000Z",

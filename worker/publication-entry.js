@@ -120,6 +120,21 @@ function sourceMetaFromPayload(payload) {
   };
 }
 
+function retrievalTimestamp(value) {
+  const timestamp = Date.parse(String(value ?? ""));
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+function shouldReplaceSection(previousSource, nextRecord) {
+  const previousFetchedAt = retrievalTimestamp(previousSource?.fetchedAt);
+  const nextFetchedAt = retrievalTimestamp(nextRecord?.source?.fetchedAt ?? nextRecord?.fetchedAt);
+  if (previousFetchedAt !== null && nextFetchedAt === null) return false;
+  if (previousFetchedAt !== null && nextFetchedAt !== null && nextFetchedAt < previousFetchedAt) {
+    return false;
+  }
+  return true;
+}
+
 async function refreshSectionPayload(section, env, ctx) {
   if (section === "taxRevenue") {
     return collectTaxRevenue(fetch, new Date());
@@ -174,11 +189,15 @@ function mergePublication(previous, refreshedRecords, contractsRecord, now = new
 
   for (const record of refreshedRecords ?? []) {
     if (!record?.section || !isRecord(record.data)) continue;
+    if (!shouldReplaceSection(base.meta.sources[record.section], record)) continue;
     base[record.section] = record.data;
     base.meta.sources[record.section] = record.source;
   }
 
-  if (contractsRecord?.data) {
+  if (contractsRecord?.data && shouldReplaceSection(base.meta.sources.governmentContracts, {
+    fetchedAt: contractsRecord.fetchedAt,
+    source: { fetchedAt: contractsRecord.fetchedAt },
+  })) {
     base.governmentContracts = contractsRecord.data;
     base.meta.sources.governmentContracts = {
       status: "ok",

@@ -1,6 +1,6 @@
 # Cloudflare free-tier data control plane
 
-public-data.org separates static presentation from live evidence publication while keeping both under repository control.
+public-data.org keeps application delivery, national evidence publication and the bounded fallback separate so that a source failure cannot turn into a stale or misleading public claim.
 
 ## System boundary
 
@@ -11,127 +11,71 @@ Primary publishers
 Cloudflare Cron
       │
       ▼
-Cloudflare Queue ──► Worker collectors and validators
-      │                         │
-      │                         ▼
-      └──────────────────► Workers KV
-                                │
-                                ▼
-public-data.org/data/metrics-snapshot.json
+public-data-jobs Queue ──► pulse-data-worker collectors and validators
+      │                                  │
+      │                                  ▼
+      └──────────────────────────────► Workers KV
+                                             │
+                       prepared snapshot + isolated comparison
+                                             │
+                   public-data.org/data/*.json exact data routes
 
-GitHub main ──► validate/build ──► deploy Worker ──► deploy Cloudflare Pages
+GitHub main ──► validate/build ──► data Worker + bootstrap ──► web Worker
+                                                              │
+                                                request-time public pages/assets
+
+Cloudflare Pages ──► bounded static seed/fallback only
 ```
 
-### Cloudflare owns runtime data work
+## Delivery planes
 
-The Worker configuration in `worker/wrangler.toml` declares:
+### Request-time web Worker
 
-- a daily complete refresh at `17 3 * * *` UTC;
-- a betting-only refresh at `47 */3 * * *` UTC;
-- the `public-data-jobs` Queue producer and serial consumer;
-- the `METRICS_CACHE` KV binding;
-- exact public routes for the aggregate snapshot and bootstrap health only.
+`worker/web-wrangler.toml` deploys `public-data-web` for `public-data.org/*`. OpenNext renders evidence-bearing pages from the incoming request and the same-origin server snapshot. This is the normal application plane for crawlers, link unfurlers, no-JavaScript clients and browsers. Static assets are served from the same Worker bundle.
 
-Cron creates run-scoped Queue work. Queue consumers collect evidence, validate source contracts and write terminal records. The finaliser is delayed, deadline-aware and idempotent. It publishes only when all required sections remain complete and current.
+### Data Worker
 
-Cloudflare stores two representations:
+`worker/wrangler.toml` deploys `pulse-data-worker` with `workers_dev = false` and `preview_urls = false`. Its only public routes are:
 
-1. a private canonical publication containing operational metadata;
-2. a pre-sanitised JSON body with a validity deadline for the public read path.
+- `/data/metrics-snapshot.json` — the prepared national publication;
+- `/data/health.json` — ready, degraded, bootstrapping or unhealthy state;
+- `/data/international-comparison.json` — the isolated comparison publication.
 
-The public Worker checks KV metadata and returns the already-serialised body. It does not repeatedly parse and transform the full dataset on HTTP requests. This keeps the hot path small enough for the Workers Free CPU boundary.
+No wildcard data route, collector, Queue endpoint, operational status page or arbitrary KV read is public.
 
-### Cloudflare Pages owns presentation
+### Pages seed/fallback
 
-Pages serves:
+Cloudflare Pages retains a deterministic export containing application assets and section downloads. It is not the normal custom-domain application plane. The data Worker accepts a seed only from the exact HTTPS object `https://public-data-org.pages.dev/data/metrics-snapshot.json`, only when its source evidence is current and its `ready` or `degraded` state has an exact required-section manifest, and only during the bounded bootstrap or outage fallback path.
 
-- the static Next.js export;
-- HTML, JavaScript, CSS, sitemap, feed and social cards;
-- deterministic `/data/sections/<section>.json` and `.csv` downloads;
-- every route except the two exact Worker routes.
+## National publication invariants
 
-The browser requests `/data/metrics-snapshot.json` from the same origin, so it receives current Cloudflare-published evidence without a Pages rebuild. Static section downloads describe the last application build and are intentionally not presented as the continuously refreshed runtime snapshot.
+The daily Cron (`17 3 * * *`) and three-hour betting Cron (`47 */3 * * *`) enqueue run-scoped jobs. Each section fragment is stored under `v13:publication:run:<runId>:section:<section>` with the run ID in the value and a bounded TTL. A finaliser reads only the selected run's fragments, validates source ownership and currentness, and writes the canonical publication and prepared public artifact together from the reader's perspective.
 
-## Publication invariants
+Before the retry deadline, an incomplete run remains pending. At the deadline, fresh successful source-owned fragments may be published as an explicitly degraded edition. A failed job never becomes successful merely because the deadline elapsed. The public edition carries `meta.publicationState` and an exact `missingRequiredSections` list; health reports `ready: false` for degraded editions. If no current evidence remains, the response is unavailable.
 
-A candidate may replace the current publication only when:
+The prepared national artifact carries a `validUntil` deadline. HTTP cache headers are capped at the same evidence deadline and never use stale-while-revalidate beyond it.
 
-- every required section exists;
-- each section belongs to its registered source owner;
-- retrieval and observation clocks are valid UTC instants;
-- evidence remains inside its source-specific currentness window;
-- observation, retrieval and expiry chronology is coherent;
-- the complete candidate passes its section contract.
+## International comparison invariants
 
-An incomplete or malformed run records a failure state and leaves the previous publication untouched. A previous value is served only while its original evidence window remains valid. Successful checks of unchanged evidence may update retrieval metadata, but they do not invent a newer observation or edition date.
-
-## Public boundary
-
-The Worker may serve only:
-
-- `/data/metrics-snapshot.json` — complete current aggregate evidence;
-- `/data/health.json` — `ready`, `bootstrapping` or `unhealthy` without source data or infrastructure detail.
-
-Collectors, Queue state, editorial operations, private metadata and arbitrary KV keys are not public routes. `workers.dev` and preview URLs remain disabled. `scripts/check-static-architecture.mjs` rejects broader ingress.
-
-During initial migration or a bounded KV read failure, the Worker may use the existing canonical KV publication or a complete, current Pages seed. It never serves a partial candidate.
+The comparison publication is written to `v1:international-comparison:current` and is refreshed independently of the national run. Each edition records measure-specific observation years, source provenance, country coverage, missingness and ranking denominators. Its seven-day due guard controls refresh work; its seven-day hard expiry controls public reads. The comparison can become unavailable without downgrading a current UK national publication.
 
 ## Repository-managed deployment
 
-There are two active workflows:
+Pull Request Validation runs policy and product assurance without Cloudflare credentials: text and lockfile policy, architecture, source ownership, source-repair backlog, complexity, PR evidence, toolchain, audit, lint, tests, static build, OpenNext build and deterministic browser checks.
 
-### Pull Request Validation
-
-Runs policy and product assurance without Cloudflare credentials or mutations:
-
-- text and lockfile policy;
-- architecture and source ownership;
-- change-complexity and PR-evidence policy;
-- exact Node/npm toolchain;
-- ESLint;
-- unit and Worker tests;
-- static production build;
-- deterministic desktop and mobile browser journeys.
-
-### Deploy public-data.org
-
-Runs automatically for relevant pushes to `main`:
-
-1. repeats the release-quality checks and builds one static export;
-2. creates the `public-data-jobs` Queue when absent and reconciles its retention;
-3. deploys and verifies the Worker and its KV-backed health route;
-4. deploys the exact built artifact to Cloudflare Pages;
-5. verifies the production revision and a representative Pages-owned evidence download.
-
-`workflow_dispatch` is retained for recovery. Routine evidence publication does not require a person or a scheduled GitHub workflow.
+Deploy public-data.org is automatic only for relevant pushes to `main` and begins with an explicit release-ref guard. It validates and builds, reconciles `public-data-jobs`, deploys and verifies the data Worker, bootstraps national publication and independently queues comparison refresh, deploys the request-time web Worker, verifies live routes, and refreshes the Pages seed only after production verification. Manual dispatch is recovery-only.
 
 ## Free-tier budget
 
-The control plane deliberately uses only Workers, Cron Triggers, Queues, KV and Pages. It does not require Browser Rendering, D1, R2, Durable Objects or Cloudflare Workflows.
-
-The encoded daily operating target is:
-
-- nine Cron invocations;
-- no more than 28 Queue jobs and 84 Queue operations;
-- one serial Queue consumer;
-- no more than 36 bounded government-contract requests;
-- fewer than 120 target KV writes and 300 target KV reads from scheduled work.
-
-Public snapshot reads use Cloudflare edge caching plus one prepared KV value. Repository deployments occur only when relevant code reaches `main`, not for each data refresh.
-
-Free-tier limits are external service constraints and can change. Maintainers must verify current Cloudflare plan limits before materially increasing cadence, source count, payload size or retention.
+The control plane uses Workers, Cron Triggers, Queues, KV and Pages. It does not require R2, D1, Durable Objects, Browser Rendering, Workflows or a paid data service. The encoded target is nine Cron invocations, no more than 28 Queue jobs and 84 Queue operations per day, one serial consumer, bounded procurement requests and bounded KV retention. Cloudflare plan limits can change and must be rechecked before increasing cadence, source count, payload size or retention.
 
 ## Failure and rollback
 
-- **Source failure:** preserve the last publication only while each source remains current; otherwise fail closed.
-- **Queue failure:** retries and run terminal records converge; an incomplete run cannot replace the current publication.
-- **Worker deployment failure:** Pages remains online and the previous Worker revision remains the recovery target.
-- **Pages deployment failure:** the previous Pages release remains active; runtime data publication is independent.
-- **Bad repository release:** revert the merge on `main`; the same workflow deploys the reverted Worker and Pages code.
-- **Cloudflare resource drift:** the deployment reconciles the named Queue and Wrangler reconciles code, routes, triggers and bindings from repository configuration.
+- A source failure removes its expired evidence or produces an honest degraded manifest; it does not invent a value.
+- Queue retries and terminal records remain run-scoped; a late retry cannot overwrite another run's fragment.
+- Data Worker failure leaves the previous valid revision as the recovery target; web deployment is not presented as data readiness.
+- Web Worker failure leaves the previous application revision active; data publication remains separately observable.
+- Pages failure leaves the previous seed release active; Pages is not the normal data path.
+- A repository release is reverted through a reviewed `main` change; no force-push or hidden manual promotion is part of the contract.
 
-Issue #257 records seven consecutive scheduled runs and an exercised Worker/Pages rollback. Those operational observations are not inferred from a successful merge.
-
-## Decision record
-
-The detailed architectural decision and rejected alternatives are recorded in [ADR-0001](./decisions/0001-cloudflare-first-data-plane.md).
+Build, deploy and DNS results are not live-data proof. The release ledger must record exact head, affected route observations, scheduled-run evidence and rollback evidence separately.

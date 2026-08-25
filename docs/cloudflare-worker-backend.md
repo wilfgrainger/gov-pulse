@@ -1,38 +1,24 @@
-# Internal scheduled data Worker
+# Cloudflare Workers runtime boundary
 
-## Security boundary
+public-data.org has two Workers with deliberately different responsibilities:
 
-The Worker is an internal collection and diagnostic component. It is not part of the public website delivery path.
+- `public-data-web` is the request-time OpenNext application Worker for `public-data.org/*`.
+- `pulse-data-worker` is the data and publication Worker. It owns only `/data/metrics-snapshot.json`, `/data/health.json` and `/data/international-comparison.json`.
 
-- `workers_dev = false` prevents a public `workers.dev` hostname.
-- `preview_urls = false` prevents preview hostnames.
-- No custom route is attached.
-- The browser reads only the verified same-origin snapshot shipped with the static site.
-- Deployment is manual and uses a scoped Cloudflare token stored in GitHub Actions secrets.
+Both configurations set `workers_dev = false` and `preview_urls = false`. The data Worker has exact zone routes and no collector or diagnostic route is attached. The web Worker serves application assets and request-time HTML; it does not expose Worker internals to browser code.
 
-## Responsibilities
-
-The Worker retrieves supported public sources on its four-hour cron, applies source freshness contracts and stores accepted records in the existing `METRICS_CACHE` KV namespace. Its HTTP handlers remain useful under local Wrangler development for diagnostics, but production has no public ingress.
-
-## Local development
+## Local checks
 
 ```bash
-npm run worker:dev
+npm run build:check
+npm ci --prefix worker
+./worker/node_modules/.bin/opennextjs-cloudflare build --config worker/web-wrangler.toml
 ```
 
-Local diagnostic handlers include health, registry, metrics and refresh views. They must not be exposed by adding a public route without an explicit security review.
+The Pages export remains useful for deterministic seed generation and fallback validation. It is not evidence that the custom domain is being served by Pages.
 
 ## Deployment
 
-```bash
-npm run worker:deploy
-```
+The production workflow is the supported deployment path. It requires `refs/heads/main`, installs locked dependencies, audits production packages, validates and builds, reconciles the Queue, deploys/verifies the data Worker, bootstraps publication, deploys the request-time web Worker, and runs the production verifier. Manual dispatch is recovery-only.
 
-The `Deploy private scheduled data worker` workflow is manual. It deploys with Wrangler and checks the recorded deployment version; it does not probe a public endpoint.
-
-## Operational guardrails
-
-- Cron runs in UTC and refreshes are idempotent.
-- KV is eventually consistent and is not used by the public browser.
-- A successful retrieval does not prove that a source published a new observation; each source contract still validates period, provenance and acceptable age.
-- Do not add a public Worker route, browser Worker URL, second data service or paid Cloudflare product without an explicit architecture decision.
+Cloudflare credentials stay in environment secrets. Never put them in Wrangler output, logs, source, issues or evidence records.

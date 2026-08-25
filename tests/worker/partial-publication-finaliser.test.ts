@@ -37,7 +37,15 @@ function currentSnapshot() {
   const sources = Object.fromEntries(
     REQUIRED_PUBLISHED_SECTION_IDS.map((section) => [
       section,
-      { status: "ok", cacheState: "fresh", fetchedAt },
+      {
+        status: "ok",
+        cacheState: "fresh",
+        fetchedAt,
+        provenance: {
+          registryVersion: FEED_REGISTRY_VERSION,
+          section,
+        },
+      },
     ])
   );
 
@@ -51,7 +59,18 @@ function currentSnapshot() {
       sources,
     },
     ...Object.fromEntries(
-      REQUIRED_PUBLISHED_SECTION_IDS.map((section) => [section, { value: section }])
+      REQUIRED_PUBLISHED_SECTION_IDS.map((section) => [
+        section,
+        {
+          value: section,
+          __observation: {
+            status: "current",
+            period: "July 2026",
+            observedAt: "2026-07-17T00:00:00.000Z",
+            maxAgeDays: 75,
+          },
+        },
+      ])
     ),
   };
 }
@@ -64,6 +83,12 @@ describe("partial publication finalisation", () => {
 
     const freshGdp = {
       headline: { monthlyGrowth: 0.2, period: "June 2026" },
+      __observation: {
+        status: "current",
+        period: "June 2026",
+        observedAt: "2026-07-18T00:00:00.000Z",
+        maxAgeDays: 75,
+      },
     };
     const gdpFragment = {
       section: "gdpTracker",
@@ -73,6 +98,10 @@ describe("partial publication finalisation", () => {
         cacheState: "fresh",
         fetchedAt: "2026-07-18T03:20:00.000Z",
         source: "ONS GDP monthly estimate",
+        provenance: {
+          registryVersion: FEED_REGISTRY_VERSION,
+          section: "gdpTracker",
+        },
       },
       fetchedAt: "2026-07-18T03:20:00.000Z",
       runId: "partial-run",

@@ -1,6 +1,7 @@
 import {
   FEED_REGISTRY,
   PUBLICATION_SOURCE_REGISTRY,
+  FEED_REGISTRY_VERSION,
   retrievalMaxAgeMsForSection,
 } from "./feed-registry.js";
 
@@ -33,6 +34,17 @@ function parsedTime(value) {
   return Number.isFinite(time) && new Date(time).toISOString() === normalized ? time : null;
 }
 
+function observationMaxAgeMs(observation) {
+  if (!isRecord(observation)) return null;
+  const maximumAgeDays = observation.maxAgeDays;
+  const maximumAgeHours = observation.maxAgeHours;
+  const hasDayPolicy = Number.isSafeInteger(maximumAgeDays) && maximumAgeDays > 0;
+  const hasHourPolicy = Number.isSafeInteger(maximumAgeHours) && maximumAgeHours > 0;
+  if (hasDayPolicy === hasHourPolicy) return null;
+  const maximumAgeMs = hasDayPolicy ? maximumAgeDays * DAY_MS : maximumAgeHours * HOUR_MS;
+  return Number.isSafeInteger(maximumAgeMs) ? maximumAgeMs : null;
+}
+
 function sectionCurrentness(section, data, source, now = new Date()) {
   const nowMs = now.getTime();
   if (!Number.isFinite(nowMs) || !isRecord(data) || !isRecord(source)) {
@@ -44,15 +56,22 @@ function sectionCurrentness(section, data, source, now = new Date()) {
     return { current: false, reason: "missing-policy" };
   }
 
-  if (Object.prototype.hasOwnProperty.call(source, "status") && source.status !== "ok") {
+  if (source.status !== "ok") {
     return { current: false, reason: "source-not-current" };
   }
 
-  if (
-    Object.prototype.hasOwnProperty.call(source, "cacheState") &&
-    source.cacheState !== "fresh"
-  ) {
+  if (source.cacheState !== "fresh") {
     return { current: false, reason: "source-cache-not-current" };
+  }
+
+  if (!isRecord(source.provenance)) {
+    return { current: false, reason: "missing-provenance" };
+  }
+  if (source.provenance.section !== section) {
+    return { current: false, reason: "wrong-provenance-section" };
+  }
+  if (source.provenance.registryVersion !== FEED_REGISTRY_VERSION) {
+    return { current: false, reason: "wrong-provenance-version" };
   }
 
   const hasExplicitExpiry = Object.prototype.hasOwnProperty.call(data, "expiresAt");
@@ -77,8 +96,7 @@ function sectionCurrentness(section, data, source, now = new Date()) {
   }
 
   const hasObservation = Object.prototype.hasOwnProperty.call(data, "__observation");
-  const sourceOwned = isRecord(source.provenance) && source.provenance.section === section;
-  if (!hasObservation && sourceOwned) {
+  if (!hasObservation) {
     return { current: false, reason: "missing-observation" };
   }
   if (hasObservation && !isRecord(data.__observation)) {
@@ -99,13 +117,8 @@ function sectionCurrentness(section, data, source, now = new Date()) {
       return { current: false, reason: "expiry-not-after-observation" };
     }
 
-    const maximumAgeDays = observation.maxAgeDays;
-    const maximumAgeMs = maximumAgeDays * DAY_MS;
-    if (
-      !Number.isSafeInteger(maximumAgeDays) ||
-      maximumAgeDays <= 0 ||
-      !Number.isSafeInteger(maximumAgeMs)
-    ) {
+    const maximumAgeMs = observationMaxAgeMs(observation);
+    if (maximumAgeMs === null) {
       return { current: false, reason: "invalid-observation-policy" };
     }
 
@@ -134,8 +147,10 @@ function sectionValidityDeadline(section, data, source, now = new Date()) {
   if (explicitExpiry !== null) deadlines.push(explicitExpiry);
 
   if (isRecord(data.__observation) && explicitExpiry === null) {
+    const maximumAgeMs = observationMaxAgeMs(data.__observation);
+    if (maximumAgeMs === null) return null;
     deadlines.push(
-      parsedTime(data.__observation.observedAt) + data.__observation.maxAgeDays * DAY_MS
+      parsedTime(data.__observation.observedAt) + maximumAgeMs
     );
   }
 

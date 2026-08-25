@@ -86,6 +86,12 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(publicationStructuredData) }}
         />
+        <a
+          href="#main-content"
+          className="sr-only z-[100] bg-black px-4 py-3 text-white focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
+        >
+          Skip to main content
+        </a>
         <MetricsSnapshotProvider snapshot={initialSnapshot}>
           {children}
         </MetricsSnapshotProvider>

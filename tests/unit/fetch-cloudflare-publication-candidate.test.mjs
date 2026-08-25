@@ -25,6 +25,10 @@ function completeSnapshot() {
             status: "ok",
             cacheState: "fresh",
             fetchedAt: FETCHED_AT,
+            provenance: {
+              registryVersion: FEED_REGISTRY_VERSION,
+              section,
+            },
           },
         ])
       ),
@@ -32,7 +36,15 @@ function completeSnapshot() {
     ...Object.fromEntries(
       REQUIRED_PUBLISHED_SECTION_IDS.map((section) => [
         section,
-        { value: section },
+        {
+          value: section,
+          __observation: {
+            status: "current",
+            period: "July 2026",
+            observedAt: "2026-08-01T08:00:00.000Z",
+            maxAgeDays: 45,
+          },
+        },
       ])
     ),
   };
@@ -69,6 +81,25 @@ describe("Cloudflare Pages publication candidate", () => {
     expect(candidate.meta).not.toHaveProperty("freeTierBudget");
     expect(Object.keys(candidate.meta.sources)).toHaveLength(
       REQUIRED_PUBLISHED_SECTION_IDS.length
+    );
+  });
+
+  it("accepts a degraded candidate only with an exact missing-section manifest", () => {
+    const candidate = completeSnapshot();
+    delete candidate.sentimentPulse;
+    delete candidate.meta.sources.sentimentPulse;
+    candidate.meta.publicationState = "degraded";
+    candidate.meta.missingRequiredSections = ["sentimentPulse"];
+
+    const validated = validateCandidate(candidate, NOW);
+
+    expect(validated.meta.publicationState).toBe("degraded");
+    expect(validated.meta.missingRequiredSections).toEqual(["sentimentPulse"]);
+
+    const dishonest = structuredClone(candidate);
+    dishonest.meta.missingRequiredSections = [];
+    expect(() => validateCandidate(dishonest, NOW)).toThrow(
+      /missing current required evidence: sentimentPulse/i,
     );
   });
 });

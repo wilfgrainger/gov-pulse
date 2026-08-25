@@ -43,7 +43,11 @@ function snapshot(now = new Date()) {
         cacheState: "fresh",
         fetchedAt,
         backend: "cloudflare-worker",
-        provenance: { retrieval: "cloudflare-worker-live" },
+        provenance: {
+          registryVersion: FEED_REGISTRY_VERSION,
+          section,
+          retrieval: "cloudflare-worker-live",
+        },
       },
     ])
   );
@@ -62,7 +66,15 @@ function snapshot(now = new Date()) {
     ...Object.fromEntries(
       REQUIRED_PUBLISHED_SECTION_IDS.map((section) => [
         section,
-        { value: section },
+        {
+          value: section,
+          __observation: {
+            status: "current",
+            period: "July 2026",
+            observedAt: new Date(new Date(fetchedAt).getTime() - 60 * 60 * 1000).toISOString(),
+            maxAgeDays: 45,
+          },
+        },
       ])
     ),
   };
@@ -84,6 +96,22 @@ function environment(current: unknown = snapshot(), now = new Date()) {
 }
 
 describe("Cloudflare public data route", () => {
+  it("exposes the configured public Worker revision on the national snapshot route", async () => {
+    const env = environment() as ReturnType<typeof environment> & {
+      PUBLIC_DATA_REVISION?: string;
+    };
+    env.PUBLIC_DATA_REVISION = "a".repeat(40);
+
+    const response = await publicWorker.fetch(
+      new Request("https://public-data.org/data/metrics-snapshot.json"),
+      env,
+    );
+
+    expect(response.headers.get("X-Public-Data-Revision")).toBe(
+      env.PUBLIC_DATA_REVISION,
+    );
+  });
+
   it("serves a precomputed sanitised snapshot from KV", async () => {
     const env = environment();
     const response = await publicWorker.fetch(

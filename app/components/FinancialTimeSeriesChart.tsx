@@ -71,6 +71,7 @@ export default function FinancialTimeSeriesChart({
   const latest = data.at(-1);
   const range =
     first && latest ? `${first.period} to ${latest.period}` : "Published history unavailable";
+  const accessibleDescription = description.replace(/[.!?]+\s*$/, "");
 
   return (
     <figure className="border-y border-black/20 bg-[#fbfaf7] py-5">
@@ -83,7 +84,7 @@ export default function FinancialTimeSeriesChart({
       </figcaption>
       <div
         role="img"
-        aria-label={`${title}. ${description}. Period shown: ${range}.`}
+        aria-label={`${title}. ${accessibleDescription}. Period shown: ${range}.`}
         className="border-t border-black/10 pt-3"
       >
         <ClientOnlyChart heightClass={heightClass}>

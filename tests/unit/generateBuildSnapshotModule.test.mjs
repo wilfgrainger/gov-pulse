@@ -46,19 +46,29 @@ describe("build snapshot module generator", () => {
     const now = new Date().toISOString();
     const snapshot = {
       meta: {
-        registryVersion: "test-registry",
+        registryVersion: FEED_REGISTRY_VERSION,
         generatedAt: now,
         sources: {
           gdpTracker: {
             status: "ok",
             cacheState: "fresh",
             fetchedAt: now,
+            provenance: {
+              registryVersion: FEED_REGISTRY_VERSION,
+              section: "gdpTracker",
+            },
           },
         },
       },
       gdpTracker: {
         available: true,
         headline: { period: "Current test period", monthlyGrowth: 0.1 },
+        __observation: {
+          status: "current",
+          period: "Current test period",
+          observedAt: now,
+          maxAgeDays: 45,
+        },
       },
     };
     await writeFile(snapshotPath, `${JSON.stringify(snapshot)}\n`, "utf8");
@@ -87,16 +97,31 @@ describe("build snapshot module generator", () => {
           cacheState: "fresh",
           fetchedAt: now,
           backend: "private-worker",
+          provenance: {
+            registryVersion: FEED_REGISTRY_VERSION,
+            section,
+          },
         },
       ])
     );
     const sections = Object.fromEntries(
       REQUIRED_PUBLISHED_SECTION_IDS.map((section) => [
         section,
-        { value: section },
+        {
+          value: section,
+          __observation: {
+            status: "current",
+            period: "July 2026",
+            observedAt: "2026-08-01T10:00:00.000Z",
+            maxAgeDays: 45,
+          },
+        },
       ])
     );
-    sections.electionPolling = { value: "=HYPERLINK(\"bad\")" };
+    sections.electionPolling = {
+      ...sections.electionPolling,
+      value: "=HYPERLINK(\"bad\")",
+    };
 
     const candidate = publicCandidate(
       {
