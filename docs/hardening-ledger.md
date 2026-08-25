@@ -9,7 +9,7 @@ This ledger records structural controls included in the 1.0.0 release candidate.
 - Source discovery, seed fallback and decompression are bounded by approved hosts, response limits and archive output caps.
 - Upstream redirects must preserve the approved HTTPS hostname and effective port, not merely the hostname.
 - The live snapshot canary rejects publications outside its six-hour build-age window at runtime, not only in helper tests.
-- Pull-request validation runs for stacked and main-bound PRs, so each base-relative change budget receives CI evidence.
+- Pull-request validation fetches the declared base ref and runs for stacked and main-bound PRs, so each base-relative change budget receives CI evidence.
 - The public national cache cannot outlive the evidence currentness deadline.
 - Degraded national editions expose exact missing required sections and are not reported as ready.
 - Public currentness requires fresh source transport, exact registry/section provenance and a current observation; transport-only or malformed fragments fail closed.
