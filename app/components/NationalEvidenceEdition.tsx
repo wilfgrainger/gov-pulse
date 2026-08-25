@@ -11,6 +11,17 @@ import {
   type SignalPresentation,
 } from "@/app/lib/nationalEvidence";
 
+const SECTION_LABELS: Record<string, string> = {
+  sentimentPulse: "sentiment and economic indicators",
+  gdpTracker: "GDP",
+  employmentStats: "employment",
+  nationalDebt: "national debt",
+  taxRevenue: "tax receipts",
+  migrationStats: "migration",
+  electionPolling: "election polling",
+  nhsStats: "NHS waiting lists",
+};
+
 const STATE_LABELS: Record<EvidenceState, string> = {
   current: "Current",
   "update-due": "Update due",
@@ -139,6 +150,57 @@ function SignalCard({ signal }: { signal: SignalPresentation }) {
   );
 }
 
+function PublicationStatus({ edition }: { edition: Edition }) {
+  if (edition.publicationState === "degraded") {
+    const missing = edition.missingRequiredSections
+      .map((section) => SECTION_LABELS[section] ?? section)
+      .join(", ");
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        data-testid="national-publication-status"
+        className="border border-[#a46811] bg-[#fff4d8] px-4 py-3 text-sm leading-6 text-[#744600]"
+      >
+        <p className="font-semibold">Degraded edition: current evidence is partial.</p>
+        <p>
+          Missing required sections: {missing || "the publication manifest is unavailable"}.
+          Older values are not carried forward as current.
+        </p>
+      </div>
+    );
+  }
+
+  if (edition.publicationState === "unavailable") {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        data-testid="national-publication-status"
+        className="border border-black/30 bg-[#f4f2ec] px-4 py-3 text-sm leading-6 text-gray-700"
+      >
+        <p className="font-semibold">Edition unavailable.</p>
+        <p>A current national publication could not be verified.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      data-testid="national-publication-status"
+      className="border border-[#2f6b50] bg-[#eef7f0] px-4 py-3 text-sm leading-6 text-[#1f4d38]"
+    >
+      <p className="font-semibold">Ready edition: current required evidence is present.</p>
+      <p>{edition.generatedAt ? `Edition generated ${edition.generatedAt}.` : "Edition date unavailable."}</p>
+    </div>
+  );
+}
+
 export default function NationalEvidenceEdition({ initialEdition }: { initialEdition: Edition }) {
   const [edition, setEdition] = useState(initialEdition);
 
@@ -170,6 +232,10 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
           <p className="text-sm text-gray-600">
             {edition.counts.current} current · {edition.counts["update-due"]} update due · {edition.counts.unavailable} unavailable
           </p>
+        </div>
+
+        <div className="mb-6">
+          <PublicationStatus edition={edition} />
         </div>
 
         <LeadStory signal={edition.lead} />

@@ -198,7 +198,7 @@ export default function CrimeStatistics() {
         sourceDate={`Released ${formatDate(crimeData.justice.releaseDate ?? "")} · ${crimeData.justice.period}`}
       />
 
-      <section aria-labelledby="regional-crime-title" className="border-l-4 border-foreground pl-4">
+      <section aria-labelledby="regional-crime-title" className="border-t border-[#d8d3c8] pt-4">
         <p className="text-sm font-semibold text-accent">Not yet published</p>
         <h3 id="regional-crime-title" className="mt-1 text-xl font-semibold">
           {crimeData.regional.title}

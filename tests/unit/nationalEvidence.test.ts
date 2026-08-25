@@ -134,6 +134,8 @@ describe("national evidence presentation", () => {
     expect(edition.lead?.leadHeadline).toBe("UK GDP grew in May 2026 by 0.1%.");
     expect(edition.signals).toHaveLength(8);
     expect(edition.counts.current).toBe(8);
+    expect(edition.publicationState).toBe("ready");
+    expect(edition.missingRequiredSections).toEqual([]);
     expect(edition.signals.find((signal) => signal.id === "national-debt")?.value).toBe("£2.98tn");
     expect(edition.signals.find((signal) => signal.id === "nhs-waiting-list")?.value).toBe("7.39m pathways");
     expect(edition.signals.find((signal) => signal.id === "latest-poll")?.value).toBe("24% Reform UK");
@@ -169,5 +171,26 @@ describe("national evidence presentation", () => {
     expect(edition.lead).toBeNull();
     expect(edition.counts.unavailable).toBe(8);
     expect(edition.signals.every((signal) => signal.value === null)).toBe(true);
+  });
+
+  it("preserves the public degraded state and missing-section manifest", () => {
+    const payload = snapshot();
+    payload.meta.publicationState = "degraded";
+    payload.meta.missingRequiredSections = ["nhsStats", "taxRevenue"];
+
+    const edition = selectNationalEvidenceEdition(payload);
+
+    expect(edition.publicationState).toBe("degraded");
+    expect(edition.missingRequiredSections).toEqual(["nhsStats", "taxRevenue"]);
+  });
+
+  it("does not turn an explicitly unavailable publication into a ready edition", () => {
+    const payload = snapshot();
+    payload.meta.publicationState = "unavailable";
+    payload.meta.missingRequiredSections = [];
+
+    const edition = selectNationalEvidenceEdition(payload);
+
+    expect(edition.publicationState).toBe("unavailable");
   });
 });

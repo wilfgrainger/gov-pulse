@@ -5,6 +5,7 @@ import {
 } from "./metricsSnapshot";
 
 export type EvidenceState = "current" | "update-due" | "unavailable";
+export type NationalPublicationState = "ready" | "degraded" | "unavailable";
 
 type SignalId =
   | "gdp"
@@ -38,6 +39,8 @@ export type SignalPresentation = {
 
 export type NationalEvidenceEdition = {
   generatedAt: string | null;
+  publicationState: NationalPublicationState;
+  missingRequiredSections: string[];
   lead: SignalPresentation | null;
   signals: SignalPresentation[];
   counts: Record<EvidenceState, number>;
@@ -445,6 +448,8 @@ function emptyEdition(): NationalEvidenceEdition {
   const signals = SIGNAL_ORDER.map(unavailable);
   return {
     generatedAt: null,
+    publicationState: "unavailable",
+    missingRequiredSections: [],
     lead: null,
     signals,
     counts: { current: 0, "update-due": 0, unavailable: signals.length },
@@ -470,8 +475,24 @@ export function selectNationalEvidenceEdition(snapshot: unknown): NationalEviden
     (result, signal) => ({ ...result, [signal.state]: result[signal.state] + 1 }),
     { current: 0, "update-due": 0, unavailable: 0 }
   );
+  const missingRequiredSections = Array.isArray(snapshot.meta.missingRequiredSections)
+    ? snapshot.meta.missingRequiredSections.filter(
+        (section): section is string => typeof section === "string" && section.trim().length > 0,
+      )
+    : [];
+  const declaredPublicationState = snapshot.meta.publicationState;
+  const publicationState: NationalPublicationState =
+    declaredPublicationState === "unavailable"
+      ? "unavailable"
+      : declaredPublicationState === "degraded" || missingRequiredSections.length > 0
+        ? "degraded"
+        : declaredPublicationState === undefined || declaredPublicationState === "ready"
+          ? "ready"
+          : "unavailable";
   return {
     generatedAt: formatDate(snapshot.meta.generatedAt),
+    publicationState,
+    missingRequiredSections,
     lead: preferred("current") ?? preferred("update-due"),
     signals,
     counts,

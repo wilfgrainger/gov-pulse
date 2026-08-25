@@ -40,7 +40,7 @@ export default function WithdrawnEvidence({
           {summary}
         </p>
 
-        <div className="mt-6 border-l-4 border-foreground pl-4">
+        <div className="mt-6 border-t border-[#d8d3c8] pt-4">
           <h4 className="text-lg font-semibold text-gray-950">
             What must be true before this evidence returns
           </h4>

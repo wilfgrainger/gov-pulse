@@ -121,19 +121,9 @@ table.sr-only {
 }
 
 .v3-page-header {
-  position: relative;
-  overflow: hidden;
   background:
     linear-gradient(135deg, rgb(138 53 64 / 0.08), transparent 42%),
     var(--surface-warm);
-}
-
-.v3-page-header::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 0.35rem;
-  background: var(--accent);
 }
 
 .v3-page-header-rail {

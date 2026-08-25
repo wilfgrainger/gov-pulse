@@ -50,6 +50,7 @@ export default function SiteFooter() {
                 href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
                 target="_blank"
                 rel="noreferrer"
+                aria-label="Open Government Licence v3.0 (opens in a new tab)"
                 className="underline decoration-white/30 underline-offset-4"
               >
                 Open Government Licence v3.0
@@ -60,7 +61,7 @@ export default function SiteFooter() {
               Educational and public-evidence information only; not financial, investment or betting advice.
             </p>
             <p className="mt-3 text-xs leading-5 text-slate-400">
-              This static website does not place cookies on your device or collect personal data.
+              The application does not use advertising, analytics or account tracking and does not intentionally collect personal data. Standard web requests may still be handled in hosting and delivery logs under the providers&apos; operational policies.
             </p>
           </div>
 

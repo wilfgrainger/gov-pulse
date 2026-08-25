@@ -10,7 +10,6 @@ import {
   valueTypeLabel,
   type ComparisonMeasure,
   type ComparisonObservation,
-  type InternationalComparisonPublication,
 } from "@/app/lib/internationalComparison";
 
 function sourceLine(observation: ComparisonObservation | null) {
@@ -74,25 +73,6 @@ function rankedCountries(measure: ComparisonMeasure) {
 
 function unavailableCountries(measure: ComparisonMeasure) {
   return measure.countries.filter((observation) => observation.value === null);
-}
-
-function strongestUkPosition(publication: InternationalComparisonPublication) {
-  return COMPARISON_MEASURE_ORDER.map((id) => publication.measures[id])
-    .map((measure) => ({ measure, uk: ukObservation(measure) }))
-    .filter(
-      (entry): entry is { measure: ComparisonMeasure; uk: ComparisonObservation } =>
-        Boolean(
-          entry.uk &&
-            entry.uk.value !== null &&
-            entry.uk.rank !== null &&
-            entry.measure.comparableCountryCount > 0
-        )
-    )
-    .sort(
-      (left, right) =>
-        (left.uk.rank ?? 999) / left.measure.comparableCountryCount -
-        (right.uk.rank ?? 999) / right.measure.comparableCountryCount
-    )[0] ?? null;
 }
 
 function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
@@ -202,7 +182,6 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
 
 export default async function InternationalComparison() {
   const publication = await readServerInternationalComparison();
-  const standout = publication ? strongestUkPosition(publication) : null;
 
   return (
     <div>
@@ -212,19 +191,9 @@ export default async function InternationalComparison() {
           What does Britain spend and owe per resident?
         </h2>
         <p className="mt-4 text-base leading-7 text-gray-700">
-          Seven separate measures put the UK beside the United States, China, Russia, Ukraine and eight large European economies. Each row keeps its own definition, year and comparable-country denominator. The figures are not added together into an overall score.
+          Seven separate measures put the UK beside the United States, China, Russia, Ukraine and eight large European economies. Each row keeps its own definition, year and comparable-country denominator. The measures are deliberately presented side by side, not ranked into a composite judgement or added together into an overall score.
         </p>
       </div>
-
-      {standout ? (
-        <aside className="mt-6 border-l-4 border-[#8a3540] bg-[#f7f3eb] px-5 py-4" aria-label="UK comparison standout">
-          <p className="eyebrow">What jumps out</p>
-          <p className="mt-2 text-base leading-7 text-[#172234]">
-            <strong>{standout.measure.label}:</strong>{" "}
-            {rankLabel(standout.measure, standout.uk)}. {comparisonSummary(standout.measure, standout.uk)}.
-          </p>
-        </aside>
-      ) : null}
 
       <div className="mt-7 border-y border-[#172234]">
         <div className="overflow-x-auto">

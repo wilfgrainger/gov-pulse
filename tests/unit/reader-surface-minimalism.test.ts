@@ -29,7 +29,7 @@ describe("public reader surface", () => {
     expect(homepage).not.toContain("publicationProvenanceFromSnapshot");
 
     expect(edition).not.toContain("Publication provenance");
-    expect(edition).not.toContain("Ready edition");
+    expect(edition).toContain('data-testid="national-publication-status"');
     expect(edition).not.toContain("Registry ");
     expect(edition).not.toContain("App ");
     expect(edition).not.toContain("Four checks before a number becomes a claim.");
