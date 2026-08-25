@@ -16,6 +16,7 @@ This ledger records structural controls included in the 1.0.0 release candidate.
 - Release workflows enforce `main`, pin action references, audit production dependencies, order data/bootstrap before web delivery, and require a verified `ready` or explicitly degraded Pages seed candidate before seed deployment.
 - Worker deployment verification matches the exact `workers/tag` annotation rather than an arbitrary text occurrence.
 - Production verifier redirects are same-host and bounded, and response bodies are size-limited.
+- Compatibility refresh authentication accepts the secret only in the `X-Refresh-Secret` header; URL query credentials are rejected to keep them out of logs and referrers.
 - Application and dataset licensing boundaries are explicit.
 
 ## Proof still required outside the repository
