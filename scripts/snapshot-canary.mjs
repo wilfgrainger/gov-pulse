@@ -86,10 +86,10 @@ export function validatePublishedDiagnostics(snapshot, verifiedSections) {
   return diagnostics;
 }
 
-async function main(rawUrl) {
+async function main(rawUrl, { fetchImpl = fetch, now = new Date() } = {}) {
   if (!rawUrl) throw new Error("A published snapshot URL is required");
   const snapshotUrl = new URL(rawUrl).toString();
-  const response = await fetch(snapshotUrl, {
+  const response = await fetchImpl(snapshotUrl, {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(20_000),
   });
@@ -114,7 +114,8 @@ async function main(rawUrl) {
     );
   }
 
-  const checkedAt = new Date();
+  validateSnapshotAge(snapshot.meta?.generatedAt, now.getTime());
+  const checkedAt = now;
   const currentSnapshot = filterCurrentSnapshot(snapshot, checkedAt);
   if (!currentSnapshot) {
     throw diagnosticError(

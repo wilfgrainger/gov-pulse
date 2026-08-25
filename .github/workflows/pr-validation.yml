@@ -2,7 +2,6 @@ name: Pull Request Validation
 
 on:
   pull_request:
-    branches: ["main"]
 
 permissions:
   contents: read
@@ -22,6 +21,12 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+
+      - name: Fetch PR base ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "refs/heads/${GITHUB_BASE_REF}:refs/remotes/origin/${GITHUB_BASE_REF}"
 
       - name: Enforce UTF-8 and LF
         run: node scripts/check-text-policy.mjs --changed

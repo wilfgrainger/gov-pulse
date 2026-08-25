@@ -7,6 +7,9 @@ This ledger records structural controls included in the 1.0.0 release candidate.
 - National publication fragments and values carry a run ID, preventing late Queue retries from mixing editions.
 - International comparison reads enforce a seven-day hard expiry independent of the seven-day refresh due guard.
 - Source discovery, seed fallback and decompression are bounded by approved hosts, response limits and archive output caps.
+- Upstream redirects must preserve the approved HTTPS hostname and effective port, not merely the hostname.
+- The live snapshot canary rejects publications outside its six-hour build-age window at runtime, not only in helper tests.
+- Pull-request validation fetches the declared base ref and runs for stacked and main-bound PRs, so each base-relative change budget receives CI evidence.
 - The public national cache cannot outlive the evidence currentness deadline.
 - Degraded national editions expose exact missing required sections and are not reported as ready.
 - Public currentness requires fresh source transport, exact registry/section provenance and a current observation; transport-only or malformed fragments fail closed.
@@ -16,6 +19,7 @@ This ledger records structural controls included in the 1.0.0 release candidate.
 - Release workflows enforce `main`, pin action references, audit production dependencies, order data/bootstrap before web delivery, and require a verified `ready` or explicitly degraded Pages seed candidate before seed deployment.
 - Worker deployment verification matches the exact `workers/tag` annotation rather than an arbitrary text occurrence.
 - Production verifier redirects are same-host and bounded, and response bodies are size-limited.
+- Compatibility refresh authentication accepts the secret only in the `X-Refresh-Secret` header; URL query credentials are rejected to keep them out of logs and referrers.
 - Application and dataset licensing boundaries are explicit.
 
 ## Proof still required outside the repository

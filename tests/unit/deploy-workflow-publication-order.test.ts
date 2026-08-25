@@ -118,6 +118,9 @@ describe("production publication order", () => {
     expect(production).toContain(
       "METRICS_SNAPSHOT_URL: https://public-data.org/data/metrics-snapshot.json",
     );
+    expect(production).toContain(
+      "PUBLIC_DATA_EXPECTED_REVISION: ${{ github.sha }}",
+    );
   });
 
   it("refreshes Pages as a verified bounded fallback after full production verification", () => {
