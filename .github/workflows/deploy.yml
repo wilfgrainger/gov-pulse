@@ -26,21 +26,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  enforce-release-ref:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Enforce main release ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/main" || {
+            echo "Production deployment is permitted only from refs/heads/main"
+            exit 1
+          }
+
   validate-and-build:
+    needs: enforce-release-ref
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version-file: .nvmrc
           cache: npm
 
       - name: Install locked dependencies
-        run: npm ci --prefer-offline --no-audit --no-fund
+        run: npm ci --prefer-offline --no-fund
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Verify toolchain
         run: npm run toolchain:check
@@ -58,7 +75,7 @@ jobs:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
 
       - name: Install locked OpenNext toolchain
-        run: npm ci --prefix worker --prefer-offline --no-audit --no-fund
+        run: npm ci --prefix worker --prefer-offline --no-fund
 
       - name: Stage OpenNext adapter config
         shell: bash
@@ -75,6 +92,19 @@ jobs:
         env:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
 
+      - name: Verify preinstalled Chrome
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v google-chrome
+          google-chrome --version
+
+      - name: Run deterministic browser tests
+        env:
+          CI: "true"
+          PLAYWRIGHT_PORT: "4173"
+        run: npm run test:e2e
+
   deploy-production:
     needs: validate-and-build
     runs-on: ubuntu-latest
@@ -84,19 +114,19 @@ jobs:
       url: https://public-data.org/
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version-file: .nvmrc
           cache: npm
 
       - name: Install locked dependencies
-        run: npm ci --prefer-offline --no-audit --no-fund
+        run: npm ci --prefer-offline --no-fund
 
       - name: Install locked OpenNext toolchain
-        run: npm ci --prefix worker --prefer-offline --no-audit --no-fund
+        run: npm ci --prefix worker --prefer-offline --no-fund
 
       - name: Validate Cloudflare credentials
         env:
@@ -126,21 +156,6 @@ jobs:
         env:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
 
-      - name: Deploy request-time public-data.org web Worker
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: >-
-          ./worker/node_modules/.bin/opennextjs-cloudflare deploy
-          --config worker/web-wrangler.toml
-
-      - name: Verify UK in context route is live before data refresh
-        run: >-
-          curl --fail --silent --show-error
-          --retry 12 --retry-all-errors --retry-delay 5
-          https://public-data.org/section/uk-in-context/
-          --output /dev/null
-
       - name: Reconcile Cloudflare Queue
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -168,7 +183,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
-          npx wrangler deployments status
+          npx wrangler versions list
           --json
           --config worker/wrangler.toml
           | node scripts/verify-worker-deployment.mjs "$GITHUB_SHA"
@@ -182,6 +197,21 @@ jobs:
           HEALTH_URL: https://public-data.org/data/health.json
           BOOTSTRAP_TIMEOUT_MS: "720000"
         run: node scripts/bootstrap-cloudflare-publication.mjs
+
+      - name: Deploy request-time public-data.org web Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          ./worker/node_modules/.bin/opennextjs-cloudflare deploy
+          --config worker/web-wrangler.toml
+
+      - name: Verify request-time web route is live after data bootstrap
+        run: >-
+          curl --fail --silent --show-error
+          --retry 12 --retry-all-errors --retry-delay 5
+          https://public-data.org/section/uk-in-context/
+          --output /dev/null
 
       - name: Verify deployed application, evidence and comparison publication
         run: node scripts/verify-production.mjs "https://public-data.org/" "${{ github.sha }}"

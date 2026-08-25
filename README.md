@@ -1,42 +1,24 @@
 # public-data.org
 
-An independent UK public-evidence service built with Next.js, TypeScript and verified primary-source data.
+An independent UK public-evidence service built with Next.js, TypeScript and verified primary-source data. Version 1.0.0 keeps the public product deliberately small: request-time evidence pages, an isolated data publication Worker, and a bounded static seed for recovery.
 
-## Architecture
+## Runtime architecture
 
-public-data.org uses a Cloudflare-first data plane with the repository as the source of truth:
+public-data.org has three delivery planes:
 
-- **Cloudflare Pages** serves the static Next.js frontend, discovery files and downloadable section JSON/CSV assets.
-- **Cloudflare Cron Triggers** start bounded evidence refreshes.
-- **Cloudflare Queues** serialise source work, retries and run finalisation.
-- **Cloudflare Workers** collect, validate and publish evidence.
-- **Workers KV** stores source records, run state, the canonical private publication and a pre-sanitised public snapshot.
-- The Worker serves only two exact same-origin routes: `/data/metrics-snapshot.json` and `/data/health.json`.
-- **GitHub Actions** tests, builds and deploys repository code. It does not collect recurring data or manually promote daily editions.
+1. **`public-data-web`** is the normal application Worker. It renders evidence-bearing pages at request time, serves the application assets, and gives browsers, crawlers, link unfurlers and no-JavaScript clients the same currentness decision.
+2. **`pulse-data-worker`** is the data plane. Its only public HTTP routes are `/data/metrics-snapshot.json`, `/data/health.json` and `/data/international-comparison.json`. Collectors, Queue state, editorial operations and KV keys are not public routes.
+3. **Cloudflare Pages** retains a bounded static export. It is a seed/fallback distribution, not the normal `public-data.org` application plane. The data Worker may use its validated snapshot only inside the documented bootstrap and outage boundary.
 
-A merge to `main` automatically validates the repository, reconciles the required Cloudflare Queue, deploys the Worker, verifies its health route, and deploys the static frontend to Cloudflare Pages. Manual workflow dispatch is recovery-only.
+The national publication path is `Cron → Queue → source collectors → validation and normalisation → run-scoped KV fragments → run terminal records → deadline-aware finaliser → atomic prepared public artifact → request-time delivery`. International comparison publication is isolated from national readiness and expires after seven days when it is not refreshed.
 
-The repository-level GitHub Pages setting must remain disabled. A `public/CNAME` file and GitHub Pages deployment actions are prohibited because they can compete with the Cloudflare Pages production route. `npm run hosting:check` enforces this boundary in every test pass.
-
-See [the control-plane architecture](./docs/architecture/free-tier-feed-control-plane.md) and [ADR-0001](./docs/architecture/decisions/0001-cloudflare-first-data-plane.md).
-
-## Code and licensing
-
-The repository is public so readers and contributors can inspect the site, evidence contracts, source-specific validation, tests and deployment configuration, raise traceable issues and follow material decisions. A public repository is an inspection and accountability route; it is not, by itself, a blanket permission to reuse the software.
-
-This repository does not currently declare a project-wide open-source licence. The named publishers, government data, fonts and other third-party materials retain their own licence terms. Add an explicit project licence before describing the software as open source or granting broad reuse rights.
+The source-of-truth registry is [worker/feed-registry.js](./worker/feed-registry.js). The browser consumes the public contracts through [app/lib/useMetrics.ts](./app/lib/useMetrics.ts) and the request-time server snapshot. No browser code calls a collector or exposes a cache key, account identifier, secret or deployment route.
 
 ## Public evidence contract
 
-Each supported section has a source-owned observation period, publication or release date, retrieval time, revision state and evidence class. A later technical check does not renew the age of unchanged evidence.
+Every public claim identifies what changed, why it matters, what was measured, the observation period and geography, the unit, the publication date, the direct primary source, and the material revision or uncertainty caveat. Official statistics, administrative data, polling, market signals and crime source classes remain separate. Missing, stale, incomplete or incomparable evidence is unavailable or `null`, never zero, a forecast, an interpolation or a synthetic replacement.
 
-Public delivery is split deliberately:
-
-- `/data/metrics-snapshot.json` is the current Cloudflare-published aggregate used by the application;
-- `/data/health.json` reports whether the prepared runtime publication is ready or still bootstrapping;
-- `/data/sections/<section>.json` and `.csv` are deterministic static distributions generated with the Pages build.
-
-Evidence fails closed when currentness, completeness, provenance or the intended comparison cannot be proved. The public Worker does not expose collectors, editorial operations, Queue state or private KV records.
+The national public snapshot is current only when each included section passes its source-specific currentness policy. A partial edition is explicitly marked `meta.publicationState = "degraded"` with an exact `missingRequiredSections` manifest; `/data/health.json` then reports `ready: false`. Expired values are removed rather than silently carried forward. The international comparison keeps measure-specific years, country coverage, missingness and ranking denominators and never calculates an overall country score.
 
 ## Local development
 
@@ -49,9 +31,7 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000`.
-
-The project intentionally retains Node 20 type definitions while running on Node 24. This limits application code to the older, widely supported Node API surface while CI verifies the exact runtime and package-manager versions.
+Open `http://localhost:3000`. Local development intentionally does not pretend to have a live Cloudflare publication; the production request-time bundle is validated separately through the OpenNext Worker build.
 
 ## Quality gates
 
@@ -64,22 +44,25 @@ npm run build:check
 npm run test:e2e
 ```
 
-Pull requests run governance, architecture, source-ownership, hosting-boundary, lint, unit/Worker, static-build and deterministic browser checks. The named aggregate `quality` job is the branch-protection gate.
+Pull requests additionally run architecture, source ownership, text, lockfile, change-complexity and PR-evidence guards, the production dependency audit, the static seed build, the pinned OpenNext build and deterministic desktop/mobile browser journeys. The `quality` job is the branch-protection aggregate.
 
 ## Deployment
 
-The repository contains two active workflows:
+The two active workflows are:
 
-- **Pull Request Validation** — assurance only; never mutates Cloudflare.
-- **Deploy public-data.org** — runs automatically after relevant changes reach `main` and deploys Worker then Pages in that order.
+- **Pull Request Validation** — assurance only; it has no Cloudflare credentials and does not mutate infrastructure.
+- **Deploy public-data.org** — automatic for relevant changes on `main`; it enforces the release ref, validates/builds once, reconciles the `public-data-jobs` Queue, deploys and verifies the data Worker, bootstraps national and comparison publication independently, deploys the request-time web Worker, verifies live evidence routes, and refreshes the Pages seed only after production verification.
 
-The production workflow creates or reconciles the `public-data-jobs` Queue before deploying the Worker, so a fresh Cloudflare account does not depend on an undocumented manual Queue step.
+Manual dispatch is recovery-only and is refused unless the selected ref is `main`. The workflow never uses a GitHub scheduled job for recurring evidence collection.
 
 Required GitHub environment configuration:
 
-- `cloudflare-internal-worker` with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`;
-- `cloudflare-pages` with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+- The `cloudflare-internal-worker` environment with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The current deployment job uses this protected environment for both Worker deployments and the optional Pages seed refresh.
 
-The token must be restricted to the intended Cloudflare account and `public-data.org` zone while permitting Worker deployment, Worker routes, Queues, KV bindings and Pages deployment. Secret values must never be committed.
+Keep tokens restricted to the intended Cloudflare account and `public-data.org` resources. Secret values must never be committed, printed or copied into issues, prompts or evidence records. `workers_dev = false`, `preview_urls = false`, exact route declarations and [scripts/check-hosting-boundary.mjs](./scripts/check-hosting-boundary.mjs) enforce the public boundary.
 
-Operational checks and recovery are documented in [docs/manual-rollout-checklist.md](./docs/manual-rollout-checklist.md). Issue #257 remains the operational evidence record for consecutive scheduled runs and an exercised rollback; merge status alone is not treated as production proof.
+Operational release, incident and rollback guidance is in [docs/manual-rollout-checklist.md](./docs/manual-rollout-checklist.md). A green build, deployment response or DNS answer is not by itself live-data proof; production claims require exact-head checks and observation of the affected public journey.
+
+## Code and data licensing
+
+The application source is licensed under [Apache License 2.0](./LICENSE). Public-source datasets, publisher documents, government data, fonts and other third-party materials retain their own terms; see [DATA-LICENSING.md](./DATA-LICENSING.md). The application licence does not grant rights to republish a named publisher's material.
