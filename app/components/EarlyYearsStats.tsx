@@ -30,17 +30,51 @@ const FALLBACK = {
   }
 };
 
+function finiteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function formatPublicationDate(value: unknown): string | null {
+  if (typeof value !== "string" || !Number.isFinite(Date.parse(value))) return null;
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(value));
+}
+
+function changeText(value: number): string {
+  if (value === 0) return "unchanged";
+  return `${value > 0 ? "+" : ""}${value.toFixed(1)} percentage points`;
+}
+
 export default function EarlyYearsStats() {
   const metrics = useMetrics("earlyYears", FALLBACK);
   const data = metrics.data;
+  const mmrRate = finiteNumber(data?.headline?.mmrRate);
+  const mmrDelta = finiteNumber(data?.headline?.mmrDelta);
+  const schoolReadyRate = finiteNumber(data?.headline?.schoolReadyRate);
+  const schoolReadyDelta = finiteNumber(data?.headline?.schoolReadyDelta);
+  const mmrPublicationDate = formatPublicationDate(data?.source?.mmrPublicationDate);
+  const schoolReadyPublicationDate = formatPublicationDate(data?.source?.schoolReadyPublicationDate);
   const valid =
     data?.available === true &&
     typeof data.headline?.mmrPeriod === "string" &&
     typeof data.headline?.schoolReadyPeriod === "string" &&
     data.headline.mmrPeriod.trim().length > 0 &&
     data.headline.schoolReadyPeriod.trim().length > 0 &&
+    mmrRate !== null &&
+    mmrDelta !== null &&
+    schoolReadyRate !== null &&
+    schoolReadyDelta !== null &&
+    mmrPublicationDate !== null &&
+    schoolReadyPublicationDate !== null &&
     typeof data.source?.mmrUrl === "string" &&
     typeof data.source?.schoolReadyUrl === "string";
+
+  const mmrMovement =
+    mmrDelta === null || mmrDelta === 0 ? "was unchanged at" : mmrDelta > 0 ? "rose to" : "fell to";
 
   return (
     <div className="space-y-8">
@@ -52,10 +86,10 @@ export default function EarlyYearsStats() {
               id="early-years-briefing-title"
               className="mt-2 max-w-4xl text-3xl font-semibold leading-tight tracking-[-0.03em] md:text-5xl"
             >
-              England child MMR vaccination rate fell to {data.headline.mmrRate}% in {data.headline.mmrPeriod}
+              England child MMR vaccination rate {mmrMovement} {mmrRate ?? 0}% in {data.headline.mmrPeriod}
             </h3>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-gray-700">
-              The percentage of children receiving their first dose of the MMR vaccine by age two remains below the World Health Organisation target of 95.0%. School readiness at the end of reception was last observed at {data.headline.schoolReadyRate}% in {data.headline.schoolReadyPeriod}.
+              The percentage of children receiving their first dose of the MMR vaccine by age two is measured against the World Health Organisation target of 95.0%. School readiness at the end of reception was last observed at {schoolReadyRate ?? 0}% in {data.headline.schoolReadyPeriod}; the two measures use different publications and should not be read as one combined score.
             </p>
           </section>
 
@@ -70,19 +104,19 @@ export default function EarlyYearsStats() {
               <div className="p-4 md:p-5">
                 <dt className="text-sm text-gray-600">MMR 1st Dose (Age 2)</dt>
                 <dd className="mt-1 text-4xl font-semibold tabular-nums text-accent">
-                  {data.headline.mmrRate.toFixed(1)}%
+                  {(mmrRate ?? 0).toFixed(1)}%
                 </dd>
                 <dd className="mt-2 text-sm text-gray-600">
-                  {data.headline.mmrPeriod} · {data.headline.mmrDelta >= 0 ? "+" : ""}{data.headline.mmrDelta.toFixed(1)} percentage points since previous year.
+                  {data.headline.mmrPeriod} · {changeText(mmrDelta ?? 0)} since previous year.
                 </dd>
               </div>
               <div className="border-t border-black/15 p-4 md:border-l md:border-t-0 md:p-5">
                 <dt className="text-sm text-gray-600">School Readiness (GLD index)</dt>
                 <dd className="mt-1 text-4xl font-semibold tabular-nums">
-                  {data.headline.schoolReadyRate.toFixed(1)}%
+                  {(schoolReadyRate ?? 0).toFixed(1)}%
                 </dd>
                 <dd className="mt-2 text-sm text-gray-600">
-                  {data.headline.schoolReadyPeriod} · percentage of children achieving Good Level of Development.
+                  {data.headline.schoolReadyPeriod} · {changeText(schoolReadyDelta ?? 0)} since previous year; percentage of children achieving Good Level of Development.
                 </dd>
               </div>
             </dl>
@@ -115,7 +149,7 @@ export default function EarlyYearsStats() {
             geography="England"
             interpretation={
               <p>
-                A high vaccine rate (95%) ensures herd immunity against measles outbreaks. The GLD index reflects child performance across communication, physical development, and personal/social/emotional skills at reception end.
+                The 95% figure is a WHO public-health target and comparison benchmark; coverage alone is not proof of local herd immunity. The GLD index reflects child performance across communication, physical development, and personal/social/emotional skills at reception end.
               </p>
             }
             caveat={
@@ -125,7 +159,7 @@ export default function EarlyYearsStats() {
             }
             sourceLabel="UKHSA and DfE early years publications"
             sourceUrl={data.source.mmrUrl}
-            sourceDate={`UKHSA published 28 Aug 2025 · MMR observation period ${data.headline.mmrPeriod}; DfE published 27 Nov 2025 · school-readiness observation period ${data.headline.schoolReadyPeriod}`}
+            sourceDate={`UKHSA published ${mmrPublicationDate ?? "date unavailable"} · MMR observation period ${data.headline.mmrPeriod}; DfE published ${schoolReadyPublicationDate ?? "date unavailable"} · school-readiness observation period ${data.headline.schoolReadyPeriod}`}
             additionalSources={[{ label: "DfE school-readiness publication", url: data.source.schoolReadyUrl }]}
           />
         </>

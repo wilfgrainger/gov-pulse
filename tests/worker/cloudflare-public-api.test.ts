@@ -96,6 +96,9 @@ describe("Cloudflare public data route", () => {
       "cloudflare-kv"
     );
     expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    expect(response.headers.get("cache-control")).toMatch(
+      /^public, max-age=300, s-maxage=300$/
+    );
     expect(env.METRICS_CACHE.get).not.toHaveBeenCalled();
 
     const payload = (await response.json()) as PublicSnapshotPayload;
@@ -119,6 +122,9 @@ describe("Cloudflare public data route", () => {
     const etag = first.headers.get("ETag");
     expect(etag).toBeTruthy();
     expect(etag).toMatch(/^W\/\"sha256-[0-9a-f]{64}\"$/);
+    expect(first.headers.get("cache-control")).not.toContain(
+      "stale-while-revalidate"
+    );
 
     const conditional = await publicWorker.fetch(
       new Request("https://public-data.org/data/metrics-snapshot.json", {

@@ -39,7 +39,7 @@ export default function SocialShare({
   title = SITE_TITLE,
   compact = false,
 }: SocialShareProps) {
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const resetTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -50,14 +50,14 @@ export default function SocialShare({
     };
   }, []);
 
-  const showCopiedState = () => {
-    setCopied(true);
+  const showCopyState = (state: "copied" | "failed") => {
+    setCopyState(state);
     if (resetTimeoutRef.current !== null) {
       window.clearTimeout(resetTimeoutRef.current);
     }
 
     resetTimeoutRef.current = window.setTimeout(() => {
-      setCopied(false);
+      setCopyState("idle");
       resetTimeoutRef.current = null;
     }, 2000);
   };
@@ -66,15 +66,20 @@ export default function SocialShare({
     const pageUrl = getCurrentUrl();
     try {
       await navigator.clipboard.writeText(pageUrl);
-      showCopiedState();
+      showCopyState("copied");
     } catch {
       const textArea = document.createElement("textarea");
       textArea.value = pageUrl;
       document.body.appendChild(textArea);
       textArea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textArea);
-      showCopiedState();
+      try {
+        if (!document.execCommand("copy")) throw new Error("Copy command was rejected");
+        showCopyState("copied");
+      } catch {
+        showCopyState("failed");
+      } finally {
+        document.body.removeChild(textArea);
+      }
     }
   };
 
@@ -103,18 +108,23 @@ export default function SocialShare({
             rel="noopener noreferrer"
             onClick={handleShareClick(link.name)}
             className="border border-[#cbc4b8] px-2 py-1 text-xs font-semibold transition-colors hover:bg-[#172234] hover:text-white"
-            title={`Share on ${link.name}`}
+            aria-label={`${link.label} (opens in a new tab)`}
+            title={`Share on ${link.name} (opens in a new tab)`}
           >
             {link.label}
           </a>
         ))}
         <button
+          type="button"
           onClick={handleCopyLink}
           className="border border-[#cbc4b8] px-2 py-1 text-xs font-semibold transition-colors hover:bg-[#172234] hover:text-white"
           title="Copy link"
         >
-          {copied ? "Copied" : "Copy link"}
+          {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy link"}
         </button>
+        <p className="sr-only" role="status" aria-live="polite">
+          {copyState === "copied" ? "Link copied to the clipboard." : copyState === "failed" ? "The link could not be copied. Copy the page address from the browser instead." : ""}
+        </p>
       </div>
     );
   }
@@ -133,20 +143,25 @@ export default function SocialShare({
             rel="noopener noreferrer"
             onClick={handleShareClick(link.name)}
             className="border border-[#172234] px-4 py-2 text-sm font-semibold transition-colors hover:bg-[#172234] hover:text-white"
-            title={`Share on ${link.name}`}
+            aria-label={`${link.label} (opens in a new tab)`}
+            title={`Share on ${link.name} (opens in a new tab)`}
           >
             {link.label}
           </a>
         ))}
         <button
+          type="button"
           onClick={handleCopyLink}
           className={`border border-[#172234] px-4 py-2 text-sm font-semibold transition-colors ${
-            copied ? "bg-[#172234] text-white" : "bg-white text-[#172234] hover:bg-[#172234] hover:text-white"
+            copyState === "copied" ? "bg-[#172234] text-white" : "bg-white text-[#172234] hover:bg-[#172234] hover:text-white"
           }`}
           title="Copy link to clipboard"
         >
-          {copied ? "Copied" : "Copy link"}
+          {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy link"}
         </button>
+        <p className="sr-only" role="status" aria-live="polite">
+          {copyState === "copied" ? "Link copied to the clipboard." : copyState === "failed" ? "The link could not be copied. Copy the page address from the browser instead." : ""}
+        </p>
       </div>
     </div>
   );

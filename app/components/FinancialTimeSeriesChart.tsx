@@ -176,6 +176,47 @@ export default function FinancialTimeSeriesChart({
             .join("; ")}
         </p>
       ) : null}
+      <details className="mt-4 border border-black/15 bg-white">
+        <summary className="flex min-h-11 cursor-pointer items-center px-3 py-2 text-sm font-semibold underline decoration-black/25 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-black">
+          Show every published point as a table
+        </summary>
+        <div className="overflow-x-auto border-t border-black/10">
+          <table className="min-w-full border-collapse text-left text-sm">
+            <caption className="sr-only">
+              {title}. Exact published points with the period and value for each series.
+            </caption>
+            <thead className="bg-[#f4f2ec] text-xs uppercase tracking-[0.08em] text-gray-600">
+              <tr>
+                <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">
+                  Period
+                </th>
+                {series.map((entry) => (
+                  <th key={entry.key} scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">
+                    {entry.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((point) => (
+                <tr key={`${point.observedAt}-${point.period}`} className="border-t border-black/10">
+                  <th scope="row" className="whitespace-nowrap px-3 py-2 font-medium">
+                    <time dateTime={new Date(point.observedAt).toISOString()}>{point.period}</time>
+                  </th>
+                  {series.map((entry) => {
+                    const value = point[entry.key];
+                    return (
+                      <td key={entry.key} className="whitespace-nowrap px-3 py-2 font-mono tabular-nums">
+                        {typeof value === "number" ? valueFormatter(value) : "Not available"}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 px-1 text-xs text-gray-600">
         <div className="flex flex-wrap gap-x-5 gap-y-2">
           {series.map((entry) => (

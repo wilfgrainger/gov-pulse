@@ -208,7 +208,7 @@ export default function ElectionPolling() {
             </p>
           </section>
 
-          <section aria-labelledby="poll-method-title" className="border-l-4 border-foreground pl-4">
+          <section aria-labelledby="poll-method-title" className="border-t border-[#d8d3c8] pt-4">
             <h3 id="poll-method-title" className="text-lg font-semibold">Evidence method</h3>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-700">
               public-data.org does not scrape Wikipedia or calculate an unweighted average. It displays each accepted British Polling Council member publication separately with its direct source, fieldwork, sample and method.

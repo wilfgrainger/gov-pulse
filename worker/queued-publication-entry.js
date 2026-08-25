@@ -27,11 +27,11 @@ import { buildPublicationDiagnostics } from "../contracts/publication-diagnostic
 import { FEED_REGISTRY } from "./feed-registry.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
 import { refreshInternationalComparison } from "./international-comparison-store.js";
+import { approvedSeedUrl } from "./approved-seed-url.js";
 
-const PUBLICATION_SECTION_PREFIX = "v12:publication:section:";
-const PUBLICATION_HISTORY_TTL_SECONDS = 14 * 24 * 60 * 60;
-const DEFAULT_SEED_URL = "https://public-data-org.pages.dev/data/metrics-snapshot.json";
 const RUN_PREFIX = "v13:publication:run:";
+const PUBLICATION_SECTION_PREFIX = RUN_PREFIX;
+const PUBLICATION_HISTORY_TTL_SECONDS = 14 * 24 * 60 * 60;
 const RUN_TTL_SECONDS = 14 * 24 * 60 * 60;
 const FINALISE_DELAY_SECONDS = 20 * 60;
 const FINALISE_RETRY_SECONDS = 5 * 60;
@@ -117,6 +117,15 @@ function terminalKey(runId, jobId) {
   return `${RUN_PREFIX}${runId}:terminal:${jobId}`;
 }
 
+function publicationSectionKey(runId, section) {
+  const normalizedRunId = String(runId ?? "").trim();
+  const normalizedSection = String(section ?? "").trim();
+  if (!normalizedRunId || !normalizedSection) {
+    throw new Error("Publication section fragments require a runId and section");
+  }
+  return `${PUBLICATION_SECTION_PREFIX}${normalizedRunId}:section:${normalizedSection}`;
+}
+
 function sectionRefreshJobs(runId, sections, type) {
   return sections.map((section) => ({
     type,
@@ -155,15 +164,11 @@ function refreshJobs(runId, scope = "daily") {
 }
 
 function jobsForDay(runId = "manual") {
-  return refreshJobs(runId, "daily").map((job) =>
-    job.type === "refresh-contracts"
-      ? { type: job.type }
-      : { type: job.type, section: job.section }
-  );
+  return refreshJobs(runId, "daily");
 }
 
 async function fetchSeedSnapshot(env, fetchImpl = fetch) {
-  const url = String(env?.STATIC_SNAPSHOT_SEED_URL || DEFAULT_SEED_URL).trim();
+  const url = approvedSeedUrl(env?.STATIC_SNAPSHOT_SEED_URL);
   if (!url) return null;
   try {
     const response = await fetchImpl(url, {
@@ -189,30 +194,48 @@ function createPacedFetch(fetchImpl = fetch, gapMs = CONTRACT_REQUEST_GAP_MS) {
   };
 }
 
-async function storeSectionFragment(section, env, ctx) {
+async function storeSectionFragment(section, env, ctx, runId) {
   if (!GENERIC_SECTIONS.includes(section)) {
     throw new Error(`Section '${section}' is outside the generic publication set`);
   }
+  const normalizedRunId = String(runId ?? "").trim();
+  if (!normalizedRunId) throw new Error("Section fragments require a runId");
   const record = await refreshSectionPayload(section, env, ctx);
-  await kvPut(env, `${PUBLICATION_SECTION_PREFIX}${section}`, record);
-  return record;
+  const runScopedRecord = { ...record, runId: normalizedRunId };
+  await kvPut(env, publicationSectionKey(normalizedRunId, section), runScopedRecord, {
+    expirationTtl: RUN_TTL_SECONDS,
+  });
+  return runScopedRecord;
 }
 
 async function storeExternalSection(section, env, options = {}) {
   if (!EXTERNAL_SECTIONS.includes(section)) {
     throw new Error(`Section '${section}' is outside the external publication set`);
   }
+  const normalizedRunId = String(options.runId ?? "").trim();
+  if (!normalizedRunId) throw new Error("External section fragments require a runId");
   const record = await collectExternalSection(section, options);
-  await kvPut(env, `${PUBLICATION_SECTION_PREFIX}${section}`, record);
-  return record;
+  const runScopedRecord = {
+    ...record,
+    runId: normalizedRunId,
+  };
+  await kvPut(env, publicationSectionKey(normalizedRunId, section), runScopedRecord, {
+    expirationTtl: RUN_TTL_SECONDS,
+  });
+  return runScopedRecord;
 }
 
-async function publicationFragments(env, now = new Date()) {
+async function publicationFragments(env, now = new Date(), runId) {
+  const normalizedRunId = String(runId ?? "").trim();
+  if (!normalizedRunId) {
+    throw new Error("Publication fragments require a runId");
+  }
   const records = [];
   for (const section of PUBLISHED_SECTIONS) {
-    const record = await kvGet(env, `${PUBLICATION_SECTION_PREFIX}${section}`);
+    const record = await kvGet(env, publicationSectionKey(normalizedRunId, section));
     if (
       record?.section === section &&
+      record?.runId === normalizedRunId &&
       isRecord(record.data) &&
       currentSectionRecord(record, now)
     ) {
@@ -240,9 +263,11 @@ function missingRequiredSections(snapshot) {
 
 async function publishFromCaches(env, options = {}) {
   const now = options.now ?? new Date();
+  const runId = String(options.runId ?? "").trim();
+  if (!runId) throw new Error("Publication cache merge requires a runId");
   const current = await readCurrentPublication(env);
   const seed = current ?? (await fetchSeedSnapshot(env, options.fetchImpl ?? fetch));
-  const fragments = await publicationFragments(env, now);
+  const fragments = await publicationFragments(env, now, runId);
   const contractsRecord = await kvGet(env, CONTRACT_CURRENT_RECORD_KEY);
   const merged = mergePublication(seed, fragments, contractsRecord, now);
   const currentCandidate = filterCurrentSnapshot(merged, now);
@@ -304,13 +329,19 @@ async function processQueueJob(job, env, ctx, options = {}) {
     return { type: job.type, updated: result.updated, due: result.due };
   }
   if (job?.type === "refresh-section") {
-    const record = await storeSectionFragment(String(job.section ?? ""), env, ctx);
+    const record = await storeSectionFragment(
+      String(job.section ?? ""),
+      env,
+      ctx,
+      job.runId,
+    );
     return { type: job.type, section: record.section, fetchedAt: record.fetchedAt };
   }
   if (job?.type === "refresh-external-section") {
     const record = await storeExternalSection(String(job.section ?? ""), env, {
       fetchImpl: options.fetchImpl ?? fetch,
       now: options.now ?? new Date(),
+      runId: job.runId,
     });
     return { type: job.type, section: record.section, fetchedAt: record.fetchedAt };
   }
@@ -438,7 +469,7 @@ async function finaliseRun(runId, env, options = {}) {
   let publicationResult = null;
   if (complete || successful.length > 0) {
     try {
-      publicationResult = await publishFromCaches(env, { ...options, now });
+      publicationResult = await publishFromCaches(env, { ...options, now, runId });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (complete || message !== "Publication snapshot has no current source-owned evidence") {
@@ -588,6 +619,7 @@ export {
   missingRequiredSections,
   processQueueJob,
   publicationFragments,
+  publicationSectionKey,
   publishFromCaches,
   refreshJobs,
   runIdFor,

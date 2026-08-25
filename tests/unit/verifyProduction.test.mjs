@@ -4,6 +4,7 @@ import {
   PUBLIC_SECTION_PATHS,
   verifyHealthJson,
   verifyEvidenceFeed,
+  fetchResult,
   verifyGdpHtml,
   verifyInternationalComparisonJson,
   verifyProduction,
@@ -386,5 +387,29 @@ describe("production deployment verifier", () => {
     );
 
     expect(log.warn).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects redirects to another host", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(null, {
+        status: 302,
+        headers: { location: "https://attacker.example/" },
+      }),
+    );
+
+    await expect(fetchResult("https://example.test/", fetchImpl)).rejects.toThrow(
+      "redirected away from its approved HTTPS host",
+    );
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it("bounds production response bodies", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(new Uint8Array(4 * 1024 * 1024 + 1), { status: 200 }),
+    );
+
+    await expect(fetchResult("https://example.test/", fetchImpl)).rejects.toThrow(
+      "Production verifier response from https://example.test/ response exceeded",
+    );
   });
 });

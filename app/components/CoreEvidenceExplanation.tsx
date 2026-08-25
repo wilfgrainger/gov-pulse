@@ -31,7 +31,7 @@ export default function CoreEvidenceExplanation({
     <>
       <section
         aria-labelledby={`${idPrefix}-why-title`}
-        className="border-l-4 border-foreground pl-4"
+        className="border-t border-[#d8d3c8] pt-4"
       >
         <h3 id={`${idPrefix}-why-title`} className="text-lg font-semibold">
           Why it matters

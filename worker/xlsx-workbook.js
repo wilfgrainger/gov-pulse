@@ -1,11 +1,9 @@
 import { decodeHtml, parseAttributes } from "./live-feed-common.js";
-
-async function inflate(bytes) {
-  const stream = new Blob([bytes])
-    .stream()
-    .pipeThrough(new DecompressionStream("deflate-raw"));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
-}
+import {
+  MAX_DECOMPRESSED_ARCHIVE_BYTES,
+  MAX_DECOMPRESSED_ENTRY_BYTES,
+  boundedDecompress,
+} from "./decompression-limits.js";
 
 function u16(bytes, offset) {
   return bytes[offset] | (bytes[offset + 1] << 8);
@@ -42,6 +40,7 @@ async function zipEntries(arrayBuffer) {
 
   let cursor = u32(bytes, eocd + 16);
   const entries = new Map();
+  let decompressedBytes = 0;
   for (let count = 0; count < total; count += 1) {
     if (u32(bytes, cursor) !== 0x02014b50) {
       throw new Error("Workbook central directory was invalid");
@@ -74,9 +73,18 @@ async function zipEntries(arrayBuffer) {
         method === 0
           ? compressed
           : method === 8
-            ? await inflate(compressed)
+            ? await boundedDecompress(
+                compressed,
+                "deflate-raw",
+                MAX_DECOMPRESSED_ENTRY_BYTES,
+                `Workbook entry '${name}'`,
+              )
             : null;
       if (!data) throw new Error(`Workbook used unsupported ZIP method ${method}`);
+      decompressedBytes += data.byteLength;
+      if (decompressedBytes > MAX_DECOMPRESSED_ARCHIVE_BYTES) {
+        throw new Error("Workbook decoded output exceeded the aggregate limit");
+      }
       entries.set(name, new TextDecoder().decode(data));
     }
 

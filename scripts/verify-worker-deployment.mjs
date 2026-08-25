@@ -1,24 +1,23 @@
 import process from "node:process";
 
-function collectStrings(value, output = []) {
-  if (typeof value === "string") {
-    output.push(value);
-  } else if (Array.isArray(value)) {
-    for (const entry of value) collectStrings(entry, output);
-  } else if (value && typeof value === "object") {
-    for (const entry of Object.values(value)) collectStrings(entry, output);
-  }
-  return output;
-}
-
 export function verifyWorkerDeployment(payload, expectedRevision) {
   const revision = String(expectedRevision ?? "").trim().toLowerCase();
   if (!/^[0-9a-f]{40}$/.test(revision)) {
     return ["expected Worker revision must be a full Git commit SHA"];
   }
 
-  const strings = collectStrings(payload).map((value) => value.toLowerCase());
-  return strings.some((value) => value === revision || value.includes(revision))
+  const versions = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.versions)
+      ? payload.versions
+      : [];
+  const matchesReleaseTag = versions.some(
+    (version) =>
+      String(version?.annotations?.["workers/tag"] ?? "")
+        .trim()
+        .toLowerCase() === revision,
+  );
+  return matchesReleaseTag
     ? []
     : [`Worker deployment metadata did not contain revision ${revision}`];
 }

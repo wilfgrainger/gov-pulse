@@ -109,10 +109,11 @@ describe("degraded public publication", () => {
         fetchedAt: refreshedAt,
       },
       fetchedAt: refreshedAt,
+      runId: "test-run",
     };
     const store = new Map<string, unknown>([
       [PUBLICATION_CURRENT_KEY, current],
-      ["v12:publication:section:gdpTracker", gdpFragment],
+      ["v13:publication:run:test-run:section:gdpTracker", gdpFragment],
     ]);
     const put = vi.fn(async (key: string, value: string) => {
       try {
@@ -128,7 +129,7 @@ describe("degraded public publication", () => {
       },
     };
 
-    const result = await publishFromCaches(env, { now });
+    const result = await publishFromCaches(env, { now, runId: "test-run" });
     const published = store.get(PUBLICATION_CURRENT_KEY) as {
       gdpTracker?: unknown;
       nhsStats?: unknown;

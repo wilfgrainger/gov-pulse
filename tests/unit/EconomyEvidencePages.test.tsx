@@ -131,7 +131,7 @@ describe("economy evidence pages", () => {
         name: "Employment was 75.1% and unemployment was 5.2%.",
       })
     ).toBeInTheDocument();
-    expect(screen.getByText("721,000")).toBeInTheDocument();
+    expect(screen.getAllByText("721,000").length).toBeGreaterThan(0);
     expect(screen.getAllByText("April to June 2026").length).toBeGreaterThan(1);
     expect(
       screen.getByRole("heading", {

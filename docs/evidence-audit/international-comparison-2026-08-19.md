@@ -34,7 +34,7 @@ The corrected comparison-set identity is `uk-context-13-v2`; the initial impleme
 
 ## Isolation and failure behaviour
 
-The comparison publisher writes to `v1:international-comparison:current`. It refreshes only when its seven-day due guard allows, or when no verified comparison publication exists. Source families settle independently, so one failed source makes only its affected measure unavailable. An all-source failure does not overwrite the last validated comparison publication. Deployment bootstrap queues the comparison refresh independently of the national run, so the comparison can initialise immediately without becoming a national readiness dependency.
+The comparison publisher writes to `v1:international-comparison:current`. It refreshes only when its seven-day due guard allows, or when no verified comparison publication exists. Every accepted edition also has a seven-day hard public expiry derived from `checkedAt`; a stale edition is not served indefinitely merely because the refresh is not due. Source families settle independently, so one failed source makes only its affected measure unavailable. An all-source failure does not overwrite the last validated comparison publication, but an expired edition becomes unavailable. Deployment bootstrap queues the comparison refresh independently of the national run, so the comparison can initialise immediately without becoming a national readiness dependency.
 
 ## Public interpretation cautions
 

@@ -167,7 +167,7 @@ export default function BettingOdds() {
             </p>
           </section>
 
-          <section aria-labelledby="betting-why-title" className="border-l-4 border-foreground pl-4">
+          <section aria-labelledby="betting-why-title" className="border-t border-[#d8d3c8] pt-4">
             <h3 id="betting-why-title" className="text-lg font-semibold">Why it matters</h3>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-700">
               Political market prices can move within minutes and reflect liquidity, bookmaker margins, market rules and trader behaviour. public-data.org therefore shows raw reciprocal prices, names the exact market and withdraws the panel completely when the snapshot is older than four hours.
