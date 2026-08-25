@@ -96,6 +96,14 @@ function LeadStory({ signal }: { signal: SignalPresentation | null }) {
             <dt className="font-semibold">Published</dt>
             <dd className="text-gray-700">{signal.publishedAt}</dd>
           </div>
+          <div>
+            <dt className="font-semibold">Unit and geography</dt>
+            <dd className="text-gray-700">{signal.unit} · {signal.geography}</dd>
+          </div>
+          <div>
+            <dt className="font-semibold">Primary publisher</dt>
+            <dd className="text-gray-700">{signal.publisher}</dd>
+          </div>
         </dl>
         {signal.caveat ? (
           <p className="mt-5 border-l-2 border-accent pl-4 text-xs leading-5 text-gray-700">{signal.caveat}</p>
@@ -136,11 +144,18 @@ function SignalCard({ signal }: { signal: SignalPresentation }) {
           <p className="mt-3 text-sm leading-6 text-gray-700">
             {signal.comparison ?? "Open the evidence page for the latest source information."}
           </p>
+          {signal.caveat ? (
+            <p className="mt-3 border-l-2 border-accent pl-3 text-xs leading-5 text-gray-600">
+              {signal.caveat}
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-auto flex flex-wrap items-end justify-between gap-3 border-t border-black/10 pt-5 text-xs">
           <div className="space-y-1 text-gray-600">
             <p>{signal.period ?? "No current period"}</p>
+            <p>{signal.unit} · {signal.geography}</p>
+            <p>{signal.publisher}{signal.publishedAt ? ` · published ${signal.publishedAt}` : ""}</p>
             <p>{signal.evidenceClass}</p>
           </div>
           <StateBadge state={signal.state} />

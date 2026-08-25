@@ -90,7 +90,10 @@ describe("CrimeStatistics modular evidence page", () => {
     expect(screen.getByText("48,774")).toBeInTheDocument();
     expect(screen.getByText("346 days")).toBeInTheDocument();
     expect(screen.getAllByText(/released 23 July 2026/i)).toHaveLength(2);
-    expect(screen.getAllByText(/Report Fraud/i)).toHaveLength(2);
+    expect(
+      screen.getByText(/Offences recorded by police forces in England and Wales/i),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/Report Fraud/i)).toHaveLength(1);
   });
 
   it("keeps unsupported regional rankings unavailable without suppressing official modules", () => {

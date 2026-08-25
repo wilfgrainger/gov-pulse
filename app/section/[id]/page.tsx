@@ -85,7 +85,7 @@ export default async function SectionPage({
         <SectionNav sections={SECTIONS} />
       </div>
 
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <PageHeader
           eyebrow={section.tag}
           title={section.title}

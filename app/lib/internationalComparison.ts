@@ -1,3 +1,5 @@
+import { validateInternationalComparisonPublication } from "@/worker/international-comparison";
+
 export const COMPARISON_COUNTRY_NAMES = {
   GBR: "United Kingdom",
   USA: "United States",
@@ -82,6 +84,11 @@ export function isInternationalComparisonPublication(
   value: unknown
 ): value is InternationalComparisonPublication {
   if (!isRecord(value) || !isRecord(value.meta) || !isRecord(value.measures)) return false;
+  try {
+    validateInternationalComparisonPublication(value);
+  } catch {
+    return false;
+  }
   if (value.meta.schemaVersion !== 1 || value.meta.comparisonSetId !== "uk-context-13-v2") return false;
   if (!Array.isArray(value.meta.countries)) return false;
   if (JSON.stringify(value.meta.countries) !== JSON.stringify(COUNTRY_IDS)) return false;

@@ -186,7 +186,7 @@ export default function SourcesPage() {
         <SectionNav sections={SECTIONS} />
       </div>
 
-      <main data-production-route="sources">
+      <main id="main-content" tabIndex={-1} data-production-route="sources">
         <PageHeader
           eyebrow="Sources"
           title="Sources and dates"

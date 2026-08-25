@@ -143,7 +143,7 @@ export default async function TrustPageRoute({
       <div className="sticky top-0 z-50 bg-white">
         <SectionNav sections={SECTIONS} />
       </div>
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <header className="border-b border-black/15 px-4 py-10 md:px-6 md:py-14">
           <div className="mx-auto max-w-5xl">
             <p className="text-sm font-semibold text-accent">{page.eyebrow}</p>

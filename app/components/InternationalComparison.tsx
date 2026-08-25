@@ -116,8 +116,12 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
       </div>
 
       {ranked.length > 0 ? (
-        <div className="mt-6 overflow-x-auto">
-          <table className="w-full min-w-[36rem] border-collapse text-left">
+        <>
+          <p className="mt-4 text-xs leading-5 text-gray-600 md:hidden">
+            Scroll horizontally to compare all columns.
+          </p>
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full min-w-[36rem] border-collapse text-left">
             <caption className="sr-only">{measure.label} by country</caption>
             <thead>
               <tr className="border-y border-[#172234] text-xs uppercase tracking-[0.08em] text-gray-600">
@@ -148,8 +152,9 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
+            </table>
+          </div>
+        </>
       ) : (
         <div className="mt-6 border border-[#d8d3c8] bg-[#f7f3eb] p-5">
           <p className="font-semibold text-[#172234]">Comparable figures are currently unavailable.</p>
@@ -196,6 +201,9 @@ export default async function InternationalComparison() {
       </div>
 
       <div className="mt-7 border-y border-[#172234]">
+        <p className="px-4 pt-4 text-xs leading-5 text-gray-600 md:hidden">
+          Scroll horizontally to compare all columns.
+        </p>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[58rem] border-collapse">
             <caption className="sr-only">United Kingdom per-resident international comparison scorecard</caption>

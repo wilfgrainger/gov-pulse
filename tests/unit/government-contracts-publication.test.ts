@@ -146,10 +146,11 @@ describe("government contracts publication", () => {
     expect(workflow).not.toContain("merge-government-contracts-snapshot.mjs");
   });
 
-  it("keeps UK DOGE independent and evidence-led", () => {
+  it("keeps independent scrutiny neutral and evidence-led", () => {
     const component = source("app/components/GovernmentContracts.tsx");
 
-    expect(component).toContain('id="uk-doge"');
+    expect(component).toContain('id="independent-scrutiny"');
+    expect(component).not.toContain("UK DOGE");
     expect(component).toMatch(/not a government body/i);
     expect(component).toMatch(/not affiliated with the US Department of Government Efficiency/i);
     expect(component).toMatch(/not findings of waste, fraud or savings/i);

@@ -26,6 +26,9 @@ export type SignalPresentation = {
   kicker: string;
   href: string;
   evidenceClass: string;
+  geography: string;
+  unit: string;
+  publisher: string;
   state: EvidenceState;
   value: string | null;
   comparison: string | null;
@@ -48,7 +51,18 @@ export type NationalEvidenceEdition = {
 
 const SIGNAL_META: Record<
   SignalId,
-  Pick<SignalPresentation, "id" | "anchorId" | "title" | "kicker" | "href" | "evidenceClass">
+  Pick<
+    SignalPresentation,
+    | "id"
+    | "anchorId"
+    | "title"
+    | "kicker"
+    | "href"
+    | "evidenceClass"
+    | "geography"
+    | "unit"
+    | "publisher"
+  >
 > = {
   gdp: {
     id: "gdp",
@@ -57,6 +71,9 @@ const SIGNAL_META: Record<
     kicker: "Growth",
     href: "/section/gdp",
     evidenceClass: "Official statistics",
+    geography: "United Kingdom",
+    unit: "percentage change",
+    publisher: "Office for National Statistics",
   },
   inflation: {
     id: "inflation",
@@ -65,6 +82,9 @@ const SIGNAL_META: Record<
     kicker: "Prices",
     href: "/section/economy",
     evidenceClass: "Official data",
+    geography: "United Kingdom",
+    unit: "annual percentage change",
+    publisher: "Office for National Statistics",
   },
   "bank-rate": {
     id: "bank-rate",
@@ -73,6 +93,9 @@ const SIGNAL_META: Record<
     kicker: "Borrowing costs",
     href: "/section/economy",
     evidenceClass: "Official data",
+    geography: "United Kingdom",
+    unit: "percentage rate",
+    publisher: "Bank of England",
   },
   unemployment: {
     id: "unemployment",
@@ -81,6 +104,9 @@ const SIGNAL_META: Record<
     kicker: "Labour market",
     href: "/section/economy",
     evidenceClass: "Official data",
+    geography: "United Kingdom",
+    unit: "percentage",
+    publisher: "Office for National Statistics",
   },
   "national-debt": {
     id: "national-debt",
@@ -89,6 +115,9 @@ const SIGNAL_META: Record<
     kicker: "Public finances",
     href: "/section/national-debt",
     evidenceClass: "Official monthly data",
+    geography: "United Kingdom",
+    unit: "£ stock; percentage of GDP",
+    publisher: "Office for National Statistics",
   },
   "nhs-waiting-list": {
     id: "nhs-waiting-list",
@@ -97,6 +126,9 @@ const SIGNAL_META: Record<
     kicker: "Public services",
     href: "/section/nhs",
     evidenceClass: "Administrative data",
+    geography: "England",
+    unit: "waiting pathways",
+    publisher: "NHS England",
   },
   "net-migration": {
     id: "net-migration",
@@ -105,6 +137,9 @@ const SIGNAL_META: Record<
     kicker: "Population",
     href: "/section/migration",
     evidenceClass: "Official statistics",
+    geography: "United Kingdom",
+    unit: "people",
+    publisher: "Office for National Statistics",
   },
   "latest-poll": {
     id: "latest-poll",
@@ -113,6 +148,9 @@ const SIGNAL_META: Record<
     kicker: "Public opinion",
     href: "/section/election-polls",
     evidenceClass: "Polling evidence",
+    geography: "Great Britain",
+    unit: "vote share",
+    publisher: "YouGov",
   },
 };
 
