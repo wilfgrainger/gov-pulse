@@ -32,7 +32,7 @@ The international comparison uses a seven-day refresh due guard and a seven-day 
 
 ## Deployment order
 
-The production workflow runs from `refs/heads/main` only. After the locked validation and OpenNext build, it reconciles the Queue, deploys/verifies the data Worker, bootstraps national publication, queues comparison refresh independently, deploys the request-time web Worker, verifies live routes and only then refreshes the optional Pages seed.
+The production workflow runs from `refs/heads/main` only. After the locked validation and OpenNext build, it reconciles the Queue, deploys/verifies the data Worker, bootstraps national publication, queues comparison refresh independently, deploys the request-time web Worker, verifies live routes and only then refreshes the Pages seed from a verified current `ready` or explicitly `degraded` publication.
 
 ## Acceptance boundary
 

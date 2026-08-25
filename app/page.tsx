@@ -13,15 +13,11 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <a href="#national-signals" className="sr-only z-[100] bg-black px-4 py-3 text-white focus:not-sr-only focus:fixed focus:left-3 focus:top-3">
-        Skip to the latest evidence
-      </a>
-
       <div className="sticky top-0 z-50 bg-white">
         <SectionNav sections={SECTIONS} />
       </div>
 
-      <main id="main-content">
+      <main id="main-content" tabIndex={-1}>
         <HomepageIntro />
         <NationalEvidenceEdition initialEdition={initialEdition} />
 

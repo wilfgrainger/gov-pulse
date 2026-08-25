@@ -28,7 +28,15 @@ function snapshotWith(data = completeLivePayload, fetchedAt = minutesAgo(5)) {
       registryVersion: "2026-08-02.1",
       generatedAt: minutesAgo(1),
       sources: {
-        sentimentPulse: { status: "ok", cacheState: "fresh", fetchedAt },
+        sentimentPulse: {
+          status: "ok",
+          cacheState: "fresh",
+          fetchedAt,
+          provenance: {
+            registryVersion: "2026-08-02.1",
+            section: "sentimentPulse",
+          },
+        },
       },
     },
     sentimentPulse: {

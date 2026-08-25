@@ -3,10 +3,15 @@ import { describe, expect, it } from "vitest";
 import {
   comparisonSummary,
   formatUsdPerResident,
+  isInternationalComparisonPublication,
   rankLabel,
   type ComparisonMeasure,
   type ComparisonObservation,
 } from "@/app/lib/internationalComparison";
+import {
+  COMPARISON_COUNTRIES,
+  COMPARISON_MEASURES,
+} from "@/worker/international-comparison";
 
 const source = {
   publisher: "OECD",
@@ -44,6 +49,40 @@ function measure(
     observationYear: 2024,
     comparableCountryCount,
     countries,
+  };
+}
+
+function publicationFixture() {
+  const observations = COMPARISON_COUNTRIES.map(({ id }, index) => ({
+    country: id,
+    value: 100 - index,
+    rank: index + 1,
+    observationYear: 2024,
+    valueType: "historical" as const,
+    source,
+  }));
+  return {
+    meta: {
+      schemaVersion: 1 as const,
+      generatedAt: "2026-08-18T22:00:00.000Z",
+      comparisonSetId: "uk-context-13-v2" as const,
+      countries: COMPARISON_COUNTRIES.map(({ id }) => id),
+    },
+    measures: Object.fromEntries(
+      COMPARISON_MEASURES.map(({ id, label, definition }) => [
+        id,
+        {
+          id,
+          label,
+          definition,
+          unit: "USD per resident" as const,
+          rankDirection: "highest-first" as const,
+          observationYear: 2024,
+          comparableCountryCount: observations.length,
+          countries: observations.map((observation) => ({ ...observation })),
+        },
+      ])
+    ),
   };
 }
 
@@ -109,5 +148,12 @@ describe("UK in context presentation", () => {
     const oda = measure("officialDevelopmentAssistance", 10, [missing]);
     expect(rankLabel(oda, missing)).toBe("Not ranked");
     expect(comparisonSummary(oda, missing)).toBe("Comparison unavailable");
+  });
+
+  it("fails closed when a country row disagrees with the measure year", () => {
+    const publication = publicationFixture();
+    publication.measures.governmentDebt.countries[0].observationYear = 2023;
+
+    expect(isInternationalComparisonPublication(publication)).toBe(false);
   });
 });

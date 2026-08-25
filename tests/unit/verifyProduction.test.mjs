@@ -7,6 +7,7 @@ import {
   fetchResult,
   verifyGdpHtml,
   verifyInternationalComparisonJson,
+  verifyPublicDataRevision,
   verifyProduction,
   verifyProductionHtml,
   verifyRobotsTxt,
@@ -17,7 +18,7 @@ import {
   verifySourcesHtml,
 } from "../../scripts/verify-production.mjs";
 
-const revision = "abc123";
+const revision = "a".repeat(40);
 const validHtml = `<!doctype html><html><head><title>public-data.org — UK Public Evidence</title><meta name="public-data-revision" content="${revision}"><link rel="canonical" href="https://public-data.org/"></head><body><script type="application/ld+json">{"@type":"WebSite"}</script><h1>public-data.org</h1><a href = "https://www.ons.gov.uk">ONS</a></body></html>`;
 const validSourcesHtml = `<!doctype html><html><head><link rel="canonical" href="https://public-data.org/sources/"></head><body><main data-production-route="sources"><section data-production-marker="current-publications"></section><section data-production-marker="evidence-gaps"></section></main></body></html>`;
 const validGdpHtml = `<!doctype html><html><head><title>UK GDP growth | public-data.org</title><link rel="canonical" href="https://public-data.org/section/gdp/"><link rel="alternate" type="application/rss+xml" href="https://public-data.org/feed.xml"></head><body><script type="application/ld+json">{"@type":"Dataset"}</script><p>Latest ONS monthly estimate</p><h1>UK GDP grew in May 2026 by 0.1%.</h1><p>Published 16 July 2026. Monthly GDP is an early estimate and can be revised.</p></body></html>`;
@@ -102,12 +103,21 @@ function validDownload(section, extension) {
     : `section,period\n${section},2026`;
 }
 
-function okResponse(text) {
-  return { ok: true, status: 200, text: async () => text };
+function okResponse(text, headers = {}) {
+  const normalizedHeaders =
+    headers && typeof headers === "object" && !Array.isArray(headers)
+      ? headers
+      : {};
+  return {
+    ok: true,
+    status: 200,
+    headers: new Headers(normalizedHeaders),
+    text: async () => text,
+  };
 }
 
 function validResponses(home = validHtml) {
-  return [
+  const bodies = [
     home,
     validSourcesHtml,
     validGdpHtml,
@@ -121,12 +131,30 @@ function validResponses(home = validHtml) {
     validSitemap,
     validRobots,
     validFeed,
-  ].map(okResponse);
+  ];
+  return bodies.map((body, index) =>
+    okResponse(
+      body,
+      index === 4 ? { "X-Public-Data-Revision": revision } : undefined,
+    ),
+  );
 }
 
 describe("production deployment verifier", () => {
   it("accepts publication identity, revision, canonical and structured data", () => {
     expect(verifyProductionHtml(validHtml, revision)).toEqual([]);
+  });
+
+  it("requires the exact revision header from the live national snapshot route", () => {
+    expect(
+      verifyPublicDataRevision(
+        new Headers({ "X-Public-Data-Revision": revision }),
+        revision,
+      ),
+    ).toEqual([]);
+    expect(
+      verifyPublicDataRevision(new Headers(), revision),
+    ).toEqual([`public data route did not serve revision ${revision}`]);
   });
 
   it("accepts the current public sources route markers and canonical", () => {
