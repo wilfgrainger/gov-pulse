@@ -182,6 +182,7 @@ jobs:
       - name: Fetch current publication snapshot for web build
         env:
           METRICS_SNAPSHOT_URL: https://public-data.org/data/metrics-snapshot.json
+          PUBLIC_DATA_EXPECTED_REVISION: ${{ github.sha }}
           WEB_BUILD_SNAPSHOT_OUTPUT: public/data/metrics-snapshot.json
         run: node scripts/fetch-public-snapshot-for-web-build.mjs
 

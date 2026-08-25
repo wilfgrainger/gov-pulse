@@ -43,6 +43,29 @@ function missingRequiredSections(snapshot) {
   );
 }
 
+function expectedRevision(value) {
+  const revision = String(value ?? "").trim().toLowerCase();
+  if (!revision) return null;
+  if (!/^[0-9a-f]{40}$/.test(revision)) {
+    throw new Error("Expected data Worker revision must be a full Git commit SHA");
+  }
+  return revision;
+}
+
+function assertExpectedRevision(response, revision) {
+  if (!revision) return;
+  const servedRevision = String(
+    response?.headers?.get?.("X-Public-Data-Revision") ?? "",
+  )
+    .trim()
+    .toLowerCase();
+  if (servedRevision !== revision) {
+    throw new Error(
+      `Public snapshot was not served by data Worker revision ${revision}`,
+    );
+  }
+}
+
 export function prepareWebSnapshot(value, now = new Date()) {
   if (
     !isRecord(value) ||
@@ -70,10 +93,12 @@ export function prepareWebSnapshot(value, now = new Date()) {
 export async function fetchPublicSnapshot({
   url = DEFAULT_URL,
   output = DEFAULT_OUTPUT,
+  expectedRevision: expectedRevisionValue,
   fetchImpl = fetch,
   now = new Date(),
 } = {}) {
   const snapshotUrl = validatePublicSnapshotUrl(url);
+  const revision = expectedRevision(expectedRevisionValue);
   const response = await fetchImpl(snapshotUrl, {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(20_000),
@@ -88,6 +113,7 @@ export async function fetchPublicSnapshot({
   }
 
   assertSameHttpsHost(response, snapshotUrl, "Public snapshot");
+  assertExpectedRevision(response, revision);
   const snapshot = prepareWebSnapshot(
     await readResponseJson(response, { label: "Public snapshot JSON" }),
     now,
@@ -109,6 +135,7 @@ async function main() {
   const result = await fetchPublicSnapshot({
     url: process.env.METRICS_SNAPSHOT_URL ?? DEFAULT_URL,
     output: process.env.WEB_BUILD_SNAPSHOT_OUTPUT ?? DEFAULT_OUTPUT,
+    expectedRevision: process.env.PUBLIC_DATA_EXPECTED_REVISION,
   });
   process.stdout.write(
     `Wrote ${result.outputPath} with ${result.sections.length} current sections (${result.publicationState})\n`,
