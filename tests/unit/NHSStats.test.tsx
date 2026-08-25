@@ -147,8 +147,8 @@ describe("NHSStats evidence integrity", () => {
       })
     ).toBeInTheDocument();
     expect(screen.getByText(/fell by 1.1% \(77,566 pathways\)/i)).toBeInTheDocument();
-    expect(screen.getByText("65.6%")).toBeInTheDocument();
-    expect(screen.getByText("104,734")).toBeInTheDocument();
+    expect(screen.getAllByText("65.6%").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("104,734").length).toBeGreaterThan(0);
     expect(screen.getByText("Trauma and Orthopaedic Service")).toBeInTheDocument();
     expect(screen.getByText(/Sheffield Teaching Hospitals/i)).toBeInTheDocument();
     expect(

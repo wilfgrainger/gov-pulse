@@ -186,7 +186,7 @@ export default function EmploymentStats() {
 
           <SeriesEvidence items={evidence} title="Freshness and provenance for each labour-market series" />
 
-          <section aria-labelledby="employment-why-title" className="border-l-4 border-foreground pl-4">
+          <section aria-labelledby="employment-why-title" className="border-t border-[#d8d3c8] pt-4">
             <h3 id="employment-why-title" className="text-lg font-semibold">Why it matters</h3>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-700">
               Employment, unemployment and inactivity describe different parts of the labour market. Vacancies come from a separate employer survey, so their period is shown separately rather than blended into one headline.

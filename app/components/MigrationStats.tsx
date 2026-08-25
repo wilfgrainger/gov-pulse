@@ -307,7 +307,7 @@ export default function MigrationStats() {
         </section>
       )}
 
-      <section aria-labelledby="migration-withdrawn-title" className="border-l-4 border-foreground pl-4">
+      <section aria-labelledby="migration-withdrawn-title" className="border-t border-[#d8d3c8] pt-4">
         <h3 id="migration-withdrawn-title" className="text-lg font-semibold">
           Visa and nationality tables withdrawn
         </h3>

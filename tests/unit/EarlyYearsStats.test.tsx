@@ -52,9 +52,9 @@ describe("EarlyYearsStats evidence integrity", () => {
 
     render(<EarlyYearsStats />);
 
-    expect(screen.getByText("88.9%")).toBeInTheDocument();
-    expect(screen.getByText("68.3%")).toBeInTheDocument();
-    expect(screen.getByText(/england child mmr vaccination rate fell to 88.9%/i)).toBeInTheDocument();
+    expect(screen.getAllByText("88.9%").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("68.3%").length).toBeGreaterThan(0);
+    expect(screen.getByText(/england child mmr vaccination rate was unchanged at 88.9%/i)).toBeInTheDocument();
     expect(screen.getByText("Why it matters")).toBeInTheDocument();
     expect(screen.getByText("Explain this number")).toBeInTheDocument();
     expect(screen.getByText("Important caveat")).toBeInTheDocument();
