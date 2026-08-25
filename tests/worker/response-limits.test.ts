@@ -73,6 +73,14 @@ describe("bounded upstream response readers", () => {
         "ONS",
       ),
     ).toThrow(/redirected away/i);
+
+    expect(() =>
+      assertSameHttpsHost(
+        { url: "https://www.ons.gov.uk:8443/source" },
+        "https://www.ons.gov.uk/source",
+        "ONS",
+      ),
+    ).toThrow(/redirected away/i);
   });
 
   it("applies host validation at both upstream fetch boundaries", async () => {

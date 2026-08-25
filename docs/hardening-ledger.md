@@ -7,6 +7,7 @@ This ledger records structural controls included in the 1.0.0 release candidate.
 - National publication fragments and values carry a run ID, preventing late Queue retries from mixing editions.
 - International comparison reads enforce a seven-day hard expiry independent of the seven-day refresh due guard.
 - Source discovery, seed fallback and decompression are bounded by approved hosts, response limits and archive output caps.
+- Upstream redirects must preserve the approved HTTPS hostname and effective port, not merely the hostname.
 - The public national cache cannot outlive the evidence currentness deadline.
 - Degraded national editions expose exact missing required sections and are not reported as ready.
 - Public currentness requires fresh source transport, exact registry/section provenance and a current observation; transport-only or malformed fragments fail closed.

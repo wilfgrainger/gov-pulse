@@ -24,10 +24,13 @@ function assertResponseSize(response, limit, label) {
 function assertSameHttpsHost(response, requestedUrl, label = "Upstream") {
   const requested = new URL(requestedUrl);
   const resolved = new URL(response?.url || requestedUrl);
+  const requestedPort = requested.port || "443";
+  const resolvedPort = resolved.port || "443";
   if (
     requested.protocol !== "https:" ||
     resolved.protocol !== "https:" ||
-    requested.hostname.toLowerCase() !== resolved.hostname.toLowerCase()
+    requested.hostname.toLowerCase() !== resolved.hostname.toLowerCase() ||
+    requestedPort !== resolvedPort
   ) {
     throw new Error(`${label} redirected away from its approved HTTPS host`);
   }
