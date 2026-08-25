@@ -1,4 +1,7 @@
-import { normalizePrimaryPollPayload } from "./election-polls.js";
+import {
+  ALLOWED_SOURCE_HOSTS,
+  normalizePrimaryPollPayload,
+} from "./election-polls.js";
 import {
   absoluteUrl,
   MAX_RESPONSE_BYTES,
@@ -7,10 +10,21 @@ import {
   readResponseArrayBuffer,
   readResponseText,
 } from "./live-feed-common.js";
+import {
+  MAX_DECOMPRESSED_ENTRY_BYTES,
+  MAX_DECOMPRESSED_PDF_BYTES,
+  boundedDecompress,
+} from "./decompression-limits.js";
 
 const YOU_GOV_ARTICLES_URL = "https://yougov.com/en-gb/articles";
 const YOU_GOV_METHOD_URL =
   "https://yougov.com/en-gb/articles/54278-how-yougov-conducts-voting-intention-polling";
+const YOU_GOV_ARTICLE_HOSTS = new Set([
+  "yougov.com",
+  "www.yougov.com",
+  "yougov.co.uk",
+  "www.yougov.co.uk",
+]);
 
 const MONTH_NUMBER = Object.freeze({
   january: 1,
@@ -89,12 +103,35 @@ function parsePartyShares(text) {
   return result;
 }
 
+function approvedYouGovUrl(value, label, hosts = ALLOWED_SOURCE_HOSTS) {
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error(`${label} is not a valid URL`);
+  }
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    url.port ||
+    !hosts.has(url.hostname.toLowerCase())
+  ) {
+    throw new Error(`${label} must use an approved YouGov source host`);
+  }
+  return url.toString();
+}
+
 function latestYouGovArticleUrl(html) {
   const urls = [...String(html).matchAll(
     /href=(?:"|')([^"']*\/en-gb\/articles\/(\d+)-voting-intention-[^"']+)(?:"|')/gi
   )]
     .map((match) => ({
-      url: absoluteUrl(YOU_GOV_ARTICLES_URL, match[1]),
+      url: approvedYouGovUrl(
+        absoluteUrl(YOU_GOV_ARTICLES_URL, match[1]),
+        "YouGov article URL",
+        YOU_GOV_ARTICLE_HOSTS,
+      ),
       id: Number(match[2]),
     }))
     .filter((entry) => Number.isSafeInteger(entry.id));
@@ -110,7 +147,8 @@ function findPdfUrl(html, base) {
     /href=(?:"|')([^"']+\.pdf(?:\?[^"']*)?)(?:"|')/gi
   )]
     .map((match) => absoluteUrl(base, match[1]))
-    .filter((url) => /VotingIntention/i.test(url));
+    .filter((url) => /VotingIntention/i.test(url))
+    .map((url) => approvedYouGovUrl(url, "YouGov primary results URL"));
   if (urls.length === 0) {
     throw new Error("YouGov article did not link primary result tables");
   }
@@ -123,13 +161,6 @@ function latin1(bytes) {
     result += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
   }
   return result;
-}
-
-async function inflate(bytes) {
-  const stream = new Blob([bytes])
-    .stream()
-    .pipeThrough(new DecompressionStream("deflate"));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
 function decodePdfLiteral(value) {
@@ -212,6 +243,7 @@ async function extractPdfText(arrayBuffer) {
   const bytes = new Uint8Array(arrayBuffer);
   const raw = latin1(bytes);
   const parts = [];
+  let decompressedBytes = 0;
   const streamPattern = /<<(.*?)>>\s*stream\r?\n/gs;
   let match;
   while ((match = streamPattern.exec(raw))) {
@@ -233,10 +265,32 @@ async function extractPdfText(arrayBuffer) {
     }
     const chunk = bytes.subarray(start, chunkEnd);
     try {
-      const decoded = /\/FlateDecode/.test(match[1]) ? await inflate(chunk) : chunk;
+      if (/\/FlateDecode/.test(match[1]) && decompressedBytes >= MAX_DECOMPRESSED_PDF_BYTES) {
+        throw new Error("PDF decoded output exceeded the aggregate limit");
+      }
+      const decoded = /\/FlateDecode/.test(match[1])
+        ? await boundedDecompress(
+            chunk,
+            "deflate",
+            Math.min(
+              MAX_DECOMPRESSED_ENTRY_BYTES,
+              MAX_DECOMPRESSED_PDF_BYTES - decompressedBytes,
+            ),
+            "PDF stream",
+          )
+        : chunk;
+      if (/\/FlateDecode/.test(match[1])) {
+        decompressedBytes += decoded.byteLength;
+        if (decompressedBytes > MAX_DECOMPRESSED_PDF_BYTES) {
+          throw new Error("PDF decoded output exceeded the aggregate limit");
+        }
+      }
       const text = latin1(decoded);
       parts.push(pdfStrings(text));
-    } catch {
+    } catch (error) {
+      if (error instanceof Error && /decoded output exceeded/i.test(error.message)) {
+        throw error;
+      }
       // Required metadata below still fails closed.
     }
     streamPattern.lastIndex = end + 9;

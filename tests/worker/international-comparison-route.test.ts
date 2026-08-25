@@ -97,4 +97,19 @@ describe("international comparison publication route", () => {
     expect(collect).not.toHaveBeenCalled();
     expect(await readInternationalComparison(env)).toEqual(publication);
   });
+
+  it("withdraws an international publication after its seven-day validity window", async () => {
+    const publication = fixture("2026-08-10T20:00:00.000Z");
+    const { env } = envWith(publication);
+    const now = new Date("2026-08-18T20:00:01.000Z");
+
+    expect(
+      await readInternationalComparison(env, { now }),
+    ).toBeNull();
+    const response = await publicWorker.fetch(
+      new Request("https://public-data.org/data/international-comparison.json"),
+      env,
+    );
+    expect(response.status).toBe(503);
+  });
 });

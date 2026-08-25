@@ -134,6 +134,7 @@ describe("Cloudflare Free data publication", () => {
       jobs.filter((job) => job.type === "refresh-external-section")
     ).toHaveLength(3);
     expect(jobs.filter((job) => job.type === "refresh-contracts")).toHaveLength(1);
+    expect(new Set(jobs.map((job) => job.runId))).toEqual(new Set(["manual"]));
   });
 
   it("uses a single betting-only refresh between daily runs", () => {
@@ -176,14 +177,16 @@ describe("Cloudflare Free data publication", () => {
         source: "ONS GDP monthly estimate",
       },
       fetchedAt: "2026-07-18T03:20:00.000Z",
+      runId: "test-run",
     };
     const { env, store } = kvEnv({
       [PUBLICATION_CURRENT_KEY]: current,
-      "v12:publication:section:gdpTracker": fragment,
+      [`v13:publication:run:test-run:section:gdpTracker`]: fragment,
     });
 
     const result = await publishFromCaches(env, {
       now: new Date("2026-07-18T03:30:00.000Z"),
+      runId: "test-run",
     });
 
     expect(result.changed).toBe(true);
@@ -204,6 +207,7 @@ describe("Cloudflare Free data publication", () => {
 
     const result = await publishFromCaches(env, {
       now: new Date("2026-07-18T03:30:00.000Z"),
+      runId: "test-run",
     });
 
     expect(result.status.status).toBe("degraded");
@@ -224,22 +228,25 @@ describe("Cloudflare Free data publication", () => {
         fetchedAt: "2026-07-17T11:00:00.000Z",
       },
       fetchedAt: "2026-07-17T11:00:00.000Z",
+      runId: "test-run",
     };
     const { env, store } = kvEnv({
       [PUBLICATION_CURRENT_KEY]: current,
-      "v12:publication:section:migrationStats": fragment,
+      [`v13:publication:run:test-run:section:migrationStats`]: fragment,
     });
 
     const first = await publishFromCaches(env, {
       now: new Date("2026-07-17T12:30:00.000Z"),
+      runId: "test-run",
     });
-    store.set("v12:publication:section:migrationStats", {
+    store.set("v13:publication:run:test-run:section:migrationStats", {
       ...fragment,
       source: { ...fragment.source, fetchedAt: "2026-07-17T11:30:00.000Z" },
       fetchedAt: "2026-07-17T11:30:00.000Z",
     });
     const result = await publishFromCaches(env, {
       now: new Date("2026-07-17T13:00:00.000Z"),
+      runId: "test-run",
     });
 
     expect(first.changed).toBe(true);
@@ -249,6 +256,48 @@ describe("Cloudflare Free data publication", () => {
     expect(
       (store.get(PUBLICATION_CURRENT_KEY) as ReturnType<typeof snapshot>).meta.sources.migrationStats.fetchedAt
     ).toBe("2026-07-17T11:30:00.000Z");
+  });
+
+  it("finalises a run from only that run's section fragments", async () => {
+    const current = snapshot();
+    const { env, store } = kvEnv({ [PUBLICATION_CURRENT_KEY]: current });
+    const startedAt = new Date("2026-07-18T03:17:00.000Z");
+    const first = await createRun(env, startedAt, "daily", { runId: "run-a" });
+    await createRun(env, startedAt, "daily", { runId: "run-b" });
+
+    const fragment = (value: string, runId: string) => ({
+      section: "gdpTracker",
+      data: { headline: { monthlyGrowth: value, period: "June 2026" } },
+      source: {
+        status: "ok",
+        cacheState: "fresh",
+        fetchedAt: "2026-07-18T03:20:00.000Z",
+        source: "ONS GDP monthly estimate",
+      },
+      fetchedAt: "2026-07-18T03:20:00.000Z",
+      runId,
+    });
+    store.set(`${RUN_PREFIX}run-a:section:gdpTracker`, fragment("run-a", "run-a"));
+    store.set(`${RUN_PREFIX}run-b:section:gdpTracker`, fragment("run-b", "run-b"));
+
+    for (const jobId of first.run.expectedJobIds) {
+      store.set(`${RUN_PREFIX}${first.run.runId}:terminal:${jobId}`, {
+        runId: first.run.runId,
+        jobId,
+        status: "success",
+      });
+    }
+
+    const result = await finaliseRun(first.run.runId, env, {
+      now: new Date("2026-07-18T03:43:00.000Z"),
+    });
+
+    expect(result.publicationResult?.publication.gdpTracker).toEqual(
+      fragment("run-a", "run-a").data,
+    );
+    expect(result.publicationResult?.publication.gdpTracker).not.toEqual(
+      fragment("run-b", "run-b").data,
+    );
   });
 
   it("finalises an all-failed run without publishing a false fresh edition", async () => {

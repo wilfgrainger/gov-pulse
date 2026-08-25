@@ -13,12 +13,26 @@ function due(publication, now = new Date()) {
   return !Number.isFinite(checkedAt) || now.getTime() - checkedAt >= COMPARISON_REFRESH_MAX_AGE_MS;
 }
 
-async function readInternationalComparison(env) {
+function comparisonValidUntil(publication) {
+  const checkedAt = Date.parse(String(publication?.meta?.checkedAt ?? ""));
+  if (!Number.isFinite(checkedAt)) return null;
+  return new Date(checkedAt + COMPARISON_REFRESH_MAX_AGE_MS);
+}
+
+function comparisonIsCurrent(publication, now = new Date()) {
+  const validUntil = comparisonValidUntil(publication);
+  return Boolean(validUntil && validUntil.getTime() > now.getTime());
+}
+
+async function readInternationalComparison(env, options = {}) {
   if (!env?.METRICS_CACHE?.get) return null;
   const candidate = await env.METRICS_CACHE.get(INTERNATIONAL_COMPARISON_KEY, "json");
   if (!candidate) return null;
   try {
-    return validateInternationalComparisonPublication(candidate);
+    const publication = validateInternationalComparisonPublication(candidate);
+    return comparisonIsCurrent(publication, options.now ?? new Date())
+      ? publication
+      : null;
   } catch {
     return null;
   }
@@ -27,7 +41,7 @@ async function readInternationalComparison(env) {
 async function refreshInternationalComparison(env, options = {}) {
   if (!env?.METRICS_CACHE?.put) throw new Error("METRICS_CACHE KV binding is required");
   const now = options.now ?? new Date();
-  const current = await readInternationalComparison(env);
+  const current = await readInternationalComparison(env, { now });
   if (!options.force && current && !due(current, now)) {
     return { updated: false, reason: "not-due", publication: current };
   }
@@ -39,6 +53,7 @@ async function refreshInternationalComparison(env, options = {}) {
     meta: {
       ...candidate.meta,
       checkedAt: now.toISOString(),
+      validUntil: new Date(now.getTime() + COMPARISON_REFRESH_MAX_AGE_MS).toISOString(),
     },
   });
   const availableMeasureCount = Object.values(publication.measures).filter(
@@ -67,6 +82,8 @@ async function refreshInternationalComparison(env, options = {}) {
 export {
   COMPARISON_REFRESH_MAX_AGE_MS,
   INTERNATIONAL_COMPARISON_KEY,
+  comparisonIsCurrent,
+  comparisonValidUntil,
   due,
   readInternationalComparison,
   refreshInternationalComparison,

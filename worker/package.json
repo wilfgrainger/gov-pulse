@@ -1,6 +1,7 @@
 {
   "name": "gov-pulse-worker-toolchain",
   "private": true,
+  "type": "module",
   "devDependencies": {
     "@opennextjs/cloudflare": "1.20.2"
   }

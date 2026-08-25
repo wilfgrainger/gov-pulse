@@ -1,5 +1,6 @@
 import editorialWorker, { sectionDescriptors } from "./editorial-entry.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
+import { approvedSeedUrl } from "./approved-seed-url.js";
 import { FEED_REGISTRY_VERSION } from "./feed-registry.js";
 import { collectTaxRevenue } from "./live-tax-revenue-collector.js";
 import {
@@ -12,7 +13,6 @@ const PUBLICATION_CURRENT_KEY = "v12:publication:current";
 const PUBLICATION_STATUS_KEY = "v12:publication:status";
 const PUBLICATION_HISTORY_PREFIX = "v12:publication:history:";
 const PUBLICATION_HISTORY_TTL_SECONDS = 14 * 24 * 60 * 60;
-const DEFAULT_SEED_URL = "https://public-data-org.pages.dev/data/metrics-snapshot.json";
 const ROTATION = Object.freeze([
   ["gdpTracker", "sentimentPulse"],
   ["employmentStats", "taxRevenue"],
@@ -85,7 +85,7 @@ function sectionsForDay(now = new Date()) {
 }
 
 async function fetchSeedSnapshot(env, fetchImpl = fetch) {
-  const url = String(env?.STATIC_SNAPSHOT_SEED_URL || DEFAULT_SEED_URL).trim();
+  const url = approvedSeedUrl(env?.STATIC_SNAPSHOT_SEED_URL);
   if (!url) return null;
   try {
     const response = await fetchImpl(url, {

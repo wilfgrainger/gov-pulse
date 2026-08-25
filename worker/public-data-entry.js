@@ -4,26 +4,44 @@ import {
   FEED_REGISTRY_VERSION,
   REQUIRED_PUBLISHED_SECTION_IDS,
 } from "./feed-registry.js";
-import { filterCurrentSnapshot } from "./publication-currentness.js";
+import {
+  filterCurrentSnapshot,
+  snapshotValidityDeadline,
+} from "./publication-currentness.js";
 import {
   PUBLIC_SNAPSHOT_KEY,
   publicSnapshot,
 } from "./public-snapshot.js";
 import {
+  comparisonValidUntil,
   readInternationalComparison,
   refreshInternationalComparison,
 } from "./international-comparison-store.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
+import { approvedSeedUrl } from "./approved-seed-url.js";
 
 const SNAPSHOT_PATH = "/data/metrics-snapshot.json";
 const HEALTH_PATH = "/data/health.json";
 const COMPARISON_PATH = "/data/international-comparison.json";
-const DEFAULT_SEED_URL =
-  "https://public-data-org.pages.dev/data/metrics-snapshot.json";
-const PUBLIC_CACHE_CONTROL =
-  "public, max-age=300, s-maxage=300, stale-while-revalidate=3600";
-const COMPARISON_CACHE_CONTROL =
-  "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400";
+function publicCacheControl(validUntil, now = new Date()) {
+  const validUntilMs = Date.parse(String(validUntil ?? ""));
+  const remainingSeconds = Math.floor((validUntilMs - now.getTime()) / 1000);
+  if (!Number.isFinite(remainingSeconds) || remainingSeconds <= 0) {
+    return "no-store";
+  }
+  const maxAge = Math.min(300, Math.max(1, remainingSeconds));
+  return `public, max-age=${maxAge}, s-maxage=${maxAge}`;
+}
+function comparisonCacheControl(publication, now = new Date()) {
+  const validUntil = comparisonValidUntil(publication);
+  if (!validUntil) return "no-store";
+  const remainingSeconds = Math.max(
+    1,
+    Math.ceil((validUntil.getTime() - now.getTime()) / 1000),
+  );
+  const maxAge = Math.min(3600, remainingSeconds);
+  return `public, max-age=${maxAge}, s-maxage=${maxAge}`;
+}
 
 function requiredMissingFrom(snapshot) {
   if (!snapshot?.meta?.sources || typeof snapshot.meta.sources !== "object") {
@@ -145,12 +163,13 @@ async function readPreparedPublicArtifact(env, now = new Date()) {
       typeof record.metadata?.generatedAt === "string"
         ? record.metadata.generatedAt
         : "current",
+    validUntil: record.metadata.validUntil,
     delivery: "cloudflare-kv",
   };
 }
 
 async function fetchSeedSnapshot(env, fetchImpl = fetch, now = new Date()) {
-  const url = String(env?.STATIC_SNAPSHOT_SEED_URL || DEFAULT_SEED_URL).trim();
+  const url = approvedSeedUrl(env?.STATIC_SNAPSHOT_SEED_URL);
   if (!url) return null;
 
   try {
@@ -190,9 +209,12 @@ async function currentPublicArtifact(env, options = {}) {
     );
     if (isCompleteSnapshot(current)) {
       const snapshot = publicSnapshot(current);
+      const validUntilMs = snapshotValidityDeadline(current, now);
+      if (!Number.isFinite(validUntilMs)) return null;
       return {
         body: JSON.stringify(snapshot),
         generatedAt: snapshot.meta.generatedAt ?? "current",
+        validUntil: new Date(validUntilMs).toISOString(),
         delivery: "cloudflare-kv-migration",
       };
     }
@@ -203,9 +225,12 @@ async function currentPublicArtifact(env, options = {}) {
   const seed = await fetchSeedSnapshot(env, options.fetchImpl ?? fetch, now);
   if (seed) {
     const snapshot = publicSnapshot(seed);
+    const validUntilMs = snapshotValidityDeadline(seed, now);
+    if (!Number.isFinite(validUntilMs)) return null;
     return {
       body: JSON.stringify(snapshot),
       generatedAt: snapshot.meta.generatedAt ?? "current",
+      validUntil: new Date(validUntilMs).toISOString(),
       delivery: "pages-fallback",
     };
   }
@@ -246,16 +271,20 @@ async function snapshotResponse(request, env) {
     ETag: etag,
     "X-Publication-Delivery": result.delivery,
   };
-  if (request.headers.get("If-None-Match") === etag) {
+  const cacheControl = publicCacheControl(result.validUntil);
+  if (
+    cacheControl !== "no-store" &&
+    request.headers.get("If-None-Match") === etag
+  ) {
     return new Response(null, {
       status: 304,
-      headers: { ...publicHeaders(PUBLIC_CACHE_CONTROL), ...headers },
+      headers: { ...publicHeaders(cacheControl), ...headers },
     });
   }
   return new Response(request.method === "HEAD" ? null : result.body, {
     status: 200,
     headers: {
-      ...publicHeaders(PUBLIC_CACHE_CONTROL),
+      ...publicHeaders(cacheControl),
       "Content-Type": "application/json; charset=utf-8",
       ...headers,
     },
@@ -263,7 +292,8 @@ async function snapshotResponse(request, env) {
 }
 
 async function comparisonResponse(request, env) {
-  const publication = await readInternationalComparison(env);
+  const now = new Date();
+  const publication = await readInternationalComparison(env, { now });
   if (!publication) {
     return json(
       { error: "Verified international comparison data is temporarily unavailable" },
@@ -272,7 +302,7 @@ async function comparisonResponse(request, env) {
   }
   return json(publication, {
     head: request.method === "HEAD",
-    cacheControl: COMPARISON_CACHE_CONTROL,
+    cacheControl: comparisonCacheControl(publication, now),
   });
 }
 
@@ -372,6 +402,7 @@ export {
   currentPublicSnapshot,
   fetchSeedSnapshot,
   isCompleteSnapshot,
+  publicCacheControl,
   preparedMetadataIsCurrent,
   readPreparedPublicArtifact,
   withPublicationState,

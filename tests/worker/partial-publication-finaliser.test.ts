@@ -75,13 +75,14 @@ describe("partial publication finalisation", () => {
         source: "ONS GDP monthly estimate",
       },
       fetchedAt: "2026-07-18T03:20:00.000Z",
+      runId: "partial-run",
     };
 
-    const { env, store } = kvEnv({
-      [PUBLICATION_CURRENT_KEY]: current,
-      "v12:publication:section:gdpTracker": gdpFragment,
+    const { env, store } = kvEnv({ [PUBLICATION_CURRENT_KEY]: current });
+    const { run } = await createRun(env, startedAt, "daily", {
+      runId: "partial-run",
     });
-    const { run } = await createRun(env, startedAt);
+    store.set(`${RUN_PREFIX}${run.runId}:section:gdpTracker`, gdpFragment);
 
     for (const jobId of run.expectedJobIds) {
       store.set(`${RUN_PREFIX}${run.runId}:terminal:${jobId}`, {
