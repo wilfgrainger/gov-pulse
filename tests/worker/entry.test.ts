@@ -7,6 +7,7 @@ import worker, {
   isOfficialMigrationRecord,
   isOfficialNationalDebtRecord,
 } from "@/worker/entry";
+import { refreshAuthorized } from "@/worker/index";
 
 function healthEnv(manifest: unknown) {
   return {
@@ -73,6 +74,20 @@ afterEach(() => {
 
 describe("Worker observability endpoints", () => {
   const ctx = { waitUntil: vi.fn() };
+
+  it("rejects refresh secrets supplied in the URL query string", () => {
+    const queryRequest = new Request(
+      "https://example.com/refresh?secret=correct",
+      { method: "POST" },
+    );
+    const headerRequest = new Request("https://example.com/refresh", {
+      method: "POST",
+      headers: { "X-Refresh-Secret": "correct" },
+    });
+
+    expect(refreshAuthorized(queryRequest, { REFRESH_SECRET: "correct" })).toBe(false);
+    expect(refreshAuthorized(headerRequest, { REFRESH_SECRET: "correct" })).toBe(true);
+  });
 
   it("returns detailed degraded source health and supports strict monitoring", async () => {
     const env = healthEnv({

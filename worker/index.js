@@ -65,8 +65,7 @@ function constantTimeCompare(left, right) {
 function refreshAuthorized(request, env) {
   const expected = typeof env?.REFRESH_SECRET === "string" ? env.REFRESH_SECRET.trim() : "";
   if (!expected) return false;
-  const url = new URL(request.url);
-  const supplied = request.headers.get("X-Refresh-Secret") || url.searchParams.get("secret") || "";
+  const supplied = request.headers.get("X-Refresh-Secret") || "";
   return constantTimeCompare(supplied, expected);
 }
 
