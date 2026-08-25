@@ -19,7 +19,7 @@ jobs:
       lane: ${{ steps.lane.outputs.lane }}
     steps:
       - name: Checkout full PR history
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
@@ -64,16 +64,19 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version-file: .nvmrc
           cache: npm
 
       - name: Install locked dependencies
-        run: npm ci --prefer-offline --no-audit --no-fund
+        run: npm ci --prefer-offline --no-fund
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Verify toolchain
         run: npm run toolchain:check
@@ -91,7 +94,7 @@ jobs:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
 
       - name: Install locked OpenNext toolchain
-        run: npm ci --prefix worker --prefer-offline --no-audit --no-fund
+        run: npm ci --prefix worker --prefer-offline --no-fund
 
       - name: Stage OpenNext adapter config
         shell: bash

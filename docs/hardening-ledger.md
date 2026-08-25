@@ -1,25 +1,24 @@
-# Hardening Ledger (Aggressive 10-Agent Pass)
+# V1.0 hardening ledger
 
-Date: 2026-03-18
-
-## Critical findings
-
-1. Fixed: Nondeterministic E2E due to ambient server reuse on `:3000`.
-2. Fixed: Smoke coverage only checked a subset of section pages.
-3. Fixed: Missing automated published-snapshot canary for production validation.
-4. Fixed: Worker endpoint contract tests were too narrow for ingest/refresh auth paths.
+This ledger records structural controls included in the 1.0.0 release candidate. It is not a substitute for live Cloudflare or rollback evidence.
 
 ## Implemented controls
 
-- Playwright now uses an isolated dedicated server (`PLAYWRIGHT_PORT` default `4173`) and never reuses existing servers.
-- E2E includes app-identity verification and all section routes.
-- The published-data canary validates the registry and all automated sections in the same-origin Pages snapshot.
-- `live-feed-canary.yml` runs on a schedule and manual dispatch; the Pages deployment performs its own post-deploy snapshot verification.
-- Worker tests cover refresh auth, unknown sections, ingest method enforcement, non-ingest rejection, and malformed ingest payloads.
-- Deploy workflow uploads Playwright artifacts for debugging.
+- National publication fragments and values carry a run ID, preventing late Queue retries from mixing editions.
+- International comparison reads enforce a seven-day hard expiry independent of the seven-day refresh due guard.
+- Source discovery, seed fallback and decompression are bounded by approved hosts, response limits and archive output caps.
+- The public national cache cannot outlive the evidence currentness deadline.
+- Degraded national editions expose exact missing required sections and are not reported as ready.
+- Financial historical points have a complete accessible table; derived UI copy does not assert movement or herd-immunity effects without data support.
+- Release workflows enforce `main`, pin action references, audit production dependencies and order data/bootstrap before web delivery.
+- Worker deployment verification matches the exact `workers/tag` annotation rather than an arbitrary text occurrence.
+- Production verifier redirects are same-host and bounded, and response bodies are size-limited.
+- Application and dataset licensing boundaries are explicit.
 
-## Manual follow-up required
+## Proof still required outside the repository
 
-- Execute one manual Pages deploy and one manual published-data canary.
-- Confirm the production frontend and same-origin snapshot serve all verified sections before rollout close.
-- Verify Wrangler/KV configuration only when deploying the optional Worker.
+- exact remote head and PR check result;
+- deployed data Worker version, Queue/bootstrap completion and KV propagation;
+- request-time HTML and all three public data routes observed at that revision;
+- consecutive scheduled runs, alerting and an exercised rollback;
+- authenticated or provider-specific operational journeys where the deployment environment requires them.
