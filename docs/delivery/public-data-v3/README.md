@@ -19,8 +19,8 @@ The redesign must preserve the existing fail-closed evidence contracts and Cloud
 - **V3-R4 — Navigable on any device:** search, primary topics, all topics and sources are reachable by keyboard and reflow at 360px without horizontal page overflow.
 - **V3-R5 — Honest degraded states:** unavailable or update-due evidence is visually distinct and never replaced by an estimate, zero or synthetic score.
 - **V3-R6 — Coherent publication shell:** homepage, source register and section pages use one restrained visual system and consistent reading widths.
-- **V3-R7 — Static-first resilience:** the server-rendered publication remains useful if browser refresh or JavaScript fails.
-- **V3-R8 — Architecture preservation:** no change to source ownership, Worker routes, Cron, Queue, KV, publication completeness or freshness rules.
+- **V3-R7 — Request-time resilience:** the request-time web Worker gives crawlers and no-JavaScript clients the same publication decision as browsers; the Pages export remains a bounded seed/fallback.
+- **V3-R8 — Architecture preservation:** source ownership, exact data Worker routes, Cron, Queue, KV, publication completeness and freshness rules remain explicit and fail closed.
 
 ## Non-goals
 
@@ -32,7 +32,7 @@ The redesign must preserve the existing fail-closed evidence contracts and Cloud
 
 ## Architecture decision
 
-**Decision:** retain the existing Next.js static application and data contracts, then create v3 as a presentation-layer release built from reusable editorial tokens and existing evidence selectors.
+**Decision:** retain the existing Next.js components and evidence contracts, then deliver the visual system through the request-time web Worker and the bounded deterministic seed build.
 
 **Reason:** the dominant constraint is comprehension and trust, not data availability or rendering technology. A backend rewrite would add migration and reliability risk while leaving the first-visit problem unsolved.
 
@@ -42,7 +42,7 @@ The redesign must preserve the existing fail-closed evidence contracts and Cloud
 - `HomepageIntro` becomes the publication promise and reading guide.
 - `NationalEvidenceEdition` remains the sole selector-backed national summary but receives stronger edition, lead-story and signal hierarchy.
 - `PageHeader`, section downloads, source cards and the footer adopt the same editorial system.
-- Existing IDs, public routes, source links and static-first fallback behaviour remain stable.
+- Existing IDs, public routes, source links and bounded fallback behaviour remain stable.
 
 **Owner:** Richard Hendricks for architecture; Dinesh for implementation; Jared for scope and release.
 
@@ -56,8 +56,8 @@ The redesign must preserve the existing fail-closed evidence contracts and Cloud
 | V3-R4 | navigation tests, keyboard behaviour and Playwright mobile/desktop journeys |
 | V3-R5 | existing evidence-state tests plus unchanged fail-closed selectors |
 | V3-R6 | visual-system contract and section/source component tests |
-| V3-R7 | static production build and deterministic browser tests |
-| V3-R8 | architecture and source-ownership repository gates; no Worker/data-plane diff |
+| V3-R7 | OpenNext request-time build, static seed build and deterministic browser tests |
+| V3-R8 | architecture and source-ownership repository gates, including exact data Worker route ownership |
 
 ## Team reconciliation
 
