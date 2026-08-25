@@ -57,7 +57,7 @@ Manual dispatch is recovery-only and is refused unless the selected ref is `main
 
 Required GitHub environment configuration:
 
-- The `cloudflare-internal-worker` environment with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The current deployment job uses this protected environment for both Worker deployments and the optional Pages seed refresh.
+- The `cloudflare-internal-worker` environment with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The current deployment job uses this protected environment for both Worker deployments and the verified Pages seed refresh.
 
 Keep tokens restricted to the intended Cloudflare account and `public-data.org` resources. Secret values must never be committed, printed or copied into issues, prompts or evidence records. `workers_dev = false`, `preview_urls = false`, exact route declarations and [scripts/check-hosting-boundary.mjs](./scripts/check-hosting-boundary.mjs) enforce the public boundary.
 

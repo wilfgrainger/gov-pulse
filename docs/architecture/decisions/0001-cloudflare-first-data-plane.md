@@ -27,7 +27,7 @@ Adopt a Cloudflare-first split architecture:
 2. `pulse-data-worker` owns recurring collection, validation, finalisation and the exact national snapshot, health and isolated comparison routes.
 3. Cloudflare Pages retains a bounded static seed/fallback export; it is not the normal custom-domain application plane.
 4. The finaliser precomputes and stores a sanitised public JSON artifact plus its validity deadline. Public data requests return that prepared value rather than rebuilding it.
-5. One GitHub production workflow runs automatically after relevant changes reach `main`. It validates once, reconciles the Queue, deploys and verifies the data Worker, bootstraps publication, then deploys and verifies the request-time web Worker before refreshing the optional Pages seed.
+5. One GitHub production workflow runs automatically after relevant changes reach `main`. It validates once, reconciles the Queue, deploys and verifies the data Worker, bootstraps publication, then deploys and verifies the request-time web Worker before refreshing the Pages seed from a verified current publication.
 6. Manual workflow dispatch is retained only for recovery.
 
 ## Alternatives considered
