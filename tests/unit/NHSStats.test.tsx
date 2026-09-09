@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import NHSStats from "@/app/components/NHSStats";
+
+let NHSStats: typeof import("@/app/components/NHSStats").default;
 
 const useMetrics = vi.fn();
 
@@ -124,9 +125,10 @@ function result(data: unknown) {
   };
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-07-14T12:00:00Z"));
+  ({ default: NHSStats } = await import("@/app/components/NHSStats"));
 });
 
 afterEach(() => {
