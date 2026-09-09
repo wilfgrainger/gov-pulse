@@ -19,7 +19,7 @@ describe("degraded evidence must not block application releases", () => {
   it("deploys the web Worker before requiring a complete static fallback snapshot", () => {
     const production = productionBody();
     const webDeploy = production.indexOf("opennextjs-cloudflare deploy");
-    const productionVerify = production.indexOf("node scripts/verify-production.mjs");
+    const productionVerify = production.indexOf("npm run test:release");
     const fallbackCandidate = production.indexOf(
       "node scripts/fetch-cloudflare-publication-candidate.mjs",
     );

@@ -25,7 +25,9 @@
     "snapshot:diagnostics": "node scripts/generate-publication-diagnostics.mjs",
     "worker:dev": "npx wrangler dev --config worker/wrangler.toml",
     "worker:deploy": "npx wrangler deploy --config worker/wrangler.toml",
-    "worker:tail": "npx wrangler tail --config worker/wrangler.toml"
+    "worker:tail": "npx wrangler tail --config worker/wrangler.toml",
+    "build:prepare": "node scripts/generate-build-snapshot-module.mjs --optional-missing && node scripts/generate-section-downloads.mjs --optional-missing && node scripts/generate-social-cards.mjs",
+    "test:release": "node scripts/release-smoke.mjs"
   },
   "dependencies": {
     "framer-motion": "^12.42.2",

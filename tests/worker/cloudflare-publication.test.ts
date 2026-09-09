@@ -286,6 +286,7 @@ describe("Cloudflare Free data publication", () => {
 
     const result = await finaliseRun(run.runId, env, {
       now: new Date("2026-08-01T03:43:00.000Z"),
+      fetchImpl: async () => new Response("no seed", { status: 503 }),
     });
 
     expect(result.run.status).toBe("incomplete");

@@ -243,6 +243,8 @@ describe("national debt cache migration", () => {
   });
 
   it("serves the migrated debt record with provenance on the public route", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-14T02:00:00Z"));
     const record = {
       section: "nationalDebt",
       data: {
