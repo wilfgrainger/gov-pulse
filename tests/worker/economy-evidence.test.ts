@@ -147,10 +147,10 @@ describe("official ONS economy bulletin connectors", () => {
 
   it("builds aligned labour-market rates and keeps the vacancies period separate", async () => {
     const fetchImpl = fetchFor(LABOUR_BULLETIN_URL, labourEditionUrl, labourHtml, {
-      lf24: monthlyCsv(2026, 4, 75.1, 74.8),
-      mgsx: monthlyCsv(2026, 4, 5.2, 4.8),
-      lf2s: monthlyCsv(2026, 4, 21, 21.4),
-      ap2y: monthlyCsv(2026, 5, 721, 760),
+      lf24: rollingThreeMonthCsv(2026, 4, 75.1, 74.8),
+      mgsx: rollingThreeMonthCsv(2026, 4, 5.2, 4.8),
+      lf2s: rollingThreeMonthCsv(2026, 4, 21, 21.4),
+      ap2y: rollingThreeMonthCsv(2026, 5, 721, 760),
     });
     const result = await buildEmploymentStats(fetchImpl);
 
