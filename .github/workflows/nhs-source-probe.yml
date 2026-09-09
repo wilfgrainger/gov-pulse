@@ -1,0 +1,44 @@
+name: NHS Source Probe
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/nhs-source-probe.yml"
+      - "worker/live-nhs-publication-collector.js"
+      - "worker/live-nhs-collector.js"
+      - "worker/nhs-press-notice.js"
+      - "worker/nhs-rtt-source-discovery.js"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+      - name: Run exact production NHS collector against current publication
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { collectNhsRttPublication } from "./worker/live-nhs-publication-collector.js";
+
+          try {
+            const data = await collectNhsRttPublication(fetch, new Date());
+            console.log(JSON.stringify({
+              status: "ok",
+              headline: data.headline,
+              source: data.source,
+              historyPoints: data.history?.length ?? 0,
+              specialties: data.specialties?.length ?? 0,
+            }, null, 2));
+          } catch (error) {
+            console.error("NHS_SOURCE_PROBE_FAILURE", error instanceof Error ? error.stack : String(error));
+            process.exit(1);
+          }
+          NODE
