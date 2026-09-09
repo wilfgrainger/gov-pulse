@@ -108,6 +108,7 @@ function publishClockTick() {
 function subscribeToClock(listener: () => void) {
   clockListeners.add(listener);
   if (clockTimer === null) {
+    clientNowMs = Date.now();
     clockTimer = setInterval(publishClockTick, CLOCK_INTERVAL_MS);
   }
 

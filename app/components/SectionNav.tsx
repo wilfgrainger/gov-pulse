@@ -35,7 +35,7 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
     return section ? [section] : [];
   });
 
-  const isActive = (id: string) => pathname === `/section/${id}`;
+  const isActive = (id: string) => pathname?.replace(/\/$/, '') === `/section/${id}`;
 
   useEffect(() => {
     if (!menuOpen && !searchOpen) return;
@@ -101,6 +101,7 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
         >
           <BrandLogo compact />
         </Link>
+        <Link href="/explore/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/explore' ? 'page' : undefined} className={`inline-flex min-h-11 items-center text-sm font-semibold underline underline-offset-4 ${focusClasses}`}>Explore data</Link>
 
         <p className="hidden border-l border-[#d8d3c8] pl-4 text-xs leading-5 text-[#68707b] lg:block">
           Independent UK public evidence

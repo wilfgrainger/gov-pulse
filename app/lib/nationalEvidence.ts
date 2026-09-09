@@ -358,7 +358,7 @@ function selectNhs(snapshot: MetricsSnapshot): SignalPresentation {
   const publishedAt = formatDate(headline?.publicationDate);
   if (data?.available !== true || waiting === null || !period || !publishedAt) return unavailable("nhs-waiting-list");
   const value = `${formatCompactCount(waiting)} pathways`;
-  const direction = yearChange === null || yearChange === 0 ? "was unchanged" : yearChange < 0 ? "fell" : "rose";
+  const direction = yearChange === 0 ? "was unchanged" : yearChange !== null && yearChange < 0 ? "fell" : "rose";
   return applySourceState(
     {
       ...unavailable("nhs-waiting-list"),
@@ -368,7 +368,7 @@ function selectNhs(snapshot: MetricsSnapshot): SignalPresentation {
       publishedAt,
       history: historyPoints(data?.history, "waitingPathwaysEstimate"),
       leadHeadline: `${value} were waiting at the end of ${period}.`,
-      leadSummary: `The waiting list ${direction}${yearChange === null || yearChange === 0 ? "." : ` by ${Math.abs(yearChange).toFixed(1)}% from a year earlier.`}`,
+      leadSummary: yearChange === null ? "A matched annual comparison is unavailable." : `The waiting list ${direction}${yearChange === 0 ? "." : ` by ${Math.abs(yearChange).toFixed(1)}% from a year earlier.`}`,
       caveat: "Pathways are not unique people; some patients wait on more than one pathway.",
     },
     snapshot.meta.sources.nhsStats
@@ -396,7 +396,7 @@ function selectMigration(snapshot: MetricsSnapshot): SignalPresentation {
       period,
       publishedAt,
       history: historyPoints(data?.history, "netMigration"),
-      leadHeadline: `Net migration ${direction} to ${formatPeople(value)} in ${period}.`,
+      leadHeadline: change === null ? `Net migration was ${formatPeople(value)} in ${period}.` : `Net migration ${direction} to ${formatPeople(value)} in ${period}.`,
       leadSummary:
         change === null
           ? `The latest accepted ONS estimate covers ${period}; a matched previous-period comparison is unavailable.`

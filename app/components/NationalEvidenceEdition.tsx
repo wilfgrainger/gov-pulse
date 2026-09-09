@@ -26,7 +26,7 @@ function StateBadge({ state }: { state: EvidenceState }) {
         : "border-black/20 bg-[#f4f2ec] text-gray-600";
 
   return (
-    <span className={`inline-flex min-h-7 items-center border px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] ${tone}`}>
+    <span className={`inline-flex min-h-7 items-center border px-2.5 py-1 text-sm font-semibold uppercase tracking-[0.08em] ${tone}`}>
       {STATE_LABELS[state]}
     </span>
   );
@@ -52,14 +52,14 @@ function LeadStory({ signal }: { signal: SignalPresentation | null }) {
 
   return (
     <article className="grid overflow-hidden border-y border-foreground lg:grid-cols-[minmax(0,1.4fr)_minmax(19rem,0.6fr)]">
-      <div className="bg-[#172234] p-6 text-white md:p-9 lg:p-12">
+      <div className="bg-[#172234] p-6 text-white md:p-8">
         <div className="flex flex-wrap items-center gap-3">
           <p className="eyebrow eyebrow-on-dark">Lead figure</p>
-          <span className="inline-flex min-h-7 items-center border border-white bg-white px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground">
+          <span className="inline-flex min-h-7 items-center border border-white bg-white px-2.5 py-1 text-sm font-semibold uppercase tracking-[0.08em] text-foreground">
             {STATE_LABELS[signal.state]}
           </span>
         </div>
-        <h3 className="font-display mt-5 max-w-5xl text-4xl leading-[0.98] md:text-6xl lg:text-[4.75rem]">
+        <h3 className="font-display mt-5 max-w-5xl text-3xl leading-tight md:text-4xl lg:text-5xl">
           {signal.leadHeadline}
         </h3>
         {signal.leadSummary ? (
@@ -158,11 +158,11 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
 
   return (
     <section id="national-signals" tabIndex={-1} aria-labelledby="national-evidence-title" className="scroll-mt-24 focus:outline-none">
-      <div className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-16">
+      <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
         <div className="mb-8 grid gap-5 border-b border-black/20 pb-6 md:grid-cols-[1fr_auto] md:items-end">
           <div>
             <p className="eyebrow">Latest figures</p>
-            <h2 id="national-evidence-title" className="section-title mt-2">The latest evidence, first.</h2>
+            <h2 id="national-evidence-title" className="section-title mt-2">Latest figures</h2>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-gray-600 md:text-base">
               Each figure keeps its own period, definition and source. Open a figure to inspect the full evidence.
             </p>

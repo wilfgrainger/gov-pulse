@@ -9,16 +9,15 @@ describe("HomepageIntro", () => {
     render(<HomepageIntro />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Britain, in evidence." })).toBeInTheDocument();
-    expect(screen.getByText(/latest important public figures/i)).toBeInTheDocument();
-    expect(screen.getByText(/linked to the original publication/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Office for National Statistics" })).toHaveAttribute("href", "https://www.ons.gov.uk/");
+    expect(screen.getByText(/What changed, what it means/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "official sources" })).toHaveAttribute("href", "https://www.ons.gov.uk/");
     expect(screen.queryByText(/how to read a figure/i)).not.toBeInTheDocument();
   });
 
   it("puts today's evidence first and keeps source access visible", () => {
     render(<HomepageIntro />);
 
-    expect(screen.getByRole("link", { name: /read today's edition/i })).toHaveAttribute("href", "#national-signals");
-    expect(screen.getByRole("link", { name: "Check sources and dates" })).toHaveAttribute("href", "/sources");
+    expect(screen.getByRole("link", { name: /Explore 27 measures/i })).toHaveAttribute("href", "/explore");
+    expect(screen.getByRole("link", { name: "Sources and dates" })).toHaveAttribute("href", "/sources");
   });
 });

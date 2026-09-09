@@ -24,24 +24,12 @@ export interface MetricsResult<T> {
   observedAt: Date | null;
 }
 
-interface CacheEntry {
-  data: unknown;
-  timestamp: number;
-  source: "snapshot" | "worker";
-  lastUpdated: string | null;
-  cacheState: MetricsCacheState;
-  observationPeriod: string | null;
-  observationStatus: MetricsObservationStatus;
-  observedAt: string | null;
-}
-
 interface RawObservation {
   status?: unknown;
   period?: unknown;
   observedAt?: unknown;
 }
 
-const cache = new Map<string, CacheEntry>();
 
 function compatibleShape(expected: unknown, candidate: unknown): boolean {
   if (Array.isArray(expected)) {
@@ -247,7 +235,6 @@ export function useMetrics<T>(section: string, fallback: T): MetricsResult<T> {
       sourceMeta?.freshnessWindowMs
     )
   );
-  const initialSnapshotResultRef = useRef(initialSnapshotResult);
 
   useEffect(() => {
     fallbackRef.current = fallback;
@@ -267,7 +254,6 @@ export function useMetrics<T>(section: string, fallback: T): MetricsResult<T> {
       fallbackRef.current,
       sourceMeta?.freshnessWindowMs
     );
-    initialSnapshotResultRef.current = readerInitialResult;
     queueMicrotask(() => {
       if (active) setResult(readerInitialResult ?? fallbackResult(fallbackRef.current));
     });
@@ -288,40 +274,11 @@ export function useMetrics<T>(section: string, fallback: T): MetricsResult<T> {
         freshnessWindowMs: sourceMeta?.freshnessWindowMs,
         now: Date.now(),
       });
-      cache.set(section, {
-        data: raw,
-        timestamp: Date.now(),
-        source,
-        lastUpdated: timestamp ?? null,
-        cacheState: nextResult.cacheState,
-        observationPeriod: nextResult.observationPeriod,
-        observationStatus: nextResult.observationStatus,
-        observedAt: nextResult.observedAt?.toISOString() ?? null,
-      });
       if (active) setResult(nextResult);
       return true;
     };
 
     const fetchData = async () => {
-      const cached = cache.get(section);
-      if (cached && Date.now() - cached.timestamp < REFRESH_INTERVAL_MS) {
-        if (active) {
-          setResult({
-            data: cached.data as T,
-            isLive: true,
-            lastUpdated: cached.lastUpdated
-              ? new Date(cached.lastUpdated)
-              : new Date(cached.timestamp),
-            source: cached.source,
-            cacheState: cached.cacheState,
-            observationPeriod: cached.observationPeriod,
-            observationStatus: cached.observationStatus,
-            observedAt: cached.observedAt ? new Date(cached.observedAt) : null,
-          });
-        }
-        return;
-      }
-
       try {
         const loaded = await fetchMetricsSnapshot();
         const sourceStatus = loaded.payload.meta.sources[section];
@@ -344,7 +301,7 @@ export function useMetrics<T>(section: string, fallback: T): MetricsResult<T> {
       }
 
       if (active) {
-        setResult(initialSnapshotResultRef.current ?? fallbackResult(fallbackRef.current));
+        setResult(currentMetricsResultFromSnapshot(initialSnapshot, section, fallbackRef.current, sourceMeta?.freshnessWindowMs) ?? fallbackResult(fallbackRef.current));
       }
     };
 

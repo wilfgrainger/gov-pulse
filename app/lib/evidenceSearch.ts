@@ -11,6 +11,7 @@ export type EvidenceSearchItem = {
 };
 
 export const EVIDENCE_SEARCH_ITEMS: readonly EvidenceSearchItem[] = [
+  { id: 'explore', title: 'Explore all measures', category: 'Data tools', evidenceClass: 'Source-linked statistics', description: 'Search 27 measures, inspect history, compare periods and download CSV.', href: '/explore/', aliases: ['data explorer', 'download', 'CSV', 'compare', 'history', 'all data'], questions: ['Can I download the data?', 'How have the figures changed?'], priority: 0 },
   {
     id: "key-indicators",
     title: "Prices, rates and jobs",

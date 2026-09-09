@@ -44,3 +44,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 __pycache__/
+
+# Generated Cloudflare adapter and build outputs
+.open-next/
+open-next.config.ts
+worker/node_modules/
+public/social/
+build-output.log

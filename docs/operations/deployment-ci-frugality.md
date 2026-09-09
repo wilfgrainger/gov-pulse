@@ -1,39 +1,34 @@
 # Deployment CI frugality
 
-## Structural baseline before issue #201
+## Normal production release
 
-A normal push to `main` used four isolated jobs and therefore ran:
+One environment-gated job installs each locked toolchain once (root npm dependencies and the worker-local OpenNext adapter), runs lint and repository unit/Worker tests, prepares generated assets, compiles the application once with OpenNext, and deploys the web and data Workers. Cloudflare credentials are scoped to the individual deployment steps. No Actions artifact upload or browser installation is required.
 
-- `npm ci` four times: quality, E2E, build and production verification;
-- Playwright/browser dependency setup three times: E2E, publication build and production verification;
-- `apt-get update` once inside the publication build.
+A bounded smoke probe checks the exact revision on the homepage and GDP topic and validates the health endpoint. An honest `ready: false` response is reported as degraded evidence; transport errors, malformed health responses, wrong revisions and broken routes fail the probe. Source availability is not confused with application deployment success.
 
-A scheduled refresh skipped quality and E2E but still ran `npm ci` twice and browser/extractor setup twice.
+Production concurrency queues a newer release behind an already running deployment, avoiding cancellation between the web and data Worker steps. Pull-request runs still cancel superseded validation.
 
-## Consolidated design
+## Removed from the ordinary release path
 
-The workflow now has two execution jobs:
+- A second checkout and duplicate root/adapter dependency installations.
+- Duplicate Next.js/OpenNext builds and the redundant pre-adapter server build.
+- Static Pages seed compilation on every normal code release.
+- Automatic collection/bootstrap polling for up to 12 minutes.
+- Overlapping full-site, snapshot-canary and repeated download probes.
+- YAML assertions requiring those redundant deployment steps.
 
-1. **Validate and build** — one dependency install, one browser/extractor setup, conditional lint/unit/E2E on pushes, source preparation, snapshot assembly and static export.
-2. **Deploy and verify** — one dependency install, deployment credentials isolated to this job, exact artifact deployment, revision/snapshot verification and the production mobile journey.
+The default path now has one application compilation instead of up to five. There are two dependency installations total (one per distinct toolchain) instead of four. These are structural counts, not measured wall-clock speedups.
 
-For push deployments this halves dependency installation from four to two and reduces browser/extractor setup from three to two. Scheduled refreshes retain the two isolated setup boundaries because the deployment/verification job must remain separate from untrusted source retrieval and static building.
+## Pull requests and diagnostics
 
-## Runtime measurement
+Pull requests retain source/architecture guards, lint, repository tests and a Next.js application build. The production release validates the pinned Cloudflare adapter. Browser tests remain available with `npm run test:e2e`; full production diagnostics remain available through `scripts/verify-production.mjs` and `npm run test:live`. They do not gate every routine deployment.
 
-Every deployment run queries recent completed push and scheduled runs through the GitHub Actions API and records:
+Vitest explicitly discovers only `tests/unit` and `tests/worker`. It must not execute tests shipped inside `worker/node_modules`, an issue that previously pulled in unrelated Next.js, Wrangler and blake3 test dependencies.
 
-- median workflow duration;
-- median total `npm ci` step time;
-- median browser/extractor setup time;
-- sample count for each event type.
+## Recovery and fallback
 
-The report is written to the workflow summary by `scripts/report-deploy-workflow-cost.mjs`. If Actions history cannot be read, it records `unknown` rather than inventing a baseline.
+The existing daily Cloudflare Cron/Queue pipeline owns recurring collection. Manual dispatch offers `refresh_evidence` for bootstrap recovery and `refresh_pages_seed` to update the secondary Pages fallback. Neither runs by default. The fallback retains its currentness/expiry boundary, so an old seed cannot impersonate current data. Refresh it explicitly after source recovery when a usable backup is desired.
 
-## Preserved boundaries
+Keep GitHub Pages disabled. No DNS change, data migration, paid product or credentials change is part of this simplification. Revert the workflow commit to restore the prior release procedure.
 
-- Cloudflare credentials remain available only to the deployment job.
-- The static export is uploaded as an immutable workflow artifact and downloaded by the deployment job.
-- Pushes still require lint, unit/Worker tests, deterministic E2E and static export.
-- Scheduled runs still rebuild current evidence and fail closed under the existing source contracts.
-- Post-deployment revision, snapshot and Pixel 7 checks remain mandatory.
+The GitHub cost-report utility remains available for measurement; the workflow does not claim to run it automatically.

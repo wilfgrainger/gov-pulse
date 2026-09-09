@@ -20,8 +20,8 @@ describe("public reader surface", () => {
     const edition = source("app/components/NationalEvidenceEdition.tsx");
 
     expect(intro).toContain("Britain,");
-    expect(intro).toContain("latest important public figures");
-    expect(intro).toContain("Check sources and dates");
+    expect(intro).toContain("What changed, what it means");
+    expect(intro).toContain("Sources and dates");
     expect(intro).not.toContain("Number, period, source.");
     expect(intro).not.toContain("Evidence promises");
 

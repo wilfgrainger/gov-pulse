@@ -210,6 +210,7 @@ async function collectTaxRevenue(fetchImpl = fetch, now = new Date()) {
 
   const data = {
     ...parsed,
+    expiresAt: new Date(Date.parse(parsed.headline.releaseDate) + MAX_AGE_DAYS * 86_400_000).toISOString(),
     history: receipts.slice(-TEN_YEARS_MONTHLY).map((point) => ({
       period: displayMonthlyPeriod(point.period),
       observedAt: point.observedAt,
