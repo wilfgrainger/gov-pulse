@@ -50,7 +50,7 @@ The product has three deliberately small delivery planes:
 3. Cloudflare Pages retains a bounded static seed/fallback export. It is not the
    normal application plane. The data Worker may use a validated Pages seed only
    inside the documented fallback boundary, and the deployment workflow keeps
-   the seed current after a successful web deployment.
+   the seed refresh available as an explicit recovery operation after web deployment.
 
 The data Worker runs the Cloudflare Free plan schedule in `worker/wrangler.toml`: the daily
 Cron (`17 3 * * *`) refreshes generic, external and procurement evidence; the
@@ -158,19 +158,20 @@ journey are observed.
 
 ## Delivery and verification
 
-`main` is the release branch. `.github/workflows/pr-validation.yml` runs the
-focused architecture/source guards, lint, unit and Worker tests, deterministic
-Pages seed build, pinned OpenNext Worker build and browser checks as appropriate.
-`.github/workflows/deploy.yml` validates once, reconciles the Queue, deploys the
-data Worker, bootstraps the required national run and independently queues the
-comparison refresh, accepts a verified prepared degraded KV edition when the
-national evidence is honestly partial, deploys the request-time web Worker,
-verifies the exact revision and live snapshot, then refreshes the bounded Pages
-seed. Manual dispatch is recovery only.
+`main` is the release branch. Pull requests run source/architecture guards,
+lint, repository unit/Worker tests and one Next.js application build. Production
+uses one environment-gated job, one installation per locked toolchain and one
+OpenNext compilation. It deploys the web and data Workers and performs bounded
+revision/route/health checks. Valid degraded evidence does not block a code
+release; broken endpoints and malformed health responses do. Automatic evidence
+collection remains in Cloudflare Cron/Queue. Manual dispatch can explicitly
+bootstrap collection or refresh the bounded Pages fallback. Browser and exhaustive
+production diagnostics are explicit checks, not routine deployment gates.
+See `docs/operations/deployment-ci-frugality.md` for the release and recovery paths.
 
 Before handoff run the smallest falsifying test for the change, then the
-affected Worker/component tests, lint, both production build modes, browser
-checks and production verifier. Inspect `git status` and exact `HEAD`; preserve
+affected Worker/component tests, lint and the affected production build modes.
+Run browser and exhaustive production checks only when the change requires them. Inspect `git status` and exact `HEAD`; preserve
 untracked user files. Do not push, merge, deploy or delete material outside the
 requested scope without explicit authority.
 

@@ -102,7 +102,9 @@ export async function fetchMetricsSnapshot(): Promise<LoadedMetricsSnapshot> {
     cachedSnapshot &&
     Date.now() - cachedSnapshot.cachedAt < REFRESH_INTERVAL_MS
   ) {
-    return cachedSnapshot.loaded;
+    const current = filterCurrentSnapshot(cachedSnapshot.loaded.payload, new Date());
+    if (current) return { ...cachedSnapshot.loaded, payload: current as MetricsSnapshot };
+    cachedSnapshot = null;
   }
   if (!pendingSnapshot) {
     pendingSnapshot = loadSnapshot()

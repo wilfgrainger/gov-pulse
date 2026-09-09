@@ -173,3 +173,13 @@ describe("observation currentness contracts", () => {
     );
   });
 });
+
+it('keeps a newly published lagged release valid through the public delivery boundary', async () => {
+  const { sectionCurrentness } = await import('../../worker/publication-currentness.js');
+  const now = new Date('2026-09-07T12:00:00Z');
+  const descriptors = currentDescriptors();
+  applyObservationContracts(descriptors, () => now);
+  const data = await descriptors.migrationStats.build();
+  expect(sectionCurrentness('migrationStats', data, { status: 'ok', cacheState: 'fresh', fetchedAt: now.toISOString(), provenance: { section: 'migrationStats' } }, now)).toEqual({ current: true, reason: 'current' });
+  expect((data as unknown as WrappedObservation).__observation.observedAt).toBe('2025-12-31T00:00:00.000Z');
+});

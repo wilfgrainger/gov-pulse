@@ -6,15 +6,17 @@ An independent UK public-evidence service built with Next.js, TypeScript and ver
 
 public-data.org uses a Cloudflare-first data plane with the repository as the source of truth:
 
-- **Cloudflare Pages** serves the static Next.js frontend, discovery files and downloadable section JSON/CSV assets.
+- **Cloudflare web Worker** serves the request-time Next.js application through the pinned OpenNext adapter. **Cloudflare Pages** retains a bounded seed/fallback export.
 - **Cloudflare Cron Triggers** start bounded evidence refreshes.
 - **Cloudflare Queues** serialise source work, retries and run finalisation.
 - **Cloudflare Workers** collect, validate and publish evidence.
 - **Workers KV** stores source records, run state, the canonical private publication and a pre-sanitised public snapshot.
-- The Worker serves only two exact same-origin routes: `/data/metrics-snapshot.json` and `/data/health.json`.
+- The data Worker serves three exact same-origin routes: `/data/metrics-snapshot.json`, `/data/health.json` and `/data/international-comparison.json`.
 - **GitHub Actions** tests, builds and deploys repository code. It does not collect recurring data or manually promote daily editions.
 
-A merge to `main` automatically validates the repository, reconciles the required Cloudflare Queue, deploys the Worker, verifies its health route, and deploys the static frontend to Cloudflare Pages. Manual workflow dispatch is recovery-only.
+A merge to `main` validates source, builds the application once, deploys both Workers and runs bounded revision/route/health checks. Source collection runs independently in Cloudflare. Manual dispatch can bootstrap evidence or refresh the secondary Pages seed. See [deployment and recovery](./docs/operations/deployment-ci-frugality.md).
+
+The [data explorer](https://public-data.org/explore/) presents 27 separately sourced measures with search, topic filters, published history, endpoint comparisons and CSV export. It shows only evidence that remains within its source-owned validity window.
 
 The repository-level GitHub Pages setting must remain disabled. A `public/CNAME` file and GitHub Pages deployment actions are prohibited because they can compete with the Cloudflare Pages production route. `npm run hosting:check` enforces this boundary in every test pass.
 
@@ -64,7 +66,7 @@ npm run build:check
 npm run test:e2e
 ```
 
-Pull requests run governance, architecture, source-ownership, hosting-boundary, lint, unit/Worker, static-build and deterministic browser checks. The named aggregate `quality` job is the branch-protection gate.
+Pull requests run governance, architecture, source-ownership, hosting-boundary, lint, unit/Worker and application-build checks. Browser and exhaustive production diagnostics are explicit checks. The named aggregate `quality` job is the branch-protection gate.
 
 ## Deployment
 

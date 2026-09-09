@@ -18,6 +18,7 @@ function validDate(value: string | undefined) {
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes: MetadataRoute.Sitemap = [
+    { url: absoluteUrl("/explore/"), changeFrequency: "daily", priority: 0.9 },
     {
       url: absoluteUrl("/"),
       changeFrequency: "daily",

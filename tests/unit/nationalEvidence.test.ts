@@ -171,3 +171,12 @@ describe("national evidence presentation", () => {
     expect(edition.signals.every((signal) => signal.value === null)).toBe(true);
   });
 });
+
+it("does not describe a missing annual comparison as unchanged", () => {
+  const payload = snapshot();
+  Object.assign(payload.nhsStats.headline, { yearChangePercent: null });
+  Object.assign(payload.migrationStats.headline, { changePercent: null });
+  const edition = selectNationalEvidenceEdition(payload);
+  expect(edition.signals.find(s => s.id === "nhs-waiting-list")?.leadSummary).toBe("A matched annual comparison is unavailable.");
+  expect(edition.signals.find(s => s.id === "net-migration")?.leadHeadline).not.toContain("unchanged");
+});

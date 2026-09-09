@@ -190,6 +190,11 @@ export function applyObservationContracts(descriptors, nowProvider = () => new D
 
       return {
         ...data,
+        // Statistical releases describe earlier periods. Use the verified
+        // publication clock for expiry, while retaining the measured period.
+        ...(observation.observedAt ? {
+          expiresAt: new Date(observation.date.getTime() + contract.maxAgeDays * DAY_MS).toISOString(),
+        } : {}),
         __observation: {
           status: "current",
           period: observation.raw,
