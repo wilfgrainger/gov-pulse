@@ -38,7 +38,7 @@ if (!existsSync(deploymentWorkflow)) {
   );
   requireText(
     deploymentWorkflow,
-    /node scripts\/verify-production\.mjs "https:\/\/public-data\.org\/"/,
+    /npm run test:release -- "https:\/\/public-data\.org\/"/,
     "The production workflow must verify the deployed public-data.org revision."
   );
 }

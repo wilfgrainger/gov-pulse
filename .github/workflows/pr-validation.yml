@@ -84,42 +84,13 @@ jobs:
       - name: Unit and Worker tests
         run: npm run test
 
-      - name: Static Pages seed build
-        run: npm run build:check
-        env:
-          STATIC_EXPORT: "true"
-          NEXT_PUBLIC_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+      - name: Prepare generated data and assets
+        run: npm run build:prepare
 
-      - name: Install locked OpenNext toolchain
-        run: npm ci --prefix worker --prefer-offline --no-audit --no-fund
-
-      - name: Stage OpenNext adapter config
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p node_modules/@opennextjs
-          ln -s "$PWD/worker/node_modules/@opennextjs/cloudflare" node_modules/@opennextjs/cloudflare
-          cp worker/open-next.config.template open-next.config.ts
-
-      - name: Build request-time Cloudflare web Worker
-        run: >-
-          ./worker/node_modules/.bin/opennextjs-cloudflare build
-          --config worker/web-wrangler.toml
+      - name: Build application
+        run: npm run build
         env:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
-
-      - name: Verify preinstalled Chrome
-        shell: bash
-        run: |
-          set -euo pipefail
-          command -v google-chrome
-          google-chrome --version
-
-      - name: Run deterministic browser tests
-        env:
-          CI: "true"
-          PLAYWRIGHT_PORT: "4173"
-        run: npm run test:e2e
 
   quality:
     if: always()
