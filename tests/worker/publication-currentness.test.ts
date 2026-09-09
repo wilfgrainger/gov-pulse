@@ -72,6 +72,17 @@ describe("publication currentness", () => {
     ).toBe("retrieval-in-future");
   });
 
+  it("keeps explicitly valid evidence current after the retrieval health window", () => {
+    expect(
+      sectionCurrentness(
+        "gdpTracker",
+        data({ expiresAt: "2026-08-10T00:00:00.000Z" }),
+        source({ fetchedAt: "2026-08-01T10:00:00.000Z" }),
+        new Date("2026-08-03T12:00:00.000Z")
+      )
+    ).toEqual({ current: true, reason: "current" });
+  });
+
   it("rejects expired evidence at the exact boundary", () => {
     expect(
       sectionCurrentness(
