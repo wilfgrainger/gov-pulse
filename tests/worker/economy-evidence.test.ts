@@ -16,6 +16,7 @@ import {
 
 const gdpEditionUrl = `${GDP_BULLETIN_URL.replace(/\/latest$/, "")}/may2026`;
 const labourEditionUrl = `${LABOUR_BULLETIN_URL.replace(/\/latest$/, "")}/july2026`;
+const currentLabourEditionUrl = `${LABOUR_BULLETIN_URL.replace(/\/latest$/, "")}/august2026`;
 const financesEditionUrl = `${FINANCES_BULLETIN_URL.replace(/\/latest$/, "")}/may2026`;
 
 const gdpHtml = `
@@ -32,6 +33,14 @@ const labourHtml = `
 <p>The UK economic inactivity rate for March to May 2026 was estimated at 21.0%.</p>
 <p>The estimated number of vacancies in the UK decreased in the latest quarter. Early estimates for April to June 2026 suggest a decrease of 19,000 (2.6%) to 721,000, compared with January to March 2026.</p>`;
 
+const currentLabourHtml = `
+<h1>Labour market overview, UK: August 2026</h1>
+<p>Release date: 18 August 2026</p>
+<p>The UK employment rate (based on the LFS) for people aged 16 to 64 years was estimated at 75.1% in April to June 2026.</p>
+<p>The UK unemployment rate for people aged 16 years and over was estimated at 4.9% in April to June 2026.</p>
+<p>The UK economic inactivity rate for people aged 16 to 64 years was estimated at 20.9% in April to June 2026.</p>
+<p>The estimated number of vacancies in the UK decreased in the latest quarter. Early estimates for May to July 2026 suggest a decrease of 6,000 (0.8%) to 707,000, compared with February to April 2026.</p>`;
+
 const financesHtml = `
 <h1>Public sector finances, UK: May 2026</h1>
 <p>Release date: 19 June 2026</p>
@@ -41,13 +50,35 @@ function landing(url: string) {
   return `<a href="${url}">Latest release</a>`;
 }
 
+function monthCode(date: Date) {
+  return date
+    .toLocaleString("en-GB", { month: "short", timeZone: "UTC" })
+    .toUpperCase()
+    .replace("SEPT", "SEP");
+}
+
 function monthlyCsv(endYear: number, endMonth: number, latest: number, prior: number) {
   const rows = [];
   for (let offset = 12; offset >= 0; offset -= 1) {
     const date = new Date(Date.UTC(endYear, endMonth - offset, 1));
-    const period = `${date.getUTCFullYear()} ${date
-      .toLocaleString("en-GB", { month: "short", timeZone: "UTC" })
-      .toUpperCase()}`;
+    const period = `${date.getUTCFullYear()} ${monthCode(date)}`;
+    const value = offset === 12 ? prior : offset === 0 ? latest : prior;
+    rows.push(`${period},${value}`);
+  }
+  return `Title,Value\n${rows.join("\n")}`;
+}
+
+function rollingThreeMonthCsv(
+  endYear: number,
+  endMonth: number,
+  latest: number,
+  prior: number
+) {
+  const rows = [];
+  for (let offset = 12; offset >= 0; offset -= 1) {
+    const end = new Date(Date.UTC(endYear, endMonth - offset, 1));
+    const start = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - 2, 1));
+    const period = `${end.getUTCFullYear()} ${monthCode(start)}-${monthCode(end)}`;
     const value = offset === 12 ? prior : offset === 0 ? latest : prior;
     rows.push(`${period},${value}`);
   }
@@ -116,10 +147,10 @@ describe("official ONS economy bulletin connectors", () => {
 
   it("builds aligned labour-market rates and keeps the vacancies period separate", async () => {
     const fetchImpl = fetchFor(LABOUR_BULLETIN_URL, labourEditionUrl, labourHtml, {
-      lf24: monthlyCsv(2026, 4, 75.1, 74.8),
-      mgsx: monthlyCsv(2026, 4, 5.2, 4.8),
-      lf2s: monthlyCsv(2026, 4, 21, 21.4),
-      ap2y: monthlyCsv(2026, 5, 721, 760),
+      lf24: rollingThreeMonthCsv(2026, 4, 75.1, 74.8),
+      mgsx: rollingThreeMonthCsv(2026, 4, 5.2, 4.8),
+      lf2s: rollingThreeMonthCsv(2026, 4, 21, 21.4),
+      ap2y: rollingThreeMonthCsv(2026, 5, 721, 760),
     });
     const result = await buildEmploymentStats(fetchImpl);
 
@@ -146,6 +177,45 @@ describe("official ONS economy bulletin connectors", () => {
     });
     expect(result).not.toHaveProperty("publicVsPrivate");
     expect(result).not.toHaveProperty("employmentTrend");
+  });
+
+  it("builds the current ONS rolling three-month labour series", async () => {
+    const fetchImpl = fetchFor(
+      LABOUR_BULLETIN_URL,
+      currentLabourEditionUrl,
+      currentLabourHtml,
+      {
+        lf24: rollingThreeMonthCsv(2026, 5, 75.1, 75.3),
+        mgsx: rollingThreeMonthCsv(2026, 5, 4.9, 4.7),
+        lf2s: rollingThreeMonthCsv(2026, 5, 20.9, 20.9),
+        ap2y: rollingThreeMonthCsv(2026, 6, 707, 726),
+      }
+    );
+
+    const result = await buildEmploymentStats(fetchImpl);
+
+    expect(result).toMatchObject({
+      available: true,
+      headline: {
+        period: "April to June 2026",
+        observedAt: Date.UTC(2026, 6, 0),
+        releaseDate: "2026-08-18",
+        employmentRate: 75.1,
+        unemploymentRate: 4.9,
+        inactivityRate: 20.9,
+        vacancies: 707_000,
+        vacanciesPeriod: "May to July 2026",
+      },
+      source: { bulletinUrl: currentLabourEditionUrl },
+    });
+    expect(result.history.labourForce).toHaveLength(13);
+    expect(result.history.vacancies).toHaveLength(13);
+    expect(result.annualDelta).toEqual({
+      employmentRatePoints: -0.2,
+      unemploymentRatePoints: 0.2,
+      inactivityRatePoints: 0,
+      vacancies: -19_000,
+    });
   });
 
   it("fails closed when labour-market headline periods do not align", () => {

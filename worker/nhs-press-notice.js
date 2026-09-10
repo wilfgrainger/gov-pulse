@@ -142,6 +142,7 @@ function parseNhsRttPressNotice(text) {
     .replace(/(\d)\s+\.\s+(\d)/g, "$1.$2")
     .replace(/(\d+)\.\s+(\d)/g, "$1.$2")
     .replace(/(\d)\s+(\d)(?=\.\d)/g, "$1$2")
+    .replace(/(\d)\s+(?=\d+\s+cases\b)/g, "$1")
     .replace(/(\d)\s+%/g, "$1%")
     .replace(/\(\s+([\d,]+)\s+\)/g, "($1)")
     .replace(/(\d+)\s+nd\b/gi, "$1nd")

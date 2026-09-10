@@ -72,7 +72,12 @@ function sectionCurrentness(section, data, source, now = new Date()) {
   if (explicitExpiry !== null && explicitExpiry <= fetchedAt) {
     return { current: false, reason: "expiry-not-after-retrieval" };
   }
-  if (nowMs - fetchedAt >= retrievalLimit) {
+  // Retrieval age is an operational-health clock. Once a source-owned
+  // statistical release has a verified explicit expiry, that publication
+  // remains valid until its evidence clock expires even if the next refresh
+  // attempt is late or fails. Sections without explicit expiry retain the
+  // registry retrieval-age policy.
+  if (explicitExpiry === null && nowMs - fetchedAt >= retrievalLimit) {
     return { current: false, reason: "retrieval-expired" };
   }
 
@@ -129,9 +134,10 @@ function sectionValidityDeadline(section, data, source, now = new Date()) {
   const retrievalLimit = retrievalMaxAgeMsForSection(section);
   if (!Number.isFinite(retrievalLimit)) return null;
 
-  const deadlines = [parsedTime(source.fetchedAt) + retrievalLimit];
   const explicitExpiry = parsedTime(data.expiresAt);
-  if (explicitExpiry !== null) deadlines.push(explicitExpiry);
+  const deadlines = explicitExpiry !== null
+    ? [explicitExpiry]
+    : [parsedTime(source.fetchedAt) + retrievalLimit];
 
   if (isRecord(data.__observation) && explicitExpiry === null) {
     deadlines.push(

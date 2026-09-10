@@ -72,6 +72,33 @@ describe("publication currentness", () => {
     ).toBe("retrieval-in-future");
   });
 
+  it("keeps explicitly valid evidence current after the retrieval health window", () => {
+    expect(
+      sectionCurrentness(
+        "gdpTracker",
+        data({ expiresAt: "2026-08-10T00:00:00.000Z" }),
+        source({ fetchedAt: "2026-08-01T10:00:00.000Z" }),
+        new Date("2026-08-03T12:00:00.000Z")
+      )
+    ).toEqual({ current: true, reason: "current" });
+  });
+
+  it("uses explicit evidence expiry as the snapshot deadline after retrieval health is stale", () => {
+    const snapshot = {
+      meta: {
+        registryVersion: FEED_REGISTRY_VERSION,
+        sources: {
+          gdpTracker: source({ fetchedAt: "2026-08-01T10:00:00.000Z" }),
+        },
+      },
+      gdpTracker: data({ expiresAt: "2026-08-10T00:00:00.000Z" }),
+    };
+
+    expect(
+      snapshotValidityDeadline(snapshot, new Date("2026-08-03T12:00:00.000Z"))
+    ).toBe(Date.parse("2026-08-10T00:00:00.000Z"));
+  });
+
   it("rejects expired evidence at the exact boundary", () => {
     expect(
       sectionCurrentness(

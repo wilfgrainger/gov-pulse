@@ -107,4 +107,39 @@ describe("partial publication finalisation", () => {
       result.publicationResult?.publication
     );
   });
+
+  it("keeps still-valid last-known-good evidence when its refresh job fails", async () => {
+    const startedAt = new Date("2026-07-18T03:17:00.000Z");
+    const current = currentSnapshot();
+    current.nhsStats = {
+      value: "nhsStats",
+      expiresAt: "2026-08-23T00:00:00.000Z",
+    };
+    current.meta.sources.nhsStats.fetchedAt = "2026-07-15T00:00:00.000Z";
+
+    const { env, store } = kvEnv({ [PUBLICATION_CURRENT_KEY]: current });
+    const { run } = await createRun(env, startedAt);
+
+    for (const jobId of run.expectedJobIds) {
+      store.set(`${RUN_PREFIX}${run.runId}:terminal:${jobId}`, {
+        runId: run.runId,
+        jobId,
+        status: jobId === "external:nhsStats" ? "failure" : "success",
+      });
+    }
+
+    const result = await finaliseRun(run.runId, env, {
+      now: new Date("2026-07-18T03:43:00.000Z"),
+    });
+
+    expect(result.run.status).toBe("incomplete");
+    expect(result.run.failedJobIds).toEqual(["external:nhsStats"]);
+    expect(result.publicationResult?.publication.nhsStats).toEqual(current.nhsStats);
+    expect(
+      result.publicationResult?.publication.meta.missingRequiredSections
+    ).not.toContain("nhsStats");
+    expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(
+      result.publicationResult?.publication
+    );
+  });
 });

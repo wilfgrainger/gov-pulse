@@ -198,13 +198,61 @@ function parseMonthlyOnsCsv(text) {
   return points;
 }
 
-async function fetchOnsSeries(definition, fetchImpl = fetch) {
+function parseRollingThreeMonthOnsCsv(text) {
+  const points = [];
+  const seen = new Set();
+
+  for (const line of String(text).split(/\r?\n/)) {
+    const [rawPeriod, rawValue] = parseCsvColumns(line);
+    const match = String(rawPeriod ?? "")
+      .replace(/^"|"$/g, "")
+      .trim()
+      .toUpperCase()
+      .match(/^(\d{4})\s+([A-Z]{3,4})-([A-Z]{3,4})$/);
+    if (!match) continue;
+
+    const startMonth = MONTHS[match[2].toLowerCase()];
+    const endMonth = MONTHS[match[3].toLowerCase()];
+    const value = Number.parseFloat(
+      String(rawValue ?? "").replace(/^"|"$/g, "").replace(/,/g, "")
+    );
+    if (
+      startMonth === undefined ||
+      endMonth === undefined ||
+      (endMonth - startMonth + 12) % 12 !== 2 ||
+      !Number.isFinite(value)
+    ) {
+      continue;
+    }
+
+    const period = `${match[1]} ${match[2]}-${match[3]}`;
+    if (seen.has(period)) throw new Error(`ONS series contains duplicate period '${period}'`);
+    seen.add(period);
+    points.push({
+      period,
+      observedAt: Date.UTC(Number(match[1]), endMonth + 1, 0),
+      value: Number(value.toFixed(4)),
+    });
+  }
+
+  points.sort((left, right) => left.observedAt - right.observedAt);
+  if (points.length === 0) {
+    throw new Error("ONS CSV did not expose rolling three-month observations");
+  }
+  return points;
+}
+
+async function fetchOnsSeries(
+  definition,
+  fetchImpl = fetch,
+  parseSeries = parseMonthlyOnsCsv
+) {
   const response = await fetchOfficialResponse(`${ONS_GENERATOR}${definition.path}`, {
     accept: "text/csv,text/plain;q=0.9,*/*;q=0.8",
     fetchImpl,
     sourceName: `ONS ${definition.id}`,
   });
-  return parseMonthlyOnsCsv(await readResponseText(response, { label: "ONS CSV" }));
+  return parseSeries(await readResponseText(response, { label: "ONS CSV" }));
 }
 
 function pointMap(points) {
@@ -538,26 +586,44 @@ async function buildEmploymentStats(fetchImpl = fetch) {
   const response = await fetchLatestOnsBulletin(LABOUR_BULLETIN_URL, fetchImpl);
   const parsed = parseLabourBulletin(response.html, response.finalUrl);
   const employment = includeCurrentBulletinPoint(
-    await fetchOnsSeries(LABOUR_SERIES.employmentRate, fetchImpl),
+    await fetchOnsSeries(
+      LABOUR_SERIES.employmentRate,
+      fetchImpl,
+      parseRollingThreeMonthOnsCsv
+    ),
     parsed.headline.observedAt,
     parsed.headline.employmentRate,
     "Employment rate"
   );
   const unemployment = includeCurrentBulletinPoint(
-    await fetchOnsSeries(LABOUR_SERIES.unemploymentRate, fetchImpl),
+    await fetchOnsSeries(
+      LABOUR_SERIES.unemploymentRate,
+      fetchImpl,
+      parseRollingThreeMonthOnsCsv
+    ),
     parsed.headline.observedAt,
     parsed.headline.unemploymentRate,
     "Unemployment rate"
   );
   const inactivity = includeCurrentBulletinPoint(
-    await fetchOnsSeries(LABOUR_SERIES.inactivityRate, fetchImpl),
+    await fetchOnsSeries(
+      LABOUR_SERIES.inactivityRate,
+      fetchImpl,
+      parseRollingThreeMonthOnsCsv
+    ),
     parsed.headline.observedAt,
     parsed.headline.inactivityRate,
     "Inactivity rate"
   );
   const vacanciesObservedAt = rollingPeriodEnd(parsed.headline.vacanciesPeriod);
   const vacancies = includeCurrentBulletinPoint(
-    (await fetchOnsSeries(LABOUR_SERIES.vacancies, fetchImpl)).map((point) => ({
+    (
+      await fetchOnsSeries(
+        LABOUR_SERIES.vacancies,
+        fetchImpl,
+        parseRollingThreeMonthOnsCsv
+      )
+    ).map((point) => ({
       ...point,
       value: Math.round(point.value * 1_000),
     })),
