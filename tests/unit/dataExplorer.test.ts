@@ -18,6 +18,12 @@ const payload = {
         fetchedAt: now.toISOString(),
         provenance: { section: "taxRevenue" },
       },
+      employmentStats: {
+        status: "ok",
+        cacheState: "fresh",
+        fetchedAt: now.toISOString(),
+        provenance: { section: "employmentStats" },
+      },
     },
   },
   taxRevenue: {
@@ -48,13 +54,30 @@ const payload = {
       maxAgeDays: 70,
     },
   },
+  employmentStats: {
+    available: true,
+    headline: { unemploymentRate: 4.9, period: "April to June 2026", releaseDate: "2026-08-18" },
+    annualDelta: { unemploymentRatePoints: 0.2 },
+    source: { bulletinUrl: "https://www.ons.gov.uk/employmentandlabourmarket/uklabourmarket/august2026" },
+    history: { labourForce: [
+      { observedAt: Date.parse("2026-05-31"), period: "March to May 2026", unemploymentRate: 4.8 },
+      { observedAt: Date.parse("2026-06-30"), period: "April to June 2026", unemploymentRate: 4.9 },
+    ] },
+    __observation: { status: "current", observedAt: "2026-06-30T00:00:00.000Z", maxAgeDays: 70 },
+  },
 };
 describe("data explorer", () => {
-  it("exposes available evidence without fabricating missing measures", () => {
+  it("keeps the public explorer to seven core measures and uses the labour publication for unemployment", () => {
     const measures = exploreMeasures(payload, now);
-    expect(measures).toHaveLength(27);
+    expect(measures.map((m) => m.id)).toEqual([
+      "gdp-threeMonthGrowth", "inflation", "unemployment", "waitingPathwaysEstimate",
+      "debt-ratio", "receipts", "netMigration",
+    ]);
     expect(measures.find((m) => m.id === "receipts")?.value).toBe(100);
-    expect(measures.filter((m) => m.value !== null)).toHaveLength(1);
+    expect(measures.find((m) => m.id === "unemployment")).toMatchObject({
+      value: 4.9, period: "April to June 2026",
+    });
+    expect(measures.filter((m) => m.value !== null)).toHaveLength(2);
   });
   it("suppresses expired sources and untrusted links", () => {
     expect(
@@ -64,7 +87,8 @@ describe("data explorer", () => {
     ).toBe(true);
     const bad = structuredClone(payload);
     bad.taxRevenue.source.bulletinUrl = "https://www.ons.gov.uk.evil.test/";
-    expect(exploreMeasures(bad, now).every((m) => m.value === null)).toBe(true);
+    expect(exploreMeasures(bad, now).find((m) => m.id === "receipts")?.value).toBeNull();
+    expect(exploreMeasures(bad, now).find((m) => m.id === "unemployment")?.value).toBe(4.9);
   });
   it("compares rates in percentage points and never divides by zero", () => {
     const points = [
@@ -85,7 +109,7 @@ describe("data explorer", () => {
     const measures = exploreMeasures(payload, now);
     const csv = measuresCsv(measures);
     expect(csv).toContain('"100","£bn","July 2026"');
-    expect(csv).toContain('"GDP: monthly growth","","%"');
+    expect(csv).toContain('"GDP: three-month growth","","%"');
     expect(csv).toContain("https://www.ons.gov.uk/");
   });
 });
@@ -93,5 +117,5 @@ it('links the debt ratio to HF6X rather than the absolute HF6W debt series', () 
   const snapshot = { meta: { registryVersion: FEED_REGISTRY_VERSION, sources: { nationalDebt: { status: 'ok', cacheState: 'fresh', fetchedAt: now.toISOString() } } }, nationalDebt: { baseDebt: 3e12, debtToGdp: 95, observationPeriod: 'July 2026', publicationDate: '2026-08-21', source: { debtUrl: 'https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6w/pusf', debtToGdpUrl: 'https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6x/pusf' } } };
   const measures = exploreMeasures(snapshot, now);
   expect(measures.find(m => m.id === 'debt-ratio')?.sourceUrl).toContain('/hf6x/');
-  expect(measures.find(m => m.id === 'debt')?.value).toBe(3000);
+  expect(measures.find(m => m.id === 'debt-ratio')?.value).toBe(95);
 });

@@ -36,7 +36,7 @@ Public delivery is split deliberately:
 
 - `/data/metrics-snapshot.json` is the current Cloudflare-published aggregate used by the application;
 - `/data/health.json` reports whether the prepared runtime publication is ready or still bootstrapping;
-- `/data/sections/<section>.json` and `.csv` are deterministic static distributions generated with the Pages build.
+- `/data/sections/<section>.json` and `.csv` come from the current filtered snapshot on the main-domain web Worker. The optional Pages fallback distributes the same formats from its dated seed. Topic pages offer links only while their section has current verified evidence.
 
 Evidence fails closed when currentness, completeness, provenance or the intended comparison cannot be proved. The public Worker does not expose collectors, editorial operations, Queue state or private KV records.
 

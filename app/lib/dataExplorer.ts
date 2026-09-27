@@ -49,75 +49,45 @@ const nhs = {
 };
 
 export const MEASURES: MeasureDefinition[] = [
-  ...[
-    ["monthlyGrowth", "GDP: monthly growth", "%"],
-    ["threeMonthGrowth", "GDP: three-month growth", "%"],
-    ["annualGrowth", "GDP: annual growth", "%"],
-  ].map(([key, label, unit]) => ({
+  {
     ...base("gdpTracker", "gdp", "Economy"),
     ...headline,
-    id: `gdp-${key}`,
-    label,
-    unit,
-    valuePath: `headline.${key}`,
-    historyValue: key,
-    note: "Real GDP, seasonally adjusted. Early estimates can be revised.",
-  })),
-  ...[
-    ["inflation", "CPI inflation"],
-    ["bankRate", "Bank Rate"],
-    ["unemployment", "Unemployment rate"],
-  ].map(([key, label]) => ({
-    ...base("sentimentPulse", "economy", "Economy"),
-    id: key,
-    label,
+    id: "gdp-threeMonthGrowth",
+    label: "GDP: three-month growth",
     unit: "%",
-    valuePath: `series.${key}.value`,
-    periodPath: `series.${key}.period`,
-    publicationPath: `series.${key}.publishedAt`,
-    historyPath: `series.${key}.history`,
-    historyValue: "value",
-    note:
-      key === "bankRate"
-        ? "Event-dated policy rate. History contains rate decisions, not monthly observations."
-        : key === "inflation"
-          ? "Annual CPI rate. Lower inflation does not mean prices have fallen."
-          : "Rolling three-month Labour Force Survey estimate; subject to sampling uncertainty.",
-  })),
-  ...[
-    ["employmentRate", "Employment rate"],
-    ["inactivityRate", "Economic inactivity rate"],
-  ].map(([key, label]) => ({
-    ...labour,
-    id: key,
-    label,
-    unit: "%",
-    valuePath: `headline.${key}`,
-    historyValue: key,
-    note: "People aged 16–64. Rolling three-month survey estimate; revisions and sampling uncertainty apply.",
-  })),
-  {
-    ...labour,
-    id: "vacancies",
-    label: "Job vacancies",
-    unit: "vacancies",
-    valuePath: "headline.vacancies",
-    periodPath: "headline.vacanciesPeriod",
-    historyPath: "history.vacancies",
-    historyValue: "vacancies",
-    note: "Separate employer survey; its rolling period differs from the labour-force rates.",
+    valuePath: "headline.threeMonthGrowth",
+    historyValue: "threeMonthGrowth",
+    note: "Real GDP across the latest three months. An early estimate that can be revised.",
   },
   {
-    ...base("nationalDebt", "national-debt", "Public finances"),
-    id: "debt",
-    label: "Public sector net debt",
-    unit: "£bn",
-    valuePath: "baseDebt",
-    periodPath: "observationPeriod",
-    publicationPath: "publicationDate",
-    historyPath: "history",
-    historyValue: "debtBillion",
-    note: "Excludes public sector banks. A stock at a stated date, not cumulative spending.",
+    ...base("sentimentPulse", "economy", "Economy"),
+    id: "inflation",
+    label: "CPI inflation",
+    unit: "%",
+    valuePath: "series.inflation.value",
+    periodPath: "series.inflation.period",
+    publicationPath: "series.inflation.publishedAt",
+    historyPath: "series.inflation.history",
+    historyValue: "value",
+    note: "Annual CPI rate. Lower inflation means prices rise more slowly, not that they have fallen.",
+  },
+  {
+    ...labour,
+    id: "unemployment",
+    label: "Unemployment rate",
+    unit: "%",
+    valuePath: "headline.unemploymentRate",
+    historyValue: "unemploymentRate",
+    note: "A rolling three-month Labour Force Survey estimate; subject to sampling uncertainty and revision.",
+  },
+  {
+    ...nhs,
+    id: "waitingPathwaysEstimate",
+    label: "NHS waiting list",
+    unit: "pathways",
+    valuePath: "headline.waitingPathwaysEstimate",
+    historyValue: "waitingPathwaysEstimate",
+    note: "NHS England referral-to-treatment pathways, not unique people. A person can wait on more than one pathway.",
   },
   {
     ...base("nationalDebt", "national-debt", "Public finances"),
@@ -141,42 +111,16 @@ export const MEASURES: MeasureDefinition[] = [
     historyValue: "receiptsBillion",
     note: "Monthly nominal receipts on the ONS accounting basis. Not all receipts are taxes. Compare the same month across years to avoid seasonality.",
   },
-  ...[
-    ["immigration", "Long-term immigration"],
-    ["emigration", "Long-term emigration"],
-    ["netMigration", "Net migration"],
-  ].map(([key, label]) => ({
+  {
     ...base("migrationStats", "migration", "Population"),
     ...headline,
-    id: key,
-    label,
+    id: "netMigration",
+    label: "Net migration",
     unit: "people",
-    valuePath: `headline.${key}`,
-    historyValue: key,
+    valuePath: "headline.netMigration",
+    historyValue: "netMigration",
     note: "ONS long-term migration estimates. Provisional and subject to revision; not a count of small-boat arrivals.",
-  })),
-  ...[
-    ["waitingPathwaysEstimate", "NHS waiting list", "pathways"],
-    ["uniquePatientsEstimate", "People on the waiting list", "people"],
-    ["within18WeeksPercent", "Waiting within 18 weeks", "%"],
-    ["medianWaitWeeks", "Median waiting time", "weeks"],
-    ["percentile92WaitWeeks", "92nd-percentile waiting time", "weeks"],
-    ["over52Weeks", "Waiting over one year", "pathways"],
-    ["over65Weeks", "Waiting over 65 weeks", "pathways"],
-    ["over78Weeks", "Waiting over 78 weeks", "pathways"],
-    ["over104Weeks", "Waiting over two years", "pathways"],
-    ["newPathways", "New treatment pathways", "pathways"],
-    ["admittedCompleted", "Completed admitted pathways", "pathways"],
-    ["nonAdmittedCompleted", "Completed non-admitted pathways", "pathways"],
-  ].map(([key, label, unit]) => ({
-    ...nhs,
-    id: key,
-    label,
-    unit,
-    valuePath: `headline.${key}`,
-    historyValue: key,
-    note: "NHS England referral-to-treatment statistics. Pathways are not unique patients; waiting-time thresholds overlap and must not be summed.",
-  })),
+  },
 ];
 
 function at(value: unknown, path: string): unknown {
@@ -203,7 +147,6 @@ function sourceLink(
     ? definition.valuePath.split(".")[1]
     : null;
   const candidates = [
-    definition.id === "debt" ? at(data, "source.debtUrl") : null,
     definition.id === "debt-ratio" ? at(data, "source.debtToGdpUrl") : null,
     seriesKey ? at(data, `series.${seriesKey}.sourceUrl`) : null,
     at(data, "source.bulletinUrl"),
@@ -277,11 +220,7 @@ export function exploreMeasures(raw: unknown, now = new Date()): Measure[] {
       : [];
     return {
       ...definition,
-      value: valid
-        ? definition.id === "debt"
-          ? rawValue / 1e9
-          : rawValue
-        : null,
+      value: valid ? rawValue : null,
       period: valid ? period : null,
       publishedAt: valid ? publishedAt : null,
       sourceUrl: valid ? sourceUrl : null,

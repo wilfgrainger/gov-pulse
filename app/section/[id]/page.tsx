@@ -12,6 +12,10 @@ import {
 } from "../../lib/discovery";
 import { SECTIONS } from "../../lib/sections";
 import { SECTION_CONTENT } from "../../lib/sectionContent";
+import { readServerMetricsSnapshot } from "../../lib/serverMetricsSnapshot";
+import { sectionDistribution } from "../../lib/sectionDownloads";
+import { filterCurrentSnapshot } from "@/worker/publication-currentness";
+import type { MetricsSnapshot } from "../../lib/metricsSnapshot";
 
 export function generateStaticParams() {
   return Object.keys(SECTION_CONTENT).map((id) => ({ id }));
@@ -72,6 +76,9 @@ export default async function SectionPage({
   const SectionComponent = section.component;
   const structuredData = structuredDataForSection(id);
   const dataSection = "dataSection" in section ? section.dataSection : null;
+  const snapshot = dataSection ? await readServerMetricsSnapshot() : null;
+  const current = snapshot && filterCurrentSnapshot(snapshot, new Date()) as MetricsSnapshot | null;
+  const hasDownload = Boolean(dataSection && current && sectionDistribution(current, dataSection));
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -101,10 +108,12 @@ export default async function SectionPage({
               <div>
                 <p className="eyebrow">Verified edition downloads</p>
                 <p className="mt-2 text-sm leading-6 text-gray-700">
-                  Source metadata, observation and publication dates, attribution and licence are included with the current static edition.
+                  {hasDownload
+                    ? "Source metadata, observation and publication dates, geography, attribution and licence are included with this current edition."
+                    : "A download will appear when this section has current verified evidence."}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2">
+              {hasDownload && <div className="flex flex-wrap gap-2">
                 <a
                   href={`/data/sections/${dataSection}.json`}
                   className="v3-secondary-action"
@@ -119,7 +128,7 @@ export default async function SectionPage({
                 >
                   Download CSV
                 </a>
-              </div>
+              </div>}
             </aside>
           ) : null}
           <article className="evidence-article v3-evidence-article p-5 md:p-8 lg:p-12">
