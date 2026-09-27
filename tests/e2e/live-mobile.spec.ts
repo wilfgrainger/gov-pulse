@@ -37,9 +37,9 @@ test.beforeEach(({}, testInfo) => {
 test("deployed Pixel 7 journey passes evidence, search, touch and overflow checks", async ({ page }) => {
   await page.goto(liveUrl(), { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { level: 1, name: "Britain, in evidence." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "The latest evidence, first." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Britain at a glance" })).toBeVisible();
-  await expect(page.getByTestId("signal-card")).toHaveCount(8);
+  await expect(page.getByRole("heading", { name: "Latest figures" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Six measures, separate clocks" })).toBeVisible();
+  await expect(page.getByTestId("signal-card")).toHaveCount(6);
   await expect(page.locator("details[id^='category-']")).toHaveCount(0);
   await assertNoHorizontalOverflow(page);
 

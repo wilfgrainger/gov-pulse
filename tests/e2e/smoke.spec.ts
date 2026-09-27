@@ -42,14 +42,14 @@ async function assertNoHorizontalOverflow(page: Parameters<typeof test>[0]["page
 async function assertPulseApp(page: Parameters<typeof test>[0]["page"]) {
   await page.goto("./");
   await expect(page.getByRole("heading", { level: 1, name: "Britain, in evidence." })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Read today's edition/i })).toBeVisible();
-  await expect(page.locator("header").getByRole("link", { name: "Check sources and dates" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "The latest evidence, first." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Britain at a glance" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Explore 7 measures/i })).toBeVisible();
+  await expect(page.locator("header").getByRole("link", { name: "Sources and dates" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Latest figures" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Six measures, separate clocks" })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Go deeper by topic/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Number, period, source." })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: /Inspect the claim, not our confidence/i })).toHaveCount(0);
-  await expect(page.getByTestId("signal-card")).toHaveCount(8);
+  await expect(page.getByTestId("signal-card")).toHaveCount(6);
   await expect(page.locator("details[id^='category-']")).toHaveCount(0);
   await expect(page.locator("#more-evidence").getByRole("link", { name: /Crime statistics/i })).toBeVisible();
   await expect(page.locator("#more-evidence").getByRole("link", { name: /Government contracts/i })).toBeVisible();
@@ -128,17 +128,11 @@ test("sources page and public trust record load cleanly", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test("section pages expose deterministic edition downloads", async ({ page }) => {
+test("section pages explain absent downloads in an unseeded local edition", async ({ page }) => {
   await page.goto("./section/gdp");
   const downloads = page.getByLabel("GDP data downloads");
-  await expect(downloads.getByRole("link", { name: "Download JSON" })).toHaveAttribute(
-    "href",
-    "/data/sections/gdpTracker.json"
-  );
-  await expect(downloads.getByRole("link", { name: "Download CSV" })).toHaveAttribute(
-    "href",
-    "/data/sections/gdpTracker.csv"
-  );
+  await expect(downloads).toContainText("A download will appear when this section has current verified evidence.");
+  await expect(downloads.getByRole("link", { name: "Download JSON" })).toHaveCount(0);
 });
 
 test("mobile journeys preserve touch targets and avoid horizontal overflow", async ({ page }, testInfo) => {

@@ -9,12 +9,10 @@ export type EvidenceState = "current" | "update-due" | "unavailable";
 type SignalId =
   | "gdp"
   | "inflation"
-  | "bank-rate"
   | "unemployment"
   | "national-debt"
   | "nhs-waiting-list"
-  | "net-migration"
-  | "latest-poll";
+  | "net-migration";
 
 export type SignalHistoryPoint = { observedAt: number; value: number };
 
@@ -25,6 +23,7 @@ export type SignalPresentation = {
   kicker: string;
   href: string;
   evidenceClass: string;
+  geography: string;
   state: EvidenceState;
   value: string | null;
   comparison: string | null;
@@ -45,7 +44,7 @@ export type NationalEvidenceEdition = {
 
 const SIGNAL_META: Record<
   SignalId,
-  Pick<SignalPresentation, "id" | "anchorId" | "title" | "kicker" | "href" | "evidenceClass">
+  Pick<SignalPresentation, "id" | "anchorId" | "title" | "kicker" | "href" | "evidenceClass" | "geography">
 > = {
   gdp: {
     id: "gdp",
@@ -54,6 +53,7 @@ const SIGNAL_META: Record<
     kicker: "Growth",
     href: "/section/gdp",
     evidenceClass: "Official statistics",
+    geography: "United Kingdom",
   },
   inflation: {
     id: "inflation",
@@ -62,22 +62,16 @@ const SIGNAL_META: Record<
     kicker: "Prices",
     href: "/section/economy",
     evidenceClass: "Official data",
-  },
-  "bank-rate": {
-    id: "bank-rate",
-    anchorId: null,
-    title: "Bank Rate",
-    kicker: "Borrowing costs",
-    href: "/section/economy",
-    evidenceClass: "Official data",
+    geography: "United Kingdom",
   },
   unemployment: {
     id: "unemployment",
-    anchorId: null,
+    anchorId: "employment",
     title: "Unemployment",
     kicker: "Labour market",
-    href: "/section/economy",
+    href: "/section/employment",
     evidenceClass: "Official data",
+    geography: "United Kingdom",
   },
   "national-debt": {
     id: "national-debt",
@@ -86,6 +80,7 @@ const SIGNAL_META: Record<
     kicker: "Public finances",
     href: "/section/national-debt",
     evidenceClass: "Official monthly data",
+    geography: "United Kingdom",
   },
   "nhs-waiting-list": {
     id: "nhs-waiting-list",
@@ -94,6 +89,7 @@ const SIGNAL_META: Record<
     kicker: "Public services",
     href: "/section/nhs",
     evidenceClass: "Administrative data",
+    geography: "England",
   },
   "net-migration": {
     id: "net-migration",
@@ -102,28 +98,11 @@ const SIGNAL_META: Record<
     kicker: "Population",
     href: "/section/migration",
     evidenceClass: "Official statistics",
-  },
-  "latest-poll": {
-    id: "latest-poll",
-    anchorId: "election-polls",
-    title: "Latest poll",
-    kicker: "Public opinion",
-    href: "/section/election-polls",
-    evidenceClass: "Polling evidence",
+    geography: "United Kingdom",
   },
 };
 
 const SIGNAL_ORDER = Object.keys(SIGNAL_META) as SignalId[];
-const LEAD_PRIORITY: SignalId[] = [
-  "gdp",
-  "inflation",
-  "national-debt",
-  "nhs-waiting-list",
-  "net-migration",
-  "latest-poll",
-  "bank-rate",
-  "unemployment",
-];
 
 export const DIRECT_EVIDENCE_LINKS = [
   {
@@ -142,24 +121,11 @@ export const DIRECT_EVIDENCE_LINKS = [
     description: "Current official receipts on a stated accounting basis.",
   },
   {
-    href: "/section/employment",
-    label: "Employment",
-    description: "Employment, inactivity and vacancies from the labour-market release.",
+    href: "/section/election-polls",
+    label: "Election polling",
+    description: "Individual pollster publications, separate from official statistics.",
   },
 ] as const;
-
-const PARTY_LABELS: Record<string, string> = {
-  conservative: "Conservative",
-  labour: "Labour",
-  liberalDemocrats: "Liberal Democrats",
-  reformUK: "Reform UK",
-  green: "Green",
-  snp: "SNP",
-  plaidCymru: "Plaid Cymru",
-  yourParty: "Your Party",
-  restoreBritain: "Restore Britain",
-  other: "Other",
-};
 
 function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -291,8 +257,8 @@ function selectGdp(snapshot: MetricsSnapshot): SignalPresentation {
 
 function selectEconomicSeries(
   snapshot: MetricsSnapshot,
-  key: "inflation" | "bankRate" | "unemployment",
-  id: "inflation" | "bank-rate" | "unemployment"
+  key: "inflation",
+  id: "inflation"
 ): SignalPresentation {
   const data = record(snapshot.sentimentPulse);
   const series = record(record(data?.series)?.[key]);
@@ -312,14 +278,33 @@ function selectEconomicSeries(
       history: historyPoints(series?.history, "value"),
       leadHeadline: `${title} is ${formatPercent(value)}.`,
       leadSummary: `${title} is shown on its own publication period: ${period}.`,
-      caveat:
-        key === "bankRate"
-          ? "Bank Rate changes after Monetary Policy Committee decisions; it is not a monthly estimate."
-          : key === "unemployment"
-            ? "Unemployment is a rolling three-month survey estimate."
-            : "CPI does not describe every household's personal inflation rate.",
+      caveat: "CPI does not describe every household's personal inflation rate.",
     },
     snapshot.meta.sources.sentimentPulse
+  );
+}
+
+function selectUnemployment(snapshot: MetricsSnapshot): SignalPresentation {
+  const data = record(snapshot.employmentStats);
+  const headline = record(data?.headline);
+  const value = finite(headline?.unemploymentRate);
+  const period = text(headline?.period);
+  const publishedAt = formatDate(headline?.releaseDate);
+  if (data?.available !== true || value === null || !period || !publishedAt) return unavailable("unemployment");
+  const annualDelta = finite(record(data?.annualDelta)?.unemploymentRatePoints);
+  return applySourceState(
+    {
+      ...unavailable("unemployment"),
+      value: formatPercent(value),
+      comparison: annualDelta === null ? "Annual comparison unavailable" : `Annual change ${formatPoints(annualDelta)}`,
+      period,
+      publishedAt,
+      history: historyPoints(record(data?.history)?.labourForce, "unemploymentRate"),
+      leadHeadline: `Unemployment was ${formatPercent(value)} in ${period}.`,
+      leadSummary: "This is the ONS rolling three-month Labour Force Survey estimate.",
+      caveat: "Survey estimates carry sampling uncertainty and may be revised.",
+    },
+    snapshot.meta.sources.employmentStats
   );
 }
 
@@ -407,40 +392,6 @@ function selectMigration(snapshot: MetricsSnapshot): SignalPresentation {
   );
 }
 
-function selectPoll(snapshot: MetricsSnapshot): SignalPresentation {
-  const data = record(snapshot.electionPolling);
-  const poll = Array.isArray(data?.polls) ? record(data.polls[0]) : null;
-  const parties = record(poll?.parties);
-  if (data?.available !== true || !poll || !parties) return unavailable("latest-poll");
-  const leader = Object.entries(parties)
-    .flatMap(([key, value]) => {
-      const share = finite(value);
-      return share === null ? [] : [{ key, share }];
-    })
-    .sort((left, right) => right.share - left.share)[0];
-  const pollster = text(poll.pollster);
-  const start = formatDate(poll.fieldworkStart);
-  const end = formatDate(poll.fieldworkEnd);
-  const publishedAt = formatDate(poll.publicationDate);
-  if (!leader || !pollster || !end || !publishedAt) return unavailable("latest-poll");
-  const label = PARTY_LABELS[leader.key] ?? leader.key;
-  const period = start && start !== end ? `${start}–${end}` : end;
-  return applySourceState(
-    {
-      ...unavailable("latest-poll"),
-      value: `${leader.share.toFixed(0)}% ${label}`,
-      comparison: `${pollster} · fieldwork ${period} · one publication, not a trend`,
-      period,
-      publishedAt,
-      history: [],
-      leadHeadline: `${pollster} reports ${label} at ${leader.share.toFixed(0)}%.`,
-      leadSummary: "This is one accepted primary poll publication, not a polling average or forecast.",
-      caveat: text(poll.uncertainty) ?? "Polling estimates carry sampling and methodology uncertainty.",
-    },
-    snapshot.meta.sources.electionPolling
-  );
-}
-
 function emptyEdition(): NationalEvidenceEdition {
   const signals = SIGNAL_ORDER.map(unavailable);
   return {
@@ -456,16 +407,15 @@ export function selectNationalEvidenceEdition(snapshot: unknown): NationalEviden
   const signals = [
     selectGdp(snapshot),
     selectEconomicSeries(snapshot, "inflation", "inflation"),
-    selectEconomicSeries(snapshot, "bankRate", "bank-rate"),
-    selectEconomicSeries(snapshot, "unemployment", "unemployment"),
+    selectUnemployment(snapshot),
     selectDebt(snapshot),
     selectNhs(snapshot),
     selectMigration(snapshot),
-    selectPoll(snapshot),
   ];
   const preferred = (state: EvidenceState) =>
-    LEAD_PRIORITY.map((id) => signals.find((signal) => signal.id === id))
-      .find((signal) => signal?.state === state) ?? null;
+    signals
+      .filter((signal) => signal.state === state)
+      .sort((left, right) => (timestamp(right.publishedAt) ?? 0) - (timestamp(left.publishedAt) ?? 0))[0] ?? null;
   const counts = signals.reduce<Record<EvidenceState, number>>(
     (result, signal) => ({ ...result, [signal.state]: result[signal.state] + 1 }),
     { current: 0, "update-due": 0, unavailable: 0 }

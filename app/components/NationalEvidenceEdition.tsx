@@ -85,6 +85,10 @@ function LeadStory({ signal }: { signal: SignalPresentation | null }) {
             <dt className="font-semibold">Published</dt>
             <dd className="text-gray-700">{signal.publishedAt}</dd>
           </div>
+          <div>
+            <dt className="font-semibold">Geography</dt>
+            <dd className="text-gray-700">{signal.geography}</dd>
+          </div>
         </dl>
         {signal.caveat ? (
           <p className="mt-5 border-l-2 border-accent pl-4 text-xs leading-5 text-gray-700">{signal.caveat}</p>
@@ -130,6 +134,7 @@ function SignalCard({ signal }: { signal: SignalPresentation }) {
         <div className="mt-auto flex flex-wrap items-end justify-between gap-3 border-t border-black/10 pt-5 text-xs">
           <div className="space-y-1 text-gray-600">
             <p>{signal.period ?? "No current period"}</p>
+            <p>{signal.geography}</p>
             <p>{signal.evidenceClass}</p>
           </div>
           <StateBadge state={signal.state} />
@@ -177,9 +182,9 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
         <section aria-labelledby="at-a-glance-title" className="mt-12 md:mt-16">
           <div className="border-b border-black/20 pb-5">
             <p className="eyebrow">National signals</p>
-            <h3 id="at-a-glance-title" className="font-display mt-2 text-3xl leading-tight md:text-5xl">Britain at a glance</h3>
+            <h3 id="at-a-glance-title" className="font-display mt-2 text-3xl leading-tight md:text-5xl">Six measures, separate clocks</h3>
           </div>
-          <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {edition.signals.map((signal) => (
               <SignalCard key={signal.id} signal={signal} />
             ))}

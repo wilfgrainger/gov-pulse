@@ -214,7 +214,7 @@ export default function DataExplorer({
   const [now, setNow] = useState(() => Date.now());
   const [query, setQuery] = useState("");
   const [topic, setTopic] = useState("All topics");
-  const [availableOnly, setAvailableOnly] = useState(false);
+  const [showUnavailable, setShowUnavailable] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
@@ -245,7 +245,7 @@ export default function DataExplorer({
     .filter(
       (m) =>
         (topic === "All topics" || m.topic === topic) &&
-        (!availableOnly || m.value !== null) &&
+        (available === 0 || showUnavailable || m.value !== null) &&
         `${m.label} ${m.topic} ${m.geography} ${m.note}`
           .toLowerCase()
           .includes(query.toLowerCase().trim()),
@@ -269,7 +269,7 @@ export default function DataExplorer({
           Find a measure
           <input
             type="search"
-            placeholder="Try inflation, vacancies or waiting times"
+            placeholder="Try inflation, unemployment or waiting times"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="mt-2 block min-h-12 w-full border border-slate-400 px-3 py-2 text-base font-normal"
@@ -295,6 +295,11 @@ export default function DataExplorer({
           Download results CSV
         </button>
       </div>
+      {available === 0 && (
+        <p className="mt-5 border-l-2 border-amber-700 pl-4 text-sm leading-6 text-slate-700">
+          No core measure has a current verified value. The gaps below show what we are checking.
+        </p>
+      )}
       <div className="my-5 flex flex-wrap items-center justify-between gap-3">
         <p role="status" className="text-sm text-slate-600">
           {filtered.length} measures shown · {available} of {measures.length}{" "}
@@ -303,11 +308,12 @@ export default function DataExplorer({
         <label className="flex min-h-11 items-center gap-2 text-sm">
           <input
             type="checkbox"
-            checked={availableOnly}
-            onChange={(e) => setAvailableOnly(e.target.checked)}
+            checked={showUnavailable || available === 0}
+            disabled={available === 0}
+            onChange={(e) => setShowUnavailable(e.target.checked)}
             className="h-4 w-4"
           />
-          Available values only
+          Show unavailable measures
         </label>
       </div>
       {filtered.length === 0 ? (
@@ -318,7 +324,7 @@ export default function DataExplorer({
             onClick={() => {
               setQuery("");
               setTopic("All topics");
-              setAvailableOnly(false);
+              setShowUnavailable(false);
             }}
             className="mt-4 min-h-11 font-semibold underline"
           >

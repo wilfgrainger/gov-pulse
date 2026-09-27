@@ -32,8 +32,9 @@ export default async function ExplorePage() {
             Explore the numbers
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">
-            Find a measure, inspect its history and compare published periods.
-            Each figure keeps its own source, date and geography.
+            Seven core measures across prices, jobs, health, public finances and population.
+            Start with current verified values, then inspect the history, publication date,
+            source and geography. Show unavailable measures to see the gaps.
           </p>
         </header>
         <DataExplorer initialSnapshot={snapshot} />

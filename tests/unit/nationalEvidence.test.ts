@@ -16,6 +16,7 @@ function snapshot() {
       sources: {
         gdpTracker: currentSource(),
         sentimentPulse: currentSource(),
+        employmentStats: currentSource(),
         nationalDebt: currentSource(),
         nhsStats: currentSource(),
         migrationStats: currentSource(),
@@ -70,6 +71,14 @@ function snapshot() {
           ],
         },
       },
+    },
+    employmentStats: {
+      available: true,
+      headline: { unemploymentRate: 4.9, period: "February to April 2026", releaseDate: "2026-06-18" },
+      annualDelta: { unemploymentRatePoints: 0.2 },
+      history: { labourForce: [
+        { observedAt: Date.parse("2026-04-30"), unemploymentRate: 4.9 },
+      ] },
     },
     nationalDebt: {
       baseDebt: 2_984_300_000_000,
@@ -127,23 +136,26 @@ function snapshot() {
 }
 
 describe("national evidence presentation", () => {
-  it("selects one lead and eight separately dated signal cards", () => {
+  it("selects one lead and six separately dated official signal cards", () => {
     const edition = selectNationalEvidenceEdition(snapshot());
 
     expect(edition.lead?.id).toBe("gdp");
     expect(edition.lead?.leadHeadline).toBe("UK GDP grew in May 2026 by 0.1%.");
-    expect(edition.signals).toHaveLength(8);
-    expect(edition.counts.current).toBe(8);
+    expect(edition.signals.map((signal) => signal.id)).toEqual([
+      "gdp", "inflation", "unemployment", "national-debt", "nhs-waiting-list", "net-migration",
+    ]);
+    expect(edition.counts.current).toBe(6);
     expect(edition.signals.find((signal) => signal.id === "national-debt")?.value).toBe("£2.98tn");
     expect(edition.signals.find((signal) => signal.id === "nhs-waiting-list")?.value).toBe("7.39m pathways");
-    expect(edition.signals.find((signal) => signal.id === "latest-poll")?.value).toBe("24% Reform UK");
+    expect(edition.signals.find((signal) => signal.id === "unemployment")?.value).toBe("4.9%");
+    expect(edition.signals.find((signal) => signal.id === "nhs-waiting-list")?.geography).toBe("England");
+    expect(edition.signals.find((signal) => signal.id === "net-migration")?.geography).toBe("United Kingdom");
   });
 
   it("does not align economic series onto one shared period", () => {
     const edition = selectNationalEvidenceEdition(snapshot());
 
     expect(edition.signals.find((signal) => signal.id === "inflation")?.period).toBe("May 2026");
-    expect(edition.signals.find((signal) => signal.id === "bank-rate")?.period).toBe("5 February 2026");
     expect(edition.signals.find((signal) => signal.id === "unemployment")?.period).toBe("February to April 2026");
   });
 
@@ -160,6 +172,19 @@ describe("national evidence presentation", () => {
     expect(edition.signals.find((signal) => signal.id === "national-debt")?.value).toBeNull();
   });
 
+  it("does not borrow an unemployment value from the indicators section when labour evidence is missing", () => {
+    const payload = snapshot();
+    delete (payload.meta.sources as Record<string, unknown>).employmentStats;
+    const edition = selectNationalEvidenceEdition(payload);
+    expect(edition.signals.find((signal) => signal.id === "unemployment")?.state).toBe("unavailable");
+  });
+
+  it("leads with the most recently published current official signal", () => {
+    const payload = snapshot();
+    payload.migrationStats.headline.releaseDate = "2026-07-17";
+    expect(selectNationalEvidenceEdition(payload).lead?.id).toBe("net-migration");
+  });
+
   it("fails closed for an incompatible publication", () => {
     const payload = snapshot();
     payload.meta.registryVersion = "obsolete";
@@ -167,7 +192,7 @@ describe("national evidence presentation", () => {
     const edition = selectNationalEvidenceEdition(payload);
 
     expect(edition.lead).toBeNull();
-    expect(edition.counts.unavailable).toBe(8);
+    expect(edition.counts.unavailable).toBe(6);
     expect(edition.signals.every((signal) => signal.value === null)).toBe(true);
   });
 });

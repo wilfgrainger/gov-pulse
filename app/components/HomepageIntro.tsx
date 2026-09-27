@@ -25,7 +25,7 @@ export default function HomepageIntro() {
         </div>
         <div className="flex flex-wrap gap-3">
           <Link href="/explore/" prefetch={false} className="v3-primary-action">
-            Explore 27 measures <span aria-hidden="true">→</span>
+            Explore 7 measures <span aria-hidden="true">→</span>
           </Link>
           <Link
             href="/sources"
@@ -36,6 +36,12 @@ export default function HomepageIntro() {
           </Link>
         </div>
       </div>
+      <nav aria-label="Start with a question" className="mx-auto mt-7 flex max-w-7xl flex-wrap gap-x-7 gap-y-3 border-t border-black/10 pt-5 text-sm font-semibold">
+        <span className="text-slate-600">Start with a question:</span>
+        <Link href="/section/nhs" prefetch={false} className="underline underline-offset-4">Is the NHS waiting list shrinking?</Link>
+        <Link href="/section/gdp" prefetch={false} className="underline underline-offset-4">Is the economy growing?</Link>
+        <Link href="/section/national-debt" prefetch={false} className="underline underline-offset-4">How much does the UK owe?</Link>
+      </nav>
     </header>
   );
 }

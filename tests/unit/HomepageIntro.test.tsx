@@ -17,7 +17,8 @@ describe("HomepageIntro", () => {
   it("puts today's evidence first and keeps source access visible", () => {
     render(<HomepageIntro />);
 
-    expect(screen.getByRole("link", { name: /Explore 27 measures/i })).toHaveAttribute("href", "/explore");
+    expect(screen.getByRole("link", { name: /Explore 7 measures/i })).toHaveAttribute("href", "/explore");
+    expect(screen.getByRole("link", { name: /Is the NHS waiting list shrinking/i })).toHaveAttribute("href", "/section/nhs");
     expect(screen.getByRole("link", { name: "Sources and dates" })).toHaveAttribute("href", "/sources");
   });
 });

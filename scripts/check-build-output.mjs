@@ -75,14 +75,18 @@ if (process.env.STATIC_EXPORT === "true") {
   }
 
   const gdpHtml = await readFile("out/section/gdp/index.html", "utf8");
+  let hasSeed = true;
+  try { await access("public/data/metrics-snapshot.json"); } catch { hasSeed = false; }
   const expectedMarkers = [
     "<title>UK GDP growth | public-data.org</title>",
     'rel="canonical" href="https://public-data.org/section/gdp/"',
     'type="application/ld+json"',
     '"@type":"Dataset"',
     'href="https://public-data.org/feed.xml"',
-    'href="/data/sections/gdpTracker.json"',
-    'href="/data/sections/gdpTracker.csv"',
+    ...(hasSeed ? [
+      'href="/data/sections/gdpTracker.json"',
+      'href="/data/sections/gdpTracker.csv"',
+    ] : ["A download will appear when this section has current verified evidence."]),
   ];
 
   for (const marker of expectedMarkers) {
