@@ -2,13 +2,18 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+// The :root design tokens are pinned here as the guard that a palette change
+// cannot silently break the WCAG AA contrast contract. The page surface,
+// ink and accent are load-bearing for every text/background pairing, so any
+// edit to the palette must land here first and keep the structural, focus,
+// reduced-motion and flat-evidence-panel contracts below intact.
 const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
 
 describe("consumer visual system", () => {
   it("uses a calm page surface and flat editorial evidence panels", () => {
-    expect(css).toContain("--background: #f7f3eb");
+    expect(css).toContain("--background: #f4f6f8");
     expect(css).toContain("--surface: #ffffff");
-    expect(css).toContain("--foreground: #172234");
+    expect(css).toContain("--foreground: #14243b");
     expect(css).toContain('--font-editorial: Georgia, "Times New Roman", serif');
     expect(css).not.toMatch(/Bebas Neue|IBM Plex Mono/);
     expect(css).toMatch(/\.dashboard-card\s*\{[\s\S]*border-top:\s*1px solid var\(--foreground\) !important/);

@@ -77,9 +77,9 @@ export default function PoliticalCompass() {
       <div>
         <div className="space-y-6">
           {QUESTIONS.map((question, index) => (
-            <div key={index} className="border border-[#d8d3c8] bg-white p-5">
+            <div key={index} className="border border-[#d3dae1] bg-white p-5">
               <p className="mb-1 text-xs font-semibold text-accent">Question {index + 1}</p>
-              <p className="mb-4 text-sm font-semibold leading-6 text-[#172234]">
+              <p className="mb-4 text-sm font-semibold leading-6 text-[#14243b]">
                 {question.text}
               </p>
               <div className="flex flex-wrap gap-2">
@@ -89,8 +89,8 @@ export default function PoliticalCompass() {
                     onClick={() => handleAnswer(index, value)}
                     className={`border px-3 py-2 text-xs font-medium transition-colors ${
                       answers[index] === value
-                        ? "border-[#172234] bg-[#172234] text-white"
-                        : "border-[#cbc4b8] bg-white text-[#172234] hover:bg-[#f7f3eb]"
+                        ? "border-[#14243b] bg-[#14243b] text-white"
+                        : "border-[#aab4bf] bg-white text-[#14243b] hover:bg-[#f4f6f8]"
                     }`}
                   >
                     {labelText}
@@ -102,7 +102,7 @@ export default function PoliticalCompass() {
         </div>
         <button
           onClick={() => setSubmitted(true)}
-          className="mt-6 w-full border border-[#172234] bg-[#172234] px-5 py-4 text-base font-semibold text-white transition-colors hover:bg-[#8a3540]"
+          className="mt-6 w-full border border-[#14243b] bg-[#14243b] px-5 py-4 text-base font-semibold text-white transition-colors hover:bg-[#1f5c8a]"
         >
           Show my position →
         </button>
@@ -113,19 +113,19 @@ export default function PoliticalCompass() {
 
   return (
     <div>
-      <div className="relative mx-auto max-w-80 border border-[#d8d3c8] bg-white p-3">
+      <div className="relative mx-auto max-w-80 border border-[#d3dae1] bg-white p-3">
         <svg viewBox="0 0 320 320" className="h-full w-full">
           <rect x="0" y="0" width="160" height="160" fill="#fee2e2" opacity="0.5" />
           <rect x="160" y="0" width="160" height="160" fill="#dbeafe" opacity="0.5" />
           <rect x="0" y="160" width="160" height="160" fill="#dcfce7" opacity="0.5" />
           <rect x="160" y="160" width="160" height="160" fill="#fef9c3" opacity="0.5" />
 
-          <line x1="160" y1="0" x2="160" y2="320" stroke="#172234" strokeWidth="1.5" />
-          <line x1="0" y1="160" x2="320" y2="160" stroke="#172234" strokeWidth="1.5" />
+          <line x1="160" y1="0" x2="160" y2="320" stroke="#14243b" strokeWidth="1.5" />
+          <line x1="0" y1="160" x2="320" y2="160" stroke="#14243b" strokeWidth="1.5" />
           {[80, 240].map((value) => (
             <g key={value}>
-              <line x1={value} y1="0" x2={value} y2="320" stroke="#172234" strokeWidth="0.5" opacity="0.2" />
-              <line x1="0" y1={value} x2="320" y2={value} stroke="#172234" strokeWidth="0.5" opacity="0.2" />
+              <line x1={value} y1="0" x2={value} y2="320" stroke="#14243b" strokeWidth="0.5" opacity="0.2" />
+              <line x1="0" y1={value} x2="320" y2={value} stroke="#14243b" strokeWidth="0.5" opacity="0.2" />
             </g>
           ))}
 
@@ -159,8 +159,8 @@ export default function PoliticalCompass() {
             cx={160 + (economicScore / 10) * 150}
             cy={160 - (socialScore / 10) * -150}
             r="12"
-            fill="#8a3540"
-            stroke="#172234"
+            fill="#1f5c8a"
+            stroke="#14243b"
             strokeWidth="2"
           />
           <text
@@ -176,7 +176,7 @@ export default function PoliticalCompass() {
         </svg>
       </div>
 
-      <div className="mt-6 border border-[#172234] bg-[#172234] p-5 text-center text-white">
+      <div className="mt-6 border border-[#14243b] bg-[#14243b] p-5 text-center text-white">
         <p className="mb-2 text-sm text-white/70">Your political position</p>
         <p className="font-display text-4xl">
           {label}
@@ -184,7 +184,7 @@ export default function PoliticalCompass() {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-4">
-        <div className="border border-[#d8d3c8] bg-white p-4 text-center">
+        <div className="border border-[#d3dae1] bg-white p-4 text-center">
           <p className="text-xs text-gray-500">Economic axis</p>
           <p className="mt-1 text-2xl font-semibold">
             {economicScore > 0 ? "+" : ""}
@@ -192,7 +192,7 @@ export default function PoliticalCompass() {
           </p>
           <p className="text-xs">{economicScore < -2 ? "Left" : economicScore > 2 ? "Right" : "Centre"}</p>
         </div>
-        <div className="border border-[#d8d3c8] bg-white p-4 text-center">
+        <div className="border border-[#d3dae1] bg-white p-4 text-center">
           <p className="text-xs text-gray-500">Social axis</p>
           <p className="mt-1 text-2xl font-semibold">
             {socialScore > 0 ? "+" : ""}
@@ -204,7 +204,7 @@ export default function PoliticalCompass() {
 
       <button
         onClick={() => setSubmitted(false)}
-        className="mt-4 w-full border border-[#172234] bg-white py-3 text-sm font-semibold text-[#172234] transition-colors hover:bg-[#f7f3eb]"
+        className="mt-4 w-full border border-[#14243b] bg-white py-3 text-sm font-semibold text-[#14243b] transition-colors hover:bg-[#f4f6f8]"
       >
         ← Retake quiz
       </button>

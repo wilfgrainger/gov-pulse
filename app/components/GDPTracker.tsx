@@ -156,7 +156,7 @@ export default function GDPTracker() {
             title="UK real GDP: ten-year direction"
             description="Monthly chained-volume index from the ONS. A straight line joins exact monthly observations; it is not a forecast."
             data={data.history}
-            series={[{ key: "index", label: "Real GDP index", color: "#172234" }]}
+            series={[{ key: "index", label: "Real GDP index", color: "#14243b" }]}
             valueFormatter={(value) => value.toFixed(1)}
           />
 
@@ -165,8 +165,8 @@ export default function GDPTracker() {
             description="Monthly, three-month-on-three-month and annual growth are shown on the same percentage scale. The monthly line is naturally more volatile."
             data={data.history}
             series={[
-              { key: "monthlyGrowth", label: "Monthly", color: "#b23a20" },
-              { key: "threeMonthGrowth", label: "Latest three months", color: "#172234" },
+              { key: "monthlyGrowth", label: "Monthly", color: "#1f5c8a" },
+              { key: "threeMonthGrowth", label: "Latest three months", color: "#14243b" },
               { key: "annualGrowth", label: "From a year earlier", color: "#6b7280", dashed: true },
             ]}
             valueFormatter={(value) => `${value > 0 ? "+" : ""}${value.toFixed(1)}%`}

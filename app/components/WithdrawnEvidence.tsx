@@ -58,7 +58,7 @@ export default function WithdrawnEvidence({
         <Link
           href="/sources"
           prefetch={false}
-          className="mt-5 inline-block text-sm font-semibold underline decoration-1 underline-offset-4 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#172234]"
+          className="mt-5 inline-block text-sm font-semibold underline decoration-1 underline-offset-4 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#14243b]"
         >
           Read the evidence and withdrawal policy
         </Link>

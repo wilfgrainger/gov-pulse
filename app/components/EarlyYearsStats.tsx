@@ -92,7 +92,7 @@ export default function EarlyYearsStats() {
             title="MMR 1st dose vaccination rate history"
             description="The percentage of children immunized by age two in England. A standard WHO reference target is shown at 95%."
             data={data.history}
-            series={[{ key: "mmrRate", label: "MMR coverage rate", color: "#b23a20" }]}
+            series={[{ key: "mmrRate", label: "MMR coverage rate", color: "#1f5c8a" }]}
             valueFormatter={(value) => `${value.toFixed(1)}%`}
             referenceValue={95}
             referenceLabel="WHO Target (95%)"

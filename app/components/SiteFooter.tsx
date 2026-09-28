@@ -13,7 +13,7 @@ const publicationLinks = [
 
 export default function SiteFooter() {
   return (
-    <footer className="v3-footer border-t border-[#263852] px-4 py-10 md:px-6 md:py-14">
+    <footer className="v3-footer border-t border-[#22304a] px-4 py-10 md:px-6 md:py-14">
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-6 border-b border-white/20 pb-9 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
           <div>
@@ -26,7 +26,7 @@ export default function SiteFooter() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Link href="/" prefetch={false} className="inline-flex min-h-11 items-center border border-white bg-white px-4 py-2 text-sm font-semibold !text-[#172234] hover:!bg-[#f6a5ad]">
+            <Link href="/" prefetch={false} className="inline-flex min-h-11 items-center border border-white bg-white px-4 py-2 text-sm font-semibold !text-[#14243b] hover:!bg-[#8fc2e6]">
               Latest edition
             </Link>
             <Link href="/sources" prefetch={false} className="inline-flex min-h-11 items-center border border-white/50 px-4 py-2 text-sm font-semibold text-white hover:border-white">

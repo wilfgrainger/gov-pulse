@@ -3,10 +3,10 @@ import Reveal from "./Reveal";
 
 export default function HomepageIntro() {
   return (
-    <header className="border-b border-black/15 bg-[#f0eee5] px-4 py-10 md:px-6 md:py-14">
+    <header className="border-b border-black/15 bg-[#eef1f4] px-4 py-10 md:px-6 md:py-14">
       <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.6fr)] lg:items-end">
         <Reveal>
-          <p className="eyebrow !text-[#0b6b69]">Free, independent UK public evidence</p>
+          <p className="eyebrow !text-[#0f6b63]">Free, independent UK public evidence</p>
           <h1
             aria-label="Britain, in evidence."
             className="font-display mt-5 text-balance text-5xl leading-[0.95] tracking-[-0.03em] md:text-7xl lg:text-[5.75rem]"
@@ -38,9 +38,9 @@ export default function HomepageIntro() {
         </Reveal>
       </div>
       <nav aria-label="Start with a question" className="mx-auto mt-10 grid max-w-7xl gap-3 border-t border-black/15 pt-6 text-sm font-semibold sm:grid-cols-3">
-        <Link href="/section/nhs" prefetch={false} className="editorial-lift group flex min-h-16 items-center justify-between gap-4 border-l-4 border-[#0b6b69] bg-white px-4 py-3 hover:bg-[#e4f1ec]">Is the NHS waiting list shrinking? <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">↗</span></Link>
-        <Link href="/section/gdp" prefetch={false} className="editorial-lift group flex min-h-16 items-center justify-between gap-4 border-l-4 border-[#0b6b69] bg-white px-4 py-3 hover:bg-[#e4f1ec]">Is the economy growing? <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">↗</span></Link>
-        <Link href="/section/national-debt" prefetch={false} className="editorial-lift group flex min-h-16 items-center justify-between gap-4 border-l-4 border-[#0b6b69] bg-white px-4 py-3 hover:bg-[#e4f1ec]">How much does the UK owe? <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">↗</span></Link>
+        <Link href="/section/nhs" prefetch={false} className="editorial-lift group flex min-h-16 items-center justify-between gap-4 border-l-4 border-[#0f6b63] bg-white px-4 py-3 hover:bg-[#dceaf4]">Is the NHS waiting list shrinking? <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">↗</span></Link>
+        <Link href="/section/gdp" prefetch={false} className="editorial-lift group flex min-h-16 items-center justify-between gap-4 border-l-4 border-[#0f6b63] bg-white px-4 py-3 hover:bg-[#dceaf4]">Is the economy growing? <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">↗</span></Link>
+        <Link href="/section/national-debt" prefetch={false} className="editorial-lift group flex min-h-16 items-center justify-between gap-4 border-l-4 border-[#0f6b63] bg-white px-4 py-3 hover:bg-[#dceaf4]">How much does the UK owe? <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">↗</span></Link>
       </nav>
     </header>
   );
