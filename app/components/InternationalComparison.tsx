@@ -38,19 +38,19 @@ function sourceLine(observation: ComparisonObservation | null) {
 function scorecardRow(measure: ComparisonMeasure) {
   const uk = ukObservation(measure);
   return (
-    <tr key={measure.id} className="border-t border-[#d8d3c8] align-top">
-      <th scope="row" className="py-4 pr-4 text-left text-sm font-semibold text-[#172234]">
+    <tr key={measure.id} className="border-t border-[#d3dae1] align-top">
+      <th scope="row" className="py-4 pr-4 text-left text-sm font-semibold text-[#14243b]">
         <a href={`#${measure.id}`} className="underline decoration-black/20 underline-offset-4 hover:text-accent">
           {measure.label}
         </a>
       </th>
-      <td className="px-2 py-4 text-sm font-semibold tabular-nums text-[#172234]">
+      <td className="px-2 py-4 text-sm font-semibold tabular-nums text-[#14243b]">
         {formatUsdPerResident(uk?.value ?? null)}
       </td>
       <td className="px-2 py-4 text-sm text-gray-700">
         {uk ? rankLabel(measure, uk) : "Not ranked"}
       </td>
-      <td className="px-2 py-4 text-sm font-medium text-[#8a3540]">
+      <td className="px-2 py-4 text-sm font-medium text-[#1f5c8a]">
         {uk ? comparisonSummary(measure, uk) : "Comparison unavailable"}
       </td>
       <td className="px-2 py-4 text-sm text-gray-700">{measure.observationYear}</td>
@@ -101,11 +101,11 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
   const uk = ukObservation(measure);
 
   return (
-    <section id={measure.id} className="scroll-mt-28 border-t border-[#c8c1b5] pt-8">
+    <section id={measure.id} className="scroll-mt-28 border-t border-[#aab4bf] pt-8">
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.42fr)] lg:items-start">
         <div>
           <p className="eyebrow">{measure.observationYear} comparison</p>
-          <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[#172234]">
+          <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[#14243b]">
             {measure.label}
           </h3>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-700">{measure.definition}</p>
@@ -113,16 +113,16 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
             <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-700">{measure.caveat}</p>
           ) : null}
         </div>
-        <aside className="border border-[#c8c1b5] bg-[#f7f3eb] p-4" aria-label={`UK ${measure.label} summary`}>
+        <aside className="border border-[#aab4bf] bg-[#f4f6f8] p-4" aria-label={`UK ${measure.label} summary`}>
           <p className="eyebrow">United Kingdom</p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-[#172234]">
+          <p className="mt-2 text-2xl font-semibold tabular-nums text-[#14243b]">
             {formatUsdPerResident(uk?.value ?? null)}
           </p>
-          <p className="mt-1 text-sm font-semibold text-[#8a3540]">
+          <p className="mt-1 text-sm font-semibold text-[#1f5c8a]">
             {uk ? rankLabel(measure, uk) : "Not ranked"}
           </p>
           {uk ? (
-            <p className="mt-2 text-sm font-medium leading-5 text-[#172234]">
+            <p className="mt-2 text-sm font-medium leading-5 text-[#14243b]">
               {comparisonSummary(measure, uk)}.
             </p>
           ) : null}
@@ -140,7 +140,7 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
           <table className="w-full min-w-[36rem] border-collapse text-left">
             <caption className="sr-only">{measure.label} by country</caption>
             <thead>
-              <tr className="border-y border-[#172234] text-xs uppercase tracking-[0.08em] text-gray-600">
+              <tr className="border-y border-[#14243b] text-xs uppercase tracking-[0.08em] text-gray-600">
                 <th scope="col" className="py-3 pr-3">Rank</th>
                 <th scope="col" className="px-3 py-3">Country</th>
                 <th scope="col" className="px-3 py-3">USD per resident</th>
@@ -151,12 +151,12 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
               {ranked.map((observation) => (
                 <tr
                   key={observation.country}
-                  className={`border-b border-[#e4dfd6] ${observation.country === "GBR" ? "bg-[#f7f3eb]" : ""}`}
+                  className={`border-b border-[#dbe0e6] ${observation.country === "GBR" ? "bg-[#f4f6f8]" : ""}`}
                 >
-                  <td className="py-3 pr-3 text-sm font-semibold tabular-nums text-[#172234]">
+                  <td className="py-3 pr-3 text-sm font-semibold tabular-nums text-[#14243b]">
                     {observation.rank}
                   </td>
-                  <th scope="row" className="px-3 py-3 text-sm font-semibold text-[#172234]">
+                  <th scope="row" className="px-3 py-3 text-sm font-semibold text-[#14243b]">
                     {COMPARISON_COUNTRY_NAMES[observation.country]}
                   </th>
                   <td className="px-3 py-3 text-sm tabular-nums text-gray-800">
@@ -171,8 +171,8 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
           </table>
         </div>
       ) : (
-        <div className="mt-6 border border-[#d8d3c8] bg-[#f7f3eb] p-5">
-          <p className="font-semibold text-[#172234]">Comparable figures are currently unavailable.</p>
+        <div className="mt-6 border border-[#d3dae1] bg-[#f4f6f8] p-5">
+          <p className="font-semibold text-[#14243b]">Comparable figures are currently unavailable.</p>
           <p className="mt-2 text-sm leading-6 text-gray-700">
             This measure is withheld until its authoritative source can be validated. Other comparison measures continue independently.
           </p>
@@ -180,14 +180,14 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
       )}
 
       {unavailable.length > 0 ? (
-        <details className="mt-4 border border-[#d8d3c8] bg-white p-4">
-          <summary className="cursor-pointer text-sm font-semibold text-[#172234]">
+        <details className="mt-4 border border-[#d3dae1] bg-white p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-[#14243b]">
             {unavailable.length} countr{unavailable.length === 1 ? "y" : "ies"} not included in this ranking
           </summary>
           <ul className="mt-3 grid gap-2 text-sm text-gray-700 sm:grid-cols-2">
             {unavailable.map((observation) => (
               <li key={observation.country}>
-                <span className="font-semibold text-[#172234]">
+                <span className="font-semibold text-[#14243b]">
                   {COMPARISON_COUNTRY_NAMES[observation.country]}:
                 </span>{" "}
                 {exclusionLabel(observation.exclusionReason)}
@@ -208,7 +208,7 @@ export default async function InternationalComparison() {
     <div>
       <div className="max-w-4xl">
         <p className="eyebrow">Selected 13-country comparison set</p>
-        <h2 className="mt-2 text-3xl font-semibold tracking-tight text-[#172234]">
+        <h2 className="mt-2 text-3xl font-semibold tracking-tight text-[#14243b]">
           What does Britain spend and owe per resident?
         </h2>
         <p className="mt-4 text-base leading-7 text-gray-700">
@@ -217,16 +217,16 @@ export default async function InternationalComparison() {
       </div>
 
       {standout ? (
-        <aside className="mt-6 border-l-4 border-[#8a3540] bg-[#f7f3eb] px-5 py-4" aria-label="UK comparison standout">
+        <aside className="mt-6 border-l-4 border-[#1f5c8a] bg-[#f4f6f8] px-5 py-4" aria-label="UK comparison standout">
           <p className="eyebrow">What jumps out</p>
-          <p className="mt-2 text-base leading-7 text-[#172234]">
+          <p className="mt-2 text-base leading-7 text-[#14243b]">
             <strong>{standout.measure.label}:</strong>{" "}
             {rankLabel(standout.measure, standout.uk)}. {comparisonSummary(standout.measure, standout.uk)}.
           </p>
         </aside>
       ) : null}
 
-      <div className="mt-7 border-y border-[#172234]">
+      <div className="mt-7 border-y border-[#14243b]">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[58rem] border-collapse">
             <caption className="sr-only">United Kingdom per-resident international comparison scorecard</caption>
@@ -243,8 +243,8 @@ export default async function InternationalComparison() {
               {publication
                 ? COMPARISON_MEASURE_ORDER.map((id) => scorecardRow(publication.measures[id]))
                 : COMPARISON_MEASURE_ORDER.map((id) => (
-                    <tr key={id} className="border-t border-[#d8d3c8] align-top">
-                      <th scope="row" className="py-4 pr-4 text-left text-sm font-semibold text-[#172234]">
+                    <tr key={id} className="border-t border-[#d3dae1] align-top">
+                      <th scope="row" className="py-4 pr-4 text-left text-sm font-semibold text-[#14243b]">
                         {id === "governmentDebt" && "Government debt outstanding"}
                         {id === "officialDevelopmentAssistance" && "Foreign / overseas aid"}
                         {id === "defenceSpending" && "Defence spending"}
@@ -265,8 +265,8 @@ export default async function InternationalComparison() {
       </div>
 
       {!publication ? (
-        <div className="mt-6 border border-[#d8d3c8] bg-[#f7f3eb] p-5">
-          <p className="font-semibold text-[#172234]">International comparison edition not yet verified.</p>
+        <div className="mt-6 border border-[#d3dae1] bg-[#f4f6f8] p-5">
+          <p className="font-semibold text-[#14243b]">International comparison edition not yet verified.</p>
           <p className="mt-2 text-sm leading-6 text-gray-700">
             The report remains unavailable until at least one authoritative comparison source has produced a validated publication. This does not affect the UK national evidence edition.
           </p>
@@ -275,10 +275,10 @@ export default async function InternationalComparison() {
         <>
           <div className="mt-6 grid gap-3 text-sm leading-6 text-gray-700 sm:grid-cols-2">
             <p>
-              <strong className="text-[#172234]">Ranking method:</strong> highest amount per resident first, with tied values sharing a competition rank.
+              <strong className="text-[#14243b]">Ranking method:</strong> highest amount per resident first, with tied values sharing a competition rank.
             </p>
             <p>
-              <strong className="text-[#172234]">Coverage:</strong> countries without a genuinely comparable observation are excluded from the denominator for that measure, never treated as zero.
+              <strong className="text-[#14243b]">Coverage:</strong> countries without a genuinely comparable observation are excluded from the denominator for that measure, never treated as zero.
             </p>
           </div>
           <div className="mt-10 space-y-10">

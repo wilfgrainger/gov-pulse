@@ -234,7 +234,7 @@ export default function GovernmentContracts() {
         />
       </section>
 
-      <section id="uk-doge" aria-labelledby="uk-doge-title" className="border border-black bg-[#172234] p-6 text-white md:p-8">
+      <section id="uk-doge" aria-labelledby="uk-doge-title" className="border border-black bg-[#14243b] p-6 text-white md:p-8">
         <p className="text-sm font-semibold text-red-300">UK DOGE · independent scrutiny</p>
         <h3 id="uk-doge-title" className="mt-2 text-3xl font-semibold tracking-[-0.03em] md:text-4xl">
           Where should public-money scrutiny start?

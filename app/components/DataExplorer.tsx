@@ -44,7 +44,7 @@ function MeasureDetail({ measure }: { measure: Measure }) {
   return (
     <section
       aria-labelledby="measure-detail-title"
-      className="border-t-4 border-[#172234] bg-white p-5 md:p-8"
+      className="border-t-4 border-[#14243b] bg-white p-5 md:p-8"
     >
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div>
@@ -100,14 +100,14 @@ function MeasureDetail({ measure }: { measure: Measure }) {
               {formatMeasure(min, measure.unit)}
             </text>
             {[45, 105, 165].map((tick) => (
-              <line key={tick} x1="105" x2="710" y1={tick} y2={tick} stroke="#d8e2dd" />
+              <line key={tick} x1="105" x2="710" y1={tick} y2={tick} stroke="#d7dfe6" />
             ))}
             {segments.map((segment, index) => segment.length > 1 ? (
               <polyline
                 key={index}
                 points={segment.map((point) => `${x(point.date)},${y(point.value)}`).join(" ")}
                 fill="none"
-                stroke="#0b6b69"
+                stroke="#0f6b63"
                 strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -120,7 +120,7 @@ function MeasureDetail({ measure }: { measure: Measure }) {
                 cx={x(point.date)}
                 cy={y(point.value)}
                 r={point.date === end ? "5" : "2.5"}
-                fill={point.date === end ? "#8a3540" : "#0b6b69"}
+                fill={point.date === end ? "#1f5c8a" : "#0f6b63"}
               >
                 <title>
                   {point.period}: {formatMeasure(point.value, measure.unit)}
@@ -318,7 +318,7 @@ export default function DataExplorer({
         </label>
         <button
           onClick={download}
-          className="min-h-12 border border-[#172234] bg-[#172234] px-5 py-2 font-semibold text-white"
+          className="min-h-12 border border-[#14243b] bg-[#14243b] px-5 py-2 font-semibold text-white"
         >
           Download results CSV
         </button>
@@ -373,7 +373,7 @@ export default function DataExplorer({
                 <button
                   onClick={() => setSelected(m.id)}
                   aria-pressed={detail?.id === m.id}
-                  className={`w-full border-l-4 p-4 text-left hover:bg-slate-50 ${detail?.id === m.id ? "border-[#172234] bg-slate-100" : "border-transparent"}`}
+                  className={`w-full border-l-4 p-4 text-left hover:bg-slate-50 ${detail?.id === m.id ? "border-[#14243b] bg-slate-100" : "border-transparent"}`}
                 >
                   <span className="block text-sm text-slate-600">
                     {m.topic} · {m.geography}

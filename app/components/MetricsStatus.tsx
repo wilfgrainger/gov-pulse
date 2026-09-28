@@ -133,7 +133,7 @@ export default function MetricsStatus({ section, status }: MetricsStatusProps) {
 
   return (
     <aside
-      className="mt-6 border-y border-[#d8d3c8] bg-[#faf8f3] px-4 py-5 md:px-5"
+      className="mt-6 border-y border-[#d3dae1] bg-[#f7f9fb] px-4 py-5 md:px-5"
       aria-label={`${meta.name} evidence and sources`}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -156,7 +156,7 @@ export default function MetricsStatus({ section, status }: MetricsStatusProps) {
         <Link
           href="/sources"
           prefetch={false}
-          className="text-sm font-semibold underline decoration-1 underline-offset-4 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#172234]"
+          className="text-sm font-semibold underline decoration-1 underline-offset-4 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#14243b]"
         >
           View all sources
         </Link>
@@ -175,7 +175,7 @@ export default function MetricsStatus({ section, status }: MetricsStatusProps) {
                   href={url}
                   target="_blank"
                   rel="noreferrer"
-                  className="font-semibold underline decoration-1 underline-offset-4 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#172234]"
+                  className="font-semibold underline decoration-1 underline-offset-4 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#14243b]"
                   aria-label={`Open ${source} source website`}
                 >
                   {source}

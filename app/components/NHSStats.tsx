@@ -440,7 +440,7 @@ export default function NHSStats() {
             description="Incomplete consultant-led pathways and, where published, estimated unique patients. Gaps mean NHS England did not publish that measure for the period."
             data={data.history}
             series={[
-              { key: "waitingPathwaysEstimate", label: "Waiting pathways", color: "#172234" },
+              { key: "waitingPathwaysEstimate", label: "Waiting pathways", color: "#14243b" },
               { key: "uniquePatientsEstimate", label: "Estimated unique patients", color: "#6b7280", dashed: true },
             ]}
             valueFormatter={formatNumber}
@@ -451,7 +451,7 @@ export default function NHSStats() {
             title="18-week performance"
             description="Share of incomplete pathways waiting no more than 18 weeks, compared with the 92% NHS Constitution standard. Pandemic-era service and reporting disruption is visible in 2020."
             data={data.history}
-            series={[{ key: "within18WeeksPercent", label: "Within 18 weeks", color: "#b23a20" }]}
+            series={[{ key: "within18WeeksPercent", label: "Within 18 weeks", color: "#1f5c8a" }]}
             valueFormatter={(value) => `${value.toFixed(1)}%`}
             referenceValue={92}
             referenceLabel="92% standard"
@@ -462,8 +462,8 @@ export default function NHSStats() {
             description="Median and 92nd-percentile waits in weeks. These show the centre and the long end of the distribution; pandemic-era disruption is visible in 2020."
             data={data.history}
             series={[
-              { key: "medianWaitWeeks", label: "Median wait", color: "#172234" },
-              { key: "percentile92WaitWeeks", label: "92nd percentile", color: "#b23a20" },
+              { key: "medianWaitWeeks", label: "Median wait", color: "#14243b" },
+              { key: "percentile92WaitWeeks", label: "92nd percentile", color: "#1f5c8a" },
             ]}
             valueFormatter={(value) => `${value.toFixed(1)} weeks`}
           />
@@ -473,10 +473,10 @@ export default function NHSStats() {
             description="Published counts above 52, 65, 78 and 104 weeks. A gap is retained where a threshold was not yet reported."
             data={data.history}
             series={[
-              { key: "over52Weeks", label: "Over 52 weeks", color: "#172234" },
-              { key: "over65Weeks", label: "Over 65 weeks", color: "#596579" },
-              { key: "over78Weeks", label: "Over 78 weeks", color: "#8a4b3a" },
-              { key: "over104Weeks", label: "Over 104 weeks", color: "#b23a20" },
+              { key: "over52Weeks", label: "Over 52 weeks", color: "#14243b" },
+              { key: "over65Weeks", label: "Over 65 weeks", color: "#0f6b63" },
+              { key: "over78Weeks", label: "Over 78 weeks", color: "#8a5a12" },
+              { key: "over104Weeks", label: "Over 104 weeks", color: "#1f5c8a" },
             ]}
             valueFormatter={formatNumber}
             axisFormatter={(value) => `${Math.round(value / 1_000)}k`}
@@ -487,8 +487,8 @@ export default function NHSStats() {
             description="New pathways and completed admitted or non-admitted pathways in each month, including NHS England estimates where supplied."
             data={data.history}
             series={[
-              { key: "newPathways", label: "New pathways", color: "#172234" },
-              { key: "admittedCompleted", label: "Admitted completions", color: "#b23a20" },
+              { key: "newPathways", label: "New pathways", color: "#14243b" },
+              { key: "admittedCompleted", label: "Admitted completions", color: "#1f5c8a" },
               { key: "nonAdmittedCompleted", label: "Other completions", color: "#6b7280" },
             ]}
             valueFormatter={formatNumber}

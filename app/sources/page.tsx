@@ -154,15 +154,15 @@ function PublisherAnchor({ publisher }: { publisher: PublisherLink }) {
 
 function SourceEntryCard({ entry, gap = false, wide = false }: { entry: SourceEntry; gap?: boolean; wide?: boolean }) {
   return (
-    <article className={`v3-source-card p-5 md:p-6 ${wide ? "md:col-span-2" : ""} ${gap ? "v3-source-card--gap bg-[#faf8f3] text-[#172234]" : "bg-white"}`}>
+    <article className={`v3-source-card p-5 md:p-6 ${wide ? "md:col-span-2" : ""} ${gap ? "v3-source-card--gap bg-[#f7f9fb] text-[#14243b]" : "bg-white"}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <h3 className="max-w-xl text-xl font-semibold leading-tight tracking-[-0.02em]">{entry.name}</h3>
-        <span className={`px-2.5 py-1 text-xs font-semibold ${gap ? "bg-rose-50 text-rose-900" : "bg-[#172234] text-white"}`}>
+        <span className={`px-2.5 py-1 text-xs font-semibold ${gap ? "bg-rose-50 text-rose-900" : "bg-[#14243b] text-white"}`}>
           {entry.cadence}
         </span>
       </div>
       <p className="mt-4 max-w-3xl text-sm leading-6 text-gray-700">{entry.use}</p>
-      <div className="mt-5 border-t border-[#ded8cd] pt-4">
+      <div className="mt-5 border-t border-[#d3dae1] pt-4">
         <p className="eyebrow text-gray-500">Original publication{entry.publishers.length > 1 ? "s" : ""}</p>
         <ul className="mt-2 space-y-2 text-sm">
           {entry.publishers.map((publisher) => (
@@ -195,8 +195,8 @@ export default function SourcesPage() {
         />
 
         <div className="mx-auto max-w-7xl space-y-12 px-4 py-10 md:px-6 md:py-16">
-          <section aria-labelledby="active-publisher-directory" data-production-marker="current-publications" className="border-t border-[#c8c1b5] pt-8">
-            <div className="mb-7 grid gap-4 border-b border-[#d8d3c8] pb-6 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,36rem)] lg:items-end">
+          <section aria-labelledby="active-publisher-directory" data-production-marker="current-publications" className="border-t border-[#aab4bf] pt-8">
+            <div className="mb-7 grid gap-4 border-b border-[#d3dae1] pb-6 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,36rem)] lg:items-end">
               <div>
                 <p className="eyebrow mb-2">Original publications</p>
                 <h2 id="active-publisher-directory" className="font-display text-3xl leading-tight md:text-5xl">Publisher directory</h2>
@@ -212,7 +212,7 @@ export default function SourcesPage() {
                   <h3 id={`source-group-${group.category.toLowerCase().replace(/\s+/g, "-")}`} className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
                     {group.category}
                   </h3>
-                  <div className="grid gap-px border border-[#d8d3c8] bg-[#d8d3c8] lg:grid-cols-2">
+                  <div className="grid gap-px border border-[#d3dae1] bg-[#d3dae1] lg:grid-cols-2">
                     {group.entries.map((entry, index) => (
                       <SourceEntryCard key={entry.name} entry={entry} wide={group.entries.length % 2 === 1 && index === group.entries.length - 1} />
                     ))}
@@ -222,7 +222,7 @@ export default function SourcesPage() {
             </div>
           </section>
 
-          <section aria-labelledby="evidence-gap-register" data-production-marker="evidence-gaps" className="border-y border-[#172234] bg-[#172234] p-5 text-white md:p-8 lg:p-10">
+          <section aria-labelledby="evidence-gap-register" data-production-marker="evidence-gaps" className="border-y border-[#14243b] bg-[#14243b] p-5 text-white md:p-8 lg:p-10">
             <div className="grid gap-5 border-b border-white/20 pb-7 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,36rem)] lg:items-end">
               <div>
                 <p className="eyebrow eyebrow-on-dark mb-2">Unavailable evidence</p>

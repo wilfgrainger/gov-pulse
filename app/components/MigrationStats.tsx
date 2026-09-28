@@ -264,9 +264,9 @@ export default function MigrationStats() {
             description="December year-ending estimates from the latest ONS revised time series. Components are independently rounded, so older arithmetic can differ from published net migration by up to 1,000."
             data={payload.history}
             series={[
-              { key: "immigration", label: "Immigration", color: "#172234" },
+              { key: "immigration", label: "Immigration", color: "#14243b" },
               { key: "emigration", label: "Emigration", color: "#6b7280" },
-              { key: "netMigration", label: "Net migration", color: "#b23a20" },
+              { key: "netMigration", label: "Net migration", color: "#1f5c8a" },
             ]}
             valueFormatter={formatPeople}
             axisFormatter={(value) => `${Math.round(value / 1_000)}k`}

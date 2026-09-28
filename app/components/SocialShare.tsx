@@ -102,7 +102,7 @@ export default function SocialShare({
             target="_blank"
             rel="noopener noreferrer"
             onClick={handleShareClick(link.name)}
-            className="border border-[#cbc4b8] px-2 py-1 text-xs font-semibold transition-colors hover:bg-[#172234] hover:text-white"
+            className="border border-[#aab4bf] px-2 py-1 text-xs font-semibold transition-colors hover:bg-[#14243b] hover:text-white"
             title={`Share on ${link.name}`}
           >
             {link.label}
@@ -110,7 +110,7 @@ export default function SocialShare({
         ))}
         <button
           onClick={handleCopyLink}
-          className="border border-[#cbc4b8] px-2 py-1 text-xs font-semibold transition-colors hover:bg-[#172234] hover:text-white"
+          className="border border-[#aab4bf] px-2 py-1 text-xs font-semibold transition-colors hover:bg-[#14243b] hover:text-white"
           title="Copy link"
         >
           {copied ? "Copied" : "Copy link"}
@@ -120,8 +120,8 @@ export default function SocialShare({
   }
 
   return (
-    <div className="border border-[#d8d3c8] bg-white p-5">
-      <div className="mb-3 text-sm font-semibold text-[#172234]">
+    <div className="border border-[#d3dae1] bg-white p-5">
+      <div className="mb-3 text-sm font-semibold text-[#14243b]">
         Share this evidence
       </div>
       <div className="flex flex-wrap gap-2">
@@ -132,7 +132,7 @@ export default function SocialShare({
             target="_blank"
             rel="noopener noreferrer"
             onClick={handleShareClick(link.name)}
-            className="border border-[#172234] px-4 py-2 text-sm font-semibold transition-colors hover:bg-[#172234] hover:text-white"
+            className="border border-[#14243b] px-4 py-2 text-sm font-semibold transition-colors hover:bg-[#14243b] hover:text-white"
             title={`Share on ${link.name}`}
           >
             {link.label}
@@ -140,8 +140,8 @@ export default function SocialShare({
         ))}
         <button
           onClick={handleCopyLink}
-          className={`border border-[#172234] px-4 py-2 text-sm font-semibold transition-colors ${
-            copied ? "bg-[#172234] text-white" : "bg-white text-[#172234] hover:bg-[#172234] hover:text-white"
+          className={`border border-[#14243b] px-4 py-2 text-sm font-semibold transition-colors ${
+            copied ? "bg-[#14243b] text-white" : "bg-white text-[#14243b] hover:bg-[#14243b] hover:text-white"
           }`}
           title="Copy link to clipboard"
         >

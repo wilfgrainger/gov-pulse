@@ -152,7 +152,7 @@ export default function NationalDebtCounter() {
             title="Public sector net debt: ten-year direction"
             description="End-month ONS debt stock excluding public sector banks. Values are dated observations, not a live counter."
             data={data.history}
-            series={[{ key: "debtBillion", label: "Debt stock", color: "#172234" }]}
+            series={[{ key: "debtBillion", label: "Debt stock", color: "#14243b" }]}
             valueFormatter={(value) => `£${value.toFixed(1)}bn`}
             axisFormatter={(value) => `£${Math.round(value)}bn`}
           />
@@ -161,7 +161,7 @@ export default function NationalDebtCounter() {
             title="Debt relative to GDP"
             description="The matching ONS debt-to-GDP series places the stock against the size of the economy on the same publication basis."
             data={data.history}
-            series={[{ key: "debtToGdp", label: "Debt-to-GDP", color: "#b23a20" }]}
+            series={[{ key: "debtToGdp", label: "Debt-to-GDP", color: "#1f5c8a" }]}
             valueFormatter={(value) => `${value.toFixed(1)}%`}
           />
 

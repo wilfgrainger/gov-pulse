@@ -125,7 +125,7 @@ export default function TaxRevenue() {
             title="Central government receipts: ten-year direction"
             description="Monthly ONS current receipts on a consistent cash basis. The seasonal pattern is why the annual comparison uses the same month one year earlier."
             data={data.history}
-            series={[{ key: "receiptsBillion", label: "Monthly receipts", color: "#172234" }]}
+            series={[{ key: "receiptsBillion", label: "Monthly receipts", color: "#14243b" }]}
             valueFormatter={(value) => `£${value.toFixed(1)}bn`}
             axisFormatter={(value) => `£${Math.round(value)}bn`}
           />

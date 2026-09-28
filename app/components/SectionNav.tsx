@@ -88,10 +88,10 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
   }
 
   const focusClasses =
-    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#172234]";
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14243b]";
 
   return (
-    <nav className="border-b border-[#c8c1b5] bg-white" aria-label="public-data.org navigation">
+    <nav className="border-b border-[#aab4bf] bg-white" aria-label="public-data.org navigation">
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-2 md:px-6 md:py-3">
         <Link
           href="/"
@@ -103,7 +103,7 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
         </Link>
         <Link href="/explore/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/explore' ? 'page' : undefined} className={`inline-flex min-h-11 items-center text-sm font-semibold underline underline-offset-4 ${focusClasses}`}>Explore data</Link>
 
-        <p className="hidden border-l border-[#d8d3c8] pl-4 text-xs leading-5 text-[#68707b] lg:block">
+        <p className="hidden border-l border-[#d3dae1] pl-4 text-xs leading-5 text-[#68707b] lg:block">
           Independent UK public evidence
         </p>
 
@@ -121,7 +121,7 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
             type="button"
             data-publication-panel-toggle
             onClick={toggleSearch}
-            className={`inline-flex min-h-11 items-center border border-[#172234] px-3 py-2 text-sm font-semibold text-[#172234] transition-colors hover:bg-[#f2eee6] sm:px-4 ${focusClasses}`}
+            className={`inline-flex min-h-11 items-center border border-[#14243b] px-3 py-2 text-sm font-semibold text-[#14243b] transition-colors hover:bg-[#eef1f4] sm:px-4 ${focusClasses}`}
             aria-label="Search evidence"
             aria-expanded={searchOpen}
             aria-controls="global-evidence-search-panel"
@@ -133,7 +133,7 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
             type="button"
             data-publication-panel-toggle
             onClick={toggleMenu}
-            className={`inline-flex min-h-11 items-center gap-2 bg-[#172234] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#8a3540] sm:px-4 ${focusClasses}`}
+            className={`inline-flex min-h-11 items-center gap-2 bg-[#14243b] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1f5c8a] sm:px-4 ${focusClasses}`}
             aria-expanded={menuOpen}
             aria-controls="all-topic-navigation"
           >
@@ -143,12 +143,12 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
         </div>
       </div>
 
-      <div className="hidden border-t border-[#e4dfd6] md:block">
+      <div className="hidden border-t border-[#dbe0e6] md:block">
         <div className="mx-auto flex max-w-7xl items-center overflow-x-auto px-6 text-xs">
           <Link
             href="/"
             prefetch={false}
-            className={`inline-flex min-h-11 shrink-0 items-center border-r border-[#e4dfd6] pr-4 font-semibold transition-colors hover:text-accent ${focusClasses}`}
+            className={`inline-flex min-h-11 shrink-0 items-center border-r border-[#dbe0e6] pr-4 font-semibold transition-colors hover:text-accent ${focusClasses}`}
             aria-current={pathname === "/" ? "page" : undefined}
           >
             Latest
@@ -158,10 +158,10 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
               key={section.id}
               href={`/section/${section.id}`}
               prefetch={false}
-              className={`inline-flex min-h-11 shrink-0 items-center whitespace-nowrap border-r border-[#e4dfd6] px-3 font-medium transition-colors last:border-r-0 hover:bg-[#f2eee6] hover:text-accent ${focusClasses} ${
+              className={`inline-flex min-h-11 shrink-0 items-center whitespace-nowrap border-r border-[#dbe0e6] px-3 font-medium transition-colors last:border-r-0 hover:bg-[#eef1f4] hover:text-accent ${focusClasses} ${
                 isActive(section.id)
-                  ? "bg-[#172234] font-semibold text-white hover:bg-[#172234] hover:text-white"
-                  : "text-[#172234]"
+                  ? "bg-[#14243b] font-semibold text-white hover:bg-[#14243b] hover:text-white"
+                  : "text-[#14243b]"
               }`}
               aria-current={isActive(section.id) ? "page" : undefined}
             >
@@ -175,10 +175,10 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
         <div
           ref={menuRef}
           id="all-topic-navigation"
-          className="border-t border-[#d8d3c8] bg-[#f7f3eb] shadow-[0_18px_42px_rgba(23,34,52,0.18)]"
+          className="border-t border-[#d3dae1] bg-[#f4f6f8] shadow-[0_18px_42px_rgba(20,36,59,0.18)]"
         >
           <div className="mx-auto max-h-[75vh] max-w-7xl overflow-y-auto px-4 py-6 md:px-6 md:py-8">
-            <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-[#c8c1b5] pb-5">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-[#aab4bf] pb-5">
               <div>
                 <p className="eyebrow">Evidence library</p>
                 <h2 className="font-display mt-2 text-3xl leading-tight md:text-4xl">Choose a public question.</h2>
@@ -189,7 +189,7 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
               </div>
             </div>
 
-            <div className="grid gap-px border border-[#c8c1b5] bg-[#c8c1b5] md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-px border border-[#aab4bf] bg-[#aab4bf] md:grid-cols-2 lg:grid-cols-4">
               {sections.map((group) => (
                 <section key={group.category} aria-labelledby={`topic-group-${group.category.toLowerCase().replace(/\s+/g, "-")}`} className="bg-white p-5">
                   <h2 id={`topic-group-${group.category.toLowerCase().replace(/\s+/g, "-")}`} className="eyebrow">
@@ -202,8 +202,8 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
                           href={`/section/${section.id}`}
                           prefetch={false}
                           onClick={closePanels}
-                          className={`flex min-h-11 items-center justify-between gap-3 border-b border-[#eeeae3] py-2 text-sm transition-colors hover:text-accent ${focusClasses} ${
-                            isActive(section.id) ? "font-semibold text-accent" : "text-[#172234]"
+                          className={`flex min-h-11 items-center justify-between gap-3 border-b border-[#e6ebf0] py-2 text-sm transition-colors hover:text-accent ${focusClasses} ${
+                            isActive(section.id) ? "font-semibold text-accent" : "text-[#14243b]"
                           }`}
                           aria-current={isActive(section.id) ? "page" : undefined}
                         >
@@ -224,7 +224,7 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
         <div
           ref={searchRef}
           id="global-evidence-search-panel"
-          className="border-t border-[#d8d3c8] bg-white shadow-[0_18px_42px_rgba(23,34,52,0.18)]"
+          className="border-t border-[#d3dae1] bg-white shadow-[0_18px_42px_rgba(20,36,59,0.18)]"
         >
           <EvidenceSearch onNavigate={closePanels} />
         </div>

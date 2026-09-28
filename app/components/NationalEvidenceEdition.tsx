@@ -24,8 +24,8 @@ function StateBadge({ state }: { state: EvidenceState }) {
     state === "current"
       ? "border-foreground bg-foreground text-white"
       : state === "update-due"
-        ? "border-[#a46811] bg-[#fff4d8] text-[#744600]"
-        : "border-black/20 bg-[#f4f2ec] text-gray-600";
+        ? "border-[#8a5a12] bg-[#e9eef3] text-[#3a4657]"
+        : "border-black/20 bg-[#eef1f4] text-gray-600";
 
   return (
     <span className={`inline-flex min-h-7 items-center border px-2.5 py-1 text-sm font-semibold uppercase tracking-[0.08em] ${tone}`}>
@@ -54,7 +54,7 @@ function LeadStory({ signal }: { signal: SignalPresentation | null }) {
 
   return (
     <article className="v3-lead-story editorial-lift grid overflow-hidden border-y-2 border-foreground lg:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
-      <div className="flex flex-col bg-[#172234] p-7 text-white md:p-10 lg:p-12">
+      <div className="flex flex-col bg-[#14243b] p-7 text-white md:p-10 lg:p-12">
         <div className="flex flex-wrap items-center gap-3">
           <p className="eyebrow eyebrow-on-dark">The latest release to know</p>
           <span className="inline-flex min-h-7 items-center border border-white bg-white px-2.5 py-1 text-sm font-semibold uppercase tracking-[0.08em] text-foreground">
@@ -69,16 +69,16 @@ function LeadStory({ signal }: { signal: SignalPresentation | null }) {
             {signal.leadSummary}
           </p>
         ) : null}
-        <Link href={signal.href} prefetch={false} className="mt-8 inline-flex min-h-12 w-fit items-center gap-6 border-b-2 border-[#8bd3c6] py-2 text-base font-semibold text-white hover:text-[#8bd3c6] lg:mt-auto">
+        <Link href={signal.href} prefetch={false} className="mt-8 inline-flex min-h-12 w-fit items-center gap-6 border-b-2 border-[#8fc2e6] py-2 text-base font-semibold text-white hover:text-[#8fc2e6] lg:mt-auto">
           Understand this figure <span aria-hidden="true">↗</span>
         </Link>
       </div>
 
-      <div className="flex flex-col bg-[#e4f1ec] p-7 md:p-10 lg:p-12">
-        <p className="eyebrow !text-[#0b6b69]">{signal.kicker} · {signal.geography}</p>
+      <div className="flex flex-col bg-[#dceaf4] p-7 md:p-10 lg:p-12">
+        <p className="eyebrow !text-[#0f6b63]">{signal.kicker} · {signal.geography}</p>
         <p className="mt-4 text-6xl font-semibold tabular-nums tracking-[-0.06em] md:text-7xl">{signal.value}</p>
         <p className="mt-3 text-sm font-semibold">{signal.period} · published {signal.publishedAt}</p>
-        <div className="text-[#0b6b69]"><TrendSparkline label={signal.title} points={signal.history} large /></div>
+        <div className="text-[#0f6b63]"><TrendSparkline label={signal.title} points={signal.history} large /></div>
         <p className="mt-5 border-t border-black/15 pt-5 text-base leading-7">{signal.comparison}</p>
         {signal.caveat ? (
           <p className="mt-4 border-l-2 border-accent pl-4 text-sm leading-6 text-gray-700">{signal.caveat}</p>
@@ -99,7 +99,7 @@ function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?:
         prefetch={false}
         data-testid="signal-card"
         data-evidence-state={signal.state}
-        className="editorial-lift group flex h-full min-h-80 flex-col border border-black/20 border-t-4 border-t-[#0b6b69] bg-white p-5 hover:border-foreground hover:bg-[#f5fbf7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black md:p-6"
+        className="editorial-lift group flex h-full min-h-80 flex-col border border-black/20 border-t-4 border-t-[#0f6b63] bg-white p-5 transition-colors hover:border-foreground hover:bg-[#eef6fb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black md:p-6"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -119,7 +119,7 @@ function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?:
         </div>
 
         {!unavailable && signal.history.length > 1 ? (
-          <div className="mb-5 text-[#0b6b69]"><TrendSparkline label={signal.title} points={signal.history} /></div>
+          <div className="mb-5 text-[#0f6b63]"><TrendSparkline label={signal.title} points={signal.history} /></div>
         ) : (
           <p className="my-5 text-xs text-gray-600">{unavailable ? "Source check pending" : "Comparable trend unavailable"}</p>
         )}
@@ -195,7 +195,8 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
             <ul className="grid gap-3 sm:grid-cols-2">
               {DIRECT_EVIDENCE_LINKS.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href} prefetch={false} className="editorial-lift group flex min-h-28 items-start justify-between gap-4 border border-black/20 bg-white p-5 hover:border-foreground hover:bg-[#fffdf8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black">
+                  <Link href={item.href} prefetch={false} className="editorial-lift group flex min-h-28 items-start justify-between gap-4 border border-black/20 bg-white p-5 transition-colors hover:border-foreground hover:bg-[#f9fbfc] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black">
+
                     <span>
                       <span className="text-lg font-semibold">{item.label}</span>
                       <span className="mt-2 block text-sm leading-6 text-gray-600">{item.description}</span>

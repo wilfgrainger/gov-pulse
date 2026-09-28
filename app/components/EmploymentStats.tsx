@@ -168,8 +168,8 @@ export default function EmploymentStats() {
             description="Rolling three-month ONS estimates. Each line uses the same Labour Force Survey period; straight segments join published observations."
             data={data.history.labourForce}
             series={[
-              { key: "employmentRate", label: "Employment", color: "#172234" },
-              { key: "unemploymentRate", label: "Unemployment", color: "#b23a20" },
+              { key: "employmentRate", label: "Employment", color: "#14243b" },
+              { key: "unemploymentRate", label: "Unemployment", color: "#1f5c8a" },
               { key: "inactivityRate", label: "Inactivity", color: "#6b7280", dashed: true },
             ]}
             valueFormatter={(value) => `${value.toFixed(1)}%`}
@@ -179,7 +179,7 @@ export default function EmploymentStats() {
             title="UK vacancies: ten-year direction"
             description="Rolling three-month ONS Vacancy Survey estimate. This is a separate employer survey and is not forced onto the Labour Force Survey clock."
             data={data.history.vacancies}
-            series={[{ key: "vacancies", label: "Vacancies", color: "#172234" }]}
+            series={[{ key: "vacancies", label: "Vacancies", color: "#14243b" }]}
             valueFormatter={formatPeople}
             axisFormatter={(value) => `${Math.round(value / 1_000)}k`}
           />

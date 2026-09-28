@@ -47,7 +47,7 @@ export default function ClientOnlyChart({
       {mounted && hasSize ? (
         children
       ) : (
-        <div className="flex h-full flex-col justify-between border border-black/10 bg-[#fbfaf7] p-5 animate-pulse" aria-busy="true">
+        <div className="flex h-full flex-col justify-between border border-black/10 bg-[#f7f9fb] p-5 animate-pulse" aria-busy="true">
           <span className="sr-only">{fallbackLabel}</span>
           <div className="flex justify-between items-center">
             <div className="h-3 w-24 bg-gray-200/80 rounded"></div>

@@ -73,7 +73,7 @@ export default function FinancialTimeSeriesChart({
     first && latest ? `${first.period} to ${latest.period}` : "Published history unavailable";
 
   return (
-    <figure className="border-y border-black/20 bg-[#fbfaf7] py-5">
+    <figure className="border-y border-black/20 bg-[#f7f9fb] py-5">
       <figcaption className="mb-4 flex flex-wrap items-end justify-between gap-3 px-1">
         <div>
           <h4 className="text-xl font-semibold tracking-[-0.015em]">{title}</h4>
@@ -95,14 +95,14 @@ export default function FinancialTimeSeriesChart({
             initialDimension={{ width: 640, height: 300 }}
           >
             <LineChart data={data} margin={{ top: 10, right: 14, bottom: 4, left: 4 }}>
-              <CartesianGrid vertical={false} stroke="#d8d4cc" strokeDasharray="2 4" />
+              <CartesianGrid vertical={false} stroke="#d3dae1" strokeDasharray="2 4" />
               <XAxis
                 dataKey="observedAt"
                 type="number"
                 scale="time"
                 domain={["dataMin", "dataMax"]}
                 tickFormatter={formatAxisDate}
-                tick={{ fontSize: 11, fontFamily: "ui-monospace, monospace", fill: "#5f5b55" }}
+                tick={{ fontSize: 11, fontFamily: "ui-monospace, monospace", fill: "#586170" }}
                 axisLine={{ stroke: "#111827", strokeWidth: 1 }}
                 tickLine={false}
                 tickCount={6}
@@ -110,7 +110,7 @@ export default function FinancialTimeSeriesChart({
               />
               <YAxis
                 tickFormatter={axisFormatter}
-                tick={{ fontSize: 11, fontFamily: "ui-monospace, monospace", fill: "#5f5b55" }}
+                tick={{ fontSize: 11, fontFamily: "ui-monospace, monospace", fill: "#586170" }}
                 axisLine={false}
                 tickLine={false}
                 width={62}
@@ -119,21 +119,21 @@ export default function FinancialTimeSeriesChart({
               {referenceValue !== undefined ? (
                 <ReferenceLine
                   y={referenceValue}
-                  stroke="#8b8680"
+                  stroke="#8892a0"
                   strokeDasharray="4 4"
                   label={
                     referenceLabel
-                      ? { value: referenceLabel, position: "insideTopRight", fontSize: 10, fill: "#5f5b55" }
+                      ? { value: referenceLabel, position: "insideTopRight", fontSize: 10, fill: "#586170" }
                       : undefined
                   }
                 />
               ) : null}
               <Tooltip
-                cursor={{ stroke: "#8b8680", strokeWidth: 1 }}
+                cursor={{ stroke: "#8892a0", strokeWidth: 1 }}
                 contentStyle={{
                   fontFamily: "ui-monospace, monospace",
                   fontSize: 11,
-                  border: "1px solid rgba(23, 34, 52, 0.15)",
+                  border: "1px solid rgba(20, 36, 59, 0.15)",
                   borderRadius: "4px",
                   background: "rgba(255, 255, 255, 0.85)",
                   backdropFilter: "blur(8px)",
