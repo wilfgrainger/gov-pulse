@@ -28,7 +28,7 @@ export default async function ExplorePage() {
       >
         <header className="mb-6">
           <p className="eyebrow">UK public data</p>
-          <h1 className="font-display mt-2 text-4xl md:text-5xl">
+          <h1 className="font-display mt-2 text-balance text-4xl tracking-[-0.02em] md:text-5xl">
             Explore the numbers
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">

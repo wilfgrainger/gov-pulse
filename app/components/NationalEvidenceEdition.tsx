@@ -10,6 +10,7 @@ import {
   type NationalEvidenceEdition as Edition,
   type SignalPresentation,
 } from "@/app/lib/nationalEvidence";
+import Reveal from "./Reveal";
 import TrendSparkline from "./TrendSparkline";
 
 const STATE_LABELS: Record<EvidenceState, string> = {
@@ -52,7 +53,7 @@ function LeadStory({ signal }: { signal: SignalPresentation | null }) {
   }
 
   return (
-    <article className="grid overflow-hidden border-y-2 border-foreground lg:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
+    <article className="v3-lead-story editorial-lift grid overflow-hidden border-y-2 border-foreground lg:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
       <div className="flex flex-col bg-[#172234] p-7 text-white md:p-10 lg:p-12">
         <div className="flex flex-wrap items-center gap-3">
           <p className="eyebrow eyebrow-on-dark">The latest release to know</p>
@@ -87,17 +88,18 @@ function LeadStory({ signal }: { signal: SignalPresentation | null }) {
   );
 }
 
-function SignalCard({ signal }: { signal: SignalPresentation }) {
+function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?: number }) {
   const unavailable = signal.state === "unavailable" || !signal.value;
 
   return (
     <li id={signal.anchorId ?? undefined} className="scroll-mt-24">
+      <Reveal delay={Math.min(index, 5) * 0.05} y={10} className="h-full">
       <Link
         href={signal.href}
         prefetch={false}
         data-testid="signal-card"
         data-evidence-state={signal.state}
-        className="group flex h-full min-h-80 flex-col border border-black/20 border-t-4 border-t-[#0b6b69] bg-white p-5 transition-colors hover:border-foreground hover:bg-[#f5fbf7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black md:p-6"
+        className="editorial-lift group flex h-full min-h-80 flex-col border border-black/20 border-t-4 border-t-[#0b6b69] bg-white p-5 hover:border-foreground hover:bg-[#f5fbf7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black md:p-6"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -130,6 +132,7 @@ function SignalCard({ signal }: { signal: SignalPresentation }) {
           <StateBadge state={signal.state} />
         </div>
       </Link>
+      </Reveal>
     </li>
   );
 }
@@ -167,7 +170,9 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
           </p>
         </div>
 
-        <LeadStory signal={edition.lead} />
+        <Reveal>
+          <LeadStory signal={edition.lead} />
+        </Reveal>
 
         <section aria-labelledby="at-a-glance-title" className="mt-12 md:mt-16">
           <div className="border-b border-black/20 pb-5">
@@ -175,8 +180,8 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
             <h3 id="at-a-glance-title" className="font-display mt-2 text-3xl leading-tight md:text-5xl">The country at a glance</h3>
           </div>
           <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {edition.signals.map((signal) => (
-              <SignalCard key={signal.id} signal={signal} />
+            {edition.signals.map((signal, index) => (
+              <SignalCard key={signal.id} signal={signal} index={index} />
             ))}
           </ul>
         </section>
@@ -190,7 +195,7 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
             <ul className="grid gap-3 sm:grid-cols-2">
               {DIRECT_EVIDENCE_LINKS.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href} prefetch={false} className="group flex min-h-28 items-start justify-between gap-4 border border-black/20 bg-white p-5 transition-colors hover:border-foreground hover:bg-[#fffdf8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black">
+                  <Link href={item.href} prefetch={false} className="editorial-lift group flex min-h-28 items-start justify-between gap-4 border border-black/20 bg-white p-5 hover:border-foreground hover:bg-[#fffdf8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black">
                     <span>
                       <span className="text-lg font-semibold">{item.label}</span>
                       <span className="mt-2 block text-sm leading-6 text-gray-600">{item.description}</span>

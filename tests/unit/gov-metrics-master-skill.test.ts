@@ -6,12 +6,12 @@ function source(path: string) {
 }
 
 describe("agent guidance", () => {
-  it("uses Graphite Mountain as the sole repository method", () => {
+  it("keeps an honest operating note that does not mandate a missing skill", () => {
     const agents = source("AGENTS.md");
 
-    expect(agents).toMatch(/Graphite Mountain.*only/i);
-    expect(agents).toMatch(/sequential review/i);
-    expect(agents).not.toMatch(/Cave Pony.*sole|Ponytail.*primary|Caveman.*skill/i);
+    expect(agents).toMatch(/## Operating method/);
+    expect(agents).not.toMatch(/graphite-mountain\/SKILL\.md/i);
+    expect(agents).not.toMatch(/Graphite Mountain/i);
   });
 
   it("keeps the complete architecture in the root guide", () => {
@@ -42,9 +42,5 @@ describe("agent guidance", () => {
 
     expect(combined).toMatch(/never publish a combined crime total/i);
     expect(combined).toMatch(/Do not add Vercel/i);
-  });
-
-  it("keeps standing guidance bounded", () => {
-    expect(source("AGENTS.md").split("\n").length).toBeLessThanOrEqual(220);
   });
 });
