@@ -378,7 +378,6 @@ table.sr-only {
 .editorial-lift {
   transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 200ms ease, border-color 180ms ease, background-color 180ms ease;
-  will-change: transform;
 }
 
 .editorial-lift:hover {
