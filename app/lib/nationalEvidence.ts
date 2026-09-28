@@ -201,6 +201,19 @@ function sourceState(source: SnapshotSourceStatus | undefined): EvidenceState {
   return "current";
 }
 
+export function hasNewerRelatedRelease(snapshot: MetricsSnapshot, section: "employmentStats" | "nationalDebt"): boolean {
+  const sibling = section === "employmentStats" ? "sentimentPulse" : "taxRevenue";
+  if (sourceState(snapshot.meta.sources[sibling]) !== "current") return false;
+  const relatedDate = section === "employmentStats"
+    ? timestamp(record(record(record(snapshot.sentimentPulse)?.series)?.unemployment)?.publishedAt)
+    : timestamp(record(record(snapshot.taxRevenue)?.headline)?.releaseDate);
+  const storedDate = section === "employmentStats"
+    ? timestamp(record(record(snapshot.employmentStats)?.headline)?.releaseDate)
+    : timestamp(record(snapshot.nationalDebt)?.publicationDate);
+  return relatedDate !== null && storedDate !== null &&
+    Math.floor(relatedDate / 86_400_000) > Math.floor(storedDate / 86_400_000);
+}
+
 function unavailable(id: SignalId): SignalPresentation {
   return {
     ...SIGNAL_META[id],
@@ -313,7 +326,10 @@ function selectDebt(snapshot: MetricsSnapshot): SignalPresentation {
   const debt = finite(data?.baseDebt);
   const ratio = finite(data?.debtToGdp);
   const annualDebt = finite(record(data?.annualDelta)?.debtBillion);
-  const period = text(data?.observationPeriod) ?? formatDate(data?.baseDate, true);
+  const rawPeriod = text(data?.observationPeriod);
+  const period = rawPeriod?.match(/^\d{4}\s+[A-Z]{3}$/)
+    ? formatDate(data?.baseDate, true)
+    : rawPeriod ?? formatDate(data?.baseDate, true);
   const publishedAt = formatDate(data?.publicationDate);
   if (debt === null || debt <= 0 || ratio === null || !period || !publishedAt) return unavailable("national-debt");
   const value = `£${(debt / 1_000_000_000_000).toFixed(2)}tn`;
@@ -411,7 +427,13 @@ export function selectNationalEvidenceEdition(snapshot: unknown): NationalEviden
     selectDebt(snapshot),
     selectNhs(snapshot),
     selectMigration(snapshot),
-  ];
+  ].map((signal) => {
+    const section = signal.id === "unemployment" ? "employmentStats"
+      : signal.id === "national-debt" ? "nationalDebt" : null;
+    return section && signal.state === "current" && hasNewerRelatedRelease(snapshot, section)
+      ? { ...signal, state: "update-due" as const }
+      : signal;
+  });
   const preferred = (state: EvidenceState) =>
     signals
       .filter((signal) => signal.state === state)

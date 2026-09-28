@@ -112,6 +112,19 @@ describe("data explorer", () => {
     expect(csv).toContain('"GDP: three-month growth","","%"');
     expect(csv).toContain("https://www.ons.gov.uk/");
   });
+  it("marks an older debt release for update when current receipts cite a later finances bulletin", () => {
+    const candidate = structuredClone(payload) as typeof payload & { nationalDebt: Record<string, unknown> };
+    const checkDate = new Date("2026-09-28T12:00:00Z");
+    candidate.meta.sources.taxRevenue.fetchedAt = checkDate.toISOString();
+    Object.assign(candidate.meta.sources, { nationalDebt: { status: "ok", cacheState: "fresh", fetchedAt: checkDate.toISOString() } });
+    candidate.nationalDebt = {
+      debtToGdp: 94.1, observationPeriod: "2026 JUL", publicationDate: "2026-08-21",
+      source: { debtToGdpUrl: "https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6x/pusf" },
+    };
+    candidate.taxRevenue.headline.releaseDate = "2026-09-22";
+    const debt = exploreMeasures(candidate, checkDate).find((m) => m.id === "debt-ratio");
+    expect(debt).toMatchObject({ period: "July 2026", updateDue: true });
+  });
 });
 it('links the debt ratio to HF6X rather than the absolute HF6W debt series', () => {
   const snapshot = { meta: { registryVersion: FEED_REGISTRY_VERSION, sources: { nationalDebt: { status: 'ok', cacheState: 'fresh', fetchedAt: now.toISOString() } } }, nationalDebt: { baseDebt: 3e12, debtToGdp: 95, observationPeriod: 'July 2026', publicationDate: '2026-08-21', source: { debtUrl: 'https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6w/pusf', debtToGdpUrl: 'https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6x/pusf' } } };

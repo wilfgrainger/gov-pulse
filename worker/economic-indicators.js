@@ -193,8 +193,9 @@ function monthlyPeriod(point) {
 }
 
 function rollingThreeMonthPeriod(point) {
-  const startDate = new Date(Date.UTC(point.year, point.month - 2, 1));
-  const endDate = new Date(Date.UTC(point.year, point.month, 1));
+  // LMS series labels the rolling estimate by its centre month.
+  const startDate = new Date(Date.UTC(point.year, point.month - 1, 1));
+  const endDate = new Date(Date.UTC(point.year, point.month + 1, 1));
   const start = `${MONTH_NAMES[startDate.getUTCMonth()]} ${startDate.getUTCFullYear()}`;
   const end = `${MONTH_NAMES[endDate.getUTCMonth()]} ${endDate.getUTCFullYear()}`;
   return `${start} to ${end}`;
@@ -276,8 +277,11 @@ function historyPoint(point, period) {
 function buildOnsSeries(definition, points, publication, retrievedAt) {
   const latest = points.at(-1);
   const priorYear = points.at(-13);
-  const periodFormatter =
-    definition.periodType === "rolling-three-month" ? rollingThreeMonthPeriod : monthlyPeriod;
+  const rolling = definition.periodType === "rolling-three-month";
+  const periodFormatter = rolling ? rollingThreeMonthPeriod : monthlyPeriod;
+  const observedAt = (point) => rolling
+    ? new Date(Date.UTC(point.year, point.month + 2, 0)).toISOString()
+    : point.observedAt;
   return {
     id: definition.id,
     label: definition.label,
@@ -286,7 +290,7 @@ function buildOnsSeries(definition, points, publication, retrievedAt) {
     unit: definition.unit,
     color: definition.color,
     period: periodFormatter(latest),
-    observedAt: latest.observedAt,
+    observedAt: observedAt(latest),
     publishedAt: `${publication.publishedAt}T00:00:00.000Z`,
     retrievedAt,
     publisher: definition.publisher,
@@ -303,7 +307,7 @@ function buildOnsSeries(definition, points, publication, retrievedAt) {
     annualDeltaUnit: "percentage points",
     history: points
       .slice(-TEN_YEARS_MONTHLY)
-      .map((point) => historyPoint(point, periodFormatter(point))),
+      .map((point) => historyPoint({ ...point, observedAt: observedAt(point) }, periodFormatter(point))),
   };
 }
 

@@ -59,9 +59,6 @@ export default function SiteFooter() {
             <p className="mt-3 text-xs leading-5 text-slate-400">
               Educational and public-evidence information only; not financial, investment or betting advice.
             </p>
-            <p className="mt-3 text-xs leading-5 text-slate-400">
-              This static website does not place cookies on your device or collect personal data.
-            </p>
           </div>
 
           {SECTIONS.map((group) => (

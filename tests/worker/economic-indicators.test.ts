@@ -118,7 +118,7 @@ describe("series-level economic indicators", () => {
   it("formats rolling three-month periods across year boundaries", () => {
     expect(
       rollingThreeMonthPeriod({ year: 2026, month: 0 })
-    ).toBe("November 2025 to January 2026");
+    ).toBe("December 2025 to February 2026");
   });
 
   it("builds three independent official series with separate clocks", async () => {
@@ -148,8 +148,8 @@ describe("series-level economic indicators", () => {
     });
     expect(data.series.unemployment).toMatchObject({
       value: 4.9,
-      period: "January 2026 to March 2026",
-      observedAt: "2026-03-31T00:00:00.000Z",
+      period: "February 2026 to April 2026",
+      observedAt: "2026-04-30T00:00:00.000Z",
       publishedAt: "2026-06-18T00:00:00.000Z",
       seriesId: "MGSX",
       datasetId: "LMS",

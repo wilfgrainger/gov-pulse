@@ -237,7 +237,24 @@ function parseRollingThreeMonthOnsCsv(text) {
 
   points.sort((left, right) => left.observedAt - right.observedAt);
   if (points.length === 0) {
-    throw new Error("ONS CSV did not expose rolling three-month observations");
+    // Some ONS series label a rolling three-month estimate by its centre month.
+    // Convert that month to the corresponding observation window before joining
+    // series and comparing the latest point with the bulletin headline.
+    return parseMonthlyOnsCsv(text).map((point) => {
+      const centre = new Date(point.observedAt);
+      const year = centre.getUTCFullYear();
+      const month = centre.getUTCMonth();
+      const start = new Date(Date.UTC(year, month - 1, 1));
+      const end = new Date(Date.UTC(year, month + 1, 1));
+      const code = (date) => date.toLocaleString("en-GB", {
+        month: "short", timeZone: "UTC",
+      }).toUpperCase().replace("SEPT", "SEP");
+      return {
+        period: `${end.getUTCFullYear()} ${code(start)}-${code(end)}`,
+        observedAt: Date.UTC(year, month + 2, 0),
+        value: point.value,
+      };
+    });
   }
   return points;
 }
@@ -433,7 +450,7 @@ function parseLabourBulletin(html, finalUrl = LABOUR_BULLETIN_URL) {
   const periodPattern = "([A-Za-z]+(?:\\s+\\d{4})?\\s+to\\s+[A-Za-z]+\\s+\\d{4})";
   function rateMatch(subject, label) {
     const current = text.match(
-      new RegExp(`${subject}[^.]*?was estimated at\\s+([\\d.]+)%\\s+in\\s+${periodPattern}`, "i")
+      new RegExp(`${subject}[^.]*?was estimated at\\s+([\\d.]+)%\\s+(?:in|for)\\s+${periodPattern}`, "i")
     );
     if (current) return { value: current[1], period: current[2] };
     const legacy = text.match(

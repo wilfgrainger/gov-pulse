@@ -3,6 +3,7 @@ import {
   isCompatibleMetricsSnapshot,
   type MetricsSnapshot,
 } from "./metricsSnapshot";
+import { hasNewerRelatedRelease } from "./nationalEvidence";
 
 export type MeasureDefinition = {
   id: string;
@@ -25,6 +26,7 @@ export type Measure = MeasureDefinition & {
   publishedAt: string | null;
   sourceUrl: string | null;
   history: { date: number; period: string; value: number }[];
+  updateDue: boolean;
 };
 const base = (
   section: string,
@@ -138,6 +140,12 @@ const finite = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 const text = (value: unknown) =>
   typeof value === "string" && value.trim() ? value : null;
+function readablePeriod(value: string | null): string | null {
+  const match = value?.match(/^(\d{4})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$/i);
+  if (!match) return value;
+  const month = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"].indexOf(match[2].toUpperCase());
+  return new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(Number(match[1]), month, 1)));
+}
 function sourceLink(
   data: unknown,
   definition: MeasureDefinition,
@@ -180,7 +188,7 @@ export function exploreMeasures(raw: unknown, now = new Date()): Measure[] {
   return MEASURES.map((definition) => {
     const data = snapshot?.[definition.section];
     const rawValue = at(data, definition.valuePath);
-    const period = text(at(data, definition.periodPath));
+    const period = readablePeriod(text(at(data, definition.periodPath)));
     const publishedAt = text(at(data, definition.publicationPath));
     const sourceUrl = snapshot ? sourceLink(data, definition, snapshot) : null;
     const valid =
@@ -225,6 +233,10 @@ export function exploreMeasures(raw: unknown, now = new Date()): Measure[] {
       publishedAt: valid ? publishedAt : null,
       sourceUrl: valid ? sourceUrl : null,
       history,
+      updateDue: Boolean(valid && snapshot && (
+        (definition.section === "employmentStats" || definition.section === "nationalDebt") &&
+        hasNewerRelatedRelease(snapshot, definition.section)
+      )),
     };
   });
 }

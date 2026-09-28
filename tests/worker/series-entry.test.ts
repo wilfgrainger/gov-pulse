@@ -120,7 +120,7 @@ describe("series-aware Worker entry", () => {
         __observation: {
           status: "current",
           period:
-            "Inflation May 2026 · Bank Rate 18 December 2025 · Unemployment January 2026 to March 2026",
+            "Inflation May 2026 · Bank Rate 18 December 2025 · Unemployment February 2026 to April 2026",
         },
       },
     });
@@ -201,7 +201,7 @@ describe("series-aware Worker entry", () => {
     expect(observationFor(data)).toMatchObject({
       status: "current",
       period:
-        "Inflation May 2026 · Bank Rate 18 December 2025 · Unemployment January 2026 to March 2026",
+        "Inflation May 2026 · Bank Rate 18 December 2025 · Unemployment February 2026 to April 2026",
       observedAt: "2026-05-31T00:00:00.000Z",
       checkedAt: "2026-07-14T12:00:00.000Z",
       maxAgeDays: 75,

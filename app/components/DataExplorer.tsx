@@ -29,11 +29,18 @@ function MeasureDetail({ measure }: { measure: Measure }) {
   const min = Math.min(...points.map((p) => p.value));
   const max = Math.max(...points.map((p) => p.value));
   const span = max - min || 1;
+  const intervals = points.slice(1).map((point, index) => point.date - points[index].date).sort((a, b) => a - b);
+  const typicalInterval = intervals[Math.floor(intervals.length / 2)] || 1;
+  const segments: typeof points[] = [];
+  points.forEach((point, index) => {
+    if (index === 0 || point.date - points[index - 1].date > typicalInterval * 1.7) segments.push([]);
+    segments.at(-1)!.push(point);
+  });
   const x = (date: number) =>
-    30 +
+    105 +
     ((date - (points[0]?.date ?? 0)) / (end - (points[0]?.date ?? 0) || 1)) *
-      680;
-  const y = (value: number) => 150 - ((value - min) / span) * 110;
+      605;
+  const y = (value: number) => 165 - ((value - min) / span) * 120;
   return (
     <section
       aria-labelledby="measure-detail-title"
@@ -58,6 +65,11 @@ function MeasureDetail({ measure }: { measure: Measure }) {
           <p className="mt-2 text-base text-slate-600">
             {measure.period ?? "No verified current value"}
           </p>
+          {measure.updateDue && (
+            <p className="mt-3 inline-flex border border-amber-700 bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-900">
+              Newer publication detected · update due
+            </p>
+          )}
         </div>
         <label className="text-sm font-semibold">
           History window
@@ -74,42 +86,58 @@ function MeasureDetail({ measure }: { measure: Measure }) {
         </label>
       </div>
       {points.length > 1 ? (
-        <figure className="mt-6">
+        <figure className="mt-8 border-y border-slate-200 py-5">
           <svg
-            viewBox="0 0 740 200"
+            viewBox="0 0 740 225"
             role="img"
-            aria-label={`${measure.label}: ${points.length} published observations, in ${measure.unit}. Exact values in the table below.`}
+            aria-label={`${measure.label}: ${points.length} published observations, in ${measure.unit}, from ${points[0].period} to ${points.at(-1)?.period}. Vertical scale does not start at zero. Exact values in the table below.`}
             className="w-full"
           >
-            <text x="30" y="20" fontSize="14" fill="#475569">
+            <text x="8" y="50" fontSize="14" fill="#475569">
               {formatMeasure(max, measure.unit)}
             </text>
-            <line x1="30" x2="710" y1="150" y2="150" stroke="#cbd5e1" />
-            {points.map((point) => (
+            <text x="8" y="170" fontSize="14" fill="#475569">
+              {formatMeasure(min, measure.unit)}
+            </text>
+            {[45, 105, 165].map((tick) => (
+              <line key={tick} x1="105" x2="710" y1={tick} y2={tick} stroke="#d8e2dd" />
+            ))}
+            {segments.map((segment, index) => segment.length > 1 ? (
+              <polyline
+                key={index}
+                points={segment.map((point) => `${x(point.date)},${y(point.value)}`).join(" ")}
+                fill="none"
+                stroke="#0b6b69"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            ) : null)}
+            {points.filter((_, index) => points.length < 20 || index === 0 || index === points.length - 1).map((point) => (
               <circle
                 key={point.date}
                 cx={x(point.date)}
                 cy={y(point.value)}
-                r="3"
-                fill="#172234"
+                r={point.date === end ? "5" : "2.5"}
+                fill={point.date === end ? "#8a3540" : "#0b6b69"}
               >
                 <title>
                   {point.period}: {formatMeasure(point.value, measure.unit)}
                 </title>
               </circle>
             ))}
-            <text x="30" y="180" fontSize="14" fill="#475569">
+            <text x="105" y="205" fontSize="14" fill="#475569">
               {points[0].period}
             </text>
-            <text x="710" y="180" textAnchor="end" fontSize="14" fill="#475569">
+            <text x="710" y="205" textAnchor="end" fontSize="14" fill="#475569">
               {points.at(-1)?.period}
             </text>
           </svg>
           <figcaption className="text-sm leading-6 text-slate-600">
-            Each dot is a published observation. The vertical scale spans{" "}
+            Line joins consecutive published observations; gaps are left open. The vertical scale spans{" "}
             {formatMeasure(min, measure.unit)} to{" "}
-            {formatMeasure(max, measure.unit)}; it may not start at zero.
-            Missing periods are not filled.
+            {formatMeasure(max, measure.unit)} and does not start at zero. The coral dot marks the latest observation.
           </figcaption>
         </figure>
       ) : (
@@ -363,6 +391,7 @@ export default function DataExplorer({
                   <span className="mt-1 block text-sm text-slate-600">
                     {m.period ?? "Awaiting verified evidence"}
                   </span>
+                  {m.updateDue && <span className="mt-2 block text-xs font-semibold text-amber-800">Newer publication detected</span>}
                 </button>
               </li>
             ))}

@@ -17,6 +17,7 @@ import {
 const gdpEditionUrl = `${GDP_BULLETIN_URL.replace(/\/latest$/, "")}/may2026`;
 const labourEditionUrl = `${LABOUR_BULLETIN_URL.replace(/\/latest$/, "")}/july2026`;
 const currentLabourEditionUrl = `${LABOUR_BULLETIN_URL.replace(/\/latest$/, "")}/august2026`;
+const septemberLabourEditionUrl = `${LABOUR_BULLETIN_URL.replace(/\/latest$/, "")}/september2026`;
 const financesEditionUrl = `${FINANCES_BULLETIN_URL.replace(/\/latest$/, "")}/may2026`;
 
 const gdpHtml = `
@@ -40,6 +41,14 @@ const currentLabourHtml = `
 <p>The UK unemployment rate for people aged 16 years and over was estimated at 4.9% in April to June 2026.</p>
 <p>The UK economic inactivity rate for people aged 16 to 64 years was estimated at 20.9% in April to June 2026.</p>
 <p>The estimated number of vacancies in the UK decreased in the latest quarter. Early estimates for May to July 2026 suggest a decrease of 6,000 (0.8%) to 707,000, compared with February to April 2026.</p>`;
+
+const septemberLabourHtml = `
+<h1>Labour market overview, UK: September 2026</h1>
+<p>Release date: 15 September 2026</p>
+<p>The UK employment rate (based on the LFS) for people aged 16 to 64 years was estimated at 75.1% for May to July 2026.</p>
+<p>The UK unemployment rate for people aged 16 years and over was estimated at 4.9% in May to July 2026.</p>
+<p>The UK economic inactivity rate for people aged 16 to 64 years was estimated at 20.9% in May to July 2026.</p>
+<p>Early estimates for June to August 2026 suggest a decrease of 8,000 (1.1%) to 702,000, compared with March to May 2026.</p>`;
 
 const financesHtml = `
 <h1>Public sector finances, UK: May 2026</h1>
@@ -216,6 +225,27 @@ describe("official ONS economy bulletin connectors", () => {
       inactivityRatePoints: 0,
       vacancies: -19_000,
     });
+  });
+
+  it("accepts the September ONS wording and preserves the separate vacancy period", async () => {
+    const fetchImpl = fetchFor(LABOUR_BULLETIN_URL, septemberLabourEditionUrl, septemberLabourHtml, {
+      // ONS now labels the rolling estimate by its centre month in the CSV.
+      lf24: monthlyCsv(2026, 5, 75.1, 75.2),
+      mgsx: monthlyCsv(2026, 5, 4.9, 4.7),
+      lf2s: monthlyCsv(2026, 5, 20.9, 21),
+      ap2y: monthlyCsv(2026, 6, 702, 721),
+    });
+    const result = await buildEmploymentStats(fetchImpl);
+    expect(result.headline).toMatchObject({
+      period: "May to July 2026",
+      releaseDate: "2026-09-15",
+      employmentRate: 75.1,
+      unemploymentRate: 4.9,
+      inactivityRate: 20.9,
+      vacancies: 702_000,
+      vacanciesPeriod: "June to August 2026",
+    });
+    expect(result.history.labourForce.at(-1)?.observedAt).toBe(Date.UTC(2026, 7, 0));
   });
 
   it("fails closed when labour-market headline periods do not align", () => {
