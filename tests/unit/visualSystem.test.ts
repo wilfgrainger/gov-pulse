@@ -14,6 +14,10 @@ describe("consumer visual system", () => {
     expect(css).toContain("--background: #f4f6f8");
     expect(css).toContain("--surface: #ffffff");
     expect(css).toContain("--foreground: #14243b");
+    // Load-bearing accent tokens: their regression would break white-on-accent
+    // and on-dark contrast, so pin them alongside the surface/ink tokens.
+    expect(css).toContain("--accent: #1f5c8a");
+    expect(css).toContain("--accent-on-dark: #8fc2e6");
     expect(css).toContain('--font-editorial: Georgia, "Times New Roman", serif');
     expect(css).not.toMatch(/Bebas Neue|IBM Plex Mono/);
     expect(css).toMatch(/\.dashboard-card\s*\{[\s\S]*border-top:\s*1px solid var\(--foreground\) !important/);

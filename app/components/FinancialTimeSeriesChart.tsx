@@ -133,7 +133,7 @@ export default function FinancialTimeSeriesChart({
                 contentStyle={{
                   fontFamily: "ui-monospace, monospace",
                   fontSize: 11,
-                  border: "1px solid rgba(23, 34, 52, 0.15)",
+                  border: "1px solid rgba(20, 36, 59, 0.15)",
                   borderRadius: "4px",
                   background: "rgba(255, 255, 255, 0.85)",
                   backdropFilter: "blur(8px)",

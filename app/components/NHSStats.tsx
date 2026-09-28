@@ -474,8 +474,8 @@ export default function NHSStats() {
             data={data.history}
             series={[
               { key: "over52Weeks", label: "Over 52 weeks", color: "#14243b" },
-              { key: "over65Weeks", label: "Over 65 weeks", color: "#586170" },
-              { key: "over78Weeks", label: "Over 78 weeks", color: "#6b4a86" },
+              { key: "over65Weeks", label: "Over 65 weeks", color: "#0f6b63" },
+              { key: "over78Weeks", label: "Over 78 weeks", color: "#8a5a12" },
               { key: "over104Weeks", label: "Over 104 weeks", color: "#1f5c8a" },
             ]}
             valueFormatter={formatNumber}

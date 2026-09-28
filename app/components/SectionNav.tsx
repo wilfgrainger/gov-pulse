@@ -175,7 +175,7 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
         <div
           ref={menuRef}
           id="all-topic-navigation"
-          className="border-t border-[#d3dae1] bg-[#f4f6f8] shadow-[0_18px_42px_rgba(23,34,52,0.18)]"
+          className="border-t border-[#d3dae1] bg-[#f4f6f8] shadow-[0_18px_42px_rgba(20,36,59,0.18)]"
         >
           <div className="mx-auto max-h-[75vh] max-w-7xl overflow-y-auto px-4 py-6 md:px-6 md:py-8">
             <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-[#aab4bf] pb-5">
@@ -224,7 +224,7 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
         <div
           ref={searchRef}
           id="global-evidence-search-panel"
-          className="border-t border-[#d3dae1] bg-white shadow-[0_18px_42px_rgba(23,34,52,0.18)]"
+          className="border-t border-[#d3dae1] bg-white shadow-[0_18px_42px_rgba(20,36,59,0.18)]"
         >
           <EvidenceSearch onNavigate={closePanels} />
         </div>
