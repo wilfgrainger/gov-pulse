@@ -6,6 +6,7 @@ import queuedWorker, {
   BOOTSTRAP_FINALISE_RETRY_SECONDS,
   RUN_PREFIX,
   bootstrapRunId,
+  enqueueCompletedBootstrapFinaliser,
   refreshJobs,
 } from "@/worker/queued-publication-entry";
 
@@ -100,5 +101,28 @@ describe("Cloudflare publication bootstrap", () => {
     expect(() => bootstrapRunId("main")).toThrow(
       "must be a full Git commit SHA"
     );
+  });
+
+  it("prompts finalisation as soon as every bootstrap source job succeeds", async () => {
+    const { env, store, send } = environment();
+    const runId = bootstrapRunId(SHA);
+    store.set(`${RUN_PREFIX}${runId}`, {
+      runId, scope: "bootstrap", finalisedAt: null,
+      expectedJobIds: ["section:employmentStats", "external:nhsStats"],
+    });
+    store.set(`${RUN_PREFIX}${runId}:terminal:section:employmentStats`, {
+      jobId: "section:employmentStats", status: "success",
+    });
+    expect(await enqueueCompletedBootstrapFinaliser(runId, env)).toBe(false);
+    expect(send).not.toHaveBeenCalled();
+
+    store.set(`${RUN_PREFIX}${runId}:terminal:external:nhsStats`, {
+      jobId: "external:nhsStats", status: "success",
+    });
+    expect(await enqueueCompletedBootstrapFinaliser(runId, env)).toBe(true);
+    expect(send).toHaveBeenCalledWith({
+      type: "finalise-run", runId,
+      retryDelaySeconds: BOOTSTRAP_FINALISE_RETRY_SECONDS,
+    });
   });
 });

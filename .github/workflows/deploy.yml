@@ -137,6 +137,7 @@ jobs:
           QUEUE_NAME: public-data-jobs
           HEALTH_URL: https://public-data.org/data/health.json
           BOOTSTRAP_TIMEOUT_MS: "720000"
+          FORCE_PUBLICATION_REFRESH: "true"
         run: node scripts/bootstrap-cloudflare-publication.mjs
 
       - name: Verify deployed revision and reader routes

@@ -303,9 +303,10 @@ async function bootstrapCloudflarePublication(options = {}) {
     options.recoveryIntervalMs ?? DEFAULT_RECOVERY_INTERVAL_MS,
     "BOOTSTRAP_RECOVERY_INTERVAL_MS"
   );
+  const forceRefresh = options.forceRefresh === true;
 
   const initialHealth = await readHealth(fetchImpl, healthUrl);
-  if (await deploymentPublicationAvailable(fetchImpl, healthUrl, initialHealth)) {
+  if (!forceRefresh && await deploymentPublicationAvailable(fetchImpl, healthUrl, initialHealth)) {
     return { triggered: false, attempts: 0, health: initialHealth };
   }
 
@@ -317,6 +318,7 @@ async function bootstrapCloudflarePublication(options = {}) {
   );
   const deadline = nowImpl() + timeoutMs;
   let attempt = 0;
+  let latestAttemptId = null;
   let nextAttemptAt = nowImpl();
   let lastHealth = initialHealth;
 
@@ -330,19 +332,30 @@ async function bootstrapCloudflarePublication(options = {}) {
         queueId,
         attemptId
       );
+      latestAttemptId = attemptId;
       attempt += 1;
       nextAttemptAt = nowImpl() + recoveryIntervalMs;
     }
 
-    lastHealth = await readHealth(fetchImpl, healthUrl);
-    if (lastHealth?.ready === true) {
-      return { triggered: true, attempts: attempt, health: lastHealth };
-    }
-    if (
-      isDegradedPublicationHealth(lastHealth) &&
-      (await hasPreparedPublication(fetchImpl, healthUrl))
-    ) {
-      return { triggered: true, attempts: attempt, health: lastHealth };
+    const run = forceRefresh
+      ? await readKvValue(
+          fetchImpl, accountId, apiToken, namespaceId,
+          `v13:publication:run:bootstrap-${latestAttemptId}`
+        )
+      : null;
+    // A previously serveable edition cannot prove that this deployment's
+    // collectors ran. Forced refresh requires the new run to finalise first.
+    if (!forceRefresh || (run?.finalisedAt && ["published", "no-change"].includes(run.status))) {
+      lastHealth = await readHealth(fetchImpl, healthUrl);
+      if (lastHealth?.ready === true && (!forceRefresh || await hasPreparedPublication(fetchImpl, healthUrl))) {
+        return { triggered: true, attempts: attempt, health: lastHealth };
+      }
+      if (
+        !forceRefresh && isDegradedPublicationHealth(lastHealth) &&
+        (await hasPreparedPublication(fetchImpl, healthUrl))
+      ) {
+        return { triggered: true, attempts: attempt, health: lastHealth };
+      }
     }
 
     const remainingMs = deadline - nowImpl();
@@ -383,6 +396,7 @@ async function main() {
     namespaceId: process.env.CLOUDFLARE_KV_NAMESPACE_ID,
     timeoutMs: process.env.BOOTSTRAP_TIMEOUT_MS,
     recoveryIntervalMs: process.env.BOOTSTRAP_RECOVERY_INTERVAL_MS,
+    forceRefresh: process.env.FORCE_PUBLICATION_REFRESH === "true",
   });
   console.log(
     result.triggered
