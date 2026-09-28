@@ -129,7 +129,7 @@ jobs:
           | node scripts/verify-worker-deployment.mjs "$GITHUB_SHA"
 
       - name: Bootstrap and verify Cloudflare publication readiness
-        if: github.event_name == 'workflow_dispatch' && inputs.refresh_evidence
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.refresh_evidence)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

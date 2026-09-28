@@ -10,6 +10,7 @@ import {
   type NationalEvidenceEdition as Edition,
   type SignalPresentation,
 } from "@/app/lib/nationalEvidence";
+import TrendSparkline from "./TrendSparkline";
 
 const STATE_LABELS: Record<EvidenceState, string> = {
   current: "Current",
@@ -51,52 +52,36 @@ function LeadStory({ signal }: { signal: SignalPresentation | null }) {
   }
 
   return (
-    <article className="grid overflow-hidden border-y border-foreground lg:grid-cols-[minmax(0,1.4fr)_minmax(19rem,0.6fr)]">
-      <div className="bg-[#172234] p-6 text-white md:p-8">
+    <article className="grid overflow-hidden border-y-2 border-foreground lg:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
+      <div className="flex flex-col bg-[#172234] p-7 text-white md:p-10 lg:p-12">
         <div className="flex flex-wrap items-center gap-3">
-          <p className="eyebrow eyebrow-on-dark">Lead figure</p>
+          <p className="eyebrow eyebrow-on-dark">The latest release to know</p>
           <span className="inline-flex min-h-7 items-center border border-white bg-white px-2.5 py-1 text-sm font-semibold uppercase tracking-[0.08em] text-foreground">
             {STATE_LABELS[signal.state]}
           </span>
         </div>
-        <h3 className="font-display mt-5 max-w-5xl text-3xl leading-tight md:text-4xl lg:text-5xl">
+        <h3 className="font-display mt-8 max-w-4xl text-4xl leading-[1.05] md:text-5xl lg:text-6xl">
           {signal.leadHeadline}
         </h3>
         {signal.leadSummary ? (
-          <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-200 md:text-xl md:leading-9">
+          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-200 md:text-xl md:leading-9">
             {signal.leadSummary}
           </p>
         ) : null}
+        <Link href={signal.href} prefetch={false} className="mt-8 inline-flex min-h-12 w-fit items-center gap-6 border-b-2 border-[#8bd3c6] py-2 text-base font-semibold text-white hover:text-[#8bd3c6] lg:mt-auto">
+          Understand this figure <span aria-hidden="true">↗</span>
+        </Link>
       </div>
 
-      <div className="flex flex-col bg-[#f0e8db] p-6 lg:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#5d6470]">{signal.kicker}</p>
-        <p className="mt-3 text-5xl font-semibold tabular-nums tracking-[-0.055em] md:text-6xl">{signal.value}</p>
-        <dl className="mt-7 space-y-4 border-t border-black/20 pt-5 text-sm leading-6">
-          <div>
-            <dt className="font-semibold">Period</dt>
-            <dd className="text-gray-700">{signal.period}</dd>
-          </div>
-          <div>
-            <dt className="font-semibold">Comparison</dt>
-            <dd className="text-gray-700">{signal.comparison}</dd>
-          </div>
-          <div>
-            <dt className="font-semibold">Published</dt>
-            <dd className="text-gray-700">{signal.publishedAt}</dd>
-          </div>
-          <div>
-            <dt className="font-semibold">Geography</dt>
-            <dd className="text-gray-700">{signal.geography}</dd>
-          </div>
-        </dl>
+      <div className="flex flex-col bg-[#e4f1ec] p-7 md:p-10 lg:p-12">
+        <p className="eyebrow !text-[#0b6b69]">{signal.kicker} · {signal.geography}</p>
+        <p className="mt-4 text-6xl font-semibold tabular-nums tracking-[-0.06em] md:text-7xl">{signal.value}</p>
+        <p className="mt-3 text-sm font-semibold">{signal.period} · published {signal.publishedAt}</p>
+        <div className="text-[#0b6b69]"><TrendSparkline label={signal.title} points={signal.history} large /></div>
+        <p className="mt-5 border-t border-black/15 pt-5 text-base leading-7">{signal.comparison}</p>
         {signal.caveat ? (
-          <p className="mt-5 border-l-2 border-accent pl-4 text-xs leading-5 text-gray-700">{signal.caveat}</p>
+          <p className="mt-4 border-l-2 border-accent pl-4 text-sm leading-6 text-gray-700">{signal.caveat}</p>
         ) : null}
-        <Link href={signal.href} prefetch={false} className="mt-8 inline-flex min-h-11 items-center justify-between border-t border-black/20 pt-5 text-sm font-semibold underline decoration-black/30 underline-offset-4 hover:text-accent lg:mt-auto">
-          Open full evidence
-          <span aria-hidden="true">→</span>
-        </Link>
       </div>
     </article>
   );
@@ -112,7 +97,7 @@ function SignalCard({ signal }: { signal: SignalPresentation }) {
         prefetch={false}
         data-testid="signal-card"
         data-evidence-state={signal.state}
-        className="group flex h-full min-h-64 flex-col border border-black/20 bg-white p-5 transition-colors hover:border-foreground hover:bg-[#fffdf8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black md:p-6"
+        className="group flex h-full min-h-80 flex-col border border-black/20 border-t-4 border-t-[#0b6b69] bg-white p-5 transition-colors hover:border-foreground hover:bg-[#f5fbf7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black md:p-6"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -122,20 +107,25 @@ function SignalCard({ signal }: { signal: SignalPresentation }) {
           <span aria-hidden="true" className="text-xl transition-transform group-hover:translate-x-1">→</span>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-5">
           <p className={unavailable ? "max-w-xs text-2xl font-semibold leading-tight text-gray-600" : "text-4xl font-semibold tabular-nums tracking-[-0.045em] md:text-5xl"}>
             {unavailable ? "Current value unavailable" : signal.value}
           </p>
-          <p className="mt-3 text-sm leading-6 text-gray-700">
+          <p className="mt-2 text-sm leading-6 text-gray-700">
             {signal.comparison ?? "Open the evidence page for the latest source information."}
           </p>
         </div>
 
-        <div className="mt-auto flex flex-wrap items-end justify-between gap-3 border-t border-black/10 pt-5 text-xs">
+        {!unavailable && signal.history.length > 1 ? (
+          <div className="mb-5 text-[#0b6b69]"><TrendSparkline label={signal.title} points={signal.history} /></div>
+        ) : (
+          <p className="my-5 text-xs text-gray-600">{unavailable ? "Source check pending" : "Comparable trend unavailable"}</p>
+        )}
+
+        <div className="mt-auto flex flex-wrap items-end justify-between gap-3 border-t border-black/10 pt-4 text-xs">
           <div className="space-y-1 text-gray-600">
             <p>{signal.period ?? "No current period"}</p>
-            <p>{signal.geography}</p>
-            <p>{signal.evidenceClass}</p>
+            <p>{signal.geography} · {signal.publishedAt ? `Published ${signal.publishedAt}` : signal.evidenceClass}</p>
           </div>
           <StateBadge state={signal.state} />
         </div>
@@ -166,10 +156,10 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
         <div className="mb-8 grid gap-5 border-b border-black/20 pb-6 md:grid-cols-[1fr_auto] md:items-end">
           <div>
-            <p className="eyebrow">Latest figures</p>
+            <p className="eyebrow">The public data edition</p>
             <h2 id="national-evidence-title" className="section-title mt-2">Latest figures</h2>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-gray-600 md:text-base">
-              Each figure keeps its own period, definition and source. Open a figure to inspect the full evidence.
+              A clear reading of the latest verified releases. Every figure has its own period, geography and original source.
             </p>
           </div>
           <p className="text-sm text-gray-600">
@@ -182,7 +172,7 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
         <section aria-labelledby="at-a-glance-title" className="mt-12 md:mt-16">
           <div className="border-b border-black/20 pb-5">
             <p className="eyebrow">National signals</p>
-            <h3 id="at-a-glance-title" className="font-display mt-2 text-3xl leading-tight md:text-5xl">Six measures, separate clocks</h3>
+            <h3 id="at-a-glance-title" className="font-display mt-2 text-3xl leading-tight md:text-5xl">The country at a glance</h3>
           </div>
           <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {edition.signals.map((signal) => (
