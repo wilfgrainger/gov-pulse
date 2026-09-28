@@ -51,6 +51,32 @@ describe("Cloudflare deployment bootstrap", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
+  it("forces a new run and waits for its finalisation even when an old snapshot is ready", async () => {
+    let now = 0;
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ status: "ready", ready: true }))
+      .mockResolvedValueOnce(jsonResponse({ success: true, result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }] }))
+      .mockResolvedValueOnce(jsonResponse({ success: true }))
+      .mockResolvedValueOnce(jsonResponse({ status: "running", finalisedAt: null }))
+      .mockResolvedValueOnce(jsonResponse({ status: "published", finalisedAt: "2026-09-28T09:00:00.000Z" }))
+      .mockResolvedValueOnce(jsonResponse({ status: "ready", ready: true }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ meta: { delivery: "published-snapshot", publicationDiagnostics: {} } }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", "X-Publication-Delivery": "cloudflare-kv" },
+      }));
+
+    const result = await bootstrapCloudflarePublication({
+      accountId: "account", apiToken: "token", deploymentId: SHA,
+      forceRefresh: true, fetchImpl, timeoutMs: 60_000,
+      pollIntervalMs: 10_000, nowImpl: () => now,
+      sleepImpl: async (milliseconds) => { now += milliseconds; },
+    });
+
+    expect(result).toMatchObject({ triggered: true, attempts: 1, health: { ready: true } });
+    expect(fetchImpl.mock.calls[2][0]).toContain("/queues/queue-id/messages");
+    expect(fetchImpl.mock.calls[3][0]).toContain(`v13%3Apublication%3Arun%3Abootstrap-${SHA}`);
+  });
+
   it("does not skip when ready health is backed by migration delivery", async () => {
     let now = 0;
     const fetchImpl = vi

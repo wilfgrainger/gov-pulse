@@ -36,9 +36,8 @@ const RUN_TTL_SECONDS = 14 * 24 * 60 * 60;
 const FINALISE_DELAY_SECONDS = 20 * 60;
 const FINALISE_RETRY_SECONDS = 5 * 60;
 const BOOTSTRAP_DEADLINE_SECONDS = 12 * 60;
-// Queue retries are intentionally bounded. Schedule the bootstrap finaliser
-// at the run deadline so it cannot be discarded before the source jobs have
-// had their full publication window.
+// Keep the delayed finaliser for partial runs. Successful bootstrap jobs also
+// enqueue an immediate finaliser once every required job has finished.
 const BOOTSTRAP_FINALISE_DELAY_SECONDS = BOOTSTRAP_DEADLINE_SECONDS;
 const BOOTSTRAP_FINALISE_RETRY_SECONDS = 60;
 const CONTRACT_REQUEST_GAP_MS = 10_500;
@@ -473,6 +472,22 @@ async function finaliseRun(runId, env, options = {}) {
   return { run: finalised, publicationResult, pending: false };
 }
 
+async function enqueueCompletedBootstrapFinaliser(runId, env) {
+  if (typeof runId !== "string" || !runId.startsWith("bootstrap-")) return false;
+  const run = await kvGet(env, runKey(runId));
+  if (run?.scope !== "bootstrap" || run.finalisedAt) return false;
+  const terminals = await readTerminals(env, run);
+  if (!run.expectedJobIds.every((jobId) =>
+    terminals.some((terminal) => terminal.jobId === jobId && terminal.status === "success")
+  )) return false;
+  await env.DATA_JOBS.send({
+    type: "finalise-run",
+    runId,
+    retryDelaySeconds: BOOTSTRAP_FINALISE_RETRY_SECONDS,
+  });
+  return true;
+}
+
 const queuedPublicationWorker = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -551,6 +566,14 @@ const queuedPublicationWorker = {
 
         const result = await processQueueJob(job, env, ctx);
         await recordTerminal(env, job, "success", result);
+        try {
+          await enqueueCompletedBootstrapFinaliser(job.runId, env);
+        } catch (error) {
+          console.error("Cloudflare prompt bootstrap finaliser failed", {
+            runId: job.runId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
         console.log("Cloudflare data publication job completed", result);
         message.ack();
       } catch (error) {
@@ -584,6 +607,7 @@ export {
   createRun,
   enqueuePublicationRun,
   finaliseRun,
+  enqueueCompletedBootstrapFinaliser,
   jobsForDay,
   missingRequiredSections,
   processQueueJob,
