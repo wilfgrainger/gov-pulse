@@ -2,12 +2,10 @@
 
 ## Operating method
 
-Use Graphite Mountain from `skills/graphite-mountain/SKILL.md` as the only
-repository operating method. Follow its sequential review: Jared for outcome
-and scope, Richard for architecture, Dinesh for the complete implementation
-path, Gilfoyle for adversarial reliability and security, Jian-Yang for user and
-operational challenge, and Erlich for final simplification. These are bounded
-review lenses, not persistent personas.
+Keep changes small and root-caused. Review each change for outcome and scope,
+architecture, a complete implementation path, adversarial reliability and
+security, and final simplification. Prefer deleting or reusing over adding.
+These are review lenses, not a mandated workflow or persona set.
 
 ## Mission and public promise
 
