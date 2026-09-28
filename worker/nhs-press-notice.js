@@ -139,6 +139,9 @@ function parseNhsRttPressNotice(text) {
     .replace(/\s+/g, " ")
     // PDF text extraction can split glyphs inside numbers and a handful of
     // repeated labels; repair only those unambiguous boundaries.
+    .replace(/\bJu\s+ly\b/gi, "July")
+    .replace(/\b(\d)\s+(\d)(?=\s+[A-Za-z]+\s+\d{4}\s+Statistical Press Notice)/gi, "$1$2")
+    .replace(/\b(\d{1,2})\s+(\d{2})\s*,\s*(\d{3})\b/g, "$1$2,$3")
     .replace(/(\d)\s+\.\s+(\d)/g, "$1.$2")
     .replace(/(\d+)\.\s+(\d)/g, "$1.$2")
     .replace(/(\d)\s+(\d)(?=\.\d)/g, "$1$2")
@@ -196,7 +199,7 @@ function parseNhsRttPressNotice(text) {
   );
   const thresholds = requiredMatch(
     normalized,
-    /in\s+([\d,]+)\s+cases the patient was waiting more than 52 weeks,\s+in\s+([\d,]+)\s+cases they were waiting more than 65 weeks,\s+in\s+([\d,]+)\s+cases they were waiting more than 78 weeks,\s+and in\s+([\d,]+)\s+cases they were waiting more than 104 weeks/i,
+    /in\s+([\d,]+)\s+cases the patient was waiting more than 52 weeks,\s+in\s+([\d,]+)\s+cases they were waiting more than 65 weeks,\s+in\s+([\d,]+)\s+cases they were .{0,500}?waiting more than 78 weeks,\s+and in\s+([\d,]+)\s+cases they were waiting more than 104 weeks/i,
     "long-wait thresholds"
   );
   const median = requiredMatch(
