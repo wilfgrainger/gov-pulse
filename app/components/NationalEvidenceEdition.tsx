@@ -10,6 +10,7 @@ import {
   type NationalEvidenceEdition as Edition,
   type SignalPresentation,
 } from "@/app/lib/nationalEvidence";
+import Reveal from "./Reveal";
 import TrendSparkline from "./TrendSparkline";
 
 const STATE_LABELS: Record<EvidenceState, string> = {
@@ -87,11 +88,12 @@ function LeadStory({ signal }: { signal: SignalPresentation | null }) {
   );
 }
 
-function SignalCard({ signal }: { signal: SignalPresentation }) {
+function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?: number }) {
   const unavailable = signal.state === "unavailable" || !signal.value;
 
   return (
     <li id={signal.anchorId ?? undefined} className="scroll-mt-24">
+      <Reveal delay={Math.min(index, 5) * 0.05} y={10} className="h-full">
       <Link
         href={signal.href}
         prefetch={false}
@@ -130,6 +132,7 @@ function SignalCard({ signal }: { signal: SignalPresentation }) {
           <StateBadge state={signal.state} />
         </div>
       </Link>
+      </Reveal>
     </li>
   );
 }
@@ -167,7 +170,9 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
           </p>
         </div>
 
-        <LeadStory signal={edition.lead} />
+        <Reveal>
+          <LeadStory signal={edition.lead} />
+        </Reveal>
 
         <section aria-labelledby="at-a-glance-title" className="mt-12 md:mt-16">
           <div className="border-b border-black/20 pb-5">
@@ -175,8 +180,8 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
             <h3 id="at-a-glance-title" className="font-display mt-2 text-3xl leading-tight md:text-5xl">The country at a glance</h3>
           </div>
           <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {edition.signals.map((signal) => (
-              <SignalCard key={signal.id} signal={signal} />
+            {edition.signals.map((signal, index) => (
+              <SignalCard key={signal.id} signal={signal} index={index} />
             ))}
           </ul>
         </section>

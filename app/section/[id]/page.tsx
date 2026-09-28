@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PageHeader from "../../components/PageHeader";
+import Reveal from "../../components/Reveal";
 import SectionNav from "../../components/SectionNav";
 import SiteFooter from "../../components/SiteFooter";
 import {
@@ -131,10 +132,10 @@ export default async function SectionPage({
               </div>}
             </aside>
           ) : null}
-          <article className="evidence-article v3-evidence-article p-5 md:p-8 lg:p-12">
+          <Reveal as="article" className="evidence-article v3-evidence-article p-5 md:p-8 lg:p-12">
             <h2 className="sr-only">{section.title}: latest evidence and sources</h2>
             <SectionComponent />
-          </article>
+          </Reveal>
         </div>
       </main>
       <SiteFooter />
