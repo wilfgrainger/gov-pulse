@@ -9,7 +9,7 @@ export default function HomepageIntro() {
           <p className="eyebrow !text-[#0b6b69]">Free, independent UK public evidence</p>
           <h1
             aria-label="Britain, in evidence."
-            className="font-display mt-5 text-5xl leading-[0.98] tracking-tight md:text-7xl lg:text-[5.75rem]"
+            className="font-display mt-5 text-balance text-5xl leading-[0.95] tracking-[-0.03em] md:text-7xl lg:text-[5.75rem]"
           >
             Britain, <span className="text-accent">in evidence.</span>
           </h1>
@@ -38,9 +38,9 @@ export default function HomepageIntro() {
         </Reveal>
       </div>
       <nav aria-label="Start with a question" className="mx-auto mt-10 grid max-w-7xl gap-3 border-t border-black/15 pt-6 text-sm font-semibold sm:grid-cols-3">
-        <Link href="/section/nhs" prefetch={false} className="flex min-h-16 items-center justify-between gap-4 border-l-4 border-[#0b6b69] bg-white px-4 py-3 hover:bg-[#e4f1ec]">Is the NHS waiting list shrinking? <span aria-hidden="true">↗</span></Link>
-        <Link href="/section/gdp" prefetch={false} className="flex min-h-16 items-center justify-between gap-4 border-l-4 border-[#0b6b69] bg-white px-4 py-3 hover:bg-[#e4f1ec]">Is the economy growing? <span aria-hidden="true">↗</span></Link>
-        <Link href="/section/national-debt" prefetch={false} className="flex min-h-16 items-center justify-between gap-4 border-l-4 border-[#0b6b69] bg-white px-4 py-3 hover:bg-[#e4f1ec]">How much does the UK owe? <span aria-hidden="true">↗</span></Link>
+        <Link href="/section/nhs" prefetch={false} className="editorial-lift group flex min-h-16 items-center justify-between gap-4 border-l-4 border-[#0b6b69] bg-white px-4 py-3 hover:bg-[#e4f1ec]">Is the NHS waiting list shrinking? <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">↗</span></Link>
+        <Link href="/section/gdp" prefetch={false} className="editorial-lift group flex min-h-16 items-center justify-between gap-4 border-l-4 border-[#0b6b69] bg-white px-4 py-3 hover:bg-[#e4f1ec]">Is the economy growing? <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">↗</span></Link>
+        <Link href="/section/national-debt" prefetch={false} className="editorial-lift group flex min-h-16 items-center justify-between gap-4 border-l-4 border-[#0b6b69] bg-white px-4 py-3 hover:bg-[#e4f1ec]">How much does the UK owe? <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">↗</span></Link>
       </nav>
     </header>
   );

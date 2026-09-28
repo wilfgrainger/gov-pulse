@@ -53,7 +53,7 @@ function LeadStory({ signal }: { signal: SignalPresentation | null }) {
   }
 
   return (
-    <article className="grid overflow-hidden border-y-2 border-foreground lg:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
+    <article className="v3-lead-story editorial-lift grid overflow-hidden border-y-2 border-foreground lg:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
       <div className="flex flex-col bg-[#172234] p-7 text-white md:p-10 lg:p-12">
         <div className="flex flex-wrap items-center gap-3">
           <p className="eyebrow eyebrow-on-dark">The latest release to know</p>
@@ -99,7 +99,7 @@ function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?:
         prefetch={false}
         data-testid="signal-card"
         data-evidence-state={signal.state}
-        className="group flex h-full min-h-80 flex-col border border-black/20 border-t-4 border-t-[#0b6b69] bg-white p-5 transition-colors hover:border-foreground hover:bg-[#f5fbf7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black md:p-6"
+        className="editorial-lift group flex h-full min-h-80 flex-col border border-black/20 border-t-4 border-t-[#0b6b69] bg-white p-5 hover:border-foreground hover:bg-[#f5fbf7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black md:p-6"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -195,7 +195,7 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
             <ul className="grid gap-3 sm:grid-cols-2">
               {DIRECT_EVIDENCE_LINKS.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href} prefetch={false} className="group flex min-h-28 items-start justify-between gap-4 border border-black/20 bg-white p-5 transition-colors hover:border-foreground hover:bg-[#fffdf8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black">
+                  <Link href={item.href} prefetch={false} className="editorial-lift group flex min-h-28 items-start justify-between gap-4 border border-black/20 bg-white p-5 hover:border-foreground hover:bg-[#fffdf8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black">
                     <span>
                       <span className="text-lg font-semibold">{item.label}</span>
                       <span className="mt-2 block text-sm leading-6 text-gray-600">{item.description}</span>

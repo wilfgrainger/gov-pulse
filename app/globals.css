@@ -41,9 +41,16 @@ body {
     var(--background);
   color: var(--foreground);
   font-family: var(--font-body);
+  font-feature-settings: "kern" 1, "liga" 1;
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+}
+
+/* Deliberate reading rhythm on long-form evidence prose. */
+.evidence-article p {
+  text-wrap: pretty;
 }
 
 ::selection {
@@ -54,6 +61,12 @@ body {
 :where(a, button, input, summary):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+}
+
+/* Smooth the focus-ring appearance so keyboard navigation reads as considered,
+   never abrupt. Colour and width remain exactly as pinned above. */
+:where(a, button, input, summary) {
+  transition: outline-offset 140ms ease;
 }
 
 #__next {
@@ -221,8 +234,10 @@ table.sr-only {
   padding: 0.75rem 1.15rem;
   font-size: 0.875rem;
   font-weight: 700;
+  letter-spacing: 0.005em;
   text-decoration: none;
-  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease,
+    box-shadow 180ms ease, transform 180ms ease;
 }
 
 .v3-primary-action {
@@ -233,6 +248,8 @@ table.sr-only {
 .v3-primary-action:hover {
   background: var(--accent);
   border-color: var(--accent);
+  box-shadow: 0 8px 20px rgb(138 53 64 / 0.22);
+  transform: translateY(-1px);
 }
 
 .v3-secondary-action {
@@ -244,6 +261,18 @@ table.sr-only {
   background: white;
   border-color: var(--accent);
   color: var(--accent);
+  transform: translateY(-1px);
+}
+
+/* Nudge chevrons/arrows inside the primary actions on hover for a tactile read. */
+.v3-primary-action:hover [aria-hidden],
+.v3-secondary-action:hover [aria-hidden] {
+  transform: translateX(2px);
+}
+
+.v3-primary-action [aria-hidden],
+.v3-secondary-action [aria-hidden] {
+  transition: transform 180ms ease;
 }
 
 .v3-reading-card {
@@ -329,18 +358,49 @@ table.sr-only {
   background: white;
   color: var(--foreground);
   text-decoration: none;
-  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease;
 }
 
 .signal-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 32px rgb(23 34 52 / 0.12);
+  transform: translateY(-3px);
+  box-shadow: 0 16px 36px rgb(23 34 52 / 0.14);
   background: var(--surface-warm);
 }
 
 .signal-card__rail {
   height: 0.35rem;
   background: var(--accent);
+}
+
+/* Editorial lift shared by the rendered lead-story and signal cards.
+   Restrained depth reserved for emphasis surfaces, never evidence panels. */
+.editorial-lift {
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 200ms ease, border-color 180ms ease, background-color 180ms ease;
+  will-change: transform;
+}
+
+.editorial-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px rgb(23 34 52 / 0.13);
+}
+
+/* Accent rail that grows in on hover/focus of an editorial card. */
+.editorial-rail::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 3px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.editorial-rail:hover::after,
+.editorial-rail:focus-visible::after {
+  transform: scaleX(1);
 }
 
 .signal-card--growth .signal-card__rail,
@@ -390,6 +450,12 @@ table.sr-only {
   position: relative;
   min-width: 0;
   border-top: 0.3rem solid var(--foreground);
+  transition: box-shadow 180ms ease, transform 180ms ease;
+}
+
+.v3-source-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgb(23 34 52 / 0.09);
 }
 
 .v3-source-card--gap {
