@@ -1,5 +1,6 @@
 // @vitest-environment node
 
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseNhsRttPressNotice } from "@/worker/nhs-press-notice";
 
@@ -15,6 +16,30 @@ const specialties = [
 ].join(" ");
 
 describe("current NHS RTT press notice extraction", () => {
+  it("reads the July 2026 primary notice despite split month names and numbers", () => {
+    // Extracted with the Worker PDF reader from NHS England's July 2026 RTT
+    // statistical press notice; kept offline so the regression is repeatable.
+    const text = readFileSync(
+      new URL("../fixtures/nhs-rtt-july-2026-extracted.txt", import.meta.url),
+      "utf8"
+    );
+    const result = parseNhsRttPressNotice(text);
+
+    expect(result.headline).toMatchObject({
+      period: "July 2026",
+      publicationDate: "2026-09-10",
+      waitingPathwaysEstimate: 7_300_000,
+      uniquePatientsEstimate: 6_200_000,
+      over104Weeks: 235,
+      within18WeeksPercent: 65.4,
+      admittedCompleted: 328_929,
+      yearChangePercent: -0.8,
+      yearChangePathways: -62_027,
+    });
+    expect(result.specialties).toHaveLength(8);
+    expect(result.specialties[0].name).toBe("Trauma and Orthopaedic Service");
+  });
+
   it("reassembles a split integer in the June 2026 long-wait thresholds", () => {
     const result = parseNhsRttPressNotice(`
       Thursday 13 August 2026 Statistical Press Notice
