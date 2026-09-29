@@ -26,7 +26,7 @@ import { samePublicationEvidence } from "../contracts/publication-evidence.js";
 import { buildPublicationDiagnostics } from "../contracts/publication-diagnostics.js";
 import { FEED_REGISTRY } from "./feed-registry.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
-import { refreshInternationalComparison } from "./international-comparison-store.js";
+import { refreshInternationalComparison } from "./international-comparison-publication.js";
 
 const PUBLICATION_SECTION_PREFIX = "v12:publication:section:";
 const PUBLICATION_HISTORY_TTL_SECONDS = 14 * 24 * 60 * 60;

@@ -12,7 +12,7 @@ import {
 import {
   readInternationalComparison,
   refreshInternationalComparison,
-} from "./international-comparison-store.js";
+} from "./international-comparison-publication.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
 
 const SNAPSHOT_PATH = "/data/metrics-snapshot.json";
