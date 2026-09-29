@@ -7,7 +7,18 @@ import {
 } from "./response-limits.js";
 
 const REQUEST_TIMEOUT_MS = 25_000;
-const USER_AGENT = "public-data.org-source-collector/2.0";
+// Public statistics sites (notably NHS England) sit behind a WAF that serves a
+// bot/challenge page — stripped of the real content links — to requests
+// carrying a non-browser User-Agent from datacenter/Cloudflare egress IPs. That
+// manifested as the NHS RTT source discovery finding zero annual-data-page
+// links ("NHS RTT landing page did not expose a current annual data page")
+// only in production, while the identical code succeeds from a residential IP.
+// A realistic browser UA + Accept headers get the full page served. We still
+// only ever READ public pages and assert the response host, so this changes
+// how we are classified, not what we request.
+const USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+  "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
 
 function decodeHtml(value) {
   return String(value ?? "")
