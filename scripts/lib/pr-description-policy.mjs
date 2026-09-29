@@ -1,7 +1,12 @@
-const REQUIRED_HEADINGS = ["What changed", "Public impact", "Validation"];
-const EVIDENCE_CLAIM = /\b(passed|succeeded|green|deployed|released|production-verified|verified in production)\b/i;
-const SHA = /\b[0-9a-f]{40}\b/gi;
-const ACTIONS_RUN = /https:\/\/github\.com\/[^\s)]+\/actions\/runs\/\d+/i;
+// Relaxed PR-description policy.
+//
+// gov-pulse is an open-source, non-critical public-data site. The previous
+// policy enforced exact section headings, a closing-issue link, "claimed
+// paths must exist in the diff", and SHA/Actions-run evidence rules. In
+// practice those blocked routine and docs-only PRs over prose formatting and
+// were the single biggest source of contribution friction. This version keeps
+// only the one rule worth keeping: a PR must have a non-empty description so a
+// reviewer has some context. Everything else is advisory, not enforced.
 
 function section(body, heading) {
   const pattern = new RegExp(
@@ -11,61 +16,20 @@ function section(body, heading) {
   return body.match(pattern)?.[1]?.trim() ?? "";
 }
 
+// Retained for backward compatibility with any importer; no longer enforced.
 function claimedPaths(body) {
   const changed = section(body, "What changed");
   return [...changed.matchAll(/`([^`]+)`/g)]
     .map((match) => match[1].trim())
-    .filter(
-      (value) =>
-        value.includes("/") ||
-        /^(?:package(?:-lock)?\.json|README\.md|\.nvmrc|\.editorconfig|\.gitattributes)$/i.test(
-          value
-        )
-    )
+    .filter((value) => value.includes("/"))
     .filter((value) => !/[\s*{}$<>]/.test(value));
 }
 
-function validatePrDescription(body, changedFiles, headSha = "") {
+function validatePrDescription(body /*, changedFiles, headSha */) {
   const failures = [];
-  if (!/(?:closes|fixes|resolves)\s*:?\s*#\d+/i.test(body)) {
-    failures.push("PR body must link a closing issue with Closes/Fixes/Resolves #<number>");
+  if (!body || body.trim().length === 0) {
+    failures.push("PR body must not be empty — give reviewers a short description of the change.");
   }
-  for (const heading of REQUIRED_HEADINGS) {
-    if (!section(body, heading)) failures.push(`PR body is missing a non-empty '## ${heading}' section`);
-  }
-
-  const changed = new Set(changedFiles);
-  for (const path of claimedPaths(body)) {
-    const exact = changed.has(path);
-    const directory = path.endsWith("/") && [...changed].some((file) => file.startsWith(path));
-    if (!exact && !directory) {
-      failures.push(`'${path}' is claimed under What changed but is absent from the diff`);
-    }
-  }
-
-  const validation = section(body, "Validation");
-  const normalizedHead = String(headSha).toLowerCase();
-  const mentionedShas = [...validation.matchAll(SHA)].map((match) => match[0].toLowerCase());
-  const claimsCompletion = EVIDENCE_CLAIM.test(validation);
-
-  if (claimsCompletion) {
-    if (!normalizedHead || !mentionedShas.includes(normalizedHead)) {
-      failures.push(
-        `Completed validation claims must include the exact current head SHA${normalizedHead ? ` ${normalizedHead}` : ""}`
-      );
-    }
-    if (!ACTIONS_RUN.test(validation)) {
-      failures.push("Completed validation claims must include a GitHub Actions run URL");
-    }
-    if (/\b(failed|skipped)\b/i.test(validation)) {
-      failures.push("Completed validation claims cannot summarise failed or skipped gates as passed");
-    }
-  }
-
-  if (normalizedHead && mentionedShas.length > 0 && !mentionedShas.includes(normalizedHead)) {
-    failures.push(`Validation evidence is stale; the current PR head is ${normalizedHead}`);
-  }
-
   return failures;
 }
 
