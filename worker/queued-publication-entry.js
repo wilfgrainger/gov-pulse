@@ -585,10 +585,20 @@ const queuedPublicationWorker = {
         console.log("Cloudflare data publication job completed", result);
         message.ack();
       } catch (error) {
-        await recordTerminal(env, job, "failure", { errorCode: "job-failed" });
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        // Persist the real failure reason (not just an opaque code) so a
+        // repeatedly-failing section — e.g. an external collector blocked at
+        // Cloudflare egress — is diagnosable from the terminal record in KV
+        // without needing a live `wrangler tail` across the daily cron window.
+        await recordTerminal(env, job, "failure", {
+          errorCode: "job-failed",
+          errorName: error instanceof Error ? error.name : "Error",
+          errorMessage: errorMessage.slice(0, 500),
+        });
         console.error("Cloudflare data publication job failed", {
           job,
-          error: error instanceof Error ? error.message : String(error),
+          error: errorMessage,
         });
         message.retry({ delaySeconds: FINALISE_RETRY_SECONDS });
       }
