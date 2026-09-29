@@ -1,12 +1,10 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import worker, {
-  enforceCurrentNhsRtt,
-  normalizeNhsIngest,
-  sectionDescriptors,
-} from "@/worker/evidence-entry";
-import { normalizeNhsRttPayload } from "@/worker/nhs-rtt";
+import {
+  isCurrentNhsRttPayload,
+  normalizeNhsRttPayload,
+} from "@/worker/nhs-rtt";
 
 const latestHistory = {
   medianWaitWeeks: 12.4,
@@ -111,10 +109,6 @@ function rawPayload() {
   };
 }
 
-function currentData() {
-  return normalizeNhsRttPayload(rawPayload(), new Date("2026-07-14T12:00:00Z"));
-}
-
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-07-14T12:00:00Z"));
@@ -125,137 +119,31 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("NHS RTT production wrapper", () => {
-  it("marks NHS statistics ingest-only", () => {
-    expect(sectionDescriptors.nhsStats.ingestOnly).toBe(true);
-    expect(sectionDescriptors.nhsStats.source).toBe(
-      "NHS England RTT statistical press notice"
-    );
+// NHS RTT is served in the live queue path by live-nhs-publication-collector.js;
+// the doll's /ingest + enforceCurrentNhsRtt HTTP layer was removed in the worker
+// flatten. Its fail-closed currentness contract lives in worker/nhs-rtt.js and is
+// covered here (and in nhs-rtt.test.ts / nhs-press-notice-current.test.ts).
+describe("NHS RTT currentness contract", () => {
+  it("normalizes a raw payload and accepts it as current", () => {
+    const data = normalizeNhsRttPayload(rawPayload(), new Date("2026-07-14T12:00:00Z"));
+    expect(data).toMatchObject({
+      available: true,
+      headline: { period: "May 2026" },
+    });
+    expect(isCurrentNhsRttPayload(data, new Date("2026-07-14T12:00:00Z"))).toBe(true);
   });
 
-  it("rewrites an authenticated NHS ingest using the source publication date", async () => {
-    const request = new Request("https://worker.example/ingest", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Content-Length": "100",
-        "X-Refresh-Secret": "secret",
-      },
-      body: JSON.stringify({ section: "nhsStats", data: rawPayload() }),
-    });
-
-    const normalized = await normalizeNhsIngest(request);
-    const body = await normalized?.json();
-
-    expect(normalized).not.toBeNull();
-    expect(normalized?.headers.has("content-length")).toBe(false);
-    expect(body).toMatchObject({
-      section: "nhsStats",
-      fetchedAt: "2026-07-09T12:00:00.000Z",
-      sourceLabel: "NHS England RTT statistical press notice",
-      backend: "scheduled-nhs-ingest",
-      data: {
-        available: true,
-        headline: { period: "May 2026" },
-      },
-    });
+  it("rejects the legacy mixed dashboard shape", () => {
+    const legacy = {
+      headline: { waitingList: 7.48, aePerformance: 71.4 },
+      waitingTrend: [],
+      lifeExpectancyTrend: [],
+    };
+    expect(isCurrentNhsRttPayload(legacy, new Date("2026-07-14T12:00:00Z"))).toBe(false);
   });
 
-  it("blocks the obsolete direct refresh path", async () => {
-    const response = await worker.fetch(
-      new Request("https://worker.example/refresh?section=nhsStats", {
-        method: "POST",
-      }),
-      {},
-      { waitUntil: vi.fn() }
-    );
-
-    expect(response.status).toBe(409);
-    await expect(response.json()).resolves.toMatchObject({
-      error: "Section 'nhsStats' is ingest-only",
-    });
-  });
-
-  it("passes a current RTT payload and rejects the legacy mixed dashboard", async () => {
-    const request = new Request("https://worker.example/metrics?section=nhsStats");
-    const current = new Response(
-      JSON.stringify({ section: "nhsStats", data: currentData() }),
-      { headers: { "Content-Type": "application/json" } }
-    );
-    await expect(enforceCurrentNhsRtt(request, current)).resolves.toBe(current);
-
-    const legacy = new Response(
-      JSON.stringify({
-        section: "nhsStats",
-        data: {
-          headline: { waitingList: 7.48, aePerformance: 71.4 },
-          waitingTrend: [],
-          lifeExpectancyTrend: [],
-        },
-      }),
-      { headers: { "Content-Type": "application/json" } }
-    );
-    const rejected = await enforceCurrentNhsRtt(request, legacy);
-    expect(rejected.status).toBe(503);
-    await expect(rejected.json()).resolves.toMatchObject({
-      details: "No current verified NHS England RTT publication is available",
-    });
-  });
-
-  it("fails closed when the NHS section response is malformed JSON", async () => {
-    const response = await enforceCurrentNhsRtt(
-      new Request("https://worker.example/metrics?section=nhsStats"),
-      new Response("not-json", {
-        headers: { "Content-Type": "application/json" },
-      })
-    );
-
-    expect(response.status).toBe(502);
-    await expect(response.json()).resolves.toMatchObject({
-      error: "Unable to fetch section 'nhsStats'",
-      details: "Invalid JSON response from upstream",
-    });
-  });
-
-  it("removes invalid NHS data from the combined dataset", async () => {
-    const response = new Response(
-      JSON.stringify({
-        nhsStats: { headline: { waitingList: 7.48 } },
-        meta: {
-          sources: {
-            nhsStats: { status: "ok", cacheState: "fresh" },
-          },
-        },
-      }),
-      { headers: { "Content-Type": "application/json", "Content-Length": "10" } }
-    );
-
-    const result = await enforceCurrentNhsRtt(
-      new Request("https://worker.example/all"),
-      response
-    );
-    const body = await result.json();
-
-    expect(body).not.toHaveProperty("nhsStats");
-    expect(body.meta.sources.nhsStats).toMatchObject({
-      status: "error",
-      cacheState: "expired",
-    });
-    expect(result.headers.has("content-length")).toBe(false);
-  });
-
-  it("fails closed when the combined response is malformed JSON", async () => {
-    const response = await enforceCurrentNhsRtt(
-      new Request("https://worker.example/all"),
-      new Response("not-json", {
-        headers: { "Content-Type": "application/json" },
-      })
-    );
-
-    expect(response.status).toBe(502);
-    await expect(response.json()).resolves.toMatchObject({
-      error: "Unable to fetch combined metrics",
-      details: "Invalid JSON response from upstream",
-    });
+  it("fails closed once the publication is outside its currentness window", () => {
+    const data = normalizeNhsRttPayload(rawPayload(), new Date("2026-07-14T12:00:00Z"));
+    expect(isCurrentNhsRttPayload(data, new Date("2026-10-01T12:00:00Z"))).toBe(false);
   });
 });

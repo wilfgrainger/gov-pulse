@@ -1,10 +1,10 @@
 // @vitest-environment node
 
 import { afterEach, describe, expect, it, vi } from "vitest";
-import worker, {
-  currentCrimeRecord,
+import {
+  SECTION_BUILDERS,
   validDebtPayload,
-} from "@/worker/editorial-entry";
+} from "@/worker/section-builders";
 import { ONS_PUBLICATION_LANDING_URL } from "@/contracts/crime-statistics";
 import {
   CRIME_BULLETIN_HTML,
@@ -12,13 +12,6 @@ import {
   CRIME_LATEST_HTML,
 } from "@/tests/fixtures/crime-publication";
 
-const env = {
-  METRICS_CACHE: {
-    get: vi.fn(async () => null),
-    put: vi.fn(async () => undefined),
-  },
-};
-const ctx = { waitUntil: vi.fn() };
 const now = new Date("2026-08-02T04:30:00.000Z");
 
 function fixtureFetch() {
@@ -45,45 +38,32 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("crime editorial boundary", () => {
-  it("serves current modular crime evidence before the legacy combined validator", async () => {
+describe("crime statistics section builder", () => {
+  it("builds current modular crime evidence with provenance", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(now);
     vi.stubGlobal("fetch", fixtureFetch());
 
-    const response = await worker.fetch(
-      new Request("https://worker.example/metrics?section=crimeStatistics"),
-      env,
-      ctx
-    );
-    const body = await response.json();
+    const record = await SECTION_BUILDERS.crimeStatistics(now);
 
-    expect(response.status).toBe(200);
-    expect(body).toMatchObject({
+    expect(record).toMatchObject({
       section: "crimeStatistics",
-      source: "worker",
-      cacheState: "fresh",
       backend: "cloudflare-official-publication",
       data: {
         available: true,
-        headline: { period: "Year ending March 2026" },
+        headline: { period: "Year ending March 2026", releaseDate: "2026-07-23" },
         crimeSurvey: { status: "available" },
         policeRecorded: { status: "available" },
         justice: { status: "available" },
         regional: { status: "unavailable" },
       },
     });
-    expect(body.data).not.toHaveProperty("regionalRecordedCrime");
-    expect(body.data).not.toHaveProperty("focusRates");
+    expect(record.data).not.toHaveProperty("regionalRecordedCrime");
+    expect(record.data).not.toHaveProperty("focusRates");
+    expect(record.data.__provenance.section).toBe("crimeStatistics");
   });
 
-  it("retains the national-debt exports while adding the live crime boundary", async () => {
+  it("retains the national-debt validator alongside the crime builder", () => {
     expect(typeof validDebtPayload).toBe("function");
-    const record = await currentCrimeRecord(now, fixtureFetch());
-    expect(record).toMatchObject({
-      section: "crimeStatistics",
-      backend: "cloudflare-official-publication",
-      data: { headline: { releaseDate: "2026-07-23" } },
-    });
   });
 });

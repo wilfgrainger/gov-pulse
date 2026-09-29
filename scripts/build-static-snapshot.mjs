@@ -1,8 +1,10 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import worker from "../worker/editorial-entry.js";
+import { SECTION_BUILDERS } from "../worker/section-builders.js";
+import { collectTaxRevenue } from "../worker/live-tax-revenue-collector.js";
 import { normalizePrimaryPollPayload } from "../worker/election-polls.js";
+import { provenanceFor } from "../worker/feed-registry.js";
 import {
   FEED_REGISTRY,
   FEED_REGISTRY_VERSION,
@@ -11,7 +13,6 @@ import {
 } from "../worker/feed-registry.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const refreshSecret = "static-snapshot-build";
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 const maximumSeedAgeMs = Object.freeze({
@@ -84,24 +85,28 @@ async function electionPollIngest() {
   };
 }
 
-async function ingest(payload, env, ctx) {
-  const response = await worker.fetch(
-    new Request("https://snapshot.invalid/ingest", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Refresh-Secret": refreshSecret,
-      },
-      body: JSON.stringify(payload),
-    }),
-    env,
-    ctx
-  );
-  if (!response.ok) {
-    throw new Error(
-      `Snapshot ingest for ${payload?.section ?? "unknown"} failed (${response.status}): ${await response.text()}`
-    );
+// Build one section's record directly from the flat builders / live collectors,
+// replacing the former internal-worker doll (worker.fetch("/metrics?section=X")).
+// Returns a record { section, data, fetchedAt, ... } or null when the section is
+// not built at snapshot time (nhsStats / bettingOdds are ingest-only here and
+// fall back to seed reuse, exactly as under the doll).
+async function resolveSectionRecord(section, ingestRecords, now = new Date()) {
+  if (ingestRecords.has(section)) {
+    return ingestRecords.get(section);
   }
+  if (section === "taxRevenue") {
+    return collectTaxRevenue(fetch, now);
+  }
+  if (typeof SECTION_BUILDERS[section] === "function") {
+    return SECTION_BUILDERS[section](now);
+  }
+  if (section === "electionPolling") {
+    // electionPolling is ingested from the committed fixture above; if no
+    // fixture was supplied it is unavailable and falls back to seed reuse.
+    return null;
+  }
+  // nhsStats / bettingOdds: ingest-only at snapshot build time.
+  return null;
 }
 
 export function validateSnapshot(
@@ -254,22 +259,6 @@ export function sanitizePublishedSnapshot(value) {
 }
 
 export async function buildStaticSnapshot(options) {
-  const pending = [];
-  const ctx = {
-    waitUntil(promise) {
-      pending.push(
-        Promise.resolve(promise).catch((error) => {
-          console.warn(
-            `Background snapshot refresh failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        })
-      );
-    },
-  };
-  const env = {
-    METRICS_CACHE: createMemoryKv(),
-    REFRESH_SECRET: refreshSecret,
-  };
   let seed = null;
   if (options.seed) {
     try {
@@ -283,15 +272,29 @@ export async function buildStaticSnapshot(options) {
     }
   }
 
-  await ingest(await electionPollIngest(), env, ctx);
+  // Collect the fixture-based ingests (election polls from the committed file,
+  // plus any --ingest payloads) into a section->record map the resolver reads.
+  const ingestRecords = new Map();
+  const electionRecord = await electionPollIngest();
+  ingestRecords.set(electionRecord.section, electionRecord);
   for (const ingestPath of options.ingests) {
     const payload = JSON.parse(
       await readFile(resolve(projectRoot, ingestPath), "utf8")
     );
-    await ingest(payload, env, ctx);
+    if (payload?.section) {
+      ingestRecords.set(String(payload.section), {
+        section: String(payload.section),
+        data: payload.data,
+        fetchedAt:
+          typeof payload.fetchedAt === "string" ? payload.fetchedAt : new Date().toISOString(),
+        sourceLabel: payload.sourceLabel ?? FEED_REGISTRY[payload.section]?.title,
+        backend: payload.backend ?? "authenticated-ingest",
+      });
+    }
   }
 
   const generatedAt = new Date().toISOString();
+  const now = new Date(generatedAt);
   const snapshot = {
     meta: {
       generatedAt,
@@ -300,38 +303,30 @@ export async function buildStaticSnapshot(options) {
     },
   };
 
-  // Query each current wrapper directly. Calling the legacy /all compositor
-  // repeats superseded connectors before the editorial wrappers replace them,
-  // which is slower and can trigger avoidable upstream rate limits.
+  // Build each section directly from the flat SECTION_BUILDERS / live collectors.
+  // Calling builders directly (instead of a legacy /all compositor) avoids
+  // repeating superseded connectors and avoidable upstream rate limits.
   for (const section of Object.keys(FEED_REGISTRY)) {
-    const response = await worker.fetch(
-      new Request(
-        `https://snapshot.invalid/metrics?section=${encodeURIComponent(section)}`
-      ),
-      env,
-      ctx
-    );
-    let payload = null;
+    let record = null;
+    let buildError = null;
     try {
-      payload = await response.json();
-    } catch {
-      // The error manifest below retains the HTTP status when no JSON exists.
+      record = await resolveSectionRecord(section, ingestRecords, now);
+    } catch (error) {
+      buildError = error instanceof Error ? error.message : String(error);
     }
 
-    if (
-      response.ok &&
-      payload?.data !== null &&
-      payload?.data !== undefined
-    ) {
-      snapshot[section] = payload.data;
+    const data = record?.data;
+    if (data !== null && data !== undefined) {
+      const provenance = data.__provenance ?? provenanceFor(section);
+      snapshot[section] = { ...data, __provenance: provenance };
       snapshot.meta.sources[section] = {
-        status: payload.cacheState === "fresh" ? "ok" : "stale",
-        cacheState: payload.cacheState ?? null,
-        fetchedAt: payload.timestamp ?? null,
+        status: "ok",
+        cacheState: "fresh",
+        fetchedAt: record.fetchedAt ?? null,
         source: FEED_REGISTRY[section].title,
-        provenance: payload.provenance ?? payload.data?.__provenance ?? null,
+        provenance,
       };
-      console.log(`Snapshot section ${section}: ${payload.cacheState ?? "unknown"}`);
+      console.log(`Snapshot section ${section}: fresh`);
       continue;
     }
 
@@ -350,11 +345,8 @@ export async function buildStaticSnapshot(options) {
       cacheState: "missing",
       fetchedAt: null,
       source: FEED_REGISTRY[section].title,
-      error:
-        payload?.details ??
-        payload?.error ??
-        `Section endpoint returned ${response.status}`,
-      provenance: payload?.provenance ?? null,
+      error: buildError ?? "Section is not available at snapshot build time",
+      provenance: provenanceFor(section),
     };
     console.warn(
       `Snapshot section ${section}: ${snapshot.meta.sources[section].error}`

@@ -1,15 +1,10 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import worker, {
+import {
+  SECTION_BUILDERS,
   buildCurrentEconomicIndicators,
-  enforceCombinedDataset,
-  enforceHealth,
-  ensureRecord,
-  healthEntry,
-  isCurrentRecord,
-  observationFor,
-} from "@/worker/series-entry";
+} from "@/worker/section-builders";
 import {
   BOE_BANK_RATE_URL,
   SERIES_DEFINITIONS,
@@ -41,32 +36,6 @@ function fetchFixture(input: RequestInfo | URL) {
   return Promise.resolve(new Response("missing", { status: 404 }));
 }
 
-function legacyRecord() {
-  return {
-    section: "sentimentPulse",
-    fetchedAt: "2026-07-14T11:00:00.000Z",
-    data: {
-      economicData: [{ date: "Jan 26", inflation: 3, bankRate: 3.75 }],
-      metricConfig: { inflation: { current: "3.0%" } },
-    },
-  };
-}
-
-function kvEnv(initial: Record<string, unknown> = {}) {
-  const store = new Map(Object.entries(initial));
-  return {
-    store,
-    env: {
-      METRICS_CACHE: {
-        get: vi.fn(async (key: string) => store.get(key) ?? null),
-        put: vi.fn(async (key: string, value: string) => {
-          store.set(key, JSON.parse(value));
-        }),
-      },
-    },
-  };
-}
-
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-07-14T12:00:00.000Z"));
@@ -79,37 +48,15 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("series-aware Worker entry", () => {
-  it("rebuilds a fresh-looking legacy mixed-panel cache record", async () => {
-    const { env, store } = kvEnv({
-      "v10:section:sentimentPulse": legacyRecord(),
-    });
-
-    const record = await ensureRecord(env);
-
-    expect(record.data).toMatchObject({
-      available: true,
-      order: ["inflation", "bankRate", "unemployment"],
-    });
-    expect(record.data).not.toHaveProperty("economicData");
-    expect(store.get("v10:section:sentimentPulse")).toEqual(record);
-    expect(env.METRICS_CACHE.put).toHaveBeenCalledTimes(1);
-  });
-
-  it("serves the strict section payload with a real three-series period summary", async () => {
-    const { env } = kvEnv();
-    const response = await worker.fetch(
-      new Request("https://worker.example/metrics?section=sentimentPulse"),
-      env,
-      { waitUntil: vi.fn() }
+describe("sentiment pulse section builder", () => {
+  it("builds a strict section record with a real three-series period summary", async () => {
+    const record = await SECTION_BUILDERS.sentimentPulse(
+      new Date("2026-07-14T12:00:00.000Z")
     );
-    const payload = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(payload).toMatchObject({
+    expect(record).toMatchObject({
       section: "sentimentPulse",
-      source: "worker",
-      cacheState: "fresh",
+      backend: "verified-data-service-series-contract",
       data: {
         available: true,
         series: {
@@ -121,68 +68,14 @@ describe("series-aware Worker entry", () => {
           status: "current",
           period:
             "Inflation May 2026 · Bank Rate 18 December 2025 · Unemployment February 2026 to April 2026",
+          observedAt: "2026-05-31T00:00:00.000Z",
+          checkedAt: "2026-07-14T12:00:00.000Z",
+          maxAgeDays: 75,
         },
       },
     });
-    expect(payload.data.__provenance.section).toBe("sentimentPulse");
-  });
-
-  it("replaces legacy combined data and source metadata", async () => {
-    const { env } = kvEnv();
-    const response = await enforceCombinedDataset(
-      new Response(
-        JSON.stringify({
-          sentimentPulse: { economicData: [{ date: "Jan 26" }] },
-          meta: {
-            sources: {
-              sentimentPulse: { status: "ok", cacheState: "fresh" },
-            },
-          },
-        }),
-        { headers: { "Content-Type": "application/json" } }
-      ),
-      env
-    );
-    const payload = await response.json();
-
-    expect(payload.sentimentPulse.available).toBe(true);
-    expect(payload.sentimentPulse).not.toHaveProperty("economicData");
-    expect(payload.meta.sources.sentimentPulse).toMatchObject({
-      status: "ok",
-      cacheState: "fresh",
-      source: expect.any(String),
-    });
-  });
-
-  it("migrates a legacy cache record before reporting strict health", async () => {
-    const { env } = kvEnv({
-      "v10:section:sentimentPulse": legacyRecord(),
-    });
-
-    const response = await enforceHealth(
-      new Request("https://worker.example/health?strict=1"),
-      new Response(
-        JSON.stringify({
-          status: "ok",
-          healthy: true,
-          sources: {
-            sentimentPulse: { status: "missing", healthy: false },
-          },
-        }),
-        { headers: { "Content-Type": "application/json" } }
-      ),
-      env
-    );
-    const payload = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(payload.sources.sentimentPulse).toMatchObject({
-      status: "ok",
-      healthy: true,
-      cacheState: "fresh",
-    });
-    expect(payload.sections).toEqual(payload.sources);
-    expect(env.METRICS_CACHE.put).toHaveBeenCalledTimes(1);
+    expect(record.data.__provenance.section).toBe("sentimentPulse");
+    expect(record.source).toMatchObject({ status: "ok", cacheState: "fresh" });
   });
 
   it("enforces publication currentness inside the shared refresh builder", async () => {
@@ -198,25 +91,9 @@ describe("series-aware Worker entry", () => {
       new Date("2026-07-14T12:00:00.000Z")
     );
 
-    expect(observationFor(data)).toMatchObject({
-      status: "current",
-      period:
-        "Inflation May 2026 · Bank Rate 18 December 2025 · Unemployment February 2026 to April 2026",
-      observedAt: "2026-05-31T00:00:00.000Z",
-      checkedAt: "2026-07-14T12:00:00.000Z",
-      maxAgeDays: 75,
-    });
-  });
-
-  it("expires structurally valid records after the retrieval window", async () => {
-    const { env } = kvEnv();
-    const record = await ensureRecord(env);
-    const old = { ...record, fetchedAt: "2026-07-12T00:00:00.000Z" };
-
-    expect(isCurrentRecord(old, new Date("2026-07-14T12:00:00.000Z"))).toBe(false);
-    expect(healthEntry(old, Date.parse("2026-07-14T12:00:00.000Z"))).toMatchObject({
-      status: "expired",
-      healthy: false,
+    expect(data).toMatchObject({
+      available: true,
+      order: ["inflation", "bankRate", "unemployment"],
     });
   });
 });
