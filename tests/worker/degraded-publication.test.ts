@@ -15,7 +15,7 @@ import {
 
 function degradedSnapshot(now = new Date("2026-08-07T12:00:00.000Z")) {
   const fetchedAt = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
-  const missing = "nhsStats";
+  const missing = "employmentStats";
   const included = REQUIRED_PUBLISHED_SECTION_IDS.filter((section) => section !== missing);
   return {
     meta: {
@@ -85,19 +85,19 @@ describe("degraded public publication", () => {
       status: "degraded",
       ready: false,
       degraded: true,
-      missingRequiredSections: ["nhsStats"],
+      missingRequiredSections: ["employmentStats"],
     });
   });
 
   it("publishes fresh successful fragments even when another required feed has expired", async () => {
     const now = new Date("2026-08-07T12:00:00.000Z");
     const current = degradedSnapshot(now);
-    current.meta.sources.nhsStats = {
+    current.meta.sources.migrationStats = {
       status: "ok",
       cacheState: "fresh",
       fetchedAt: "2026-04-01T00:00:00.000Z",
     };
-    current.nhsStats = { value: "expired-nhs" };
+    current.migrationStats = { value: "expired-migration" };
 
     const refreshedAt = "2026-08-07T11:30:00.000Z";
     const gdpFragment = {
@@ -131,7 +131,7 @@ describe("degraded public publication", () => {
     const result = await publishFromCaches(env, { now });
     const published = store.get(PUBLICATION_CURRENT_KEY) as {
       gdpTracker?: unknown;
-      nhsStats?: unknown;
+      migrationStats?: unknown;
       meta: {
         sources: Record<string, unknown>;
         publicationState?: string;
@@ -142,10 +142,10 @@ describe("degraded public publication", () => {
     expect(result.status.status).toBe("degraded");
     expect(result.changed).toBe(true);
     expect(published.gdpTracker).toEqual(gdpFragment.data);
-    expect(published).not.toHaveProperty("nhsStats");
-    expect(published.meta.sources).not.toHaveProperty("nhsStats");
+    expect(published).not.toHaveProperty("migrationStats");
+    expect(published.meta.sources).not.toHaveProperty("migrationStats");
     expect(published.meta.publicationState).toBe("degraded");
-    expect(published.meta.missingRequiredSections).toContain("nhsStats");
+    expect(published.meta.missingRequiredSections).toContain("migrationStats");
     expect(put).toHaveBeenCalledWith(
       PUBLIC_SNAPSHOT_KEY,
       expect.any(String),

@@ -86,15 +86,19 @@ describe("feed registry", () => {
 
   it("keeps volatile market evidence outside the critical publication gate", () => {
     expect(OPTIONAL_PUBLISHED_SECTION_IDS.slice().sort()).toEqual(
-      ["bettingOdds", "crimeStatistics"].sort()
+      ["bettingOdds", "crimeStatistics", "nhsStats"].sort()
     );
-    expect(REQUIRED_PUBLISHED_SECTION_IDS).toHaveLength(8);
+    expect(REQUIRED_PUBLISHED_SECTION_IDS).toHaveLength(7);
     expect(REQUIRED_PUBLISHED_SECTION_IDS).not.toContain("bettingOdds");
     expect(REQUIRED_PUBLISHED_SECTION_IDS).not.toContain("crimeStatistics");
+    expect(REQUIRED_PUBLISHED_SECTION_IDS).not.toContain("nhsStats");
     expect(provenanceFor("bettingOdds")?.publicationRequirement).toBe(
       "optional"
     );
     expect(provenanceFor("crimeStatistics")?.publicationRequirement).toBe(
+      "optional"
+    );
+    expect(provenanceFor("nhsStats")?.publicationRequirement).toBe(
       "optional"
     );
     expect(provenanceFor("nationalDebt")?.publicationRequirement).toBe(

@@ -60,7 +60,7 @@ describe("partial publication finalisation", () => {
   it("advances fresh successful evidence after the retry deadline without pretending the run succeeded", async () => {
     const startedAt = new Date("2026-07-18T03:17:00.000Z");
     const current = currentSnapshot();
-    current.meta.sources.nhsStats.fetchedAt = "2026-04-01T00:00:00.000Z";
+    current.meta.sources.electionPolling.fetchedAt = "2026-04-01T00:00:00.000Z";
 
     const freshGdp = {
       headline: { monthlyGrowth: 0.2, period: "June 2026" },
@@ -87,7 +87,7 @@ describe("partial publication finalisation", () => {
       store.set(`${RUN_PREFIX}${run.runId}:terminal:${jobId}`, {
         runId: run.runId,
         jobId,
-        status: jobId === "external:nhsStats" ? "failure" : "success",
+        status: jobId === "external:electionPolling" ? "failure" : "success",
       });
     }
 
@@ -96,12 +96,12 @@ describe("partial publication finalisation", () => {
     });
 
     expect(result.run.status).toBe("incomplete");
-    expect(result.run.failedJobIds).toEqual(["external:nhsStats"]);
+    expect(result.run.failedJobIds).toEqual(["external:electionPolling"]);
     expect(result.publicationResult?.status.status).toBe("degraded");
     expect(result.publicationResult?.publication.gdpTracker).toEqual(freshGdp);
-    expect(result.publicationResult?.publication).not.toHaveProperty("nhsStats");
+    expect(result.publicationResult?.publication).not.toHaveProperty("electionPolling");
     expect(result.publicationResult?.publication.meta.missingRequiredSections).toContain(
-      "nhsStats"
+      "electionPolling"
     );
     expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(
       result.publicationResult?.publication
@@ -111,11 +111,11 @@ describe("partial publication finalisation", () => {
   it("keeps still-valid last-known-good evidence when its refresh job fails", async () => {
     const startedAt = new Date("2026-07-18T03:17:00.000Z");
     const current = currentSnapshot();
-    current.nhsStats = {
-      value: "nhsStats",
+    current.electionPolling = {
+      value: "electionPolling",
       expiresAt: "2026-08-23T00:00:00.000Z",
     };
-    current.meta.sources.nhsStats.fetchedAt = "2026-07-15T00:00:00.000Z";
+    current.meta.sources.electionPolling.fetchedAt = "2026-07-15T00:00:00.000Z";
 
     const { env, store } = kvEnv({ [PUBLICATION_CURRENT_KEY]: current });
     const { run } = await createRun(env, startedAt);
@@ -124,7 +124,7 @@ describe("partial publication finalisation", () => {
       store.set(`${RUN_PREFIX}${run.runId}:terminal:${jobId}`, {
         runId: run.runId,
         jobId,
-        status: jobId === "external:nhsStats" ? "failure" : "success",
+        status: jobId === "external:electionPolling" ? "failure" : "success",
       });
     }
 
@@ -133,11 +133,11 @@ describe("partial publication finalisation", () => {
     });
 
     expect(result.run.status).toBe("incomplete");
-    expect(result.run.failedJobIds).toEqual(["external:nhsStats"]);
-    expect(result.publicationResult?.publication.nhsStats).toEqual(current.nhsStats);
+    expect(result.run.failedJobIds).toEqual(["external:electionPolling"]);
+    expect(result.publicationResult?.publication.electionPolling).toEqual(current.electionPolling);
     expect(
       result.publicationResult?.publication.meta.missingRequiredSections
-    ).not.toContain("nhsStats");
+    ).not.toContain("electionPolling");
     expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(
       result.publicationResult?.publication
     );
