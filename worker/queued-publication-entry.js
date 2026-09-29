@@ -1,4 +1,4 @@
-import publicationWorker, {
+import {
   PUBLICATION_CURRENT_KEY,
   PUBLICATION_HISTORY_PREFIX,
   PUBLICATION_STATUS_KEY,
@@ -489,7 +489,12 @@ async function enqueueCompletedBootstrapFinaliser(runId, env) {
 }
 
 const queuedPublicationWorker = {
-  async fetch(request, env, ctx) {
+  async fetch(request) {
+    // The deployed entrypoint is public-data-entry.js, which serves the public
+    // routes itself and only delegates scheduled()/queue() here — this fetch
+    // handler is not on the live path. The former publicationWorker.fetch
+    // fallback (the retired daily-rotation worker) was removed in the STEP 2
+    // simplification, so respond 404 rather than reference a deleted export.
     const url = new URL(request.url);
     if (url.pathname === "/data/metrics-snapshot.json") {
       return new Response(null, {
@@ -497,7 +502,10 @@ const queuedPublicationWorker = {
         headers: { "Cache-Control": "no-store" },
       });
     }
-    return publicationWorker.fetch(request, env, ctx);
+    return new Response(null, {
+      status: 404,
+      headers: { "Cache-Control": "no-store" },
+    });
   },
 
   scheduled(controller, env, ctx) {
