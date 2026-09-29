@@ -6,19 +6,25 @@
 
 ## ⭐ Highest-leverage next step
 
-- [ ] **Fix `docs/cloudflare-worker-backend.md` (CONTRADICTS-CODE).** It claims the data
+- [x] **Fix `docs/cloudflare-worker-backend.md` (CONTRADICTS-CODE).** It claimed the data
   Worker is internal, route-less and on a four-hour cron. Reality: 3 public `/data/*`
-  routes + crons `17 3 * * *` and `47 */3 * * *`. Correct it (or retire it) so no
+  routes + crons `17 3 * * *` and `47 */3 * * *` + automatic deploy from `main`.
+  Corrected in place 2026-09-29 (branch `auto/docs-worker-backend-currency`) so no
   autonomous loop trusts a false architecture. Cheapest correctness win in the repo.
 
 ---
 
 ## Phase 0 — Documentation currency pass (#58)
 
-- [ ] Rewrite/retire `docs/cloudflare-worker-backend.md` to match the shipped 3-route,
-  daily+3h data Worker (see pinned task).
+- [x] Rewrite/retire `docs/cloudflare-worker-backend.md` to match the shipped 3-route,
+  daily+3h data Worker with automatic deploy (see pinned task; done 2026-09-29).
 - [ ] Add a superseding note to `docs/architecture/decisions/0001-cloudflare-first-data-plane.md`
   (or author ADR-0002) recording the third route `/data/international-comparison.json`.
+  <!-- follow-up 2026-09-29: next highest-leverage Phase 0 doc after backend-doc fix;
+       ADR-0001 still says "two exact routes" but three ship. -->
+- [ ] Follow-up (2026-09-29): audit `docs/architecture/cloudflare-free-data-plane.md`
+  for the same "manual-only deploy" claim just corrected in `cloudflare-worker-backend.md`,
+  so the two docs agree the deploy is automatic from `main`.
 - [ ] Reconcile `docs/architecture/cloudflare-free-data-plane.md`: two→three routes,
   `v12:`→current key scheme, manual-only→automatic web+data Worker deploy, "static Pages
   app"→OpenNext web Worker, "seven refreshes"→8 required sections.
