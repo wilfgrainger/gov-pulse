@@ -136,7 +136,7 @@ jobs:
           CLOUDFLARE_KV_NAMESPACE_ID: f950b17f36a447dca7bb339cba8818de
           QUEUE_NAME: public-data-jobs
           HEALTH_URL: https://public-data.org/data/health.json
-          BOOTSTRAP_TIMEOUT_MS: "720000"
+          BOOTSTRAP_TIMEOUT_MS: "1080000"
           FORCE_PUBLICATION_REFRESH: "true"
         run: node scripts/bootstrap-cloudflare-publication.mjs
 
