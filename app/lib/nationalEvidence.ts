@@ -384,11 +384,20 @@ function selectMigration(snapshot: MetricsSnapshot): SignalPresentation {
   const period = text(headline?.period);
   const previousPeriod = text(headline?.previousPeriod);
   const publishedAt = formatDate(headline?.releaseDate);
+  const immigration = finite(headline?.immigration);
+  const emigration = finite(headline?.emigration);
   if (value === null || !period || !publishedAt) return unavailable("net-migration");
   const direction = change === null || change === 0 ? "was unchanged" : change > 0 ? "rose" : "fell";
-  const comparison = change === null
+  const baseComparison = change === null
     ? "Previous-period comparison unavailable"
     : `${Math.abs(change).toFixed(0)}% ${change > 0 ? "higher" : change < 0 ? "lower" : "unchanged"}${previousPeriod ? ` than ${previousPeriod}` : ""}`;
+  const flowsPresent = immigration !== null && emigration !== null;
+  const comparison = flowsPresent
+    ? `Immigration ${formatPeople(immigration)} · Emigration ${formatPeople(emigration)} · ${baseComparison}`
+    : baseComparison;
+  const flowSentence = flowsPresent
+    ? ` Immigration was ${formatPeople(immigration)} and emigration ${formatPeople(emigration)}.`
+    : "";
   return applySourceState(
     {
       ...unavailable("net-migration"),
@@ -399,9 +408,9 @@ function selectMigration(snapshot: MetricsSnapshot): SignalPresentation {
       history: historyPoints(data?.history, "netMigration"),
       leadHeadline: change === null ? `Net migration was ${formatPeople(value)} in ${period}.` : `Net migration ${direction} to ${formatPeople(value)} in ${period}.`,
       leadSummary:
-        change === null
+        (change === null
           ? `The latest accepted ONS estimate covers ${period}; a matched previous-period comparison is unavailable.`
-          : `The estimate is ${comparison.toLowerCase()}.`,
+          : `The estimate is ${baseComparison.toLowerCase()}.`) + flowSentence,
       caveat: "Long-term migration estimates are provisional and subject to revision.",
     },
     snapshot.meta.sources.migrationStats
