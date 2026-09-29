@@ -7,7 +7,7 @@ import {
   INTERNATIONAL_COMPARISON_KEY,
   readInternationalComparison,
   refreshInternationalComparison,
-} from "@/worker/international-comparison-store";
+} from "@/worker/international-comparison-publication";
 import {
   COMPARISON_COUNTRIES,
   COMPARISON_MEASURES,
