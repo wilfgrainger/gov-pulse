@@ -111,6 +111,8 @@ function snapshot() {
         period: "YE Dec 2025",
         releaseDate: "2026-05-21",
         netMigration: 431_000,
+        immigration: 813_000,
+        emigration: 642_000,
         previousPeriod: "YE Dec 2024",
         changePercent: -49,
       },
@@ -193,6 +195,13 @@ describe("national evidence presentation", () => {
     const payload = snapshot();
     payload.migrationStats.headline.releaseDate = "2026-07-17";
     expect(selectNationalEvidenceEdition(payload).lead?.id).toBe("net-migration");
+  });
+
+  it("prepends immigration and emigration flows to the net-migration comparison", () => {
+    const edition = selectNationalEvidenceEdition(snapshot());
+    const migration = edition.signals.find((signal) => signal.id === "net-migration");
+    expect(migration?.comparison?.startsWith("Immigration 813,000 · Emigration 642,000")).toBe(true);
+    expect(migration?.comparison).toContain("49% lower than YE Dec 2024");
   });
 
   it("fails closed for an incompatible publication", () => {
