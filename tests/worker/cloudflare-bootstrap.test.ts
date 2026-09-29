@@ -43,7 +43,7 @@ function bootstrapMessage() {
 describe("Cloudflare publication bootstrap", () => {
   it("schedules only required national sections", () => {
     const jobs = refreshJobs("bootstrap-run", "bootstrap");
-    expect(jobs).toHaveLength(8);
+    expect(jobs).toHaveLength(7);
     expect(jobs.map((job) => job.section)).toEqual([
       "gdpTracker",
       "sentimentPulse",
@@ -52,11 +52,11 @@ describe("Cloudflare publication bootstrap", () => {
       "nationalDebt",
       "migrationStats",
       "electionPolling",
-      "nhsStats",
     ]);
     expect(jobs.some((job) => job.type === "refresh-contracts")).toBe(false);
     expect(jobs.some((job) => job.section === "bettingOdds")).toBe(false);
     expect(jobs.some((job) => job.section === "crimeStatistics")).toBe(false);
+    expect(jobs.some((job) => job.section === "nhsStats")).toBe(false);
     expect(jobs.some((job) => job.type === "refresh-international-comparison")).toBe(false);
   });
 
@@ -68,7 +68,7 @@ describe("Cloudflare publication bootstrap", () => {
     expect(first.ack).toHaveBeenCalledOnce();
     expect(first.retry).not.toHaveBeenCalled();
     expect(sendBatch).toHaveBeenCalledOnce();
-    expect(sendBatch.mock.calls[0][0]).toHaveLength(8);
+    expect(sendBatch.mock.calls[0][0]).toHaveLength(7);
     expect(send).toHaveBeenCalledWith(
       {
         type: "finalise-run",
@@ -87,7 +87,7 @@ describe("Cloudflare publication bootstrap", () => {
     };
     expect(run.scope).toBe("bootstrap");
     expect(run.dispatchedAt).toBeTruthy();
-    expect(run.expectedJobIds).toHaveLength(8);
+    expect(run.expectedJobIds).toHaveLength(7);
     expect(run.expectedJobIds).not.toContain("refresh-international-comparison");
 
     const duplicate = bootstrapMessage();
@@ -108,7 +108,7 @@ describe("Cloudflare publication bootstrap", () => {
     const runId = bootstrapRunId(SHA);
     store.set(`${RUN_PREFIX}${runId}`, {
       runId, scope: "bootstrap", finalisedAt: null,
-      expectedJobIds: ["section:employmentStats", "external:nhsStats"],
+      expectedJobIds: ["section:employmentStats", "external:electionPolling"],
     });
     store.set(`${RUN_PREFIX}${runId}:terminal:section:employmentStats`, {
       jobId: "section:employmentStats", status: "success",
@@ -116,8 +116,8 @@ describe("Cloudflare publication bootstrap", () => {
     expect(await enqueueCompletedBootstrapFinaliser(runId, env)).toBe(false);
     expect(send).not.toHaveBeenCalled();
 
-    store.set(`${RUN_PREFIX}${runId}:terminal:external:nhsStats`, {
-      jobId: "external:nhsStats", status: "success",
+    store.set(`${RUN_PREFIX}${runId}:terminal:external:electionPolling`, {
+      jobId: "external:electionPolling", status: "success",
     });
     expect(await enqueueCompletedBootstrapFinaliser(runId, env)).toBe(true);
     expect(send).toHaveBeenCalledWith({

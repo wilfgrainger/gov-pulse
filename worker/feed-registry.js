@@ -203,6 +203,14 @@ export const FEED_REGISTRY = Object.freeze({
     publicationCadence: "monthly",
     operationalStatus: "active",
     retrievalMaxAgeMs: 45 * DAY_MS,
+    // Temporarily optional: NHS England sits behind AWS WAF, which serves the
+    // Cloudflare Worker egress a JS/CAPTCHA bot-challenge instead of the RTT
+    // page (diagnosed 2026-09-29: htmlLen~2KB, zero links, awsWafCookieDomainList
+    // / gokuProps). The Worker cannot solve the challenge, so the section cannot
+    // be collected from production and must not degrade the whole publication.
+    // Revisit by ingesting NHS from a trusted (non-Cloudflare) IP and pushing to
+    // KV, then flip this back to required.
+    publicationRequirement: "optional",
     upstreams: [
       {
         publisher: "NHS England",

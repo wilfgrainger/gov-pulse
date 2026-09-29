@@ -199,7 +199,7 @@ describe("Cloudflare Free data publication", () => {
 
   it("publishes an atomic degraded edition when a required section expires", async () => {
     const current = snapshot();
-    current.meta.sources.nhsStats.fetchedAt = "2026-04-01T00:00:00.000Z";
+    current.meta.sources.employmentStats.fetchedAt = "2026-04-01T00:00:00.000Z";
     const { env, store } = kvEnv({ [PUBLICATION_CURRENT_KEY]: current });
 
     const result = await publishFromCaches(env, {
@@ -207,9 +207,9 @@ describe("Cloudflare Free data publication", () => {
     });
 
     expect(result.status.status).toBe("degraded");
-    expect(result.status.missingRequired).toContain("nhsStats");
-    expect(result.publication).not.toHaveProperty("nhsStats");
-    expect(result.publication.meta.sources).not.toHaveProperty("nhsStats");
+    expect(result.status.missingRequired).toContain("employmentStats");
+    expect(result.publication).not.toHaveProperty("employmentStats");
+    expect(result.publication.meta.sources).not.toHaveProperty("employmentStats");
     expect(result.publication.meta.publicationState).toBe("degraded");
     expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(result.publication);
   });
