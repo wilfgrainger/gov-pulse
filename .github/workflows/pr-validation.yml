@@ -18,14 +18,50 @@ jobs:
     outputs:
       lane: ${{ steps.lane.outputs.lane }}
     steps:
-      - name: Checkout full PR history
+      - name: Checkout (shallow — diff against base only)
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: 2
 
-      - name: Enforce UTF-8 and LF
+      - name: Ensure base ref is available for diffing
+        run: git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
+
+      # Cheap, universal guards that apply to every PR regardless of lane.
+      - name: Enforce UTF-8 and LF on changed files
         run: node scripts/check-text-policy.mjs --changed
 
+      - name: Validate PR description
+        run: node scripts/check-pr-description.mjs
+
+      - name: Select validation lane
+        id: lane
+        run: node scripts/classify-pr-validation.mjs
+
+  docs:
+    needs: classify
+    if: needs.classify.outputs.lane == 'docs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Confirm documentation guards passed
+        run: echo "Documentation validation passed without dependency installation."
+
+  full-quality:
+    needs: classify
+    if: needs.classify.outputs.lane == 'full'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Ensure base ref is available for diffing
+        run: git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
+
+      # Code-integrity gatekeepers only run when code actually changed. On a
+      # docs-only PR these are skipped entirely with the rest of this lane.
       - name: Reject lockfile-only rewrites
         run: node scripts/check-lockfile-policy.mjs
 
@@ -40,31 +76,6 @@ jobs:
 
       - name: Enforce focused change complexity
         run: node scripts/check-change-complexity.mjs
-
-      - name: Validate PR description
-        run: node scripts/check-pr-description.mjs
-
-      - name: Select validation lane
-        id: lane
-        run: node scripts/classify-pr-validation.mjs
-
-  docs:
-    needs: classify
-    if: needs.classify.outputs.lane == 'docs'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Confirm documentation guards passed
-        run: echo "Documentation validation passed without dependency installation."
-
-  full-quality:
-    needs: classify
-    if: needs.classify.outputs.lane == 'full'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
