@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       refresh_evidence:
-        description: "Run publication bootstrap recovery (up to 12 minutes)"
+        description: "Run publication bootstrap recovery (up to ~7 minutes)"
         type: boolean
         default: false
       refresh_pages_seed:
@@ -37,7 +37,7 @@ concurrency:
 jobs:
   deploy-production:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     environment:
       name: cloudflare-internal-worker
       url: https://public-data.org/
@@ -136,7 +136,7 @@ jobs:
           CLOUDFLARE_KV_NAMESPACE_ID: f950b17f36a447dca7bb339cba8818de
           QUEUE_NAME: public-data-jobs
           HEALTH_URL: https://public-data.org/data/health.json
-          BOOTSTRAP_TIMEOUT_MS: "1080000"
+          BOOTSTRAP_TIMEOUT_MS: "420000"
           FORCE_PUBLICATION_REFRESH: "true"
         run: node scripts/bootstrap-cloudflare-publication.mjs
 

@@ -35,7 +35,15 @@ const RUN_PREFIX = "v13:publication:run:";
 const RUN_TTL_SECONDS = 14 * 24 * 60 * 60;
 const FINALISE_DELAY_SECONDS = 20 * 60;
 const FINALISE_RETRY_SECONDS = 5 * 60;
-const BOOTSTRAP_DEADLINE_SECONDS = 12 * 60;
+// Worst-case wait before a bootstrap run with a failing/slow section is
+// finalised as `incomplete`. A HEALTHY run is finalised immediately by the
+// prompt finaliser (enqueueCompletedBootstrapFinaliser) once every required
+// job succeeds, so this deadline only bounds the degraded case. Sized to a
+// healthy run's real duration (sections collect in seconds each) plus headroom,
+// not padded — it was 12 min, which made every deploy wait 12 min whenever any
+// section failed. The deploy's BOOTSTRAP_TIMEOUT_MS must stay comfortably above
+// this so the finalise lands and is observed.
+const BOOTSTRAP_DEADLINE_SECONDS = 4 * 60;
 // Keep the delayed finaliser for partial runs. Successful bootstrap jobs also
 // enqueue an immediate finaliser once every required job has finished.
 const BOOTSTRAP_FINALISE_DELAY_SECONDS = BOOTSTRAP_DEADLINE_SECONDS;
