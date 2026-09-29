@@ -261,6 +261,12 @@ async function waitForReady(options) {
   while (nowImpl() < deadline) {
     lastHealth = await readHealth(fetchImpl, healthUrl);
     if (lastHealth?.ready === true) return lastHealth;
+    // A publication that is stably degraded (ready:false with a non-empty
+    // missingRequiredSections list) is an ACCEPTED terminal state, not a
+    // transient one: an optional/unavailable feed must not make the deploy hang
+    // until timeout. The fail-closed contract still withholds the missing
+    // section from the public payload; the deploy simply proceeds.
+    if (isDegradedPublicationHealth(lastHealth)) return lastHealth;
     await sleepImpl(pollIntervalMs);
   }
 
