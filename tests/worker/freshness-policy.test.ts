@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it } from "vitest";
-import { sectionDescriptors } from "@/worker/entry";
+import { sectionDescriptors } from "@/worker/index";
 import {
   applyFreshnessPolicy,
   SECTION_FRESH_TTL_SECONDS,

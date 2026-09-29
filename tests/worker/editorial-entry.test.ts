@@ -1,13 +1,10 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import worker, {
-  enforceCombined,
-  enforceHealth,
-  ensureRecord,
-  isCurrentRecord,
+import {
+  SECTION_BUILDERS,
   validDebtPayload,
-} from "@/worker/editorial-entry";
+} from "@/worker/section-builders";
 import {
   DEBT_GDP_SERIES_URL,
   DEBT_SERIES_URL,
@@ -51,21 +48,6 @@ function fetchFixture(input: RequestInfo | URL) {
   return Promise.resolve(new Response("missing", { status: 404 }));
 }
 
-function kvEnv(initial: Record<string, unknown> = {}) {
-  const store = new Map(Object.entries(initial));
-  return {
-    store,
-    env: {
-      METRICS_CACHE: {
-        get: vi.fn(async (key: string) => store.get(key) ?? null),
-        put: vi.fn(async (key: string, value: string) => {
-          store.set(key, JSON.parse(value));
-        }),
-      },
-    },
-  };
-}
-
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-07-14T12:00:00.000Z"));
@@ -78,7 +60,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("editorial national debt entry", () => {
+describe("national debt section builder", () => {
   it("rejects the previous payload without publication and source metadata", () => {
     expect(
       validDebtPayload(
@@ -93,51 +75,21 @@ describe("editorial national debt entry", () => {
     ).toBe(false);
   });
 
-  it("rebuilds a fresh-looking legacy record under the editorial cache key", async () => {
-    const { env, store } = kvEnv({
-      "v11:section:nationalDebt-editorial": {
-        section: "nationalDebt",
-        fetchedAt: "2026-07-14T11:00:00.000Z",
-        data: {
-          baseDebt: 2_984_300_000_000,
-          baseDate: Date.UTC(2026, 5, 0),
-          debtToGdp: 95.1,
-          series: { debt: "HF6W", debtToGdp: "HF6X" },
-        },
-      },
-    });
-
-    const record = await ensureRecord(env);
-
-    expect(record.data).toMatchObject({
-      publicationDate: "2026-06-19",
-      source: {
-        publisher: "Office for National Statistics",
-        debtUrl: DEBT_SERIES_URL,
-        debtToGdpUrl: DEBT_GDP_SERIES_URL,
-      },
-    });
-    expect(store.get("v11:section:nationalDebt-editorial")).toEqual(record);
-    expect(env.METRICS_CACHE.put).toHaveBeenCalledTimes(1);
-  });
-
-  it("serves the strict section payload with observation and provenance", async () => {
-    const { env } = kvEnv();
-    const response = await worker.fetch(
-      new Request("https://worker.example/metrics?section=nationalDebt"),
-      env,
-      { waitUntil: vi.fn() }
+  it("builds a strict section record with observation and provenance", async () => {
+    const record = await SECTION_BUILDERS.nationalDebt(
+      new Date("2026-07-14T12:00:00.000Z")
     );
-    const payload = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(payload).toMatchObject({
+    expect(record).toMatchObject({
       section: "nationalDebt",
-      source: "worker",
-      cacheState: "fresh",
+      backend: "verified-data-service-editorial-contract",
       data: {
         publicationDate: "2026-06-19",
-        source: { debtUrl: DEBT_SERIES_URL },
+        source: {
+          publisher: "Office for National Statistics",
+          debtUrl: DEBT_SERIES_URL,
+          debtToGdpUrl: DEBT_GDP_SERIES_URL,
+        },
         __observation: {
           status: "current",
           period: "2026 MAY",
@@ -145,65 +97,13 @@ describe("editorial national debt entry", () => {
         },
       },
     });
-    expect(payload.data.__provenance.section).toBe("nationalDebt");
+    expect(record.data.__provenance.section).toBe("nationalDebt");
+    expect(record.source).toMatchObject({ status: "ok", cacheState: "fresh" });
   });
 
-  it("replaces an older combined-dataset record", async () => {
-    const { env } = kvEnv();
-    const response = await enforceCombined(
-      new Response(
-        JSON.stringify({
-          nationalDebt: {
-            baseDebt: 2_984_300_000_000,
-            baseDate: Date.UTC(2026, 5, 0),
-            debtToGdp: 95.1,
-          },
-          meta: { sources: { nationalDebt: { status: "ok" } } },
-        }),
-        { headers: { "Content-Type": "application/json" } }
-      ),
-      env
-    );
-    const payload = await response.json();
-
-    expect(payload.nationalDebt.publicationDate).toBe("2026-06-19");
-    expect(payload.meta.sources.nationalDebt).toMatchObject({
-      status: "ok",
-      cacheState: "fresh",
-    });
-  });
-
-  it("refreshes before reporting strict health", async () => {
-    const { env } = kvEnv();
-    const response = await enforceHealth(
-      new Request("https://worker.example/health?strict=1"),
-      new Response(
-        JSON.stringify({
-          status: "ok",
-          healthy: true,
-          sources: { nationalDebt: { status: "missing", healthy: false } },
-        }),
-        { headers: { "Content-Type": "application/json" } }
-      ),
-      env
-    );
-    const payload = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(payload.sources.nationalDebt).toMatchObject({
-      status: "ok",
-      healthy: true,
-      cacheState: "fresh",
-    });
-    expect(payload.sections).toEqual(payload.sources);
-  });
-
-  it("expires an otherwise valid publication after 75 days", async () => {
-    const { env } = kvEnv();
-    const record = await ensureRecord(env);
-
-    expect(
-      isCurrentRecord(record, new Date("2026-09-05T12:00:00.000Z"))
-    ).toBe(false);
+  it("throws fail-closed when the debt evidence is outside its editorial contract", async () => {
+    await expect(
+      SECTION_BUILDERS.nationalDebt(new Date("2026-11-05T12:00:00.000Z"))
+    ).rejects.toThrow(/editorial contract/i);
   });
 });

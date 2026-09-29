@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { AUTOMATED_METRIC_KEYS } from "@/app/lib/metricFallbacks";
-import { decorateJsonResponse } from "@/worker/entry";
 import {
   FEED_REGISTRY,
   FEED_REGISTRY_VERSION,
@@ -105,53 +104,5 @@ describe("feed registry", () => {
 
   it("rejects descriptor drift instead of silently omitting a feed", () => {
     expect(() => applyFeedRegistry({ nationalDebt: {} })).toThrow(/Feed registry mismatch/);
-  });
-});
-
-describe("registry response decoration", () => {
-  it("returns malformed JSON untouched and still readable", async () => {
-    const original = new Response("{", {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-    const result = await decorateJsonResponse(
-      new Request("https://worker.example/health"),
-      original
-    );
-    expect(result).toBe(original);
-    expect(await result.text()).toBe("{");
-  });
-
-  it("removes stale transport headers after rewriting a body", async () => {
-    const original = new Response(JSON.stringify({ status: "ok" }), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Content-Length": "15",
-        "Content-Encoding": "gzip",
-      },
-    });
-    const result = await decorateJsonResponse(
-      new Request("https://worker.example/health"),
-      original
-    );
-    const payload = await result.json();
-    expect(payload.registryVersion).toBe(FEED_REGISTRY_VERSION);
-    expect(payload.feedCount).toBe(Object.keys(FEED_REGISTRY).length);
-    expect(result.headers.has("Content-Length")).toBe(false);
-    expect(result.headers.has("Content-Encoding")).toBe(false);
-  });
-
-  it("does not attempt to decorate non-object JSON", async () => {
-    const original = new Response(JSON.stringify(["ok"]), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-    const result = await decorateJsonResponse(
-      new Request("https://worker.example/health"),
-      original
-    );
-    expect(result).toBe(original);
-    expect(await result.json()).toEqual(["ok"]);
   });
 });

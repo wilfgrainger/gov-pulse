@@ -1,5 +1,4 @@
-import editorialWorker, { sectionDescriptors } from "./editorial-entry.js";
-import { readResponseJson } from "./response-limits.js";
+import { SECTION_BUILDERS } from "./section-builders.js";
 import { FEED_REGISTRY_VERSION } from "./feed-registry.js";
 import {
   MAX_REQUESTS_PER_RUN as CONTRACT_MAX_REQUESTS_PER_RUN,
@@ -51,42 +50,26 @@ async function readCurrentPublication(env) {
   return isSnapshot(payload) ? payload : null;
 }
 
-function sourceMetaFromPayload(payload) {
-  return {
-    status: "ok",
-    cacheState: payload.cacheState ?? "fresh",
-    fetchedAt: payload.timestamp ?? null,
-    backend: payload.backend ?? "cloudflare-worker",
-    source:
-      payload.provenance?.upstreams?.map((item) => item.label).join(" + ") ||
-      sectionDescriptors[payload.section]?.source ||
-      "Cloudflare data worker",
-    provenance: payload.provenance ?? sectionDescriptors[payload.section]?.registry ?? null,
-  };
-}
-
-async function refreshSectionPayload(section, env, ctx) {
+// The live queue path (queued-publication-entry.js:storeSectionFragment) only
+// ever calls this for the seven GENERIC sections. taxRevenue keeps its live
+// collector special-case; every other generic section is built by the flat
+// SECTION_BUILDERS map, which returns the same record shape (and same
+// fail-closed currentness behaviour) the internal-worker doll produced.
+async function refreshSectionPayload(section, env, ctx, now = new Date()) {
   if (section === "taxRevenue") {
     const { collectTaxRevenue } = await import("./live-tax-revenue-collector.js");
-    return collectTaxRevenue(fetch, new Date());
+    return collectTaxRevenue(fetch, now);
   }
 
-  const response = await editorialWorker.fetch(
-    new Request(`https://data-worker.internal/metrics?section=${encodeURIComponent(section)}`),
-    env,
-    ctx
-  );
-  if (!response.ok) throw new Error(`${section} returned ${response.status}`);
-  const payload = await readResponseJson(response, { label: `${section} internal JSON` });
-  if (payload?.section !== section || !isRecord(payload?.data)) {
+  const builder = SECTION_BUILDERS[section];
+  if (typeof builder !== "function") {
+    throw new Error(`No section builder is registered for '${section}'`);
+  }
+  const record = await builder(now);
+  if (record?.section !== section || !isRecord(record?.data)) {
     throw new Error(`${section} returned an invalid section payload`);
   }
-  return {
-    section,
-    data: payload.data,
-    source: sourceMetaFromPayload(payload),
-    fetchedAt: payload.timestamp ?? null,
-  };
+  return record;
 }
 
 function mergePublication(previous, refreshedRecords, contractsRecord, now = new Date()) {
