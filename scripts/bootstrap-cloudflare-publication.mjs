@@ -351,7 +351,7 @@ async function bootstrapCloudflarePublication(options = {}) {
       : null;
     // A previously serveable edition cannot prove that this deployment's
     // collectors ran. Forced refresh requires the new run to finalise first.
-    if (!forceRefresh || (run?.finalisedAt && ["published", "no-change"].includes(run.status))) {
+    if (!forceRefresh || (run?.finalisedAt && ["published", "no-change", "incomplete"].includes(run.status))) {
       lastHealth = await readHealth(fetchImpl, healthUrl);
       if (lastHealth?.ready === true && (!forceRefresh || await hasPreparedPublication(fetchImpl, healthUrl))) {
         return { triggered: true, attempts: attempt, health: lastHealth };
