@@ -356,8 +356,16 @@ async function bootstrapCloudflarePublication(options = {}) {
       if (lastHealth?.ready === true && (!forceRefresh || await hasPreparedPublication(fetchImpl, healthUrl))) {
         return { triggered: true, attempts: attempt, health: lastHealth };
       }
+      // A STABLE degraded publication (ready:false + non-empty
+      // missingRequiredSections) is an accepted terminal state, not a transient
+      // one: an optional/unavailable feed must not make the deploy poll until
+      // timeout. Under forceRefresh we additionally require the enclosing
+      // guarantee that THIS deployment's run finalised, plus a prepared
+      // publication — the same proof the ready-path uses — so we never accept a
+      // stale prior edition. The fail-closed contract still withholds the
+      // missing section from the public payload.
       if (
-        !forceRefresh && isDegradedPublicationHealth(lastHealth) &&
+        isDegradedPublicationHealth(lastHealth) &&
         (await hasPreparedPublication(fetchImpl, healthUrl))
       ) {
         return { triggered: true, attempts: attempt, health: lastHealth };
