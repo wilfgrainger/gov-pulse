@@ -114,7 +114,18 @@ function discoverNhsRttDataPage(html, landingUrl = NHS_RTT_LANDING_PAGE) {
   }
   if (candidates.length === 0) {
     if (rejected.length > 0) throw rejected[0];
-    throw new Error("NHS RTT landing page did not expose a current annual data page");
+    // Diagnostic: this fires when NHS serves the Worker HTML that contains no
+    // annual-data-page links (observed only from Cloudflare egress, not from a
+    // residential IP). Capture what was actually received so the failure is
+    // self-explaining without a live tail — is it a challenge/consent page, a
+    // redirect target, empty, or full HTML whose link shape changed?
+    const allAnchors = anchors(html);
+    const sample = String(html ?? "").replace(/\s+/g, " ").slice(0, 400);
+    throw new Error(
+      "NHS RTT landing page did not expose a current annual data page " +
+        `[htmlLen=${String(html ?? "").length} anchors=${allAnchors.length} ` +
+        `rttMatches=${links.length} sample=${JSON.stringify(sample)}]`
+    );
   }
   candidates.sort((left, right) => annualRank(right) - annualRank(left));
   if (!Number.isFinite(annualRank(candidates[0]))) {
