@@ -123,6 +123,16 @@ export const MEASURES: MeasureDefinition[] = [
     historyValue: "netMigration",
     note: "ONS long-term migration estimates. Provisional and subject to revision; not a count of small-boat arrivals.",
   },
+  {
+    ...base("realWages", "real-wages", "Economy", "Great Britain"),
+    ...headline,
+    id: "regularPayRealGrowth",
+    label: "Real wages: regular pay growth",
+    unit: "%",
+    valuePath: "headline.regularPayRealGrowthPercent",
+    historyValue: "regularPayRealGrowthPercent",
+    note: "ONS's own real-terms (CPIH-adjusted) regular pay growth figure, published directly in the average weekly earnings bulletin. Provisional and subject to revision.",
+  },
 ];
 
 function at(value: unknown, path: string): unknown {

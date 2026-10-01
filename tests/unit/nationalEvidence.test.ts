@@ -138,13 +138,13 @@ function snapshot() {
 }
 
 describe("national evidence presentation", () => {
-  it("selects one lead and six separately dated official signal cards", () => {
+  it("selects one lead and seven separately dated official signal cards", () => {
     const edition = selectNationalEvidenceEdition(snapshot());
 
     expect(edition.lead?.id).toBe("gdp");
     expect(edition.lead?.leadHeadline).toBe("UK GDP grew in May 2026 by 0.1%.");
     expect(edition.signals.map((signal) => signal.id)).toEqual([
-      "gdp", "inflation", "unemployment", "national-debt", "nhs-waiting-list", "net-migration",
+      "gdp", "inflation", "unemployment", "national-debt", "nhs-waiting-list", "net-migration", "real-wages",
     ]);
     expect(edition.counts.current).toBe(6);
     expect(edition.signals.find((signal) => signal.id === "national-debt")?.value).toBe("£2.98tn");
@@ -211,7 +211,7 @@ describe("national evidence presentation", () => {
     const edition = selectNationalEvidenceEdition(payload);
 
     expect(edition.lead).toBeNull();
-    expect(edition.counts.unavailable).toBe(6);
+    expect(edition.counts.unavailable).toBe(7);
     expect(edition.signals.every((signal) => signal.value === null)).toBe(true);
   });
 });

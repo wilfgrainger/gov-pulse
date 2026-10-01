@@ -77,6 +77,27 @@ export const AUTOMATED_METRIC_FALLBACKS = {
       datasetUrl: "",
     },
   },
+  realWages: {
+    headline: {
+      period: "",
+      observedAt: 0,
+      releaseDate: "",
+      regularPayRealGrowthPercent: 0,
+      totalPayRealGrowthPercent: 0,
+      deflator: "CPIH",
+    },
+    history: [],
+    methodology: {
+      measure: "",
+      status: "",
+      revisionNote: "",
+    },
+    source: {
+      edition: "",
+      bulletinUrl: "",
+      historyUrl: "",
+    },
+  },
   nationalDebt: {
     baseDebt: 0,
     baseDate: 0,

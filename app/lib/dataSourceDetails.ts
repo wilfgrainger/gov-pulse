@@ -90,6 +90,12 @@ export const DATA_SOURCE_DETAILS: Record<string, DataSourceDetail> = {
     revisionStatus: "Official statistics in development; the newest estimates are provisional for one year and earlier periods may be revised",
     caveat: "public-data.org shows ONS long-term migration estimates for people moving for 12 months or more. Visa grants and nationality tables are different administrative measures and are not mixed into this headline.",
   },
+  realWages: {
+    publicationPeriod: "Latest ONS average weekly earnings bulletin edition",
+    unit: "Percentage, real terms (CPIH-adjusted)",
+    revisionStatus: "Average weekly earnings are published on a provisional basis and are subject to revision as later source data and seasonal-adjustment reviews are incorporated",
+    caveat: "This is ONS's own real-terms earnings growth figure, adjusted for inflation using CPIH and published directly in the bulletin — not a calculation performed by public-data.org. The bulletin also quotes a CPI-adjusted figure nearby; this page shows the CPIH-adjusted figure only.",
+  },
   earlyYears: {
     publicationPeriod: "UKHSA COVER 2024/25 and DfE EYFS profile 2024/25",
     unit: "Rates (%) as labelled",
