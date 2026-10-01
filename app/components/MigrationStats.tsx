@@ -3,6 +3,8 @@
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart";
 import MetricsStatus from "@/app/components/MetricsStatus";
+import ReleaseNoteStrip from "@/app/components/ReleaseNoteStrip";
+import { buildReleaseNote } from "@/app/lib/releaseNote";
 import { useMetrics } from "@/app/lib/useMetrics";
 
 type MigrationHeadline = {
@@ -197,6 +199,17 @@ export default function MigrationStats() {
   const change = headline ? headline.changePercent : 0;
   const direction = change >= 0 ? "rose" : "fell";
   const comparisonDirection = change >= 0 ? "higher" : "lower";
+  const releaseNote =
+    valid && headline
+      ? buildReleaseNote({
+          measureLabel: "Net migration",
+          latestValueDisplay: formatPeople(headline.netMigration),
+          latestPeriod: displayPeriod(headline.period),
+          releaseDate: headline.releaseDate,
+          history: payload.history.map((point) => ({ observedAt: point.observedAt, value: point.netMigration })),
+          provisional: headline.provisional,
+        })
+      : null;
 
   return (
     <div className="space-y-8">
@@ -216,6 +229,7 @@ export default function MigrationStats() {
             <p className="mt-3 text-sm leading-6 text-gray-600">
               Published {formatReleaseDate(headline.releaseDate)}. These figures are official statistics in development and remain subject to revision.
             </p>
+            {releaseNote ? <ReleaseNoteStrip idPrefix="migration" note={releaseNote} /> : null}
           </section>
 
           <section aria-labelledby="migration-components-title">

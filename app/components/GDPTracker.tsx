@@ -3,6 +3,8 @@
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart";
 import MetricsStatus from "@/app/components/MetricsStatus";
+import ReleaseNoteStrip from "@/app/components/ReleaseNoteStrip";
+import { buildReleaseNote } from "@/app/lib/releaseNote";
 import { useMetrics } from "@/app/lib/useMetrics";
 
 const FALLBACK = {
@@ -95,6 +97,15 @@ export default function GDPTracker() {
   const metrics = useMetrics("gdpTracker", FALLBACK);
   const data = metrics.data;
   const valid = validPayload(data);
+  const releaseNote = valid
+    ? buildReleaseNote({
+        measureLabel: "Monthly GDP growth",
+        latestValueDisplay: `${data.headline.monthlyGrowth > 0 ? "+" : ""}${data.headline.monthlyGrowth.toFixed(1)}%`,
+        latestPeriod: data.headline.period,
+        releaseDate: data.headline.releaseDate,
+        history: data.history.map((point) => ({ observedAt: point.observedAt, value: point.monthlyGrowth })),
+      })
+    : null;
 
   return (
     <div className="space-y-8">
@@ -118,6 +129,7 @@ export default function GDPTracker() {
             <p className="mt-3 text-sm leading-6 text-gray-600">
               Published {formatReleaseDate(data.headline.releaseDate)}. Monthly GDP is an early estimate and can be revised.
             </p>
+            {releaseNote ? <ReleaseNoteStrip idPrefix="gdp" note={releaseNote} /> : null}
           </section>
 
           <section aria-labelledby="gdp-numbers-title">

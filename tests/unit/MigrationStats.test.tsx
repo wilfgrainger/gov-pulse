@@ -92,6 +92,17 @@ describe("MigrationStats evidence integrity", () => {
     ).toHaveAttribute("href", current.source.bulletinUrl);
   });
 
+  it("renders a release note computed from the headline and history, not free-form prose", () => {
+    useMetrics.mockReturnValue(metricResult(current));
+
+    render(<MigrationStats />);
+
+    const note = screen.getByTestId("release-note");
+    expect(note).toHaveTextContent("Release note");
+    expect(note).toHaveTextContent(/Net migration fell to 171,000, a change of -48\.\d% from the prior comparable period\./);
+    expect(note).toHaveTextContent("This release is provisional and may be revised in a later publication.");
+  });
+
   it("describes a future increase without stale fall language", () => {
     useMetrics.mockReturnValue(
       metricResult({
@@ -143,6 +154,7 @@ describe("MigrationStats evidence integrity", () => {
     expect(screen.getByText(/mixed Home Office visa grants with ONS long-term migration estimates/i)).toBeInTheDocument();
     expect(screen.queryByText("BY VISA TYPE")).not.toBeInTheDocument();
     expect(screen.queryByText("TOP ORIGINS")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("release-note")).not.toBeInTheDocument();
   });
 
   it.each([
