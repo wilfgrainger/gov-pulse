@@ -1,3 +1,4 @@
+import { DATA_SOURCES, type EvidenceClass } from "./config";
 import {
   isCompatibleMetricsSnapshot,
   type MetricsSnapshot,
@@ -22,7 +23,7 @@ export type SignalPresentation = {
   title: string;
   kicker: string;
   href: string;
-  evidenceClass: string;
+  evidenceClass: EvidenceClass;
   geography: string;
   state: EvidenceState;
   value: string | null;
@@ -52,7 +53,7 @@ const SIGNAL_META: Record<
     title: "GDP",
     kicker: "Growth",
     href: "/section/gdp",
-    evidenceClass: "Official statistics",
+    evidenceClass: DATA_SOURCES.gdpTracker.evidenceClass,
     geography: "United Kingdom",
   },
   inflation: {
@@ -61,7 +62,7 @@ const SIGNAL_META: Record<
     title: "Inflation",
     kicker: "Prices",
     href: "/section/economy",
-    evidenceClass: "Official data",
+    evidenceClass: DATA_SOURCES.sentimentPulse.evidenceClass,
     geography: "United Kingdom",
   },
   unemployment: {
@@ -70,7 +71,7 @@ const SIGNAL_META: Record<
     title: "Unemployment",
     kicker: "Labour market",
     href: "/section/employment",
-    evidenceClass: "Official data",
+    evidenceClass: DATA_SOURCES.employmentStats.evidenceClass,
     geography: "United Kingdom",
   },
   "national-debt": {
@@ -79,7 +80,7 @@ const SIGNAL_META: Record<
     title: "National debt",
     kicker: "Public finances",
     href: "/section/national-debt",
-    evidenceClass: "Official monthly data",
+    evidenceClass: DATA_SOURCES.nationalDebt.evidenceClass,
     geography: "United Kingdom",
   },
   "nhs-waiting-list": {
@@ -88,7 +89,7 @@ const SIGNAL_META: Record<
     title: "NHS waiting list",
     kicker: "Public services",
     href: "/section/nhs",
-    evidenceClass: "Administrative data",
+    evidenceClass: DATA_SOURCES.nhsStats.evidenceClass,
     geography: "England",
   },
   "net-migration": {
@@ -97,7 +98,7 @@ const SIGNAL_META: Record<
     title: "Net migration",
     kicker: "Population",
     href: "/section/migration",
-    evidenceClass: "Official statistics",
+    evidenceClass: DATA_SOURCES.migrationStats.evidenceClass,
     geography: "United Kingdom",
   },
 };

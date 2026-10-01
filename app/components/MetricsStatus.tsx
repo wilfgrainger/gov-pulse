@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { DATA_SOURCES, EVIDENCE_CLASS_LABELS } from "@/app/lib/config";
+import { DATA_SOURCES } from "@/app/lib/config";
 import { DATA_SOURCE_DETAILS } from "@/app/lib/dataSourceDetails";
 import type { MetricsResult } from "@/app/lib/useMetrics";
+import EvidenceClassBadge from "./EvidenceClassBadge";
 
 interface MetricsStatusProps {
   section: string;
@@ -148,9 +149,7 @@ export default function MetricsStatus({ section, status }: MetricsStatusProps) {
                 May be revised
               </span>
             ) : null}
-            <span className="text-sm text-neutral-700">
-              {EVIDENCE_CLASS_LABELS[meta.evidenceClass]}
-            </span>
+            <EvidenceClassBadge evidenceClass={meta.evidenceClass} />
           </div>
         </div>
         <Link
