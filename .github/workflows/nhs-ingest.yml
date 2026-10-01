@@ -1,0 +1,77 @@
+name: NHS RTT trusted-egress ingest
+
+# NHS England sits behind AWS WAF, which blocks the Cloudflare Worker egress
+# with a JS/CAPTCHA bot-challenge page instead of serving the RTT page
+# (diagnosed 2026-09-29 — see worker/feed-registry.js's nhsStats comment).
+# That is an IP-reputation block, not header-sniffing: a User-Agent/header
+# fix was already tried and rejected by evidence (PR #107). This workflow
+# runs the SAME discovery/collection logic the Worker uses
+# (worker/live-nhs-publication-collector.js -> collectNhsRttPublication) from
+# a GitHub Actions runner — a non-Cloudflare, non-WAF-blocked egress — and
+# pushes the result straight into the same Cloudflare KV key the Worker's own
+# queue consumer writes, so the Worker's read path consumes it unchanged.
+#
+# nhsStats stays `publicationRequirement: "optional"` in
+# worker/feed-registry.js until this workflow has run successfully a few
+# times with real secrets configured (see required secrets below).
+
+on:
+  schedule:
+    # nhsStats' refreshCadence is "daily". NHS RTT is a monthly publication,
+    # so a daily check is how a new monthly release is picked up promptly
+    # without over-polling; an unchanged source is cheap (collection reuses
+    # the Worker's own fail-closed currentness checks and simply fails loudly
+    # if the retrieved publication cannot be reconciled or is not current).
+    - cron: "23 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nhs-rtt-trusted-ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Validate Cloudflare credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID repository secrets are not configured yet."
+            echo "::error::Add both under Settings > Secrets and variables > Actions before this workflow can ingest NHS RTT data."
+            exit 1
+          fi
+
+      # Fetches NHS England's RTT page from this runner's (non-Cloudflare)
+      # egress, runs it through the Worker's existing discovery/collection/
+      # normalisation logic unchanged, and writes the result into the same
+      # Cloudflare KV key the Worker's own queue consumer would write
+      # (v12:publication:section:nhsStats). Any fetch/parse/reconciliation
+      # failure throws and exits non-zero WITHOUT writing to KV, so a failed
+      # run leaves the last-good KV value — and therefore the live site —
+      # untouched.
+      - name: Ingest NHS RTT publication into Cloudflare KV
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_KV_NAMESPACE_ID: f950b17f36a447dca7bb339cba8818de
+        run: node scripts/trusted-nhs-rtt-ingest.mjs

@@ -77,7 +77,7 @@
       "collector": "worker/live-nhs-publication-collector.js",
       "normalizer": "worker/nhs-rtt.js",
       "entrypoint": "worker/queued-publication-entry.js",
-      "schedule": "daily Cloudflare Cron run through public-data-jobs Queue and deployment bootstrap when no ready publication exists",
+      "schedule": "daily Cloudflare Cron run through public-data-jobs Queue and deployment bootstrap when no ready publication exists; the Worker's own egress is blocked by NHS England's AWS WAF (IP-reputation, not header-based — see PR #107), so .github/workflows/nhs-ingest.yml additionally runs scripts/trusted-nhs-rtt-ingest.mjs daily from a trusted GitHub Actions runner, reusing collector/normalizer unchanged and writing the identical KV section-fragment record the Worker's queue consumer would write",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",
       "fallback": "previous verified NHS RTT press notice and workbook publication only inside the 45-day currentness window"
     },
