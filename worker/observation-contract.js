@@ -154,6 +154,10 @@ const contracts = {
     maxAgeDays: 220,
     extract: publishedObservation,
   },
+  housePriceIndex: {
+    maxAgeDays: 45,
+    extract: publishedObservation,
+  },
   nhsStats: {
     maxAgeDays: 45,
     extract: nhsPublishedObservation,

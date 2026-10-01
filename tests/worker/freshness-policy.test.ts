@@ -19,6 +19,7 @@ describe("worker freshness policy", () => {
       employmentStats: 36 * 60 * 60,
       nhsStats: 45 * 24 * 60 * 60,
       migrationStats: 36 * 60 * 60,
+      housePriceIndex: 45 * 24 * 60 * 60,
       crimeStatistics: 36 * 60 * 60,
     });
   });
