@@ -10,6 +10,7 @@ import {
   type NationalEvidenceEdition as Edition,
   type SignalPresentation,
 } from "@/app/lib/nationalEvidence";
+import EvidenceClassBadge from "./EvidenceClassBadge";
 import Reveal from "./Reveal";
 import TrendSparkline from "./TrendSparkline";
 
@@ -105,6 +106,7 @@ function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?:
           <div>
             <p className="eyebrow">{signal.kicker}</p>
             <h4 className="mt-2 text-xl font-semibold tracking-[-0.025em]">{signal.title}</h4>
+            <EvidenceClassBadge evidenceClass={signal.evidenceClass} className="mt-2" />
           </div>
           <span aria-hidden="true" className="text-xl transition-transform group-hover:translate-x-1">→</span>
         </div>
@@ -127,7 +129,7 @@ function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?:
         <div className="mt-auto flex flex-wrap items-end justify-between gap-3 border-t border-black/10 pt-4 text-xs">
           <div className="space-y-1 text-gray-600">
             <p>{signal.period ?? "No current period"}</p>
-            <p>{signal.geography} · {signal.publishedAt ? `Published ${signal.publishedAt}` : signal.evidenceClass}</p>
+            <p>{signal.geography}{signal.publishedAt ? ` · Published ${signal.publishedAt}` : ""}</p>
           </div>
           <StateBadge state={signal.state} />
         </div>
