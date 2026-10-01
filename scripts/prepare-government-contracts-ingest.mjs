@@ -10,6 +10,7 @@ import {
   REQUIRED_AWARD_COUNT,
   buildGovernmentContractsPayload,
   buildSummary,
+  ukNationFromPostcode,
 } from "../contracts/government-contracts.js";
 
 const PAGE_LIMIT = 100;
@@ -83,6 +84,41 @@ function supplierNames(award) {
     : [];
 }
 
+// OCDS 1.1 moves organization details (including address) out of embedded
+// objects into a top-level `parties` array, cross-referenced by `id` from
+// an OrganizationReference such as `award.suppliers[]`. This builds an
+// id -> postcode lookup from `release.parties` so a supplier's nation can
+// be derived from its own disclosed postal code, never from its name.
+function partyPostcodeById(release) {
+  const parties = Array.isArray(release?.parties) ? release.parties : [];
+  const byId = new Map();
+  for (const party of parties) {
+    const id = text(party?.id);
+    const postcode = text(party?.address?.postalCode);
+    if (id) byId.set(id, postcode);
+  }
+  return byId;
+}
+
+// Resolves each award supplier (by OrganizationReference id, deduplicated
+// in the same order as supplierNames) to a UK nation using only its
+// disclosed postal code. A supplier with no id match, no address, or an
+// unrecognised postcode area is "Other/Unknown" -- never guessed from the
+// supplier's name.
+function supplierNationsFor(award, postcodeById) {
+  const seen = new Set();
+  const nations = [];
+  for (const supplier of Array.isArray(award?.suppliers) ? award.suppliers : []) {
+    const name = text(supplier?.name);
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    const id = text(supplier?.id);
+    const postcode = id ? postcodeById.get(id) : "";
+    nations.push(ukNationFromPostcode(postcode));
+  }
+  return nations;
+}
+
 function isFramework(release) {
   return Boolean(
     release?.tender?.techniques?.hasFrameworkAgreement === true ||
@@ -153,6 +189,7 @@ function extractComparableAwards(release, counters) {
       title,
       buyer,
       suppliers,
+      supplierNations: supplierNationsFor(award, partyPostcodeById(release)),
       awardDate: new Date(awardDate).toISOString(),
       publishedAt: new Date(publishedAt).toISOString(),
       amount,

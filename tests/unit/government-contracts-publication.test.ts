@@ -31,6 +31,7 @@ function currentPayload() {
       title: `Government award ${index + 1}`,
       buyer: `Buyer ${(index % 10) + 1}`,
       suppliers: [`Supplier ${(index % 20) + 1}`],
+      supplierNations: ["Other/Unknown"],
       awardDate: "2026-07-10T09:00:00.000Z",
       publishedAt: "2026-07-10T12:00:00.000Z",
       amount: 500_000_000 - index * 1_000_000,
