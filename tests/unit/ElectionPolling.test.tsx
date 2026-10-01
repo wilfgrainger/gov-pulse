@@ -46,7 +46,7 @@ const current = {
       sourceUrl: "https://ygo-assets-websites-editorial-emea.yougov.net/documents/VotingIntention_MRP_Results_260706_w.pdf",
       methodologyUrl: "https://yougov.co.uk/about/panel-methodology",
       bpcMember: true,
-      uncertainty: "Published estimates have an approximate 9-in-10 interval of plus or minus four points.",
+      uncertainty: null,
     },
   ],
   aggregation: {
@@ -128,18 +128,19 @@ describe("ElectionPolling evidence integrity", () => {
     expect(screen.getAllByText(/MRP model/i).length).toBeGreaterThan(0);
   });
 
-  it("renders per-poll uncertainty with a labelled estimated margin of error, never an average", () => {
+  it("does not turn sample size into an uncertainty interval or a polling average", () => {
     useMetrics.mockReturnValue(result(current));
 
     render(<ElectionPolling />);
 
     expect(
-      screen.getByRole("heading", { name: "Individual publications and their margin of error, not an average" })
+      screen.getByRole("heading", { name: "Individual publications and disclosed uncertainty, not an average" })
     ).toBeInTheDocument();
     expect(screen.getByText(/does not compute, show, or imply a/i)).toBeInTheDocument();
-    // Sample size 2285 -> MoE ~2.1pp via the standard 95% CI formula; shown in the accessible data table.
-    expect(screen.getAllByText(/\u00b12\.1pp/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/estimated from each poll's disclosed sample size/i)).toBeInTheDocument();
+    expect(screen.getByText(/not used to calculate an uncertainty interval/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/2,285/).length).toBeGreaterThan(1);
+    expect(screen.queryByText(/\u00b12\.1pp/)).not.toBeInTheDocument();
+    expect(screen.getByText(/No publication-specific numeric interval was verified/)).toBeInTheDocument();
     expect(screen.queryByText(/polling average/i, { selector: "h3, h4" })).not.toBeInTheDocument();
   });
 

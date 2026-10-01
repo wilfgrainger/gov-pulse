@@ -204,6 +204,31 @@ describe("national evidence presentation", () => {
     expect(migration?.comparison).toContain("49% lower than YE Dec 2024");
   });
 
+  it("uses neutral wording for zero comparisons and absolute wording for negative wage changes", () => {
+    const payload = snapshot();
+    Object.assign(payload.nhsStats.headline, { yearChangePercent: 0 });
+    Object.assign(payload.migrationStats.headline, { changePercent: 0 });
+    Object.assign(payload, {
+      realWages: {
+        available: true,
+        headline: {
+          period: "March to May 2026", releaseDate: "2026-07-16",
+          regularPayRealGrowthPercent: -0.6, totalPayRealGrowthPercent: 0,
+        },
+        history: [],
+      },
+    });
+    Object.assign(payload.meta.sources, { realWages: currentSource() });
+
+    const edition = selectNationalEvidenceEdition(payload);
+    expect(edition.signals.find((signal) => signal.id === "nhs-waiting-list")?.leadSummary).toContain("was unchanged");
+    expect(edition.signals.find((signal) => signal.id === "net-migration")?.leadHeadline).toContain("unchanged at");
+    const wages = edition.signals.find((signal) => signal.id === "real-wages");
+    expect(wages?.leadHeadline).toContain("fell 0.6%");
+    expect(wages?.leadSummary).toContain("was unchanged");
+    expect(wages?.leadSummary).not.toContain("grew -");
+  });
+
   it("fails closed for an incompatible publication", () => {
     const payload = snapshot();
     payload.meta.registryVersion = "obsolete";

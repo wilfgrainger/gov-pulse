@@ -185,11 +185,11 @@ unbounded decoded result and reject it afterwards.
 
 **Interfaces:** `describeChange(value: number | null): 'rose' | 'fell' | 'was unchanged' | 'unavailable'`; source collectors return existing validated module contracts with edition identity, not synthetic replacement data.
 
-- [ ] Signed/zero/Unicode-minus wage fixtures must parse and reconcile. `expect(describeChange(0)).toBe('was unchanged')`; null is unavailable; negative descriptions use absolute magnitude, not “fell -x”.
-- [ ] Poll metadata must match exact primary tables; absent or contradictory fields fail the claimed disclosure. SRS sample-size calculation cannot be described as publisher uncertainty.
-- [ ] MOJ source discovery validates module identity/period; stale checked-in fallback cannot look freshly collected. Early Years dated records validate all numbers, source identities/dates and change wording.
-- [ ] Run parser/component regressions red, implement supported extraction/validation, then rerun all affected tests.
-- [ ] Record authoritative fixture provenance and source limitations; review/commit. Do not claim live collection from fixture success.
+- [x] Signed/zero/Unicode-minus wage fixtures parse and reconcile. `describeChange(0)` is “was unchanged”; null is unavailable; negative descriptions use absolute magnitude.
+- [x] Poll metadata now requires exact labelled values, date, commissioner and supported method; absent/contradictory disclosure fails. Sample size no longer creates a publisher uncertainty interval.
+- [ ] Complete MoJ discovery and Early Years live source collection after publisher access is available. Until then, the checked-in MoJ edition is unavailable in current output, and Early Years fails closed unless every dated record, source identity and validity bound passes.
+- [x] Ran focused parser/component regressions and reran them green; repository-wide suite passed 623/624 tests before one stale MoJ expectation was updated, and that affected test then passed.
+- [ ] Record authoritative source fixtures and prove live collection. Current publisher fetches are blocked by the environment’s proxy (CONNECT 403); fixture success is not live collection evidence.
 
 ## Task 7: Canonical catalog and additive publication migration
 

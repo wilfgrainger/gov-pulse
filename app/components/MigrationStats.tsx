@@ -5,6 +5,7 @@ import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart"
 import MetricsStatus from "@/app/components/MetricsStatus";
 import ReleaseNoteStrip from "@/app/components/ReleaseNoteStrip";
 import { buildReleaseNote } from "@/app/lib/releaseNote";
+import { describeChange } from "@/app/lib/changeLanguage";
 import { useMetrics } from "@/app/lib/useMetrics";
 
 type MigrationHeadline = {
@@ -16,7 +17,7 @@ type MigrationHeadline = {
   emigration: number;
   previousPeriod: string;
   previousNetMigration: number;
-  changePercent: number;
+  changePercent: number | null;
   provisional: boolean;
 };
 
@@ -134,8 +135,7 @@ function validHeadline(value: unknown): value is MigrationHeadline {
     Number.isFinite(candidate.netMigration) &&
     typeof candidate.previousNetMigration === "number" &&
     Number.isFinite(candidate.previousNetMigration) &&
-    typeof candidate.changePercent === "number" &&
-    Number.isFinite(candidate.changePercent) &&
+    (candidate.changePercent === null || (typeof candidate.changePercent === "number" && Number.isFinite(candidate.changePercent))) &&
     !Number.isNaN(releaseDate.getTime()) &&
     typeof candidate.provisional === "boolean" &&
     candidate.immigration - candidate.emigration === candidate.netMigration
@@ -196,9 +196,8 @@ export default function MigrationStats() {
     metrics.isLive && metrics.cacheState === "fresh" && validPayload(payload);
   const headline = valid ? payload.headline : null;
   const comparison = valid ? payload.comparison : [];
-  const change = headline ? headline.changePercent : 0;
-  const direction = change >= 0 ? "rose" : "fell";
-  const comparisonDirection = change >= 0 ? "higher" : "lower";
+  const change = headline?.changePercent ?? null;
+  const direction = describeChange(change);
   const releaseNote =
     valid && headline
       ? buildReleaseNote({
@@ -221,10 +220,18 @@ export default function MigrationStats() {
               id="migration-briefing-title"
               className="mt-2 max-w-4xl text-3xl font-semibold leading-tight tracking-[-0.03em] md:text-5xl"
             >
-              Net migration {direction} to {formatPeople(headline.netMigration)} in {displayPeriod(headline.period)}.
+              {change === 0
+                ? `Net migration was unchanged at ${formatPeople(headline.netMigration)} in ${displayPeriod(headline.period)}.`
+                : change === null
+                  ? `Net migration was ${formatPeople(headline.netMigration)} in ${displayPeriod(headline.period)}.`
+                  : `Net migration ${direction} to ${formatPeople(headline.netMigration)} in ${displayPeriod(headline.period)}.`}
             </h3>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-gray-700">
-              The provisional estimate is {Math.abs(change)}% {comparisonDirection} than the updated {headline.previousPeriod} estimate of {formatPeople(headline.previousNetMigration)}.
+              {change === null
+                ? `A matched previous-period comparison is unavailable. The estimate is provisional and may be revised.`
+                : change === 0
+                  ? `The provisional estimate was unchanged from the updated ${headline.previousPeriod} estimate of ${formatPeople(headline.previousNetMigration)}.`
+                : `The provisional estimate is ${Math.abs(change)}% ${change < 0 ? "lower" : "higher"} than the updated ${headline.previousPeriod} estimate of ${formatPeople(headline.previousNetMigration)}.`}
             </p>
             <p className="mt-3 text-sm leading-6 text-gray-600">
               Published {formatReleaseDate(headline.releaseDate)}. These figures are official statistics in development and remain subject to revision.

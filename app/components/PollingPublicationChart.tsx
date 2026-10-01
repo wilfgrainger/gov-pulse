@@ -3,7 +3,6 @@
 import { useRef } from "react";
 import {
   CartesianGrid,
-  ErrorBar,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -13,10 +12,7 @@ import {
 } from "recharts";
 import ChartExportButtons from "@/app/components/ChartExportButtons";
 import ClientOnlyChart from "@/app/components/ClientOnlyChart";
-import {
-  fieldworkMidpointMs,
-  marginOfErrorFromSampleSize,
-} from "@/app/lib/pollingUncertainty";
+import { fieldworkMidpointMs } from "@/app/lib/pollingDates";
 
 type PartyMeta = { label: string; color: string };
 
@@ -25,7 +21,6 @@ type PollLike = {
   pollster: string;
   fieldworkStart: string;
   fieldworkEnd: string;
-  sampleSize: number;
   parties: Record<string, number | undefined>;
 };
 
@@ -41,9 +36,6 @@ type ScatterPoint = {
   fieldworkMid: number;
   fieldworkLabel: string;
   share: number;
-  moeLow: number;
-  moeHigh: number;
-  marginOfErrorPoints: number;
 };
 
 function formatAxisDate(value: number) {
@@ -82,8 +74,7 @@ function fieldworkLabel(poll: PollLike) {
 
 /**
  * Builds one Scatter series per party: each point is a single poll
- * publication, plotted at its fieldwork midpoint with a vertical error bar
- * spanning +/- the sample-size-derived margin of error. There is no line
+ * publication, plotted at its fieldwork midpoint. There is no line
  * connecting points, no fitted trend, and no averaging across polls --
  * each point stays independently traceable to its pollster and fieldwork
  * dates via the tooltip and the accessible data table below the chart.
@@ -93,22 +84,18 @@ function buildSeries<PartyKey extends string>(polls: PollLike[], partyKey: Party
     .map((poll) => {
       const share = poll.parties[partyKey];
       if (typeof share !== "number" || !Number.isFinite(share)) return null;
-      const moe = marginOfErrorFromSampleSize(poll.sampleSize);
       return {
         pollId: poll.id,
         pollster: poll.pollster,
         fieldworkMid: fieldworkMidpointMs(poll.fieldworkStart, poll.fieldworkEnd),
         fieldworkLabel: fieldworkLabel(poll),
         share,
-        moeLow: moe.marginOfErrorPoints,
-        moeHigh: moe.marginOfErrorPoints,
-        marginOfErrorPoints: moe.marginOfErrorPoints,
       } satisfies ScatterPoint;
     })
     .filter((point): point is ScatterPoint => point !== null);
 }
 
-export default function PollingUncertaintyChart<PartyKey extends string>({
+export default function PollingPublicationChart<PartyKey extends string>({
   polls,
   partyMeta,
   partyOrder,
@@ -124,7 +111,7 @@ export default function PollingUncertaintyChart<PartyKey extends string>({
       ? `${fieldworkLabel(first)} to ${fieldworkLabel(latest)}`
       : "Published history unavailable";
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const chartTitle = "Each verified poll publication, with its own margin of error";
+  const chartTitle = "Individual poll publications by party share";
 
   return (
     <figure className="border-y border-black/20 bg-[#f7f9fb] py-5">
@@ -134,11 +121,10 @@ export default function PollingUncertaintyChart<PartyKey extends string>({
             {chartTitle}
           </h4>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-600">
-            Every point is one primary poll publication for one party, plotted at its
-            fieldwork midpoint. The vertical bar is that poll&apos;s own margin of error --
-            estimated from its disclosed sample size using the standard sampling-error
-            formula at 95% confidence. public-data.org does not calculate a polling
-            average, a rolling mean, or a trend line across these points.
+            Every point is a pollster-reported party share at the fieldwork midpoint.
+            The disclosed sample count is shown in the table; it is not treated as a
+            simple random sample and is not used to calculate an uncertainty interval.
+            See the evidence register for the pollster&apos;s own uncertainty statement.
           </p>
         </div>
         <p className="font-mono text-xs tabular-nums text-gray-500">{range}</p>
@@ -146,7 +132,7 @@ export default function PollingUncertaintyChart<PartyKey extends string>({
       <div
         ref={chartContainerRef}
         role="img"
-        aria-label={`Scatter plot of individual poll publications by party share, each with a sample-size-derived margin of error band. Period shown: ${range}. No average or trend line is shown. See the data table below for exact per-poll values.`}
+        aria-label={`Scatter plot of individual poll publications by party share. Period shown: ${range}. No average, uncertainty interval or trend line is shown. See the data table below for exact per-poll values and sample counts.`}
         className="border-t border-black/10 pt-3"
       >
         <ClientOnlyChart heightClass="h-[340px]">
@@ -197,7 +183,7 @@ export default function PollingUncertaintyChart<PartyKey extends string>({
                   const point = item?.payload as ScatterPoint | undefined;
                   if (name === "share" && point) {
                     return [
-                      `${point.share.toFixed(0)}% \u00b1 ${point.marginOfErrorPoints.toFixed(1)}pp (estimated from sample size)`,
+                      `${point.share.toFixed(0)}% (pollster-reported)`,
                       `${point.pollster} \u00b7 ${point.fieldworkLabel}`,
                     ];
                   }
@@ -213,15 +199,7 @@ export default function PollingUncertaintyChart<PartyKey extends string>({
                   fill={series.meta.color}
                   line={false}
                   isAnimationActive={false}
-                >
-                  <ErrorBar
-                    dataKey="moeHigh"
-                    direction="y"
-                    width={4}
-                    strokeWidth={1.5}
-                    stroke={series.meta.color}
-                  />
-                </Scatter>
+                />
               ))}
             </ScatterChart>
           </ResponsiveContainer>
@@ -230,7 +208,7 @@ export default function PollingUncertaintyChart<PartyKey extends string>({
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[640px] border-collapse text-sm">
           <caption className="sr-only">
-            Per-poll party shares with sample-size-derived margin of error, one row per
+            Per-poll party shares and disclosed sample size, one row per
             party per publication.
           </caption>
           <thead>
@@ -239,7 +217,7 @@ export default function PollingUncertaintyChart<PartyKey extends string>({
               <th scope="col" className="py-2 pr-4">Fieldwork</th>
               <th scope="col" className="py-2 pr-4">Party</th>
               <th scope="col" className="py-2 pr-4">Share</th>
-              <th scope="col" className="py-2 pr-4">Margin of error (95% CI, est. from n)</th>
+              <th scope="col" className="py-2 pr-4">Disclosed sample</th>
             </tr>
           </thead>
           <tbody>
@@ -248,16 +226,13 @@ export default function PollingUncertaintyChart<PartyKey extends string>({
                 .filter((key) => typeof poll.parties[key] === "number")
                 .map((key) => {
                   const share = poll.parties[key] as number;
-                  const moe = marginOfErrorFromSampleSize(poll.sampleSize);
                   return (
                     <tr key={`${poll.id}-${key}`} className="border-b border-black/10">
                       <td className="py-1.5 pr-4">{poll.pollster}</td>
                       <td className="py-1.5 pr-4">{fieldworkLabel(poll)}</td>
                       <td className="py-1.5 pr-4">{partyMeta[key].label}</td>
                       <td className="py-1.5 pr-4 tabular-nums">{share.toFixed(0)}%</td>
-                      <td className="py-1.5 pr-4 tabular-nums">
-                        &plusmn;{moe.marginOfErrorPoints.toFixed(1)}pp
-                      </td>
+                      <td className="py-1.5 pr-4 tabular-nums">{poll.sampleSize.toLocaleString("en-GB")}</td>
                     </tr>
                   );
                 })
@@ -281,11 +256,9 @@ export default function PollingUncertaintyChart<PartyKey extends string>({
         <ChartExportButtons containerRef={chartContainerRef} title={chartTitle} />
       </div>
       <p className="mt-3 max-w-3xl px-1 text-xs leading-5 text-gray-500">
-        Margin of error is estimated from each poll&apos;s disclosed sample size using the
-        standard formula for a simple-random-sample proportion at 95% confidence
-        (&plusmn;1.96&times;&radic;(0.5&times;0.5/n)), not a figure published by the pollster.
-        Pollsters state their own uncertainty in different, non-numeric terms -- see each
-        poll&apos;s uncertainty statement in the evidence register below.
+        The sample count does not establish a representative simple random sample.
+        public-data.org does not calculate an uncertainty interval from it; see each
+        pollster&apos;s publication-specific uncertainty statement in the evidence register.
       </p>
     </figure>
   );

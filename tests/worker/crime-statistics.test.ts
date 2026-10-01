@@ -43,7 +43,7 @@ function fetcher() {
 }
 
 describe("modular crime evidence contract", () => {
-  it("collects the current ONS, police-recorded and MoJ modules without a synthetic total", async () => {
+  it("collects current ONS and police modules while withholding unvalidated MoJ data", async () => {
     const fetchImpl = fetcher();
     const payload = await buildCrimeStatistics(now, fetchImpl);
 
@@ -60,7 +60,7 @@ describe("modular crime evidence contract", () => {
       },
       crimeSurvey: { status: "available" },
       policeRecorded: { status: "available" },
-      justice: { status: "available", period: "January to March 2026" },
+      justice: { status: "unavailable", title: "Criminal court timeliness" },
       regional: { status: "unavailable" },
       evidencePolicy: {
         combinedTotalAllowed: false,

@@ -36,7 +36,7 @@ function poll(overrides: Record<string, unknown> = {}) {
     sourceUrl: "https://ygo-assets-websites-editorial-emea.yougov.net/documents/VotingIntention_MRP_Results_260727_w.pdf",
     methodologyUrl: "https://yougov.com/en-gb/articles/54278-how-yougov-conducts-voting-intention-polling",
     bpcMember: true,
-    uncertainty: "Published estimates have an approximate 9-in-10 interval of plus or minus four points.",
+  uncertainty: null,
     ...overrides,
   };
 }
@@ -64,6 +64,7 @@ describe("primary election poll evidence contract", () => {
       methodologyUrl:
         "https://yougov.com/en-gb/articles/54278-how-yougov-conducts-voting-intention-polling",
       parties: { reformUK: 22, conservative: 21, labour: 22 },
+      uncertainty: null,
     });
     expect(result).not.toHaveProperty("pollingData");
     expect(result).not.toHaveProperty("recentPolls");
@@ -101,6 +102,13 @@ describe("primary election poll evidence contract", () => {
     expect(() =>
       normalizePrimaryPollPayload({ polls: [poll(overrides)] }, validationTime)
     ).toThrow();
+  });
+
+  it("retains unavailable publication-specific uncertainty instead of inventing an interval", () => {
+    const result = normalizePrimaryPollPayload({ polls: [poll({ uncertainty: null })] }, validationTime);
+    expect(result.polls[0].uncertainty).toBeNull();
+    expect(() => normalizePrimaryPollPayload({ polls: [poll({ uncertainty: undefined })] }, validationTime))
+      .toThrow(/uncertainty statement is required/i);
   });
 
   it("rejects values that JavaScript would otherwise coerce into numbers", () => {

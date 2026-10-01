@@ -137,6 +137,32 @@ describe("MigrationStats evidence integrity", () => {
     expect(screen.queryByText(/sharp year-on-year fall/i)).not.toBeInTheDocument();
   });
 
+  it("says unchanged for zero and makes an unavailable comparison explicit", () => {
+    useMetrics.mockReturnValue(metricResult({
+      ...current,
+      headline: { ...current.headline, changePercent: 0, previousNetMigration: 171_000 },
+      comparison: current.comparison.map((point) => ({ ...point, netMigration: 171_000 })),
+      history: current.history.map((point) => ({
+        ...point,
+        immigration: 813_000,
+        emigration: 642_000,
+        netMigration: 171_000,
+      })),
+    }));
+    render(<MigrationStats />);
+    expect(screen.getByRole("heading", { name: /Net migration was unchanged at 171,000/i })).toBeInTheDocument();
+    expect(screen.getByText(/estimate was unchanged from the updated YE December 2024 estimate of 171,000/i)).toBeInTheDocument();
+
+    cleanup();
+    useMetrics.mockReturnValue(metricResult({
+      ...current,
+      headline: { ...current.headline, changePercent: null },
+    }));
+    render(<MigrationStats />);
+    expect(screen.getByRole("heading", { name: /Net migration was 171,000/i })).toBeInTheDocument();
+    expect(screen.getByText(/matched previous-period comparison is unavailable/i)).toBeInTheDocument();
+  });
+
   it("shows no migration value when the live feed is unavailable", () => {
     useMetrics.mockReturnValue({
       ...metricResult(current),

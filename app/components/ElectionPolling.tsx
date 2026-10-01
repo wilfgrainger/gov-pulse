@@ -2,7 +2,7 @@
 
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import MetricsStatus from "@/app/components/MetricsStatus";
-import PollingUncertaintyChart from "@/app/components/PollingUncertaintyChart";
+import PollingPublicationChart from "@/app/components/PollingPublicationChart";
 import { useMetrics } from "@/app/lib/useMetrics";
 
 const FALLBACK = {
@@ -54,7 +54,7 @@ type PrimaryPoll = {
   sourceUrl: string;
   methodologyUrl: string;
   bpcMember: boolean;
-  uncertainty: string;
+  uncertainty: string | null;
 };
 
 function parseDateOnlyUtc(value: unknown) {
@@ -92,7 +92,7 @@ function isPrimaryPoll(value: unknown): value is PrimaryPoll {
     nonEmptyText(poll.population) &&
     nonEmptyText(poll.mode) &&
     nonEmptyText(poll.headlineMethod) &&
-    nonEmptyText(poll.uncertainty) &&
+    (poll.uncertainty === null || nonEmptyText(poll.uncertainty)) &&
     !Number.isNaN(parseDateOnlyUtc(poll.publicationDate).getTime()) &&
     !Number.isNaN(parseDateOnlyUtc(poll.fieldworkStart).getTime()) &&
     !Number.isNaN(parseDateOnlyUtc(poll.fieldworkEnd).getTime()) &&
@@ -213,7 +213,7 @@ export default function ElectionPolling() {
             <div className="mb-4 border-b border-black/15 pb-3">
               <p className="text-sm font-semibold text-accent">Uncertainty over time</p>
               <h4 id="poll-uncertainty-title" className="mt-1 text-2xl font-semibold">
-                Individual publications and their margin of error, not an average
+                Individual publications and disclosed uncertainty, not an average
               </h4>
             </div>
             <p className="max-w-3xl text-sm leading-6 text-gray-700">
@@ -222,7 +222,7 @@ export default function ElectionPolling() {
               polling average or composite line across these points.
             </p>
             <div className="mt-4">
-              <PollingUncertaintyChart
+              <PollingPublicationChart
                 polls={polls}
                 partyMeta={PARTY_META}
                 partyOrder={Object.keys(PARTY_META) as PartyKey[]}
@@ -268,7 +268,12 @@ export default function ElectionPolling() {
                 Party shares describe this publication only. Differences of a few percentage points may fall within the poll&apos;s stated uncertainty and should not be treated as a durable trend.
               </p>
             }
-            caveat={<p>{latest.uncertainty}</p>}
+              caveat={
+                <p>
+                  {latest.uncertainty ??
+                    "No publication-specific numeric interval was verified, so no uncertainty interval is shown. Sample size alone is not used to estimate one."}
+                </p>
+              }
             sourceLabel={`Open ${latest.pollster} publication`}
             sourceUrl={latest.sourceUrl}
             sourceDate={`Published ${formatDate(latest.publicationDate)} · fieldwork ${fieldworkLabel(latest)}`}

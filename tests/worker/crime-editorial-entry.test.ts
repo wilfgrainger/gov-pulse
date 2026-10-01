@@ -54,7 +54,7 @@ describe("crime statistics section builder", () => {
         headline: { period: "Year ending March 2026", releaseDate: "2026-07-23" },
         crimeSurvey: { status: "available" },
         policeRecorded: { status: "available" },
-        justice: { status: "available" },
+        justice: { status: "unavailable" },
         regional: { status: "unavailable" },
       },
     });

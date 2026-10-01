@@ -1,4 +1,3 @@
-import { MOJ_COURT_PUBLICATION } from "../data/crime/moj-court-publication.js";
 import {
   ONS_PUBLICATION_LANDING_URL,
   approvedOnsPublicationUrl,
@@ -365,7 +364,11 @@ function parseOnsCrimeBulletin(html, finalUrl) {
         ),
       ],
     },
-    justice: structuredClone(MOJ_COURT_PUBLICATION),
+    justice: {
+      status: "unavailable",
+      title: "Criminal court timeliness",
+      reason: "No Ministry of Justice release has been collected and validated with this edition. The earlier checked-in figures are not presented as current evidence.",
+    },
     regional: {
       status: "unavailable",
       title: "Regional comparisons",

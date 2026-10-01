@@ -3,44 +3,157 @@
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart";
 import MetricsStatus from "@/app/components/MetricsStatus";
+import { describeChange } from "@/app/lib/changeLanguage";
 import { useMetrics } from "@/app/lib/useMetrics";
 
-const FALLBACK = {
-  available: true,
-  headline: {
-    period: "2024/25",
-    mmrPeriod: "2024/25",
-    schoolReadyPeriod: "2024/25",
-    mmrRate: 88.9,
-    mmrDelta: 0.0,
-    schoolReadyRate: 68.3,
-    schoolReadyDelta: 0.6,
-  },
-  history: [
-    { period: "2021/22", observedAt: 1648684800000, mmrRate: null, schoolReadyRate: 65.2 },
-    { period: "2022/23", observedAt: 1680220800000, mmrRate: null, schoolReadyRate: 67.2 },
-    { period: "2023/24", observedAt: 1711843200000, mmrRate: 88.9, schoolReadyRate: 67.7 },
-    { period: "2024/25", observedAt: 1743379200000, mmrRate: 88.9, schoolReadyRate: 68.3 },
-  ],
-  source: {
-    mmrUrl: "https://www.gov.uk/government/statistics/cover-of-vaccination-evaluated-rapidly-cover-programme-annual-reports/vaccination-coverage-statistics-for-children-aged-up-to-5-years-england-cover-programme-report-april-2024-to-march-2025",
-    mmrPublicationDate: "2025-08-28",
-    schoolReadyUrl: "https://explore-education-statistics.service.gov.uk/find-statistics/early-years-foundation-stage-profile-results/2024-25",
-    schoolReadyPublicationDate: "2025-11-27",
-  }
+type EarlyYearsHeadline = {
+  mmrPeriod: string;
+  mmrObservedAt: number;
+  mmrRate: number;
+  mmrDelta: number | null;
+  schoolReadyPeriod: string;
+  schoolReadyObservedAt: number;
+  schoolReadyRate: number;
+  schoolReadyDelta: number | null;
 };
+
+type EarlyYearsHistory = {
+  mmrPeriod: string;
+  mmrObservedAt: number;
+  mmrRate: number | null;
+  schoolReadyPeriod: string;
+  schoolReadyObservedAt: number;
+  schoolReadyRate: number | null;
+};
+
+type EarlyYearsPayload = {
+  available: boolean;
+  headline: EarlyYearsHeadline;
+  history: EarlyYearsHistory[];
+  source: {
+    mmrPublisher: string;
+    mmrEditionId: string;
+    mmrUrl: string;
+    mmrPublicationDate: string;
+    mmrValidUntil: string;
+    schoolReadyPublisher: string;
+    schoolReadyEditionId: string;
+    schoolReadyUrl: string;
+    schoolReadyPublicationDate: string;
+    schoolReadyValidUntil: string;
+  };
+};
+
+const FALLBACK: EarlyYearsPayload = {
+  available: false,
+  headline: {
+    mmrPeriod: "",
+    mmrObservedAt: 0,
+    mmrRate: 0,
+    mmrDelta: null,
+    schoolReadyPeriod: "",
+    schoolReadyObservedAt: 0,
+    schoolReadyRate: 0,
+    schoolReadyDelta: null,
+  },
+  history: [],
+  source: {
+    mmrPublisher: "",
+    mmrEditionId: "",
+    mmrUrl: "",
+    mmrPublicationDate: "",
+    mmrValidUntil: "",
+    schoolReadyPublisher: "",
+    schoolReadyEditionId: "",
+    schoolReadyUrl: "",
+    schoolReadyPublicationDate: "",
+    schoolReadyValidUntil: "",
+  },
+};
+
+function dateOnly(value: unknown): number | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const parsed = Date.parse(`${value}T00:00:00.000Z`);
+  return Number.isFinite(parsed) && new Date(parsed).toISOString().slice(0, 10) === value
+    ? parsed
+    : null;
+}
+
+function validPeriod(value: unknown): value is string {
+  return typeof value === "string" && /^20\d{2}\/\d{2}$/.test(value) &&
+    Number(value.slice(-2)) === (Number(value.slice(0, 4)) + 1) % 100;
+}
+
+function validRate(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100;
+}
+
+function validPayload(value: unknown, now = Date.now()): value is EarlyYearsPayload {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const candidate = value as Partial<EarlyYearsPayload>;
+  const headline = candidate.headline;
+  const source = candidate.source;
+  if (
+    candidate.available !== true || !headline || !source ||
+    !validPeriod(headline.mmrPeriod) || !validPeriod(headline.schoolReadyPeriod) ||
+    !Number.isFinite(headline.mmrObservedAt) || headline.mmrObservedAt > now ||
+    !Number.isFinite(headline.schoolReadyObservedAt) || headline.schoolReadyObservedAt > now ||
+    !validRate(headline.mmrRate) || !validRate(headline.schoolReadyRate) ||
+    !(headline.mmrDelta === null || (typeof headline.mmrDelta === "number" && Number.isFinite(headline.mmrDelta))) ||
+    !(headline.schoolReadyDelta === null || (typeof headline.schoolReadyDelta === "number" && Number.isFinite(headline.schoolReadyDelta))) ||
+    source.mmrPublisher !== "UK Health Security Agency" || source.schoolReadyPublisher !== "Department for Education" ||
+    typeof source.mmrEditionId !== "string" || !source.mmrEditionId.trim() ||
+    typeof source.schoolReadyEditionId !== "string" || !source.schoolReadyEditionId.trim() ||
+    typeof source.mmrUrl !== "string" || !source.mmrUrl.startsWith("https://www.gov.uk/government/statistics/cover-of-vaccination-evaluated-rapidly-cover-programme") ||
+    typeof source.schoolReadyUrl !== "string" || !source.schoolReadyUrl.startsWith("https://explore-education-statistics.service.gov.uk/find-statistics/early-years-foundation-stage-profile-results/")
+  ) return false;
+  const mmrPublishedAt = dateOnly(source.mmrPublicationDate);
+  const schoolReadyPublishedAt = dateOnly(source.schoolReadyPublicationDate);
+  const mmrValidUntil = Date.parse(source.mmrValidUntil);
+  const schoolReadyValidUntil = Date.parse(source.schoolReadyValidUntil);
+  if (
+    mmrPublishedAt === null || schoolReadyPublishedAt === null ||
+    mmrPublishedAt > now || schoolReadyPublishedAt > now ||
+    mmrPublishedAt < headline.mmrObservedAt ||
+    schoolReadyPublishedAt < headline.schoolReadyObservedAt ||
+    !Number.isFinite(mmrValidUntil) || mmrValidUntil <= now ||
+    !Number.isFinite(schoolReadyValidUntil) || schoolReadyValidUntil <= now
+  ) return false;
+  if (!Array.isArray(candidate.history) || candidate.history.length < 2) return false;
+  const history = candidate.history as EarlyYearsHistory[];
+  if (!history.every((point) =>
+    validPeriod(point.mmrPeriod) && validPeriod(point.schoolReadyPeriod) &&
+    Number.isFinite(point.mmrObservedAt) && point.mmrObservedAt <= now &&
+    Number.isFinite(point.schoolReadyObservedAt) && point.schoolReadyObservedAt <= now &&
+    (point.mmrRate === null || validRate(point.mmrRate)) &&
+    (point.schoolReadyRate === null || validRate(point.schoolReadyRate))
+  )) return false;
+  const latest = history.at(-1);
+  return history.slice(1).every((point, index) =>
+    point.mmrObservedAt > history[index].mmrObservedAt &&
+    point.schoolReadyObservedAt > history[index].schoolReadyObservedAt
+  ) && latest?.mmrPeriod === headline.mmrPeriod &&
+    latest.schoolReadyPeriod === headline.schoolReadyPeriod &&
+    latest.mmrRate === headline.mmrRate &&
+    latest.schoolReadyRate === headline.schoolReadyRate;
+}
+
+function changeDescription(value: number | null, current: number): string {
+  const direction = describeChange(value);
+  if (direction === "unavailable") return `change not available; latest rate ${current.toFixed(1)}%`;
+  if (direction === "was unchanged") return `was unchanged at ${current.toFixed(1)}%`;
+  return `${direction} by ${Math.abs(value as number).toFixed(1)} percentage points to ${current.toFixed(1)}%`;
+}
 
 export default function EarlyYearsStats() {
   const metrics = useMetrics("earlyYears", FALLBACK);
   const data = metrics.data;
-  const valid =
-    data?.available === true &&
-    typeof data.headline?.mmrPeriod === "string" &&
-    typeof data.headline?.schoolReadyPeriod === "string" &&
-    data.headline.mmrPeriod.trim().length > 0 &&
-    data.headline.schoolReadyPeriod.trim().length > 0 &&
-    typeof data.source?.mmrUrl === "string" &&
-    typeof data.source?.schoolReadyUrl === "string";
+  const valid = metrics.isLive && validPayload(data);
+  const history = valid ? data.history.map((point) => ({
+    observedAt: point.mmrObservedAt,
+    period: point.mmrPeriod,
+    mmrRate: point.mmrRate,
+  })) : [];
 
   return (
     <div className="space-y-8">
@@ -52,10 +165,10 @@ export default function EarlyYearsStats() {
               id="early-years-briefing-title"
               className="mt-2 max-w-4xl text-3xl font-semibold leading-tight tracking-[-0.03em] md:text-5xl"
             >
-              England child MMR vaccination rate fell to {data.headline.mmrRate}% in {data.headline.mmrPeriod}
+              England MMR vaccination coverage {changeDescription(data.headline.mmrDelta, data.headline.mmrRate)} in {data.headline.mmrPeriod}
             </h3>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-gray-700">
-              The percentage of children receiving their first dose of the MMR vaccine by age two remains below the World Health Organisation target of 95.0%. School readiness at the end of reception was last observed at {data.headline.schoolReadyRate}% in {data.headline.schoolReadyPeriod}.
+              The percentage of children receiving their first dose of the MMR vaccine by age two is compared with the World Health Organisation target of 95.0%. School readiness at the end of reception {changeDescription(data.headline.schoolReadyDelta, data.headline.schoolReadyRate)} in {data.headline.schoolReadyPeriod}.
             </p>
           </section>
 
@@ -73,7 +186,7 @@ export default function EarlyYearsStats() {
                   {data.headline.mmrRate.toFixed(1)}%
                 </dd>
                 <dd className="mt-2 text-sm text-gray-600">
-                  {data.headline.mmrPeriod} · {data.headline.mmrDelta >= 0 ? "+" : ""}{data.headline.mmrDelta.toFixed(1)} percentage points since previous year.
+                  {data.headline.mmrPeriod} · {data.headline.mmrDelta === null ? "matched annual change unavailable" : `${data.headline.mmrDelta > 0 ? "+" : ""}${data.headline.mmrDelta.toFixed(1)} percentage points since the previous comparable year`}.
                 </dd>
               </div>
               <div className="border-t border-black/15 p-4 md:border-l md:border-t-0 md:p-5">
@@ -91,7 +204,7 @@ export default function EarlyYearsStats() {
           <FinancialTimeSeriesChart
             title="MMR 1st dose vaccination rate history"
             description="The percentage of children immunized by age two in England. A standard WHO reference target is shown at 95%."
-            data={data.history}
+            data={history}
             series={[{ key: "mmrRate", label: "MMR coverage rate", color: "#1f5c8a" }]}
             valueFormatter={(value) => `${value.toFixed(1)}%`}
             referenceValue={95}
@@ -125,7 +238,7 @@ export default function EarlyYearsStats() {
             }
             sourceLabel="UKHSA and DfE early years publications"
             sourceUrl={data.source.mmrUrl}
-            sourceDate={`UKHSA published 28 Aug 2025 · MMR observation period ${data.headline.mmrPeriod}; DfE published 27 Nov 2025 · school-readiness observation period ${data.headline.schoolReadyPeriod}`}
+            sourceDate={`${data.source.mmrPublisher} published ${new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${data.source.mmrPublicationDate}T00:00:00Z`))} · MMR observation period ${data.headline.mmrPeriod}; ${data.source.schoolReadyPublisher} published ${new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${data.source.schoolReadyPublicationDate}T00:00:00Z`))} · school-readiness observation period ${data.headline.schoolReadyPeriod}`}
             additionalSources={[{ label: "DfE school-readiness publication", url: data.source.schoolReadyUrl }]}
           />
         </>

@@ -1,4 +1,4 @@
-import { normalizePrimaryPollPayload } from "./election-polls.js";
+import { PARTY_LABELS, normalizePrimaryPollPayload } from "./election-polls.js";
 import {
   absoluteUrl,
   MAX_RESPONSE_BYTES,
@@ -56,7 +56,7 @@ function parseArticleDateRange(title) {
 
 function parsePublishedDate(text) {
   const match = String(text).match(
-    /\b(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(20\d{2})\b/i
+    /\bPublished\s*:?\s*(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(20\d{2})\b/i
   );
   if (!match) throw new Error("YouGov article did not expose a publication date");
   return isoDate(
@@ -64,6 +64,28 @@ function parsePublishedDate(text) {
     MONTH_NUMBER[match[2].toLowerCase()],
     Number(match[1])
   );
+}
+
+function commissionerFromArticle(text) {
+  const matches = [...String(text).matchAll(/poll for ([^.]+?)\s*,?\s*shows/gi)]
+    .map((match) => match[1].trim())
+    .filter(Boolean);
+  const unique = [...new Set(matches)];
+  if (unique.length === 0) {
+    throw new Error("YouGov primary article did not disclose the commissioner");
+  }
+  if (unique.length > 1) {
+    throw new Error("YouGov primary article contains contradictory commissioners");
+  }
+  return unique[0];
+}
+
+function headlineMethodFromPrimarySource(articleText, pdfUrl, pdfText) {
+  const sourceIdentity = `${articleText} ${pdfUrl} ${pdfText}`;
+  if (/\bMRP\b/i.test(sourceIdentity) && /constituency/i.test(sourceIdentity)) {
+    return "Headline voting intention from constituency vote projected by YouGov's MRP model";
+  }
+  throw new Error("YouGov primary publication did not identify a supported headline method");
 }
 
 function parsePartyShares(text) {
@@ -81,10 +103,14 @@ function parsePartyShares(text) {
   ];
   const result = {};
   for (const [key, label] of labels) {
-    const match = String(text).match(
-      new RegExp(`(?:^|\\s)${label}:\\s*(\\d{1,2}(?:\\.\\d+)?)%`, "i")
-    );
-    if (match) result[key] = Number(match[1]);
+    const matches = [...String(text).matchAll(
+      new RegExp(`(?:^|\\s)${label}:\\s*(\\d{1,2}(?:\\.\\d+)?)%`, "gi")
+    )].map((match) => Number(match[1]));
+    const unique = [...new Set(matches)];
+    if (unique.length > 1) {
+      throw new Error(`YouGov primary publication contains contradictory ${PARTY_LABELS[key]} shares`);
+    }
+    if (unique.length === 1) result[key] = unique[0];
   }
   return result;
 }
@@ -245,13 +271,8 @@ async function extractPdfText(arrayBuffer) {
 }
 
 function sampleSizeFromPdfText(text) {
-  const direct = String(text).match(/Sample\s*Size\s*:?\s*(\d{3,5})\s*GB\s*Adults/i);
-  if (direct) return Number(direct[1]);
-  const marker = String(text).search(/Sample\s*Size/i);
-  const nearby = marker >= 0
-    ? String(text).slice(marker, marker + 300).match(/\b(\d{3,5})\b/)
-    : null;
-  if (nearby) return Number(nearby[1]);
+  const direct = String(text).match(/Sample\s*Size\s*:?\s*((?:\d{1,3}(?:,\d{3})+)|\d{3,5})\s*GB\s*Adults\b/i);
+  if (direct) return Number(direct[1].replace(/,/g, ""));
   throw new Error("YouGov primary tables did not expose a sample size");
 }
 
@@ -275,18 +296,16 @@ async function collectElectionPolling(fetchImpl = fetch, now = new Date()) {
   const publicationDate = parsePublishedDate(articleText);
   const pdfUrl = findPdfUrl(articleHtml, articleUrl);
   const pdfResponse = await fetchResponse(pdfUrl, fetchImpl, "application/pdf");
-  const sampleSize = sampleSizeFromPdfText(
-    await extractPdfText(
+  const pdfText = await extractPdfText(
       await readResponseArrayBuffer(pdfResponse, {
         limit: MAX_RESPONSE_BYTES.pdf,
         label: "YouGov PDF",
       }),
-    )
-  );
+    );
+  const sampleSize = sampleSizeFromPdfText(pdfText);
+  const commissioner = commissionerFromArticle(articleText);
   const parties = parsePartyShares(articleText);
-  const commissioner =
-    articleText.match(/poll for ([^.]+?),\s*shows/i)?.[1]?.trim() ||
-    "The Times and Sky News";
+  const headlineMethod = headlineMethodFromPrimarySource(articleText, pdfUrl, pdfText);
 
   return normalizePrimaryPollPayload(
     {
@@ -305,14 +324,12 @@ async function collectElectionPolling(fetchImpl = fetch, now = new Date()) {
           geography: "Great Britain",
           population: "GB adults",
           mode: "Online panel",
-          headlineMethod:
-            "Headline voting intention from constituency vote projected by YouGov's MRP model",
+          headlineMethod,
           parties,
           sourceUrl: pdfUrl,
           methodologyUrl: YOU_GOV_METHOD_URL,
           bpcMember: true,
-          uncertainty:
-            "YouGov states a 9 in 10 chance that true party support lies within four points of the estimate and a 2 in 3 chance that it lies within two points.",
+          uncertainty: null,
         },
       ],
     },
@@ -326,5 +343,9 @@ export {
   pdfStrings,
   extractPdfText,
   latestYouGovArticleUrl,
+  parsePublishedDate,
+  commissionerFromArticle,
+  headlineMethodFromPrimarySource,
   sampleSizeFromPdfText,
+  parsePartyShares,
 };

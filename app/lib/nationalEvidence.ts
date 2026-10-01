@@ -4,6 +4,7 @@ import {
   type MetricsSnapshot,
   type SnapshotSourceStatus,
 } from "./metricsSnapshot";
+import { describeChange, describePercentageChange } from "./changeLanguage";
 
 export type EvidenceState = "current" | "update-due" | "unavailable";
 
@@ -370,7 +371,7 @@ function selectNhs(snapshot: MetricsSnapshot): SignalPresentation {
   const publishedAt = formatDate(headline?.publicationDate);
   if (data?.available !== true || waiting === null || !period || !publishedAt) return unavailable("nhs-waiting-list");
   const value = `${formatCompactCount(waiting)} pathways`;
-  const direction = yearChange === 0 ? "was unchanged" : yearChange !== null && yearChange < 0 ? "fell" : "rose";
+  const direction = describeChange(yearChange);
   return applySourceState(
     {
       ...unavailable("nhs-waiting-list"),
@@ -398,7 +399,7 @@ function selectMigration(snapshot: MetricsSnapshot): SignalPresentation {
   const immigration = finite(headline?.immigration);
   const emigration = finite(headline?.emigration);
   if (value === null || !period || !publishedAt) return unavailable("net-migration");
-  const direction = change === null || change === 0 ? "was unchanged" : change > 0 ? "rose" : "fell";
+  const direction = describeChange(change);
   const baseComparison = change === null
     ? "Previous-period comparison unavailable"
     : `${Math.abs(change).toFixed(0)}% ${change > 0 ? "higher" : change < 0 ? "lower" : "unchanged"}${previousPeriod ? ` than ${previousPeriod}` : ""}`;
@@ -417,7 +418,7 @@ function selectMigration(snapshot: MetricsSnapshot): SignalPresentation {
       period,
       publishedAt,
       history: historyPoints(data?.history, "netMigration"),
-      leadHeadline: change === null ? `Net migration was ${formatPeople(value)} in ${period}.` : `Net migration ${direction} to ${formatPeople(value)} in ${period}.`,
+      leadHeadline: change === null ? `Net migration was ${formatPeople(value)} in ${period}.` : change === 0 ? `Net migration was unchanged at ${formatPeople(value)} in ${period}.` : `Net migration ${direction} to ${formatPeople(value)} in ${period}.`,
       leadSummary:
         (change === null
           ? `The latest accepted ONS estimate covers ${period}; a matched previous-period comparison is unavailable.`
@@ -438,7 +439,7 @@ function selectRealWages(snapshot: MetricsSnapshot): SignalPresentation {
   if (regularGrowth === null || totalGrowth === null || !period || !publishedAt) {
     return unavailable("real-wages");
   }
-  const direction = regularGrowth === 0 ? "was unchanged" : regularGrowth > 0 ? "rose" : "fell";
+  const direction = describeChange(regularGrowth);
   return applySourceState(
     {
       ...unavailable("real-wages"),
@@ -448,7 +449,7 @@ function selectRealWages(snapshot: MetricsSnapshot): SignalPresentation {
       publishedAt,
       history: historyPoints(data?.history, "regularPayRealGrowthPercent"),
       leadHeadline: `Regular pay ${direction} ${Math.abs(regularGrowth).toFixed(1)}% in real terms (CPIH-adjusted) in ${period}.`,
-      leadSummary: `Total pay, including bonuses, grew ${formatPercent(totalGrowth, true)} in real terms over the same period. This is ONS's own CPIH-adjusted figure, not a public-data.org calculation.`,
+      leadSummary: `Total pay, including bonuses, ${describePercentageChange(totalGrowth)} in real terms over the same period. This is ONS's own CPIH-adjusted figure, not a public-data.org calculation.`,
       caveat: "Average weekly earnings are published on a provisional basis and are subject to revision.",
     },
     snapshot.meta.sources.realWages

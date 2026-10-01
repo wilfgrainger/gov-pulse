@@ -5,6 +5,7 @@ import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart"
 import MetricsStatus from "@/app/components/MetricsStatus";
 import ReleaseNoteStrip from "@/app/components/ReleaseNoteStrip";
 import { buildReleaseNote } from "@/app/lib/releaseNote";
+import { describePercentageChange } from "@/app/lib/changeLanguage";
 import { useMetrics } from "@/app/lib/useMetrics";
 
 type RealWagesHeadline = {
@@ -139,7 +140,6 @@ export default function RealWages() {
   const valid =
     metrics.isLive && metrics.cacheState === "fresh" && validPayload(payload);
   const headline = valid ? payload.headline : null;
-  const regularDirection = headline && headline.regularPayRealGrowthPercent >= 0 ? "rose" : "fell";
   const releaseNote =
     valid && headline
       ? buildReleaseNote({
@@ -165,10 +165,10 @@ export default function RealWages() {
               id="real-wages-briefing-title"
               className="mt-2 max-w-4xl text-3xl font-semibold leading-tight tracking-[-0.03em] md:text-5xl"
             >
-              Regular pay {regularDirection} {formatPercent(headline.regularPayRealGrowthPercent)} in real terms (CPIH-adjusted) in {headline.period}.
+              Regular pay {describePercentageChange(headline.regularPayRealGrowthPercent)} in real terms (CPIH-adjusted) in {headline.period}.
             </h3>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-gray-700">
-              Total pay, including bonuses, grew {formatPercent(headline.totalPayRealGrowthPercent)} in real terms (CPIH-adjusted) over the same period.
+              Total pay, including bonuses, {describePercentageChange(headline.totalPayRealGrowthPercent)} in real terms (CPIH-adjusted) over the same period.
             </p>
             <p className="mt-3 text-sm leading-6 text-gray-600">
               Published {formatReleaseDate(headline.releaseDate)}. Average weekly earnings are published on a provisional basis and remain subject to revision.
