@@ -128,6 +128,21 @@ describe("ElectionPolling evidence integrity", () => {
     expect(screen.getAllByText(/MRP model/i).length).toBeGreaterThan(0);
   });
 
+  it("renders per-poll uncertainty with a labelled estimated margin of error, never an average", () => {
+    useMetrics.mockReturnValue(result(current));
+
+    render(<ElectionPolling />);
+
+    expect(
+      screen.getByRole("heading", { name: "Individual publications and their margin of error, not an average" })
+    ).toBeInTheDocument();
+    expect(screen.getByText(/does not compute, show, or imply a/i)).toBeInTheDocument();
+    // Sample size 2285 -> MoE ~2.1pp via the standard 95% CI formula; shown in the accessible data table.
+    expect(screen.getAllByText(/\u00b12\.1pp/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/estimated from each poll's disclosed sample size/i)).toBeInTheDocument();
+    expect(screen.queryByText(/polling average/i, { selector: "h3, h4" })).not.toBeInTheDocument();
+  });
+
   it("fails closed when a required disclosure field is absent", () => {
     useMetrics.mockReturnValue(
       result({
