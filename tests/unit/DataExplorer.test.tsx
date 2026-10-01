@@ -5,6 +5,15 @@ import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 
 const NOW = new Date("2026-09-25T12:00:00Z");
 
+const replace = vi.fn();
+let currentSearch = "";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace }),
+  usePathname: () => "/explore",
+  useSearchParams: () => new URLSearchParams(currentSearch),
+}));
+
 vi.mock("@/app/lib/metricsSnapshot", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/lib/metricsSnapshot")>()),
   fetchMetricsSnapshot: () => Promise.reject(new Error("offline test")),
@@ -13,6 +22,8 @@ vi.mock("@/app/lib/metricsSnapshot", async (importOriginal) => ({
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(NOW);
+  currentSearch = "";
+  replace.mockClear();
 });
 
 afterEach(() => {
@@ -115,5 +126,90 @@ describe("public data explorer", () => {
     // empty/fake line.
     const options = within(compareSelect).getAllByRole("option").map((o) => o.textContent);
     expect(options).not.toContain("NHS waiting list");
+  });
+
+  it("initializes selection, compare and window from valid URL params", () => {
+    currentSearch = "measure=receipts&compare=unemployment&window=10";
+    render(<DataExplorer initialSnapshot={snapshot} />);
+    expect(
+      screen.getByRole("heading", { name: "Central government receipts" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: /Compare with/i })).toHaveValue(
+      "unemployment",
+    );
+    expect(screen.getByRole("combobox", { name: /History window/i })).toHaveValue(
+      "10",
+    );
+  });
+
+  it("falls back to defaults for an unknown measure id in the URL instead of breaking", () => {
+    currentSearch = "measure=does-not-exist";
+    render(<DataExplorer initialSnapshot={snapshot} />);
+    // Falls back to the first available measure rather than crashing or
+    // showing a blank/broken state.
+    expect(screen.getByRole("heading", { level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: /Compare with/i })).toHaveValue("");
+  });
+
+  it("falls back to no comparison when compare matches the selected measure", () => {
+    currentSearch = "measure=receipts&compare=receipts";
+    render(<DataExplorer initialSnapshot={snapshot} />);
+    expect(screen.getByRole("combobox", { name: /Compare with/i })).toHaveValue("");
+  });
+
+  it("falls back to no comparison for an unknown compare id", () => {
+    currentSearch = "measure=receipts&compare=does-not-exist";
+    render(<DataExplorer initialSnapshot={snapshot} />);
+    expect(screen.getByRole("combobox", { name: /Compare with/i })).toHaveValue("");
+  });
+
+  it("falls back to the default window for an invalid window value", () => {
+    currentSearch = "window=not-a-real-window";
+    render(<DataExplorer initialSnapshot={snapshot} />);
+    expect(screen.getByRole("combobox", { name: /History window/i })).toHaveValue("5");
+  });
+
+  it("updates the URL via router.replace (not push) when the compare selection changes", () => {
+    render(<DataExplorer initialSnapshot={snapshot} />);
+    replace.mockClear();
+    const compareSelect = screen.getByRole("combobox", { name: /Compare with/i });
+    fireEvent.change(compareSelect, { target: { value: "receipts" } });
+
+    expect(replace).toHaveBeenCalled();
+    const [url, options] = replace.mock.calls.at(-1)!;
+    expect(url).toContain("compare=receipts");
+    expect(url).toContain("measure=unemployment");
+    expect(options).toEqual({ scroll: false });
+  });
+
+  it("updates the URL when the history window changes, omitting the default window", () => {
+    render(<DataExplorer initialSnapshot={snapshot} />);
+    replace.mockClear();
+    const windowSelect = screen.getByRole("combobox", { name: /History window/i });
+    fireEvent.change(windowSelect, { target: { value: "10" } });
+
+    const [url] = replace.mock.calls.at(-1)!;
+    expect(url).toContain("window=10");
+
+    fireEvent.change(windowSelect, { target: { value: "5" } });
+    const [urlAfterDefault] = replace.mock.calls.at(-1)!;
+    expect(urlAfterDefault).not.toContain("window=");
+  });
+
+  it("resets compare and window and updates the URL when a different measure is selected", () => {
+    currentSearch = "measure=unemployment&compare=receipts&window=10";
+    render(<DataExplorer initialSnapshot={snapshot} />);
+    replace.mockClear();
+
+    fireEvent.click(
+      within(screen.getByRole("list", { name: "Measures" })).getByRole("button", {
+        name: /Central government receipts/i,
+      }),
+    );
+
+    const [url] = replace.mock.calls.at(-1)!;
+    expect(url).toContain("measure=receipts");
+    expect(url).not.toContain("compare=");
+    expect(url).not.toContain("window=");
   });
 });
