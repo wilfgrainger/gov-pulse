@@ -1,5 +1,11 @@
 # Cloudflare Free data plane
 
+> Historical cutover/budget description. Its manual-deployment and recurring
+> ingestion assumptions are not authoritative for the current system. Verify
+> actual workflows and official Free limits; preserve free-only operation.
+> See the proposed
+> [reinvention design](../superpowers/specs/2026-10-01-publication-reinvention-design.md).
+
 Status: implementation prepared on `main`; production cutover requires one manual Worker deployment.
 
 ## Decision

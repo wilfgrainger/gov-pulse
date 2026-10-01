@@ -1,5 +1,10 @@
 # Tasks — public-data.org (living checklist)
 
+> Historical checklist. Use the proposed reinvention sequence in
+> `docs/superpowers/plans/2026-10-01-publication-reinvention.md` for the new
+> programme. Older scope exclusions do not override the user's authorization;
+> evidence integrity, accessibility and Cloudflare Free remain requirements.
+
 > DRAFT in `_planning-drafts/` only. GitHub-flavoured checkboxes, grouped by roadmap phase.
 > Each task is small and issue-scoped. Highest-leverage next step is pinned at the top.
 > Nothing here authorises push/merge/deploy; all work stays fail-closed per `north_star.md`.

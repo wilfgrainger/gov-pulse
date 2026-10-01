@@ -1,5 +1,11 @@
 # Cloudflare free-tier data control plane
 
+> Historical architecture description. Validate topology, routes, currentness
+> and resource counts against current code before use. It does not freeze the
+> user-authorized reinvention architecture. See the proposed
+> [design](../superpowers/specs/2026-10-01-publication-reinvention-design.md)
+> and [review](../superpowers/specs/2026-10-01-publication-reinvention-review.md).
+
 public-data.org separates static presentation from live evidence publication while keeping both under repository control.
 
 ## System boundary

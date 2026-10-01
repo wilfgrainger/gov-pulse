@@ -1,5 +1,10 @@
 # Data, insights and lean delivery
 
+> Historical scope-specific delivery brief. The existing-contract/no-migration
+> restriction does not apply to the user-authorized 1 October 2026 reinvention.
+> Preserve source truth and free-only operation; see the proposed
+> [reinvention design](../../superpowers/specs/2026-10-01-publication-reinvention-design.md).
+
 ## Outcome and acceptance
 
 Make verified UK statistics easier to find, compare and reuse, and remove repeated work from code releases. Preserve source-specific dates, geography, missingness, free Cloudflare hosting, and the existing public contracts. No production migration or new paid service.

@@ -1,5 +1,10 @@
 # Roadmap — public-data.org
 
+> Historical roadmap. The user-authorized 1 October 2026 reinvention is planned
+> in `docs/superpowers/plans/2026-10-01-publication-reinvention.md`. Reconcile
+> older issue/state claims against current code before acting; they are not
+> scope restrictions or proof of present production state.
+
 > DRAFT planning document in `_planning-drafts/` only. Themed phases derived from the
 > ACTUAL current repo state (read 2026-09-28) and the known open issues below.
 > Ordering is by leverage, not size. Nothing here authorises pushing, merging or deploying.

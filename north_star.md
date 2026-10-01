@@ -1,5 +1,11 @@
 # North Star — public-data.org
 
+> Historical brief, superseded for the user-authorized 1 October 2026
+> reinvention. Its calm-style, dashboard/analytics and architectural expansion
+> prohibitions do not constrain that programme. Preserve its evidence,
+> accessibility and free-only principles. See `AGENTS.md` and the proposed
+> `docs/superpowers/specs/2026-10-01-publication-reinvention-design.md`.
+
 > DRAFT planning document. Written into `_planning-drafts/` only; changes no existing repo file.
 > Grounded in `AGENTS.md` (operating contract) and `docs/delivery/public-data-v3/README.md` (v3 delivery contract).
 

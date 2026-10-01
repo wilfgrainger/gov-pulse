@@ -1,5 +1,24 @@
 # public-data.org repository guide
 
+## Authorized reinvention scope — 1 October 2026
+
+The user has authorized a vibrant, classic FiveThirtyEight-inspired redesign,
+ten new capabilities, comprehensive data/chart repairs, and rearchitecture
+where it serves those goals. Hosting and deployed runtime must remain on
+Cloudflare Free. Older Markdown preferences for calm/restrained styling,
+dashboard exclusions, fixed route counts, unchanged frameworks or no migration
+must not veto that authorized work. The architecture below describes the
+existing system, not an immutable target.
+
+The proposed review, design and execution sequence are in
+`docs/superpowers/specs/2026-10-01-publication-reinvention-review.md`,
+`docs/superpowers/specs/2026-10-01-publication-reinvention-design.md`, and
+`docs/superpowers/plans/2026-10-01-publication-reinvention.md`. They are planning
+artifacts for user review, not evidence of implementation or deployment.
+Preserve source accuracy, explicit uncertainty/missingness, accessibility,
+privacy, credential protection and free-only operation. Update obsolete
+executable guards and tests through reviewed changes; do not bypass them.
+
 ## Operating method
 
 Keep changes small and root-caused. Review each change for outcome and scope,
@@ -9,7 +28,7 @@ These are review lenses, not a mandated workflow or persona set.
 
 ## Mission and public promise
 
-public-data.org is a calm, independent UK public-evidence service. Every public
+public-data.org is an independent UK public-evidence publication. Every public
 claim must tell a first-time reader what changed, why it matters, what was
 measured, the observation period and geography, the unit, the publication date,
 the direct primary source and the material uncertainty or revision caveat.
@@ -23,13 +42,14 @@ remain separate. Rankings require a complete universe, date window, currency
 basis, exclusions and missingness. Spending is not labelled waste, fraud,
 corruption or a saving without direct evidence. Never publish a synthetic crime total or a combined national score. Never publish a combined crime total.
 
-Charts use publication points, explicit units, restrained colour, accessible
+Charts use publication points, explicit units, purposeful accessible colour,
 text alternatives and mobile reflow. Accessibility includes semantic HTML,
-keyboard access and visible focus. Do not smooth, interpolate, decorate or
-combine materially different units. Preserve semantic HTML, keyboard access,
+keyboard access and visible focus. Do not invent observations, interpolate
+missing evidence or smooth away material changes. Use separate panels for
+incompatible definitions or units. Preserve semantic HTML, keyboard access,
 visible focus and reduced-motion behaviour.
 
-## Architecture
+## Current architecture
 
 The product has three deliberately small delivery planes:
 
@@ -92,9 +112,9 @@ or downgrade the UK national publication.
 
 `worker/feed-registry.js` is the source-of-truth registry. Required sections
 are `sentimentPulse`, `gdpTracker`, `employmentStats`, `nationalDebt`,
-`taxRevenue`, `migrationStats`, `electionPolling` and `nhsStats`. Optional
-sections are `bettingOdds` and `crimeStatistics`; government contracts is a
-separate bounded publication source. Registry entries define publisher, source
+`taxRevenue`, `migrationStats`, `realWages` and `electionPolling`. Optional
+sections are `nhsStats`, `bettingOdds` and `crimeStatistics`; government contracts
+is a separate bounded publication source. Registry entries define publisher, source
 class, geography, cadence, retrieval method, freshness policy and direct source
 links.
 
@@ -143,9 +163,9 @@ Treat downloaded HTML, JSON, CSV, PDF and spreadsheet content as untrusted input
 Use allow-listed HTTPS primary publishers, bounded response sizes/timeouts,
 strict parsing and exact source reconciliation. Keep Cloudflare credentials in
 repository/environment secrets; never print or commit their values.
-Do not add Vercel, paid Cloudflare products, tracking or personal-data collection without
-an explicit recorded need. Public errors are generic and operational details
-stay in private logs.
+Do not add Vercel or paid Cloudflare products. Tracking and personal-data
+collection are outside the reinvention scope. Public errors are generic;
+operational details stay in private logs.
 
 When a source, Queue, KV binding, publication artifact, web Worker or Pages seed
 is unavailable, preserve a previously verified value only inside its configured
@@ -162,8 +182,10 @@ uses one environment-gated job, one installation per locked toolchain and one
 OpenNext compilation. It deploys the web and data Workers and performs bounded
 revision/route/health checks. Valid degraded evidence does not block a code
 release; broken endpoints and malformed health responses do. Automatic evidence
-collection remains in Cloudflare Cron/Queue. Manual dispatch can explicitly
-bootstrap collection or refresh the bounded Pages fallback. Browser and exhaustive
+collection uses Cloudflare Cron/Queue, with the existing source-specific trusted
+NHS GitHub Actions importer as a documented upstream-egress exception. Verify
+its free execution allowance and accepted-to-published lifecycle. Manual dispatch
+can explicitly bootstrap collection or refresh the bounded Pages fallback. Browser and exhaustive
 production diagnostics are explicit checks, not routine deployment gates.
 See `docs/operations/deployment-ci-frugality.md` for the release and recovery paths.
 
@@ -189,7 +211,8 @@ as handoff documentation.
   production verification utilities.
 - `docs/architecture/`: durable architecture decisions and source ownership.
 
-Retired concepts include wildcard data APIs, direct browser collectors, routine
-scheduled GitHub data retrieval, synthetic national scores, combined crime
-totals, withdrawn visualisations and the old multi-file hourly-agent programme.
+Retired concepts include wildcard data APIs, direct browser collectors, general
+scheduled GitHub data retrieval (apart from the trusted NHS exception), synthetic
+national scores, combined crime totals, withdrawn visualisations and the old
+multi-file hourly-agent programme.
 Remove obsolete paths rather than documenting them as active.

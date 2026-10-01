@@ -1,5 +1,11 @@
 # public-data.org v3 delivery contract
 
+> Historical scope-specific contract. Its styling, new-feed, backend,
+> framework and dependency restrictions are superseded by the user-authorized
+> 1 October 2026 reinvention. Retain its source-integrity and accessibility
+> principles. See the proposed
+> [reinvention design](../../superpowers/specs/2026-10-01-publication-reinvention-design.md).
+
 ## Mission
 
 For a first-time UK reader, make public-data.org answer four questions within the first minute:
