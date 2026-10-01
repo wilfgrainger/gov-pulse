@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import type { CategoryGroup } from "../lib/sections";
 import BrandLogo from "./BrandLogo";
 import EvidenceSearch from "./EvidenceSearch";
+import PublicationFreshnessIndicator from "./PublicationFreshnessIndicator";
 
 const QUICK_LINK_IDS = [
   "gdp",
@@ -106,6 +107,7 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
         <p className="hidden border-l border-[#d3dae1] pl-4 text-xs leading-5 text-[#68707b] lg:block">
           Independent UK public evidence
         </p>
+        <PublicationFreshnessIndicator />
 
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
           <Link
