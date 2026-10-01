@@ -3,9 +3,11 @@
 import MetricsStatus from "@/app/components/MetricsStatus";
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart";
+import ReleaseNoteStrip from "@/app/components/ReleaseNoteStrip";
 import SeriesEvidence, {
   type SeriesEvidenceItem,
 } from "@/app/components/SeriesEvidence";
+import { buildReleaseNote } from "@/app/lib/releaseNote";
 import { useMetrics } from "@/app/lib/useMetrics";
 
 const FALLBACK = {
@@ -96,6 +98,18 @@ export default function EmploymentStats() {
   const metrics = useMetrics("employmentStats", FALLBACK);
   const data = metrics.data;
   const valid = validPayload(data);
+  const releaseNote = valid
+    ? buildReleaseNote({
+        measureLabel: "The unemployment rate",
+        latestValueDisplay: `${data.headline.unemploymentRate.toFixed(1)}%`,
+        latestPeriod: data.headline.period,
+        releaseDate: data.headline.releaseDate,
+        history: data.history.labourForce.map((point) => ({
+          observedAt: point.observedAt,
+          value: point.unemploymentRate,
+        })),
+      })
+    : null;
   const evidence: SeriesEvidenceItem[] = valid
     ? [
         {
@@ -147,6 +161,7 @@ export default function EmploymentStats() {
                 parseDateOnlyUtc(data.headline.releaseDate)
               )}. Labour Force Survey estimates are rolling three-month estimates and carry sampling uncertainty.
             </p>
+            {releaseNote ? <ReleaseNoteStrip idPrefix="employment-stats" note={releaseNote} /> : null}
           </section>
 
           <section aria-labelledby="employment-numbers-title">
