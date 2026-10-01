@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import ClientOnlyChart from "@/app/components/ClientOnlyChart";
 import { METRICS_SNAPSHOT_PATH } from "@/app/lib/config";
+import { visibleChartEvents } from "@/app/lib/chartEvents";
 
 export type FinancialChartPoint = {
   observedAt: number;
@@ -38,6 +39,14 @@ type Props = {
   referenceLabel?: string;
   downloadLabel?: string;
   heightClass?: string;
+  /**
+   * Show curated event markers (vertical reference lines) for known UK
+   * events that fall within this chart's visible date range. Defaults to
+   * true; set false for a chart where a date marker would not be meaningful.
+   * Markers are descriptive date labels only -- never a causal claim about
+   * this series.
+   */
+  showEvents?: boolean;
 };
 
 function formatAxisDate(value: number) {
@@ -66,11 +75,16 @@ export default function FinancialTimeSeriesChart({
   referenceLabel,
   downloadLabel = "Download published data (JSON)",
   heightClass = "h-[300px]",
+  showEvents = true,
 }: Props) {
   const first = data.at(0);
   const latest = data.at(-1);
   const range =
     first && latest ? `${first.period} to ${latest.period}` : "Published history unavailable";
+  const events =
+    showEvents && first && latest
+      ? visibleChartEvents(first.observedAt, latest.observedAt)
+      : [];
 
   return (
     <figure className="border-y border-black/20 bg-[#f7f9fb] py-5">
@@ -83,7 +97,11 @@ export default function FinancialTimeSeriesChart({
       </figcaption>
       <div
         role="img"
-        aria-label={`${title}. ${description}. Period shown: ${range}.`}
+        aria-label={`${title}. ${description}. Period shown: ${range}.${
+          events.length
+            ? ` Marked reference dates: ${events.map((e) => e.label).join("; ")}.`
+            : ""
+        }`}
         className="border-t border-black/10 pt-3"
       >
         <ClientOnlyChart heightClass={heightClass}>
@@ -128,6 +146,25 @@ export default function FinancialTimeSeriesChart({
                   }
                 />
               ) : null}
+              {events.map((event) => (
+                <ReferenceLine
+                  key={event.id}
+                  x={event.timestamp}
+                  stroke="#b8bfc8"
+                  strokeDasharray="3 3"
+                  ifOverflow="visible"
+                  label={{
+                    value: event.label,
+                    position: "insideTopLeft",
+                    angle: -90,
+                    fontSize: 9,
+                    fill: "#8892a0",
+                    offset: 6,
+                  }}
+                >
+                  <title>{event.label}</title>
+                </ReferenceLine>
+              ))}
               <Tooltip
                 cursor={{ stroke: "#8892a0", strokeWidth: 1 }}
                 contentStyle={{
@@ -188,6 +225,15 @@ export default function FinancialTimeSeriesChart({
               {entry.label}
             </span>
           ))}
+          {events.length ? (
+            <span className="inline-flex items-center gap-2">
+              <span
+                aria-hidden="true"
+                className="inline-block h-0.5 w-5 border-t border-dashed border-[#8892a0]"
+              />
+              Marked dates: known UK events, for reference only
+            </span>
+          ) : null}
         </div>
         <a
           href={METRICS_SNAPSHOT_PATH}

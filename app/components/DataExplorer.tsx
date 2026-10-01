@@ -10,6 +10,7 @@ import {
   measuresCsv,
   type Measure,
 } from "@/app/lib/dataExplorer";
+import { visibleChartEvents } from "@/app/lib/chartEvents";
 
 const dateLabel = (value: string) =>
   new Intl.DateTimeFormat("en-GB", {
@@ -17,18 +18,38 @@ const dateLabel = (value: string) =>
     timeZone: "UTC",
   }).format(new Date(value));
 
-function MeasureDetail({ measure }: { measure: Measure }) {
+function MeasureDetail({
+  measure,
+  allMeasures,
+}: {
+  measure: Measure;
+  allMeasures: Measure[];
+}) {
   const [years, setYears] = useState("5");
+  const [compareId, setCompareId] = useState("");
   const end = measure.history.at(-1)?.date ?? 0;
   const start = new Date(end);
   start.setUTCFullYear(start.getUTCFullYear() - Number(years));
   const points = measure.history.filter(
     (p) => years === "all" || p.date >= start.getTime(),
   );
+  const compareMeasure = allMeasures.find((m) => m.id === compareId) ?? null;
+  const comparePointsForWindow = compareMeasure
+    ? compareMeasure.history.filter(
+        (p) => years === "all" || p.date >= start.getTime(),
+      )
+    : [];
   const comparison = comparePoints(points, measure.unit);
   const min = Math.min(...points.map((p) => p.value));
   const max = Math.max(...points.map((p) => p.value));
   const span = max - min || 1;
+  const compareMin = comparePointsForWindow.length
+    ? Math.min(...comparePointsForWindow.map((p) => p.value))
+    : 0;
+  const compareMax = comparePointsForWindow.length
+    ? Math.max(...comparePointsForWindow.map((p) => p.value))
+    : 1;
+  const compareSpan = compareMax - compareMin || 1;
   const intervals = points.slice(1).map((point, index) => point.date - points[index].date).sort((a, b) => a - b);
   const typicalInterval = intervals[Math.floor(intervals.length / 2)] || 1;
   const segments: typeof points[] = [];
@@ -36,11 +57,29 @@ function MeasureDetail({ measure }: { measure: Measure }) {
     if (index === 0 || point.date - points[index - 1].date > typicalInterval * 1.7) segments.push([]);
     segments.at(-1)!.push(point);
   });
+  const compareIntervals = comparePointsForWindow
+    .slice(1)
+    .map((point, index) => point.date - comparePointsForWindow[index].date)
+    .sort((a, b) => a - b);
+  const compareTypicalInterval = compareIntervals[Math.floor(compareIntervals.length / 2)] || 1;
+  const compareSegments: typeof comparePointsForWindow[] = [];
+  comparePointsForWindow.forEach((point, index) => {
+    if (
+      index === 0 ||
+      point.date - comparePointsForWindow[index - 1].date > compareTypicalInterval * 1.7
+    )
+      compareSegments.push([]);
+    compareSegments.at(-1)!.push(point);
+  });
+  const windowStart = points[0]?.date ?? 0;
+  const windowEnd = end;
   const x = (date: number) =>
     105 +
-    ((date - (points[0]?.date ?? 0)) / (end - (points[0]?.date ?? 0) || 1)) *
+    ((date - windowStart) / (windowEnd - windowStart || 1)) *
       605;
   const y = (value: number) => 165 - ((value - min) / span) * 120;
+  const yCompare = (value: number) => 165 - ((value - compareMin) / compareSpan) * 120;
+  const events = visibleChartEvents(windowStart, windowEnd);
   return (
     <section
       aria-labelledby="measure-detail-title"
@@ -71,34 +110,86 @@ function MeasureDetail({ measure }: { measure: Measure }) {
             </p>
           )}
         </div>
-        <label className="text-sm font-semibold">
-          History window
-          <select
-            value={years}
-            onChange={(event) => setYears(event.target.value)}
-            className="mt-2 block min-h-11 border border-slate-400 bg-white px-3 py-2"
-          >
-            <option value="1">1 year</option>
-            <option value="5">5 years</option>
-            <option value="10">10 years</option>
-            <option value="all">All available</option>
-          </select>
-        </label>
+        <div className="flex flex-wrap items-start gap-4">
+          <label className="text-sm font-semibold">
+            History window
+            <select
+              value={years}
+              onChange={(event) => setYears(event.target.value)}
+              className="mt-2 block min-h-11 border border-slate-400 bg-white px-3 py-2"
+            >
+              <option value="1">1 year</option>
+              <option value="5">5 years</option>
+              <option value="10">10 years</option>
+              <option value="all">All available</option>
+            </select>
+          </label>
+          <label className="text-sm font-semibold">
+            Compare with&hellip;
+            <select
+              value={compareId}
+              onChange={(event) => setCompareId(event.target.value)}
+              className="mt-2 block min-h-11 max-w-[14rem] border border-slate-400 bg-white px-3 py-2"
+            >
+              <option value="">None</option>
+              {allMeasures
+                .filter((m) => m.id !== measure.id && m.history.length > 1)
+                .map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))}
+            </select>
+          </label>
+        </div>
       </div>
+      {compareMeasure && comparePointsForWindow.length === 0 && (
+        <p className="mt-4 border-l-2 border-amber-700 bg-amber-50 py-2 pl-4 text-sm leading-6 text-amber-900">
+          {compareMeasure.label} has no published history for this window, so it cannot be
+          overlaid here. Its own current value, if any, remains available on its own measure page.
+        </p>
+      )}
       {points.length > 1 ? (
         <figure className="mt-8 border-y border-slate-200 py-5">
           <svg
             viewBox="0 0 740 225"
             role="img"
-            aria-label={`${measure.label}: ${points.length} published observations, in ${measure.unit}, from ${points[0].period} to ${points.at(-1)?.period}. Vertical scale does not start at zero. Exact values in the table below.`}
+            aria-label={`${measure.label}: ${points.length} published observations, in ${measure.unit}, from ${points[0].period} to ${points.at(-1)?.period}. Vertical scale does not start at zero. Exact values in the table below.${
+              compareMeasure && comparePointsForWindow.length > 1
+                ? ` Overlaid for comparison: ${compareMeasure.label}, in ${compareMeasure.unit}, independently scaled on its own axis, source cited separately below. Not combined into one value with ${measure.label}.`
+                : ""
+            }${
+              events.length
+                ? ` Marked reference dates: ${events.map((e) => e.label).join("; ")}.`
+                : ""
+            }`}
             className="w-full"
           >
+            {events.map((event) => {
+              const ex = x(event.timestamp);
+              return (
+                <g key={event.id}>
+                  <line x1={ex} x2={ex} y1="40" y2="175" stroke="#cbd5e1" strokeDasharray="3 3" />
+                  <title>{event.label}</title>
+                </g>
+              );
+            })}
             <text x="8" y="50" fontSize="14" fill="#475569">
               {formatMeasure(max, measure.unit)}
             </text>
             <text x="8" y="170" fontSize="14" fill="#475569">
               {formatMeasure(min, measure.unit)}
             </text>
+            {compareMeasure && comparePointsForWindow.length > 1 && (
+              <>
+                <text x="735" y="50" textAnchor="end" fontSize="12" fill="#9333ea">
+                  {formatMeasure(compareMax, compareMeasure.unit)}
+                </text>
+                <text x="735" y="170" textAnchor="end" fontSize="12" fill="#9333ea">
+                  {formatMeasure(compareMin, compareMeasure.unit)}
+                </text>
+              </>
+            )}
             {[45, 105, 165].map((tick) => (
               <line key={tick} x1="105" x2="710" y1={tick} y2={tick} stroke="#d7dfe6" />
             ))}
@@ -114,6 +205,24 @@ function MeasureDetail({ measure }: { measure: Measure }) {
                 vectorEffect="non-scaling-stroke"
               />
             ) : null)}
+            {compareMeasure &&
+              compareSegments.map((segment, index) =>
+                segment.length > 1 ? (
+                  <polyline
+                    key={`compare-${index}`}
+                    points={segment
+                      .map((point) => `${x(point.date)},${yCompare(point.value)}`)
+                      .join(" ")}
+                    fill="none"
+                    stroke="#9333ea"
+                    strokeWidth="2"
+                    strokeDasharray="6 4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ) : null,
+              )}
             {points.filter((_, index) => points.length < 20 || index === 0 || index === points.length - 1).map((point) => (
               <circle
                 key={point.date}
@@ -127,6 +236,27 @@ function MeasureDetail({ measure }: { measure: Measure }) {
                 </title>
               </circle>
             ))}
+            {compareMeasure &&
+              comparePointsForWindow
+                .filter(
+                  (_, index) =>
+                    comparePointsForWindow.length < 20 ||
+                    index === 0 ||
+                    index === comparePointsForWindow.length - 1,
+                )
+                .map((point) => (
+                  <circle
+                    key={`compare-${point.date}`}
+                    cx={x(point.date)}
+                    cy={yCompare(point.value)}
+                    r="2.5"
+                    fill="#9333ea"
+                  >
+                    <title>
+                      {point.period}: {formatMeasure(point.value, compareMeasure.unit)}
+                    </title>
+                  </circle>
+                ))}
             <text x="105" y="205" fontSize="14" fill="#475569">
               {points[0].period}
             </text>
@@ -138,7 +268,42 @@ function MeasureDetail({ measure }: { measure: Measure }) {
             Line joins consecutive published observations; gaps are left open. The vertical scale spans{" "}
             {formatMeasure(min, measure.unit)} to{" "}
             {formatMeasure(max, measure.unit)} and does not start at zero. The coral dot marks the latest observation.
+            {events.length ? " Dashed vertical lines mark known UK dates, for reference only." : ""}
           </figcaption>
+          {compareMeasure && (
+            <div className="mt-3 flex flex-wrap items-start justify-between gap-4 border-t border-slate-200 pt-3 text-sm">
+              <div className="flex items-center gap-2">
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-0.5 w-5 border-t-2 border-dashed border-[#9333ea]"
+                />
+                <span>
+                  <strong>{compareMeasure.label}</strong> ({compareMeasure.unit}) — right axis, own scale.
+                  {comparePointsForWindow.length === 0 && " No published history in this window."}
+                </span>
+              </div>
+              {compareMeasure.value === null ? (
+                <p className="border-l-2 border-amber-700 bg-amber-50 px-3 py-1 text-amber-900">
+                  {compareMeasure.label} has no current verified value — shown as unavailable, not hidden.
+                </p>
+              ) : compareMeasure.sourceUrl ? (
+                <p className="text-slate-600">
+                  Source for {compareMeasure.label}:{" "}
+                  <a
+                    href={compareMeasure.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline underline-offset-4"
+                  >
+                    original publication ↗
+                  </a>
+                  {compareMeasure.publishedAt
+                    ? ` · published ${dateLabel(compareMeasure.publishedAt)}`
+                    : ""}
+                </p>
+              ) : null}
+            </div>
+          )}
         </figure>
       ) : (
         <p className="mt-6 border-l-2 border-slate-300 pl-4 text-base text-slate-600">
@@ -396,7 +561,7 @@ export default function DataExplorer({
               </li>
             ))}
           </ul>
-          {detail && <MeasureDetail key={detail.id} measure={detail} />}
+          {detail && <MeasureDetail key={detail.id} measure={detail} allMeasures={measures} />}
         </div>
       )}
     </div>
