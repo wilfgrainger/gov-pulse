@@ -40,7 +40,7 @@ Task 4: fix international measures so a failed per-measure source refresh preser
 
 - International comparison rows now carry a source-edition fingerprint, successful check, `validUntil`, status and per-measure retry time; observation year remains separate and historical editions are labeled as historical.
 - Source failures are tracked independently. A still-valid previous measure is retained; genuine successful missingness is published as missing; expired or metadata-free legacy values are dropped. A due healthcare retry requests only its dependent source and does not overwrite other measures.
-- Added one daily queued comparison refresh. Updated the workload model to 30 healthy deliveries / 90 project operations, with 120 / 360 configured retry upper bound.
+- Reused the existing direct daily international-comparison scheduler and added per-measure source selection for retries; no Queue message was added. The workload stays at 29 healthy deliveries / 87 project operations, with 116 / 348 configured retry upper bound.
 - Updated the comparison UI to show source-specific validity instead of implying `generatedAt` is observation currentness.
 - Verification: `npm test` passed 601 tests / 115 files; `npm run lint`, architecture/source/hosting checks, budget audit and `npm run build` passed.
 

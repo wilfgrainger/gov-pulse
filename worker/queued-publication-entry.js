@@ -75,10 +75,10 @@ const REQUIRED_SECTION_SET = new Set(REQUIRED_PUBLISHED_SECTION_IDS);
 
 const FREE_TIER_BUDGET = Object.freeze({
   cronInvocationsPerDay: 9,
-  queueJobsPerDayHealthyTarget: 30,
-  queueOperationsPerDayHealthyTarget: 90,
-  queueJobsPerDayConfiguredRetryUpperBound: 120,
-  queueOperationsPerDayConfiguredRetryUpperBound: 360,
+  queueJobsPerDayHealthyTarget: 29,
+  queueOperationsPerDayHealthyTarget: 87,
+  queueJobsPerDayConfiguredRetryUpperBound: 116,
+  queueOperationsPerDayConfiguredRetryUpperBound: 348,
   officialSectionsPerDay: PUBLISHED_SECTIONS.length,
   contractRequestsPerDayMax: CONTRACT_MAX_REQUESTS_PER_RUN,
   kvWritesPerDayTargetMax: 120,
@@ -159,11 +159,6 @@ function refreshJobs(runId, scope = "daily") {
       type: "refresh-contracts",
       runId,
       jobId: "contracts",
-    });
-    jobs.push({
-      type: "refresh-international-comparison",
-      runId,
-      jobId: "international-comparison",
     });
   }
   return jobs;

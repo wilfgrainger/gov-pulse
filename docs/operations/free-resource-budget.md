@@ -6,16 +6,15 @@ expressions in `worker/queued-publication-entry.js`, and `worker/wrangler.toml`.
 
 The healthy recurring schedule has nine cron invocations: one daily run and
 eight three-hour betting refreshes. The daily run queues eleven publication
-sections, one contracts refresh, one international comparison refresh and one
-finaliser (14 deliveries). Each three-hour run queues the betting refresh and
-one finaliser (16 deliveries). The resulting target is 30 queue deliveries per
-day. The code records a planning factor of three queue operations per
-delivery, or 90 operations/day;
+sections, one contracts refresh and one finaliser (13 deliveries). Each
+three-hour run queues the betting refresh and one finaliser (16 deliveries).
+The resulting target is 29 queue deliveries per day. The code records a
+planning factor of three queue operations per delivery, or 87 operations/day;
 this factor is a conservative project estimate, not a Cloudflare billing
 definition.
 
 The queue allows three retries. If every scheduled delivery exhausts all three
-retries, the configured upper bound is 120 deliveries/day and 360 project
+retries, the configured upper bound is 116 deliveries/day and 348 project
 operations/day. This is a failure bound, not a healthy target. Bootstrap and
 manual recovery traffic are excluded and must be budgeted separately. The
 derived schedule is tested so a new active feed or retry allowance cannot

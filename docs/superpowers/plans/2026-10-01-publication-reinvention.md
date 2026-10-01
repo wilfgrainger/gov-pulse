@@ -130,7 +130,7 @@ Workbook decoding accepts a validated limits object with `maxEntryBytes`,
 by stream-counted inflate and worksheet parsing; do not first allocate the
 unbounded decoded result and reject it afterwards.
 
-- [x] Test the current healthy schedule: 30 deliveries and 90 project operations before retries. Registry additions and failed-job retry deliveries raise the derived totals.
+- [x] Test the current healthy schedule: 29 deliveries and 87 project operations before retries. Registry additions and failed-job retry deliveries raise the derived totals.
 - [x] Run `npx vitest run tests/unit/freeBudget.test.ts`; the initial red test found the absent derivation.
 - [x] Write/run failing workbook tests: >8 MiB entry, aggregate entry expansion, stored-entry cap, worksheet row/cell caps, forged ZIP sizes and shared-string cap.
 - [x] Implement expansion/row/cell bounds and count all workbook sheets; focused XLSX, international XLSX and NHS parser tests pass.
@@ -162,7 +162,7 @@ unbounded decoded result and reject it afterwards.
 
 - [x] Assert a transient healthcare-source failure retains a still-valid denominator of 13 and retries only that measure's sources; genuine source missingness remains missing. Expired data cannot be retained.
 - [x] Assert old generated timestamps cannot masquerade as current validity; historic observation years remain explicitly valid historical evidence under a 30-day successful-check policy.
-- [x] Run focused tests red, implement per-measure lifecycle/merge/expiry/due handling and the daily independent refresh job, then rerun green.
+- [x] Run focused tests red, implement per-measure lifecycle/merge/expiry/due handling and use the existing direct daily scheduler for retries, then rerun green.
 - [x] Verify a failed comparison leaves the national data path and other six international measures available; review focused changes.
 - [x] Run full checks, inspect and commit the international lifecycle tranche.
 

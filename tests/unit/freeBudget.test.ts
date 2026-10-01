@@ -6,8 +6,8 @@ import { deriveScheduledWork } from "../../scripts/audit-free-budget.mjs";
 describe("Cloudflare-free scheduled workload accounting", () => {
   it("derives the healthy scheduled baseline from registry and cron definitions", () => {
     expect(deriveScheduledWork(FEED_REGISTRY, [DAILY_CRON, BETTING_CRON])).toMatchObject({
-      messagesPerDay: 30,
-      operationsPerDay: 90,
+      messagesPerDay: 29,
+      operationsPerDay: 87,
     });
   });
 
@@ -16,12 +16,12 @@ describe("Cloudflare-free scheduled workload accounting", () => {
       ...FEED_REGISTRY,
       addedDailyFeed: { operationalStatus: "active", refreshCadence: "daily" },
     };
-    expect(deriveScheduledWork(registry, [DAILY_CRON, BETTING_CRON]).messagesPerDay).toBe(31);
+    expect(deriveScheduledWork(registry, [DAILY_CRON, BETTING_CRON]).messagesPerDay).toBe(30);
   });
 
   it("counts failed delivery retries as additional queue work", () => {
     expect(deriveScheduledWork(FEED_REGISTRY, [DAILY_CRON, BETTING_CRON], {
       retryDeliveries: 4,
-    })).toMatchObject({ messagesPerDay: 34, operationsPerDay: 102 });
+    })).toMatchObject({ messagesPerDay: 33, operationsPerDay: 99 });
   });
 });
