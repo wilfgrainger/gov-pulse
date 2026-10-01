@@ -18,10 +18,11 @@
 
 - [x] Rewrite/retire `docs/cloudflare-worker-backend.md` to match the shipped 3-route,
   daily+3h data Worker with automatic deploy (see pinned task; done 2026-09-29).
-- [ ] Add a superseding note to `docs/architecture/decisions/0001-cloudflare-first-data-plane.md`
+- [x] Add a superseding note to `docs/architecture/decisions/0001-cloudflare-first-data-plane.md`
   (or author ADR-0002) recording the third route `/data/international-comparison.json`.
-  <!-- follow-up 2026-09-29: next highest-leverage Phase 0 doc after backend-doc fix;
-       ADR-0001 still says "two exact routes" but three ship. -->
+  Done 2026-10-01 (branch `auto/adr-0001-third-route-note`): added a dated "Superseded in
+  part" banner recording the two→three route count and the Pages→OpenNext web-Worker
+  delivery model, without editing the historical decision body.
 - [ ] Follow-up (2026-09-29): audit `docs/architecture/cloudflare-free-data-plane.md`
   for the same "manual-only deploy" claim just corrected in `cloudflare-worker-backend.md`,
   so the two docs agree the deploy is automatic from `main`.
