@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart";
 import MetricsStatus from "@/app/components/MetricsStatus";
 import { useMetrics } from "@/app/lib/useMetrics";
@@ -537,59 +538,44 @@ export default function NHSStats() {
             </div>
           </section>
 
-          <section
-            aria-labelledby="nhs-why-title"
-            className="border-l-4 border-foreground pl-4"
-          >
-            <h3 id="nhs-why-title" className="text-lg font-semibold">
-              Why it matters
-            </h3>
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-700">
-              RTT measures the time from referral to the start of consultant-led
-              elective treatment. The pathway count shows the scale of unfinished
-              care; the 18-week share and long-wait thresholds show how long that
-              care is taking.
-            </p>
-          </section>
-
-          <details className="border-y border-black/20 py-4">
-            <summary className="cursor-pointer text-lg font-semibold">
-              Explain these numbers
-            </summary>
-            <div className="mt-4 grid gap-5 text-sm leading-6 text-gray-700 md:grid-cols-2">
-              <div>
-                <strong className="text-foreground">Measure</strong>
-                <p>
-                  {data.methodology.measure}. {data.methodology.peopleCaveat}
-                </p>
-              </div>
-              <div>
-                <strong className="text-foreground">Missing submissions</strong>
-                <p>
-                  {missingTrusts.length > 0
-                    ? `${missingTrustLabel} did not submit. ${data.methodology.estimatesCaveat}`
-                    : data.methodology.estimatesCaveat}
-                </p>
-              </div>
-              <div>
-                <strong className="text-foreground">Revision status</strong>
-                <p>{data.methodology.revisionNote}</p>
-              </div>
-              <div>
-                <strong className="text-foreground">Official source</strong>
-                <p>
-                  <a
-                    className="font-semibold underline underline-offset-4"
-                    href={data.source.pressNoticeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    NHS England RTT statistical press notice
-                  </a>
-                </p>
-              </div>
-            </div>
-          </details>
+          <CoreEvidenceExplanation
+            idPrefix="nhs-stats"
+            why={
+              <p>
+                RTT measures the time from referral to the start of consultant-led
+                elective treatment. The pathway count shows the scale of unfinished
+                care; the 18-week share and long-wait thresholds show how long that
+                care is taking.
+              </p>
+            }
+            definition={
+              <p>
+                {data.methodology.measure}. {data.methodology.peopleCaveat}
+              </p>
+            }
+            unit="Pathway count; wait time in weeks; share within 18 weeks (%)"
+            geography={data.methodology.geography}
+            interpretation={
+              <p>
+                These rows use the same {data.headline.period} publication but
+                exclude estimates for non-reporting trusts, unlike the national
+                headline, so the specialty table and national figures are not
+                directly comparable.
+              </p>
+            }
+            caveat={
+              <p>
+                {missingTrusts.length > 0
+                  ? `${missingTrustLabel} did not submit. ${data.methodology.estimatesCaveat}`
+                  : data.methodology.estimatesCaveat}{" "}
+                {data.methodology.revisionNote}
+              </p>
+            }
+            sourceLabel="NHS England RTT statistical press notice"
+            sourceUrl={data.source.pressNoticeUrl}
+            sourceDate={`Published ${formatDate(data.headline.publicationDate)}`}
+            explainLabel="Explain these numbers"
+          />
         </>
       ) : (
         <section
