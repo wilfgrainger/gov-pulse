@@ -1,7 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import ChartExportButtons from "@/app/components/ChartExportButtons";
 import { fetchMetricsSnapshot } from "@/app/lib/metricsSnapshot";
@@ -96,6 +105,68 @@ function MeasureDetail({
   const events = visibleChartEvents(windowStart, windowEnd);
   const svgRef = useRef<SVGSVGElement>(null);
   const compareCitation = compareMeasure?.sourceUrl ? `Comparison source: ${compareMeasure.label}` : undefined;
+
+  // Keyboard-navigable scrubber across the plotted points of the currently
+  // selected measure (and the compared measure, when present, at the same
+  // x-position). Purely additive: mouse users still get the per-point
+  // <title> tooltips and the full data table below; nothing here changes
+  // comparison, export or URL-sync behaviour.
+  const [scrubIndex, setScrubIndex] = useState<number | null>(null);
+  const liveRegionId = useId();
+  // `years`/`compareId` changes don't remount MeasureDetail (only a measure
+  // change does, via the parent's `key={detail.id}`), so clamp defensively
+  // rather than let a stale index read past the current window's points.
+  const clampedScrubIndex =
+    scrubIndex !== null && points.length
+      ? Math.min(scrubIndex, points.length - 1)
+      : null;
+  const scrubPoint = clampedScrubIndex !== null ? points[clampedScrubIndex] : undefined;
+  // The compared measure may be sampled on a different cadence, so pick the
+  // compare point whose date is closest to the primary scrub point rather
+  // than assuming matching indices.
+  const scrubComparePoint =
+    scrubPoint && comparePointsForWindow.length
+      ? comparePointsForWindow.reduce((closest, candidate) =>
+          Math.abs(candidate.date - scrubPoint.date) < Math.abs(closest.date - scrubPoint.date)
+            ? candidate
+            : closest,
+        )
+      : undefined;
+
+  const moveScrub = (delta: number) => {
+    if (points.length === 0) return;
+    setScrubIndex((current) => {
+      const base = current === null ? (delta > 0 ? -1 : points.length) : current;
+      const next = base + delta;
+      return Math.min(Math.max(next, 0), points.length - 1);
+    });
+  };
+
+  const handleChartKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      moveScrub(1);
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      moveScrub(-1);
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      setScrubIndex(points.length ? 0 : null);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setScrubIndex(points.length ? points.length - 1 : null);
+    } else if (event.key === "Escape") {
+      setScrubIndex(null);
+    }
+  };
+
+  const scrubAnnouncement = scrubPoint
+    ? `${scrubPoint.period}: ${measure.label} ${formatMeasure(scrubPoint.value, measure.unit)}${
+        compareMeasure && scrubComparePoint
+          ? `; ${compareMeasure.label} ${scrubComparePoint.period}: ${formatMeasure(scrubComparePoint.value, compareMeasure.unit)}`
+          : ""
+      }`
+    : "";
   return (
     <section
       aria-labelledby="measure-detail-title"
@@ -177,6 +248,9 @@ function MeasureDetail({
             ref={svgRef}
             viewBox="0 0 740 225"
             role="img"
+            tabIndex={0}
+            onKeyDown={handleChartKeyDown}
+            aria-describedby={scrubPoint ? liveRegionId : undefined}
             aria-label={`${measure.label}: ${points.length} published observations, in ${measure.unit}, from ${points[0].period} to ${points.at(-1)?.period}. Vertical scale does not start at zero. Exact values in the table below.${
               compareMeasure && comparePointsForWindow.length > 1
                 ? ` Overlaid for comparison: ${compareMeasure.label}, in ${compareMeasure.unit}, independently scaled on its own axis, source cited separately below. Not combined into one value with ${measure.label}.`
@@ -185,8 +259,8 @@ function MeasureDetail({
               events.length
                 ? ` Marked reference dates: ${events.map((e) => e.label).join("; ")}.`
                 : ""
-            }`}
-            className="w-full"
+            } Focus and use the left and right arrow keys to scrub through each observation; Home and End jump to the first and last point.`}
+            className="w-full focus:outline-2 focus:outline-offset-2 focus:outline-[#14243b]"
           >
             {events.map((event) => {
               const ex = x(event.timestamp);
@@ -286,7 +360,51 @@ function MeasureDetail({
             <text x="710" y="205" textAnchor="end" fontSize="14" fill="#475569">
               {points.at(-1)?.period}
             </text>
+            {scrubPoint && (
+              <g>
+                <line
+                  x1={x(scrubPoint.date)}
+                  x2={x(scrubPoint.date)}
+                  y1="40"
+                  y2="175"
+                  stroke="#14243b"
+                  strokeWidth="1.5"
+                />
+                <circle
+                  cx={x(scrubPoint.date)}
+                  cy={y(scrubPoint.value)}
+                  r="6"
+                  fill="#14243b"
+                  stroke="#fff"
+                  strokeWidth="1.5"
+                />
+                {compareMeasure && scrubComparePoint && (
+                  <circle
+                    cx={x(scrubComparePoint.date)}
+                    cy={yCompare(scrubComparePoint.value)}
+                    r="5"
+                    fill="#9333ea"
+                    stroke="#fff"
+                    strokeWidth="1.5"
+                  />
+                )}
+              </g>
+            )}
           </svg>
+          <p id={liveRegionId} aria-live="polite" className="sr-only">
+            {scrubAnnouncement}
+          </p>
+          {scrubPoint && (
+            <p
+              aria-hidden="true"
+              className="mt-2 font-mono text-xs tabular-nums text-[#14243b]"
+            >
+              {scrubPoint.period} &mdash; {measure.label}: {formatMeasure(scrubPoint.value, measure.unit)}
+              {compareMeasure && scrubComparePoint
+                ? ` · ${compareMeasure.label} (${scrubComparePoint.period}): ${formatMeasure(scrubComparePoint.value, compareMeasure.unit)}`
+                : ""}
+            </p>
+          )}
           <figcaption className="text-sm leading-6 text-slate-600">
             Line joins consecutive published observations; gaps are left open. The vertical scale spans{" "}
             {formatMeasure(min, measure.unit)} to{" "}
