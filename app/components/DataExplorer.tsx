@@ -13,6 +13,7 @@ import {
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import ChartExportButtons from "@/app/components/ChartExportButtons";
+import CountUpNumber from "@/app/components/CountUpNumber";
 import { fetchMetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import {
   comparePoints,
@@ -183,10 +184,12 @@ function MeasureDetail({
           >
             {measure.label}
           </h2>
-          <p className="mt-4 text-4xl font-semibold tabular-nums">
-            {measure.value === null
-              ? "Unavailable"
-              : formatMeasure(measure.value, measure.unit)}
+          <p className="headline-figure mt-4 text-4xl tabular-nums">
+            {measure.value === null ? (
+              "Unavailable"
+            ) : (
+              <CountUpNumber value={measure.value} format={(v) => formatMeasure(v, measure.unit)} />
+            )}
           </p>
           <p className="mt-2 text-base text-slate-600">
             {measure.period ?? "No verified current value"}
@@ -244,6 +247,13 @@ function MeasureDetail({
       )}
       {points.length > 1 ? (
         <figure className="mt-8 border-y border-slate-200 py-5">
+          <div className="mb-3 flex items-center justify-end">
+            <span className="keyboard-scrub-hint" aria-hidden="true">
+              <span aria-hidden="true">←</span>
+              <span aria-hidden="true">→</span>
+              to explore
+            </span>
+          </div>
           <svg
             ref={svgRef}
             viewBox="0 0 740 225"
@@ -300,6 +310,9 @@ function MeasureDetail({
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 vectorEffect="non-scaling-stroke"
+                pathLength={1}
+                strokeDasharray={1}
+                className="chart-draw-in"
               />
             ) : null)}
             {compareMeasure &&

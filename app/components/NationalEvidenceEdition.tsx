@@ -77,7 +77,7 @@ function LeadStory({ signal }: { signal: SignalPresentation | null }) {
 
       <div className="flex flex-col bg-[#dceaf4] p-7 md:p-10 lg:p-12">
         <p className="eyebrow !text-[#0f6b63]">{signal.kicker} · {signal.geography}</p>
-        <p className="mt-4 text-6xl font-semibold tabular-nums tracking-[-0.06em] md:text-7xl">{signal.value}</p>
+        <p className="headline-figure mt-4 text-7xl tracking-[-0.06em] md:text-8xl">{signal.value}</p>
         <p className="mt-3 text-sm font-semibold">{signal.period} · published {signal.publishedAt}</p>
         <div className="text-[#0f6b63]"><TrendSparkline label={signal.title} points={signal.history} large /></div>
         <p className="mt-5 border-t border-black/15 pt-5 text-base leading-7">{signal.comparison}</p>
@@ -112,7 +112,7 @@ function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?:
         </div>
 
         <div className="mt-5">
-          <p className={unavailable ? "max-w-xs text-2xl font-semibold leading-tight text-gray-600" : "text-4xl font-semibold tabular-nums tracking-[-0.045em] md:text-5xl"}>
+          <p className={unavailable ? "max-w-xs text-2xl font-semibold leading-tight text-gray-600" : "headline-figure text-4xl md:text-5xl"}>
             {unavailable ? "Current value unavailable" : signal.value}
           </p>
           <p className="mt-2 text-sm leading-6 text-gray-700">

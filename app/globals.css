@@ -11,11 +11,28 @@
   --accent: #1f5c8a;
   --accent-soft: #dceaf4;
   --accent-on-dark: #8fc2e6;
+  --accent-vivid: #0a6fb8;
   --teal: #0f6b63;
   --gold: #8a5a12;
   --blue: #5a4b9c;
   --font-editorial: Georgia, "Times New Roman", serif;
   --font-body: "Inter", "Helvetica Neue", Arial, sans-serif;
+
+  /* Evidence-class accent system (PR #118 categories). Each class gets a
+     distinct, WCAG AA text-on-white hue plus a soft tint for badge
+     backgrounds, so the taxonomy is identifiable by colour at a glance —
+     not just by label text. These extend the existing accent tokens above;
+     they do not replace them. */
+  --evidence-official: #0a5f8f;
+  --evidence-official-soft: #e3f0fa;
+  --evidence-opinion: #6a3a9e;
+  --evidence-opinion-soft: #f1e9fa;
+  --evidence-market: #92590a;
+  --evidence-market-soft: #fbf0dd;
+  --evidence-derived: #46525f;
+  --evidence-derived-soft: #eef1f4;
+  --evidence-user: #1c6e5a;
+  --evidence-user-soft: #e4f3ee;
 }
 
 @theme inline {
@@ -156,18 +173,28 @@ table.sr-only {
 
 .page-title {
   font-family: var(--font-editorial);
-  font-size: clamp(2.75rem, 7vw, 5.4rem);
-  font-weight: 700;
-  letter-spacing: -0.045em;
-  line-height: 0.92;
+  font-size: clamp(3rem, 8vw, 6.2rem);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 0.9;
 }
 
 .section-title {
   font-family: var(--font-editorial);
-  font-size: clamp(2.25rem, 4.5vw, 4rem);
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  line-height: 0.98;
+  font-size: clamp(2.4rem, 5vw, 4.5rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 0.96;
+}
+
+/* Bigger, more confident treatment for a measure's primary headline figure.
+   Opt-in utility so number-heavy evidence panels (not every <dd>) get the
+   bolder weight; tabular-nums keeps digits aligned as they count up. */
+.headline-figure {
+  font-weight: 800;
+  letter-spacing: -0.055em;
+  font-variant-numeric: tabular-nums;
+  line-height: 0.95;
 }
 
 .eyebrow {
@@ -429,6 +456,46 @@ table.sr-only {
 
 .signal-card--unavailable .signal-card__rail {
   background: #8892a0;
+}
+
+/* Evidence-class accent system: a distinct colour per PR #118 taxonomy
+   category, applied as a left rail + tinted background on the badge.
+   Kept purely additive to EvidenceClassBadge's existing border/bg/text
+   classes — this only adds the rail. */
+.evidence-rail--official-data { background: var(--evidence-official); }
+.evidence-rail--public-opinion { background: var(--evidence-opinion); }
+.evidence-rail--market-signal { background: var(--evidence-market); }
+.evidence-rail--derived-analysis { background: var(--evidence-derived); }
+.evidence-rail--user-generated { background: var(--evidence-user); }
+
+/* Chart line draw-in: animates stroke-dashoffset from a pre-set dasharray.
+   Purely decorative entrance for SVG polylines; the reduced-motion block
+   below zeroes animation-duration globally, so this collapses to the final
+   (fully drawn) state with no transition for reduced-motion users. */
+@keyframes draw-in {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+.chart-draw-in {
+  animation: draw-in 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Visible hint that a chart accepts arrow-key scrubbing. Shown next to the
+   figure, not only exposed via aria-label, so sighted keyboard users can
+   discover the interaction too. */
+.keyboard-scrub-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-warm);
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 .v3-reading-guide {

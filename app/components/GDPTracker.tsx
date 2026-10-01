@@ -1,6 +1,7 @@
 "use client";
 
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
+import CountUpNumber from "@/app/components/CountUpNumber";
 import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart";
 import MetricsStatus from "@/app/components/MetricsStatus";
 import ReleaseNoteStrip from "@/app/components/ReleaseNoteStrip";
@@ -142,22 +143,31 @@ export default function GDPTracker() {
             <dl className="grid border-y border-black/20 md:grid-cols-3 md:divide-x md:divide-black/15">
               <div className="p-4 md:p-5">
                 <dt className="text-sm text-gray-600">Latest month</dt>
-                <dd className="mt-1 text-4xl font-semibold tabular-nums">
-                  {data.headline.monthlyGrowth > 0 ? "+" : ""}{data.headline.monthlyGrowth.toFixed(1)}%
+                <dd className="headline-figure mt-1 text-4xl tabular-nums">
+                  <CountUpNumber
+                    value={data.headline.monthlyGrowth}
+                    format={(v) => `${v > 0 ? "+" : ""}${v.toFixed(1)}%`}
+                  />
                 </dd>
                 <dd className="mt-2 text-sm text-gray-600">Real GDP in {data.headline.period}.</dd>
               </div>
               <div className="border-t border-black/15 p-4 md:border-l md:border-t-0 md:p-5">
                 <dt className="text-sm text-gray-600">Latest three months</dt>
-                <dd className="mt-1 text-4xl font-semibold tabular-nums text-accent">
-                  {data.headline.threeMonthGrowth > 0 ? "+" : ""}{data.headline.threeMonthGrowth.toFixed(1)}%
+                <dd className="headline-figure mt-1 text-4xl tabular-nums text-accent">
+                  <CountUpNumber
+                    value={data.headline.threeMonthGrowth}
+                    format={(v) => `${v > 0 ? "+" : ""}${v.toFixed(1)}%`}
+                  />
                 </dd>
                 <dd className="mt-2 text-sm text-gray-600">A less volatile view than one monthly estimate.</dd>
               </div>
               <div className="border-t border-black/15 p-4 md:border-l md:border-t-0 md:p-5">
                 <dt className="text-sm text-gray-600">Change from a year earlier</dt>
-                <dd className="mt-1 text-4xl font-semibold tabular-nums">
-                  {data.headline.annualGrowth > 0 ? "+" : ""}{data.headline.annualGrowth.toFixed(1)}%
+                <dd className="headline-figure mt-1 text-4xl tabular-nums">
+                  <CountUpNumber
+                    value={data.headline.annualGrowth}
+                    format={(v) => `${v > 0 ? "+" : ""}${v.toFixed(1)}%`}
+                  />
                 </dd>
                 <dd className="mt-2 text-sm text-gray-600">Real GDP compared with the same month one year earlier.</dd>
               </div>

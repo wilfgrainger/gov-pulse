@@ -53,6 +53,9 @@ export default function TrendSparkline({ label, points, large = false }: Props) 
             strokeLinecap="round"
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
+            pathLength={1}
+            strokeDasharray={1}
+            className="chart-draw-in"
           />
         ) : null)}
         {(observations.length < 7 ? observations : [observations[0], observations.at(-1)!]).map((point) => (
