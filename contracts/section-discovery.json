@@ -129,6 +129,14 @@
       "sourceKey": "migrationStats",
       "sameAs": ["https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration"]
     },
+    "house-price-index": {
+      "title": "UK House Price Index",
+      "description": "Average UK house price and annual house price inflation from the latest ONS Private rent and house prices bulletin.",
+      "category": "Economy",
+      "kind": "dataset",
+      "sourceKey": "housePriceIndex",
+      "sameAs": ["https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/privaterentandhousepricesuk/latest"]
+    },
     "real-wages": {
       "title": "UK real wages (CPIH-adjusted)",
       "description": "ONS's own real-terms regular and total pay growth, adjusted for inflation using CPIH, from the average weekly earnings bulletin.",

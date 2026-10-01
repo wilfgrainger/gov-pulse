@@ -77,6 +77,28 @@ export const AUTOMATED_METRIC_FALLBACKS = {
       datasetUrl: "",
     },
   },
+  housePriceIndex: {
+    headline: {
+      period: "",
+      observedAt: 0,
+      releaseDate: "",
+      avgPriceGbp: 0,
+      changePercent: 0,
+      previousPeriod: "",
+      previousChangePercent: 0,
+    },
+    history: [],
+    methodology: {
+      measure: "",
+      status: "",
+      revisionNote: "",
+    },
+    source: {
+      edition: "",
+      bulletinUrl: "",
+      historyUrl: "",
+    },
+  },
   realWages: {
     headline: {
       period: "",

@@ -13,6 +13,7 @@ import EmploymentStats from "@/app/components/EmploymentStats";
 import CrimeStatistics from "@/app/components/CrimeStatistics";
 import NHSStats from "@/app/components/NHSStats";
 import MigrationStats from "@/app/components/MigrationStats";
+import HousePriceIndex from "@/app/components/HousePriceIndex";
 import RealWages from "@/app/components/RealWages";
 import EarlyYearsStats from "@/app/components/EarlyYearsStats";
 import GeographicHeatmap from "@/app/components/GeographicHeatmap";
@@ -86,6 +87,14 @@ export const SECTION_CONTENT = {
     subtitle: "Central government receipts from the latest ONS release.",
     component: TaxRevenue,
     dataSection: "taxRevenue",
+  },
+  "house-price-index": {
+    category: "Economy",
+    tag: "Official monthly data",
+    title: "House prices",
+    subtitle: "Average UK house price and annual house price inflation.",
+    component: HousePriceIndex,
+    dataSection: "housePriceIndex",
   },
   "uk-in-context": {
     category: "Public money",
