@@ -88,7 +88,7 @@ describe("feed registry", () => {
     expect(OPTIONAL_PUBLISHED_SECTION_IDS.slice().sort()).toEqual(
       ["bettingOdds", "crimeStatistics", "nhsStats"].sort()
     );
-    expect(REQUIRED_PUBLISHED_SECTION_IDS).toHaveLength(7);
+    expect(REQUIRED_PUBLISHED_SECTION_IDS).toHaveLength(8);
     expect(REQUIRED_PUBLISHED_SECTION_IDS).not.toContain("bettingOdds");
     expect(REQUIRED_PUBLISHED_SECTION_IDS).not.toContain("crimeStatistics");
     expect(REQUIRED_PUBLISHED_SECTION_IDS).not.toContain("nhsStats");

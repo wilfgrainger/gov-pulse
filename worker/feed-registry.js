@@ -167,6 +167,27 @@ export const FEED_REGISTRY = Object.freeze({
       },
     ],
   },
+  realWages: {
+    section: "realWages",
+    title: "Real-terms growth in average weekly earnings",
+    evidenceClass: "official-data",
+    geography: "Great Britain",
+    retrieval: "scheduled-publication-check",
+    refreshCadence: "daily",
+    publicationCadence: "monthly",
+    operationalStatus: "active",
+    retrievalMaxAgeMs: 36 * HOUR_MS,
+    publicationRequirement: "required",
+    upstreams: [
+      {
+        publisher: "Office for National Statistics",
+        label: "Average weekly earnings in Great Britain bulletin",
+        url: "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/averageweeklyearningsingreatbritain/latest",
+        sourceClass: "official-primary",
+        caveat: "The Worker discovers the current edition from the rolling bulletin alias and extracts ONS's own published real-terms (CPIH-adjusted) growth figure rather than deriving it from nominal pay and inflation separately.",
+      },
+    ],
+  },
   electionPolling: {
     section: "electionPolling",
     title: "Primary voting-intention poll publications",

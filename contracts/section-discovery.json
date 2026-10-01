@@ -129,6 +129,14 @@
       "sourceKey": "migrationStats",
       "sameAs": ["https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration"]
     },
+    "real-wages": {
+      "title": "UK real wages (CPIH-adjusted)",
+      "description": "ONS's own real-terms regular and total pay growth, adjusted for inflation using CPIH, from the average weekly earnings bulletin.",
+      "category": "Economy",
+      "kind": "dataset",
+      "sourceKey": "realWages",
+      "sameAs": ["https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/averageweeklyearningsingreatbritain/latest"]
+    },
     "early-years": {
       "title": "Early years evidence in England",
       "description": "Child vaccination and school-readiness indicators in England with dated official sources and historical context.",
