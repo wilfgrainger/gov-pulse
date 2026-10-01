@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import {
   CartesianGrid,
   Line,
@@ -10,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import ChartExportButtons from "@/app/components/ChartExportButtons";
 import ClientOnlyChart from "@/app/components/ClientOnlyChart";
 import { METRICS_SNAPSHOT_PATH } from "@/app/lib/config";
 import { visibleChartEvents } from "@/app/lib/chartEvents";
@@ -85,6 +87,7 @@ export default function FinancialTimeSeriesChart({
     showEvents && first && latest
       ? visibleChartEvents(first.observedAt, latest.observedAt)
       : [];
+  const chartContainerRef = useRef<HTMLDivElement>(null);
 
   return (
     <figure className="border-y border-black/20 bg-[#f7f9fb] py-5">
@@ -96,6 +99,7 @@ export default function FinancialTimeSeriesChart({
         <p className="font-mono text-xs tabular-nums text-gray-500">{range}</p>
       </figcaption>
       <div
+        ref={chartContainerRef}
         role="img"
         aria-label={`${title}. ${description}. Period shown: ${range}.${
           events.length
@@ -235,13 +239,16 @@ export default function FinancialTimeSeriesChart({
             </span>
           ) : null}
         </div>
-        <a
-          href={METRICS_SNAPSHOT_PATH}
-          download
-          className="font-semibold underline decoration-black/30 underline-offset-4 hover:decoration-black"
-        >
-          {downloadLabel}
-        </a>
+        <div className="flex flex-wrap items-center gap-4">
+          <a
+            href={METRICS_SNAPSHOT_PATH}
+            download
+            className="font-semibold underline decoration-black/30 underline-offset-4 hover:decoration-black"
+          >
+            {downloadLabel}
+          </a>
+          <ChartExportButtons containerRef={chartContainerRef} title={title} />
+        </div>
       </div>
     </figure>
   );

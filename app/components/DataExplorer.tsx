@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import ChartExportButtons from "@/app/components/ChartExportButtons";
 import { fetchMetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import {
   comparePoints,
@@ -93,6 +94,8 @@ function MeasureDetail({
   const y = (value: number) => 165 - ((value - min) / span) * 120;
   const yCompare = (value: number) => 165 - ((value - compareMin) / compareSpan) * 120;
   const events = visibleChartEvents(windowStart, windowEnd);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const compareCitation = compareMeasure?.sourceUrl ? `Comparison source: ${compareMeasure.label}` : undefined;
   return (
     <section
       aria-labelledby="measure-detail-title"
@@ -171,6 +174,7 @@ function MeasureDetail({
       {points.length > 1 ? (
         <figure className="mt-8 border-y border-slate-200 py-5">
           <svg
+            ref={svgRef}
             viewBox="0 0 740 225"
             role="img"
             aria-label={`${measure.label}: ${points.length} published observations, in ${measure.unit}, from ${points[0].period} to ${points.at(-1)?.period}. Vertical scale does not start at zero. Exact values in the table below.${
@@ -289,6 +293,9 @@ function MeasureDetail({
             {formatMeasure(max, measure.unit)} and does not start at zero. The coral dot marks the latest observation.
             {events.length ? " Dashed vertical lines mark known UK dates, for reference only." : ""}
           </figcaption>
+          <div className="mt-2">
+            <ChartExportButtons containerRef={svgRef} title={measure.label} citation={compareCitation} />
+          </div>
           {compareMeasure && (
             <div className="mt-3 flex flex-wrap items-start justify-between gap-4 border-t border-slate-200 pt-3 text-sm">
               <div className="flex items-center gap-2">
