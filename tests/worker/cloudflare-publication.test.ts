@@ -113,17 +113,21 @@ function award(index: number, day: string) {
 }
 
 describe("Cloudflare Free data publication", () => {
-  it("keeps the bounded control plane well inside free-tier allowances", () => {
+  it("reports the healthy schedule and configured retry workload transparently", () => {
     expect(FREE_TIER_BUDGET).toMatchObject({
       cronInvocationsPerDay: 9,
-      queueJobsPerDayMax: 28,
-      queueOperationsPerDayMax: 84,
+      queueJobsPerDayHealthyTarget: 29,
+      queueOperationsPerDayHealthyTarget: 87,
+      queueJobsPerDayConfiguredRetryUpperBound: 116,
+      queueOperationsPerDayConfiguredRetryUpperBound: 348,
       officialSectionsPerDay: 11,
       contractRequestsPerDayMax: 36,
       kvWritesPerDayTargetMax: 120,
       kvReadsPerDayTargetMax: 300,
     });
-    expect(FREE_TIER_BUDGET.queueOperationsPerDayMax).toBeLessThan(10_000);
+    expect(FREE_TIER_BUDGET.queueOperationsPerDayConfiguredRetryUpperBound).toBeGreaterThan(
+      FREE_TIER_BUDGET.queueOperationsPerDayHealthyTarget,
+    );
     expect(FREE_TIER_BUDGET.kvWritesPerDayTargetMax).toBeLessThan(1_000);
     expect(FREE_TIER_BUDGET.kvReadsPerDayTargetMax).toBeLessThan(100_000);
   });

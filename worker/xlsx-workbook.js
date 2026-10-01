@@ -1,10 +1,55 @@
 import { decodeHtml, parseAttributes } from "./live-feed-common.js";
 
-async function inflate(bytes) {
+const DEFAULT_LIMITS = Object.freeze({
+  maxEntryBytes: 8 * 1024 * 1024,
+  maxTotalBytes: 24 * 1024 * 1024,
+  maxWorksheetRows: 25_000,
+  maxWorkbookCells: 250_000,
+});
+
+function boundedLimits(overrides = {}) {
+  const limits = { ...DEFAULT_LIMITS, ...overrides };
+  for (const [name, maximum] of Object.entries(DEFAULT_LIMITS)) {
+    if (!Number.isSafeInteger(limits[name]) || limits[name] <= 0 || limits[name] > maximum) {
+      throw new Error(`Workbook ${name} must be a positive integer no greater than ${maximum}`);
+    }
+  }
+  if (limits.maxEntryBytes > limits.maxTotalBytes) {
+    throw new Error("Workbook per-entry expansion limit cannot exceed total expansion limit");
+  }
+  return limits;
+}
+
+async function inflate(bytes, maxBytes) {
   const stream = new Blob([bytes])
     .stream()
     .pipeThrough(new DecompressionStream("deflate-raw"));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
+  const reader = stream.getReader();
+  const chunks = [];
+  let size = 0;
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > maxBytes) {
+        await reader.cancel();
+        throw new Error(`Workbook entry expanded past its ${maxBytes}-byte limit`);
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const data = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    data.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return data;
 }
 
 function u16(bytes, offset) {
@@ -20,7 +65,8 @@ function u32(bytes, offset) {
   ) >>> 0;
 }
 
-async function zipEntries(arrayBuffer) {
+async function zipEntries(arrayBuffer, requestedLimits = {}) {
+  const limits = boundedLimits(requestedLimits);
   const bytes = new Uint8Array(arrayBuffer);
   let eocd = -1;
   for (
@@ -42,6 +88,7 @@ async function zipEntries(arrayBuffer) {
 
   let cursor = u32(bytes, eocd + 16);
   const entries = new Map();
+  let expandedTotal = 0;
   for (let count = 0; count < total; count += 1) {
     if (u32(bytes, cursor) !== 0x02014b50) {
       throw new Error("Workbook central directory was invalid");
@@ -70,13 +117,23 @@ async function zipEntries(arrayBuffer) {
       /^xl\/worksheets\/[^/]+\.xml$/i.test(name);
 
     if (requiredEntry) {
+      if (method === 0 && compressedSize > limits.maxEntryBytes) {
+        throw new Error(`Workbook entry exceeded its ${limits.maxEntryBytes}-byte limit`);
+      }
       const data =
         method === 0
           ? compressed
           : method === 8
-            ? await inflate(compressed)
+            ? await inflate(compressed, limits.maxEntryBytes)
             : null;
       if (!data) throw new Error(`Workbook used unsupported ZIP method ${method}`);
+      if (data.byteLength > limits.maxEntryBytes) {
+        throw new Error(`Workbook entry exceeded its ${limits.maxEntryBytes}-byte limit`);
+      }
+      expandedTotal += data.byteLength;
+      if (expandedTotal > limits.maxTotalBytes) {
+        throw new Error(`Workbook expanded contents exceeded its ${limits.maxTotalBytes}-byte limit`);
+      }
       entries.set(name, new TextDecoder().decode(data));
     }
 
@@ -94,18 +151,35 @@ function xmlText(value) {
   return decodeHtml(`x${raw}x`).slice(1, -1);
 }
 
-function sharedStrings(xml = "") {
-  return [...String(xml).matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/gi)].map(
-    (match) =>
+function sharedStrings(xml = "", requestedLimits = {}) {
+  const limits = boundedLimits(requestedLimits);
+  const result = [];
+  for (const match of String(xml).matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/gi)) {
+    if (result.length >= limits.maxWorkbookCells) {
+      throw new Error(`Workbook shared strings exceeded the ${limits.maxWorkbookCells}-item limit`);
+    }
+    result.push(
       [...match[1].matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)]
         .map((part) => xmlText(part[1]))
-        .join("")
-  );
+        .join(""),
+    );
+  }
+  return result;
 }
 
-function worksheetCells(xml, strings = []) {
+function worksheetCells(xml, strings = [], requestedLimits = {}) {
+  const limits = boundedLimits(requestedLimits);
+  const input = String(xml);
+  const rows = [...input.matchAll(/<row\b/gi)].length;
+  if (rows > limits.maxWorksheetRows) {
+    throw new Error(`Workbook worksheet exceeded the ${limits.maxWorksheetRows}-row limit`);
+  }
+  const declaredCells = [...input.matchAll(/<c\b/gi)].length;
+  if (declaredCells > limits.maxWorkbookCells) {
+    throw new Error(`Workbook exceeded the ${limits.maxWorkbookCells}-cell limit`);
+  }
   const cells = new Map();
-  for (const match of String(xml).matchAll(
+  for (const match of input.matchAll(
     /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/gi
   )) {
     const attributes = parseAttributes(match[1]);
@@ -130,8 +204,21 @@ function worksheetPath(target) {
   return `xl/${normalized.replace(/^\.\//, "")}`;
 }
 
-async function workbookSheetCells(arrayBuffer, sheetNamePattern) {
-  const archive = await zipEntries(arrayBuffer);
+async function workbookSheetCells(arrayBuffer, sheetNamePattern, requestedLimits = {}) {
+  const limits = boundedLimits(requestedLimits);
+  const archive = await zipEntries(arrayBuffer, limits);
+  let workbookCells = 0;
+  for (const [name, xml] of archive) {
+    if (!/^xl\/worksheets\/[^/]+\.xml$/i.test(name)) continue;
+    const rowCount = [...xml.matchAll(/<row\b/gi)].length;
+    if (rowCount > limits.maxWorksheetRows) {
+      throw new Error(`Workbook worksheet exceeded the ${limits.maxWorksheetRows}-row limit`);
+    }
+    workbookCells += [...xml.matchAll(/<c\b/gi)].length;
+    if (workbookCells > limits.maxWorkbookCells) {
+      throw new Error(`Workbook exceeded the ${limits.maxWorkbookCells}-cell limit`);
+    }
+  }
   const workbook = archive.get("xl/workbook.xml") ?? "";
   const relationships = archive.get("xl/_rels/workbook.xml.rels") ?? "";
   const pattern =
@@ -155,8 +242,8 @@ async function workbookSheetCells(arrayBuffer, sheetNamePattern) {
 
   const xml = archive.get(worksheetPath(relationship.target));
   if (!xml) throw new Error("Workbook worksheet XML was unavailable");
-  const strings = sharedStrings(archive.get("xl/sharedStrings.xml") ?? "");
-  return worksheetCells(xml, strings);
+  const strings = sharedStrings(archive.get("xl/sharedStrings.xml") ?? "", limits);
+  return worksheetCells(xml, strings, limits);
 }
 
 export {

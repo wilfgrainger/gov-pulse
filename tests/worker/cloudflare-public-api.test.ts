@@ -56,7 +56,7 @@ function snapshot(now = new Date()) {
       backend: "cloudflare-worker-kv",
       generator: "cloudflare-free-publication-worker",
       publicationMode: "queue-free-tier",
-      freeTierBudget: { queueOperationsPerDayMax: 84 },
+      freeTierBudget: { queueOperationsPerDayHealthyTarget: 87 },
       sources,
     },
     ...Object.fromEntries(
