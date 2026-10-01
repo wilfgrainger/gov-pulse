@@ -1,8 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart";
 import MetricsStatus from "@/app/components/MetricsStatus";
+import ReceiptsDebtVisual, {
+  type ReceiptsMonthPoint,
+} from "@/app/components/visuals/ReceiptsDebtVisual";
 import { useMetrics } from "@/app/lib/useMetrics";
 
 const FALLBACK = {
@@ -75,6 +79,12 @@ function formatPublicationDate(value: string) {
 
 export default function NationalDebtCounter() {
   const metrics = useMetrics("nationalDebt", FALLBACK);
+  const taxMetrics = useMetrics("taxRevenue", {
+    headline: { period: "", observedAt: 0, releaseDate: "", receiptsBillion: 0, yearChangeBillion: 0 },
+    history: [] as Array<{ period: string; observedAt: number; receiptsBillion: number }>,
+    methodology: { measure: "", status: "", caveat: "" },
+    source: { bulletinUrl: "", landingUrl: "" },
+  });
   const data = metrics.data;
   const debtValue = Number(data.baseDebt);
   const debtRatio = Number(data.debtToGdp);
@@ -101,6 +111,23 @@ export default function NationalDebtCounter() {
     Array.isArray(data.history) &&
     data.history.length >= 13;
   const period = valid ? formatObservationPeriod(observationDate) : "";
+
+  const receiptsHistory = useMemo<ReceiptsMonthPoint[]>(() => {
+    interface TaxHistoryItem {
+      period: string;
+      receiptsBillion?: number;
+    }
+    interface TaxPayload {
+      history?: TaxHistoryItem[];
+    }
+    const taxData = taxMetrics.data as TaxPayload | null;
+    const raw = taxData?.history;
+    if (!Array.isArray(raw)) return [];
+    return raw.map((p: TaxHistoryItem) => ({
+      date: p.period,
+      receiptsMillionGbp: (p.receiptsBillion ?? 0) * 1000,
+    }));
+  }, [taxMetrics]);
 
   return (
     <div className="space-y-8">
@@ -147,6 +174,25 @@ export default function NationalDebtCounter() {
               </div>
             </dl>
           </section>
+
+          {/* Visual 5: Receipts vs Debt Trajectory */}
+          {(() => {
+            interface TaxHeadline {
+              receiptsBillion?: number;
+              period?: string;
+            }
+            const taxData = taxMetrics.data as { headline?: TaxHeadline } | null;
+            return (
+              <ReceiptsDebtVisual
+                receiptsHistory={receiptsHistory}
+                currentReceiptsBillion={taxData?.headline?.receiptsBillion ?? 85.4}
+                currentDebtBillion={debtValue / 1e9}
+                debtToGdpRatio={debtRatio}
+                receiptsPeriod={taxData?.headline?.period || period}
+                debtPeriod={period}
+              />
+            );
+          })()}
 
           <FinancialTimeSeriesChart
             title="Public sector net debt: ten-year direction"

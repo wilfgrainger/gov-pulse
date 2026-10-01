@@ -7,6 +7,9 @@ import MetricsStatus from "@/app/components/MetricsStatus";
 import SeriesEvidence, {
   type SeriesEvidenceItem,
 } from "@/app/components/SeriesEvidence";
+import EconomicPulseGrid, {
+  type IndicatorSeries,
+} from "@/app/components/visuals/EconomicPulseGrid";
 import { useMetrics } from "@/app/lib/useMetrics";
 
 const FALLBACK = {
@@ -198,6 +201,35 @@ export default function SentimentPulse() {
     [data, valid]
   );
 
+  const pulseGridSeries = useMemo<IndicatorSeries[]>(() => {
+    if (!valid) return [];
+    const colors: Record<string, string> = {
+      inflation: "#dc2626",
+      bankRate: "#2563eb",
+      unemployment: "#b45309",
+    };
+    return (data.order as Metric[])
+      .map((id) => {
+        const item = data.series[id];
+        if (!item) return null;
+        return {
+          id,
+          title: item.label,
+          shortTitle: item.shortLabel,
+          unit: item.unit,
+          currentValue: item.value,
+          previousValue: item.history[item.history.length - 2]?.value ?? null,
+          annualDelta: item.annualDelta,
+          observationPeriod: item.period,
+          publisher: item.publisher,
+          seriesCode: item.seriesId || id.toUpperCase(),
+          history: item.history.map((h) => ({ date: h.period, value: h.value })),
+          color: colors[id] ?? "#1e293b",
+        };
+      })
+      .filter(Boolean) as IndicatorSeries[];
+  }, [data, valid]);
+
   return (
     <div className="space-y-8">
       {valid && selected ? (
@@ -214,6 +246,9 @@ export default function SentimentPulse() {
               These figures do not describe the same month. Each value below keeps its own observation period, publication date, date last checked and revision status.
             </p>
           </section>
+
+          {/* Visual 3: UK Macro Economic Pulse */}
+          <EconomicPulseGrid series={pulseGridSeries} />
 
           <section aria-labelledby="indicator-series-title">
             <div className="mb-4 border-b border-black/15 pb-3">

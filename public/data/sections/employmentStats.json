@@ -1,0 +1,1558 @@
+{
+  "contractVersion": 1,
+  "section": "employmentStats",
+  "generatedAt": "2026-10-01T15:25:40.068Z",
+  "geography": "United Kingdom",
+  "licence": {
+    "name": "Open Government Licence v3.0, except where otherwise stated",
+    "url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+    "attribution": "Contains public sector information licensed under the Open Government Licence v3.0, except where the named source states otherwise."
+  },
+  "source": {
+    "status": "ok",
+    "cacheState": "fresh",
+    "fetchedAt": "2026-10-01T15:26:11.582Z",
+    "source": "UK labour market bulletin",
+    "provenance": {
+      "registryVersion": "2026-08-02.1",
+      "section": "employmentStats",
+      "title": "UK labour market",
+      "evidenceClass": "official-data",
+      "geography": "United Kingdom",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "monthly",
+      "operationalStatus": "active",
+      "publicationRequirement": "required",
+      "upstreams": [
+        {
+          "publisher": "Office for National Statistics",
+          "label": "UK labour market bulletin",
+          "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/uklabourmarket/latest",
+          "sourceClass": "official-primary",
+          "caveat": "The Worker keeps Labour Force Survey and vacancies periods explicit and discovers the latest bulletin edition."
+        }
+      ]
+    }
+  },
+  "data": {
+    "available": true,
+    "headline": {
+      "period": "May to July 2026",
+      "observedAt": 1785456000000,
+      "releaseDate": "2026-09-15",
+      "employmentRate": 75.1,
+      "unemploymentRate": 4.9,
+      "inactivityRate": 20.9,
+      "vacancies": 702000,
+      "vacanciesPeriod": "June to August 2026"
+    },
+    "methodology": {
+      "status": "Official statistics",
+      "caveat": "Labour Force Survey rates use rolling three-month periods and carry sampling uncertainty. Vacancy estimates use a separate business survey and have their own rolling period."
+    },
+    "source": {
+      "bulletinUrl": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/uklabourmarket/september2026",
+      "landingUrl": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/uklabourmarket/latest"
+    },
+    "annualDelta": {
+      "employmentRatePoints": -0.1,
+      "unemploymentRatePoints": 0.2,
+      "inactivityRatePoints": -0.1,
+      "vacancies": -36000
+    },
+    "history": {
+      "labourForce": [
+        {
+          "period": "2016 JUN-AUG",
+          "observedAt": 1472601600000,
+          "employmentRate": 74.4,
+          "unemploymentRate": 5,
+          "inactivityRate": 21.6
+        },
+        {
+          "period": "2016 JUL-SEP",
+          "observedAt": 1475193600000,
+          "employmentRate": 74.4,
+          "unemploymentRate": 4.8,
+          "inactivityRate": 21.7
+        },
+        {
+          "period": "2016 AUG-OCT",
+          "observedAt": 1477872000000,
+          "employmentRate": 74.4,
+          "unemploymentRate": 4.8,
+          "inactivityRate": 21.7
+        },
+        {
+          "period": "2016 SEP-NOV",
+          "observedAt": 1480464000000,
+          "employmentRate": 74.4,
+          "unemploymentRate": 4.8,
+          "inactivityRate": 21.8
+        },
+        {
+          "period": "2016 OCT-DEC",
+          "observedAt": 1483142400000,
+          "employmentRate": 74.5,
+          "unemploymentRate": 4.7,
+          "inactivityRate": 21.7
+        },
+        {
+          "period": "2017 NOV-JAN",
+          "observedAt": 1485820800000,
+          "employmentRate": 74.5,
+          "unemploymentRate": 4.7,
+          "inactivityRate": 21.7
+        },
+        {
+          "period": "2017 DEC-FEB",
+          "observedAt": 1488240000000,
+          "employmentRate": 74.6,
+          "unemploymentRate": 4.6,
+          "inactivityRate": 21.7
+        },
+        {
+          "period": "2017 JAN-MAR",
+          "observedAt": 1490918400000,
+          "employmentRate": 74.7,
+          "unemploymentRate": 4.6,
+          "inactivityRate": 21.6
+        },
+        {
+          "period": "2017 FEB-APR",
+          "observedAt": 1493510400000,
+          "employmentRate": 74.7,
+          "unemploymentRate": 4.5,
+          "inactivityRate": 21.6
+        },
+        {
+          "period": "2017 MAR-MAY",
+          "observedAt": 1496188800000,
+          "employmentRate": 74.8,
+          "unemploymentRate": 4.4,
+          "inactivityRate": 21.6
+        },
+        {
+          "period": "2017 APR-JUN",
+          "observedAt": 1498780800000,
+          "employmentRate": 75,
+          "unemploymentRate": 4.4,
+          "inactivityRate": 21.4
+        },
+        {
+          "period": "2017 MAY-JUL",
+          "observedAt": 1501459200000,
+          "employmentRate": 75.2,
+          "unemploymentRate": 4.3,
+          "inactivityRate": 21.3
+        },
+        {
+          "period": "2017 JUN-AUG",
+          "observedAt": 1504137600000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 4.3,
+          "inactivityRate": 21.5
+        },
+        {
+          "period": "2017 JUL-SEP",
+          "observedAt": 1506729600000,
+          "employmentRate": 74.9,
+          "unemploymentRate": 4.3,
+          "inactivityRate": 21.7
+        },
+        {
+          "period": "2017 AUG-OCT",
+          "observedAt": 1509408000000,
+          "employmentRate": 75,
+          "unemploymentRate": 4.2,
+          "inactivityRate": 21.6
+        },
+        {
+          "period": "2017 SEP-NOV",
+          "observedAt": 1512000000000,
+          "employmentRate": 75.2,
+          "unemploymentRate": 4.3,
+          "inactivityRate": 21.3
+        },
+        {
+          "period": "2017 OCT-DEC",
+          "observedAt": 1514678400000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 4.4,
+          "inactivityRate": 21.4
+        },
+        {
+          "period": "2018 NOV-JAN",
+          "observedAt": 1517356800000,
+          "employmentRate": 75.2,
+          "unemploymentRate": 4.3,
+          "inactivityRate": 21.3
+        },
+        {
+          "period": "2018 DEC-FEB",
+          "observedAt": 1519776000000,
+          "employmentRate": 75.3,
+          "unemploymentRate": 4.2,
+          "inactivityRate": 21.3
+        },
+        {
+          "period": "2018 JAN-MAR",
+          "observedAt": 1522454400000,
+          "employmentRate": 75.5,
+          "unemploymentRate": 4.2,
+          "inactivityRate": 21.2
+        },
+        {
+          "period": "2018 FEB-APR",
+          "observedAt": 1525046400000,
+          "employmentRate": 75.5,
+          "unemploymentRate": 4.2,
+          "inactivityRate": 21.1
+        },
+        {
+          "period": "2018 MAR-MAY",
+          "observedAt": 1527724800000,
+          "employmentRate": 75.5,
+          "unemploymentRate": 4.2,
+          "inactivityRate": 21.1
+        },
+        {
+          "period": "2018 APR-JUN",
+          "observedAt": 1530316800000,
+          "employmentRate": 75.4,
+          "unemploymentRate": 4,
+          "inactivityRate": 21.3
+        },
+        {
+          "period": "2018 MAY-JUL",
+          "observedAt": 1532995200000,
+          "employmentRate": 75.4,
+          "unemploymentRate": 4,
+          "inactivityRate": 21.4
+        },
+        {
+          "period": "2018 JUN-AUG",
+          "observedAt": 1535673600000,
+          "employmentRate": 75.4,
+          "unemploymentRate": 4,
+          "inactivityRate": 21.3
+        },
+        {
+          "period": "2018 JUL-SEP",
+          "observedAt": 1538265600000,
+          "employmentRate": 75.4,
+          "unemploymentRate": 4.1,
+          "inactivityRate": 21.3
+        },
+        {
+          "period": "2018 AUG-OCT",
+          "observedAt": 1540944000000,
+          "employmentRate": 75.6,
+          "unemploymentRate": 4.1,
+          "inactivityRate": 21.1
+        },
+        {
+          "period": "2018 SEP-NOV",
+          "observedAt": 1543536000000,
+          "employmentRate": 75.6,
+          "unemploymentRate": 4,
+          "inactivityRate": 21.1
+        },
+        {
+          "period": "2018 OCT-DEC",
+          "observedAt": 1546214400000,
+          "employmentRate": 75.7,
+          "unemploymentRate": 4,
+          "inactivityRate": 21.1
+        },
+        {
+          "period": "2019 NOV-JAN",
+          "observedAt": 1548892800000,
+          "employmentRate": 76,
+          "unemploymentRate": 3.9,
+          "inactivityRate": 20.9
+        },
+        {
+          "period": "2019 DEC-FEB",
+          "observedAt": 1551312000000,
+          "employmentRate": 76,
+          "unemploymentRate": 4,
+          "inactivityRate": 20.8
+        },
+        {
+          "period": "2019 JAN-MAR",
+          "observedAt": 1553990400000,
+          "employmentRate": 75.9,
+          "unemploymentRate": 3.8,
+          "inactivityRate": 21
+        },
+        {
+          "period": "2019 FEB-APR",
+          "observedAt": 1556582400000,
+          "employmentRate": 76,
+          "unemploymentRate": 3.8,
+          "inactivityRate": 20.9
+        },
+        {
+          "period": "2019 MAR-MAY",
+          "observedAt": 1559260800000,
+          "employmentRate": 76,
+          "unemploymentRate": 3.8,
+          "inactivityRate": 20.9
+        },
+        {
+          "period": "2019 APR-JUN",
+          "observedAt": 1561852800000,
+          "employmentRate": 76.1,
+          "unemploymentRate": 3.9,
+          "inactivityRate": 20.7
+        },
+        {
+          "period": "2019 MAY-JUL",
+          "observedAt": 1564531200000,
+          "employmentRate": 76,
+          "unemploymentRate": 3.9,
+          "inactivityRate": 20.8
+        },
+        {
+          "period": "2019 JUN-AUG",
+          "observedAt": 1567209600000,
+          "employmentRate": 75.9,
+          "unemploymentRate": 3.9,
+          "inactivityRate": 20.9
+        },
+        {
+          "period": "2019 JUL-SEP",
+          "observedAt": 1569801600000,
+          "employmentRate": 76,
+          "unemploymentRate": 3.9,
+          "inactivityRate": 20.8
+        },
+        {
+          "period": "2019 AUG-OCT",
+          "observedAt": 1572480000000,
+          "employmentRate": 76,
+          "unemploymentRate": 3.8,
+          "inactivityRate": 20.9
+        },
+        {
+          "period": "2019 SEP-NOV",
+          "observedAt": 1575072000000,
+          "employmentRate": 76.2,
+          "unemploymentRate": 3.8,
+          "inactivityRate": 20.7
+        },
+        {
+          "period": "2019 OCT-DEC",
+          "observedAt": 1577750400000,
+          "employmentRate": 76.4,
+          "unemploymentRate": 3.7,
+          "inactivityRate": 20.6
+        },
+        {
+          "period": "2020 NOV-JAN",
+          "observedAt": 1580428800000,
+          "employmentRate": 76.4,
+          "unemploymentRate": 3.9,
+          "inactivityRate": 20.5
+        },
+        {
+          "period": "2020 DEC-FEB",
+          "observedAt": 1582934400000,
+          "employmentRate": 76.5,
+          "unemploymentRate": 3.9,
+          "inactivityRate": 20.3
+        },
+        {
+          "period": "2020 JAN-MAR",
+          "observedAt": 1585612800000,
+          "employmentRate": 75.9,
+          "unemploymentRate": 4.1,
+          "inactivityRate": 20.7
+        },
+        {
+          "period": "2020 FEB-APR",
+          "observedAt": 1588204800000,
+          "employmentRate": 75.7,
+          "unemploymentRate": 4.1,
+          "inactivityRate": 21
+        },
+        {
+          "period": "2020 MAR-MAY",
+          "observedAt": 1590883200000,
+          "employmentRate": 75.5,
+          "unemploymentRate": 4.1,
+          "inactivityRate": 21.2
+        },
+        {
+          "period": "2020 APR-JUN",
+          "observedAt": 1593475200000,
+          "employmentRate": 75.4,
+          "unemploymentRate": 4.1,
+          "inactivityRate": 21.3
+        },
+        {
+          "period": "2020 MAY-JUL",
+          "observedAt": 1596153600000,
+          "employmentRate": 75.2,
+          "unemploymentRate": 4.4,
+          "inactivityRate": 21.2
+        },
+        {
+          "period": "2020 JUN-AUG",
+          "observedAt": 1598832000000,
+          "employmentRate": 75,
+          "unemploymentRate": 4.6,
+          "inactivityRate": 21.3
+        },
+        {
+          "period": "2020 JUL-SEP",
+          "observedAt": 1601424000000,
+          "employmentRate": 74.6,
+          "unemploymentRate": 5,
+          "inactivityRate": 21.4
+        },
+        {
+          "period": "2020 AUG-OCT",
+          "observedAt": 1604102400000,
+          "employmentRate": 74.5,
+          "unemploymentRate": 5.2,
+          "inactivityRate": 21.4
+        },
+        {
+          "period": "2020 SEP-NOV",
+          "observedAt": 1606694400000,
+          "employmentRate": 74.5,
+          "unemploymentRate": 5.2,
+          "inactivityRate": 21.3
+        },
+        {
+          "period": "2020 OCT-DEC",
+          "observedAt": 1609372800000,
+          "employmentRate": 74.3,
+          "unemploymentRate": 5.3,
+          "inactivityRate": 21.5
+        },
+        {
+          "period": "2021 NOV-JAN",
+          "observedAt": 1612051200000,
+          "employmentRate": 74.3,
+          "unemploymentRate": 5.2,
+          "inactivityRate": 21.5
+        },
+        {
+          "period": "2021 DEC-FEB",
+          "observedAt": 1614470400000,
+          "employmentRate": 74.5,
+          "unemploymentRate": 5,
+          "inactivityRate": 21.5
+        },
+        {
+          "period": "2021 JAN-MAR",
+          "observedAt": 1617148800000,
+          "employmentRate": 74.4,
+          "unemploymentRate": 4.9,
+          "inactivityRate": 21.6
+        },
+        {
+          "period": "2021 FEB-APR",
+          "observedAt": 1619740800000,
+          "employmentRate": 74.4,
+          "unemploymentRate": 4.8,
+          "inactivityRate": 21.7
+        },
+        {
+          "period": "2021 MAR-MAY",
+          "observedAt": 1622419200000,
+          "employmentRate": 74.4,
+          "unemploymentRate": 4.8,
+          "inactivityRate": 21.7
+        },
+        {
+          "period": "2021 APR-JUN",
+          "observedAt": 1625011200000,
+          "employmentRate": 74.7,
+          "unemploymentRate": 4.7,
+          "inactivityRate": 21.6
+        },
+        {
+          "period": "2021 MAY-JUL",
+          "observedAt": 1627689600000,
+          "employmentRate": 74.8,
+          "unemploymentRate": 4.6,
+          "inactivityRate": 21.5
+        },
+        {
+          "period": "2021 JUN-AUG",
+          "observedAt": 1630368000000,
+          "employmentRate": 74.9,
+          "unemploymentRate": 4.5,
+          "inactivityRate": 21.5
+        },
+        {
+          "period": "2021 JUL-SEP",
+          "observedAt": 1632960000000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 4.4,
+          "inactivityRate": 21.4
+        },
+        {
+          "period": "2021 AUG-OCT",
+          "observedAt": 1635638400000,
+          "employmentRate": 75,
+          "unemploymentRate": 4.3,
+          "inactivityRate": 21.6
+        },
+        {
+          "period": "2021 SEP-NOV",
+          "observedAt": 1638230400000,
+          "employmentRate": 75,
+          "unemploymentRate": 4.2,
+          "inactivityRate": 21.6
+        },
+        {
+          "period": "2021 OCT-DEC",
+          "observedAt": 1640908800000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 4.2,
+          "inactivityRate": 21.6
+        },
+        {
+          "period": "2022 NOV-JAN",
+          "observedAt": 1643587200000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 4.1,
+          "inactivityRate": 21.7
+        },
+        {
+          "period": "2022 DEC-FEB",
+          "observedAt": 1646006400000,
+          "employmentRate": 75,
+          "unemploymentRate": 3.9,
+          "inactivityRate": 21.8
+        },
+        {
+          "period": "2022 JAN-MAR",
+          "observedAt": 1648684800000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 3.8,
+          "inactivityRate": 21.9
+        },
+        {
+          "period": "2022 FEB-APR",
+          "observedAt": 1651276800000,
+          "employmentRate": 75.2,
+          "unemploymentRate": 3.8,
+          "inactivityRate": 21.8
+        },
+        {
+          "period": "2022 MAR-MAY",
+          "observedAt": 1653955200000,
+          "employmentRate": 75.4,
+          "unemploymentRate": 3.7,
+          "inactivityRate": 21.7
+        },
+        {
+          "period": "2022 APR-JUN",
+          "observedAt": 1656547200000,
+          "employmentRate": 75,
+          "unemploymentRate": 3.8,
+          "inactivityRate": 21.9
+        },
+        {
+          "period": "2022 MAY-JUL",
+          "observedAt": 1659225600000,
+          "employmentRate": 74.9,
+          "unemploymentRate": 3.6,
+          "inactivityRate": 22.2
+        },
+        {
+          "period": "2022 JUN-AUG",
+          "observedAt": 1661904000000,
+          "employmentRate": 75,
+          "unemploymentRate": 3.6,
+          "inactivityRate": 22.1
+        },
+        {
+          "period": "2022 JUL-SEP",
+          "observedAt": 1664496000000,
+          "employmentRate": 75,
+          "unemploymentRate": 3.7,
+          "inactivityRate": 22.1
+        },
+        {
+          "period": "2022 AUG-OCT",
+          "observedAt": 1667174400000,
+          "employmentRate": 75,
+          "unemploymentRate": 3.8,
+          "inactivityRate": 21.9
+        },
+        {
+          "period": "2022 SEP-NOV",
+          "observedAt": 1669766400000,
+          "employmentRate": 75,
+          "unemploymentRate": 3.9,
+          "inactivityRate": 21.9
+        },
+        {
+          "period": "2022 OCT-DEC",
+          "observedAt": 1672444800000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 3.9,
+          "inactivityRate": 21.7
+        },
+        {
+          "period": "2023 NOV-JAN",
+          "observedAt": 1675123200000,
+          "employmentRate": 75.2,
+          "unemploymentRate": 3.9,
+          "inactivityRate": 21.7
+        },
+        {
+          "period": "2023 DEC-FEB",
+          "observedAt": 1677542400000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 4,
+          "inactivityRate": 21.7
+        },
+        {
+          "period": "2023 JAN-MAR",
+          "observedAt": 1680220800000,
+          "employmentRate": 75.3,
+          "unemploymentRate": 4,
+          "inactivityRate": 21.5
+        },
+        {
+          "period": "2023 FEB-APR",
+          "observedAt": 1682812800000,
+          "employmentRate": 75.5,
+          "unemploymentRate": 3.9,
+          "inactivityRate": 21.4
+        },
+        {
+          "period": "2023 MAR-MAY",
+          "observedAt": 1685491200000,
+          "employmentRate": 75.4,
+          "unemploymentRate": 4,
+          "inactivityRate": 21.4
+        },
+        {
+          "period": "2023 APR-JUN",
+          "observedAt": 1688083200000,
+          "employmentRate": 75.2,
+          "unemploymentRate": 4.2,
+          "inactivityRate": 21.4
+        },
+        {
+          "period": "2023 MAY-JUL",
+          "observedAt": 1690761600000,
+          "employmentRate": 74.9,
+          "unemploymentRate": 4.4,
+          "inactivityRate": 21.6
+        },
+        {
+          "period": "2023 JUN-AUG",
+          "observedAt": 1693440000000,
+          "employmentRate": 74.7,
+          "unemploymentRate": 4.3,
+          "inactivityRate": 21.9
+        },
+        {
+          "period": "2023 JUL-SEP",
+          "observedAt": 1696032000000,
+          "employmentRate": 74.9,
+          "unemploymentRate": 4.1,
+          "inactivityRate": 21.8
+        },
+        {
+          "period": "2023 AUG-OCT",
+          "observedAt": 1698710400000,
+          "employmentRate": 74.9,
+          "unemploymentRate": 4,
+          "inactivityRate": 21.9
+        },
+        {
+          "period": "2023 SEP-NOV",
+          "observedAt": 1701302400000,
+          "employmentRate": 74.9,
+          "unemploymentRate": 4,
+          "inactivityRate": 22
+        },
+        {
+          "period": "2023 OCT-DEC",
+          "observedAt": 1703980800000,
+          "employmentRate": 74.9,
+          "unemploymentRate": 3.9,
+          "inactivityRate": 22
+        },
+        {
+          "period": "2024 NOV-JAN",
+          "observedAt": 1706659200000,
+          "employmentRate": 74.7,
+          "unemploymentRate": 4.1,
+          "inactivityRate": 22
+        },
+        {
+          "period": "2024 DEC-FEB",
+          "observedAt": 1709164800000,
+          "employmentRate": 74.6,
+          "unemploymentRate": 4.2,
+          "inactivityRate": 22.1
+        },
+        {
+          "period": "2024 JAN-MAR",
+          "observedAt": 1711843200000,
+          "employmentRate": 74.5,
+          "unemploymentRate": 4.3,
+          "inactivityRate": 22
+        },
+        {
+          "period": "2024 FEB-APR",
+          "observedAt": 1714435200000,
+          "employmentRate": 74.4,
+          "unemploymentRate": 4.4,
+          "inactivityRate": 22.1
+        },
+        {
+          "period": "2024 MAR-MAY",
+          "observedAt": 1717113600000,
+          "employmentRate": 74.4,
+          "unemploymentRate": 4.4,
+          "inactivityRate": 22.1
+        },
+        {
+          "period": "2024 APR-JUN",
+          "observedAt": 1719705600000,
+          "employmentRate": 74.5,
+          "unemploymentRate": 4.2,
+          "inactivityRate": 22.1
+        },
+        {
+          "period": "2024 MAY-JUL",
+          "observedAt": 1722384000000,
+          "employmentRate": 74.7,
+          "unemploymentRate": 4.2,
+          "inactivityRate": 21.9
+        },
+        {
+          "period": "2024 JUN-AUG",
+          "observedAt": 1725062400000,
+          "employmentRate": 75,
+          "unemploymentRate": 4.1,
+          "inactivityRate": 21.8
+        },
+        {
+          "period": "2024 JUL-SEP",
+          "observedAt": 1727654400000,
+          "employmentRate": 75,
+          "unemploymentRate": 4.3,
+          "inactivityRate": 21.6
+        },
+        {
+          "period": "2024 AUG-OCT",
+          "observedAt": 1730332800000,
+          "employmentRate": 74.9,
+          "unemploymentRate": 4.2,
+          "inactivityRate": 21.7
+        },
+        {
+          "period": "2024 SEP-NOV",
+          "observedAt": 1732924800000,
+          "employmentRate": 74.8,
+          "unemploymentRate": 4.4,
+          "inactivityRate": 21.6
+        },
+        {
+          "period": "2024 OCT-DEC",
+          "observedAt": 1735603200000,
+          "employmentRate": 75,
+          "unemploymentRate": 4.4,
+          "inactivityRate": 21.5
+        },
+        {
+          "period": "2025 NOV-JAN",
+          "observedAt": 1738281600000,
+          "employmentRate": 75,
+          "unemploymentRate": 4.4,
+          "inactivityRate": 21.5
+        },
+        {
+          "period": "2025 DEC-FEB",
+          "observedAt": 1740700800000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 4.5,
+          "inactivityRate": 21.3
+        },
+        {
+          "period": "2025 JAN-MAR",
+          "observedAt": 1743379200000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 4.6,
+          "inactivityRate": 21.3
+        },
+        {
+          "period": "2025 FEB-APR",
+          "observedAt": 1745971200000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 4.6,
+          "inactivityRate": 21.2
+        },
+        {
+          "period": "2025 MAR-MAY",
+          "observedAt": 1748649600000,
+          "employmentRate": 75.2,
+          "unemploymentRate": 4.7,
+          "inactivityRate": 21
+        },
+        {
+          "period": "2025 APR-JUN",
+          "observedAt": 1751241600000,
+          "employmentRate": 75.3,
+          "unemploymentRate": 4.7,
+          "inactivityRate": 20.9
+        },
+        {
+          "period": "2025 MAY-JUL",
+          "observedAt": 1753920000000,
+          "employmentRate": 75.2,
+          "unemploymentRate": 4.7,
+          "inactivityRate": 21
+        },
+        {
+          "period": "2025 JUN-AUG",
+          "observedAt": 1756598400000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 4.8,
+          "inactivityRate": 21
+        },
+        {
+          "period": "2025 JUL-SEP",
+          "observedAt": 1759190400000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 5,
+          "inactivityRate": 20.9
+        },
+        {
+          "period": "2025 AUG-OCT",
+          "observedAt": 1761868800000,
+          "employmentRate": 74.9,
+          "unemploymentRate": 5.1,
+          "inactivityRate": 21
+        },
+        {
+          "period": "2025 SEP-NOV",
+          "observedAt": 1764460800000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 5.1,
+          "inactivityRate": 20.8
+        },
+        {
+          "period": "2025 OCT-DEC",
+          "observedAt": 1767139200000,
+          "employmentRate": 75,
+          "unemploymentRate": 5.2,
+          "inactivityRate": 20.9
+        },
+        {
+          "period": "2026 NOV-JAN",
+          "observedAt": 1769817600000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 5.2,
+          "inactivityRate": 20.7
+        },
+        {
+          "period": "2026 DEC-FEB",
+          "observedAt": 1772236800000,
+          "employmentRate": 75,
+          "unemploymentRate": 4.9,
+          "inactivityRate": 21
+        },
+        {
+          "period": "2026 JAN-MAR",
+          "observedAt": 1774915200000,
+          "employmentRate": 75,
+          "unemploymentRate": 5,
+          "inactivityRate": 20.9
+        },
+        {
+          "period": "2026 FEB-APR",
+          "observedAt": 1777507200000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 4.9,
+          "inactivityRate": 21
+        },
+        {
+          "period": "2026 MAR-MAY",
+          "observedAt": 1780185600000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 4.9,
+          "inactivityRate": 20.9
+        },
+        {
+          "period": "2026 APR-JUN",
+          "observedAt": 1782777600000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 4.9,
+          "inactivityRate": 20.9
+        },
+        {
+          "period": "2026 MAY-JUL",
+          "observedAt": 1785456000000,
+          "employmentRate": 75.1,
+          "unemploymentRate": 4.9,
+          "inactivityRate": 20.9
+        }
+      ],
+      "vacancies": [
+        {
+          "period": "2016 JUL-SEP",
+          "observedAt": 1475193600000,
+          "vacancies": 756000
+        },
+        {
+          "period": "2016 AUG-OCT",
+          "observedAt": 1477872000000,
+          "vacancies": 765000
+        },
+        {
+          "period": "2016 SEP-NOV",
+          "observedAt": 1480464000000,
+          "vacancies": 757000
+        },
+        {
+          "period": "2016 OCT-DEC",
+          "observedAt": 1483142400000,
+          "vacancies": 753000
+        },
+        {
+          "period": "2017 NOV-JAN",
+          "observedAt": 1485820800000,
+          "vacancies": 744000
+        },
+        {
+          "period": "2017 DEC-FEB",
+          "observedAt": 1488240000000,
+          "vacancies": 759000
+        },
+        {
+          "period": "2017 JAN-MAR",
+          "observedAt": 1490918400000,
+          "vacancies": 766000
+        },
+        {
+          "period": "2017 FEB-APR",
+          "observedAt": 1493510400000,
+          "vacancies": 789000
+        },
+        {
+          "period": "2017 MAR-MAY",
+          "observedAt": 1496188800000,
+          "vacancies": 787000
+        },
+        {
+          "period": "2017 APR-JUN",
+          "observedAt": 1498780800000,
+          "vacancies": 792000
+        },
+        {
+          "period": "2017 MAY-JUL",
+          "observedAt": 1501459200000,
+          "vacancies": 793000
+        },
+        {
+          "period": "2017 JUN-AUG",
+          "observedAt": 1504137600000,
+          "vacancies": 801000
+        },
+        {
+          "period": "2017 JUL-SEP",
+          "observedAt": 1506729600000,
+          "vacancies": 806000
+        },
+        {
+          "period": "2017 AUG-OCT",
+          "observedAt": 1509408000000,
+          "vacancies": 811000
+        },
+        {
+          "period": "2017 SEP-NOV",
+          "observedAt": 1512000000000,
+          "vacancies": 816000
+        },
+        {
+          "period": "2017 OCT-DEC",
+          "observedAt": 1514678400000,
+          "vacancies": 815000
+        },
+        {
+          "period": "2018 NOV-JAN",
+          "observedAt": 1517356800000,
+          "vacancies": 809000
+        },
+        {
+          "period": "2018 DEC-FEB",
+          "observedAt": 1519776000000,
+          "vacancies": 806000
+        },
+        {
+          "period": "2018 JAN-MAR",
+          "observedAt": 1522454400000,
+          "vacancies": 808000
+        },
+        {
+          "period": "2018 FEB-APR",
+          "observedAt": 1525046400000,
+          "vacancies": 808000
+        },
+        {
+          "period": "2018 MAR-MAY",
+          "observedAt": 1527724800000,
+          "vacancies": 822000
+        },
+        {
+          "period": "2018 APR-JUN",
+          "observedAt": 1530316800000,
+          "vacancies": 841000
+        },
+        {
+          "period": "2018 MAY-JUL",
+          "observedAt": 1532995200000,
+          "vacancies": 849000
+        },
+        {
+          "period": "2018 JUN-AUG",
+          "observedAt": 1535673600000,
+          "vacancies": 853000
+        },
+        {
+          "period": "2018 JUL-SEP",
+          "observedAt": 1538265600000,
+          "vacancies": 853000
+        },
+        {
+          "period": "2018 AUG-OCT",
+          "observedAt": 1540944000000,
+          "vacancies": 862000
+        },
+        {
+          "period": "2018 SEP-NOV",
+          "observedAt": 1543536000000,
+          "vacancies": 856000
+        },
+        {
+          "period": "2018 OCT-DEC",
+          "observedAt": 1546214400000,
+          "vacancies": 848000
+        },
+        {
+          "period": "2019 NOV-JAN",
+          "observedAt": 1548892800000,
+          "vacancies": 845000
+        },
+        {
+          "period": "2019 DEC-FEB",
+          "observedAt": 1551312000000,
+          "vacancies": 836000
+        },
+        {
+          "period": "2019 JAN-MAR",
+          "observedAt": 1553990400000,
+          "vacancies": 837000
+        },
+        {
+          "period": "2019 FEB-APR",
+          "observedAt": 1556582400000,
+          "vacancies": 837000
+        },
+        {
+          "period": "2019 MAR-MAY",
+          "observedAt": 1559260800000,
+          "vacancies": 837000
+        },
+        {
+          "period": "2019 APR-JUN",
+          "observedAt": 1561852800000,
+          "vacancies": 835000
+        },
+        {
+          "period": "2019 MAY-JUL",
+          "observedAt": 1564531200000,
+          "vacancies": 835000
+        },
+        {
+          "period": "2019 JUN-AUG",
+          "observedAt": 1567209600000,
+          "vacancies": 830000
+        },
+        {
+          "period": "2019 JUL-SEP",
+          "observedAt": 1569801600000,
+          "vacancies": 827000
+        },
+        {
+          "period": "2019 AUG-OCT",
+          "observedAt": 1572480000000,
+          "vacancies": 809000
+        },
+        {
+          "period": "2019 SEP-NOV",
+          "observedAt": 1575072000000,
+          "vacancies": 800000
+        },
+        {
+          "period": "2019 OCT-DEC",
+          "observedAt": 1577750400000,
+          "vacancies": 799000
+        },
+        {
+          "period": "2020 NOV-JAN",
+          "observedAt": 1580428800000,
+          "vacancies": 800000
+        },
+        {
+          "period": "2020 DEC-FEB",
+          "observedAt": 1582934400000,
+          "vacancies": 808000
+        },
+        {
+          "period": "2020 JAN-MAR",
+          "observedAt": 1585612800000,
+          "vacancies": 788000
+        },
+        {
+          "period": "2020 FEB-APR",
+          "observedAt": 1588204800000,
+          "vacancies": 635000
+        },
+        {
+          "period": "2020 MAR-MAY",
+          "observedAt": 1590883200000,
+          "vacancies": 476000
+        },
+        {
+          "period": "2020 APR-JUN",
+          "observedAt": 1593475200000,
+          "vacancies": 343000
+        },
+        {
+          "period": "2020 MAY-JUL",
+          "observedAt": 1596153600000,
+          "vacancies": 384000
+        },
+        {
+          "period": "2020 JUN-AUG",
+          "observedAt": 1598832000000,
+          "vacancies": 445000
+        },
+        {
+          "period": "2020 JUL-SEP",
+          "observedAt": 1601424000000,
+          "vacancies": 499000
+        },
+        {
+          "period": "2020 AUG-OCT",
+          "observedAt": 1604102400000,
+          "vacancies": 530000
+        },
+        {
+          "period": "2020 SEP-NOV",
+          "observedAt": 1606694400000,
+          "vacancies": 549000
+        },
+        {
+          "period": "2020 OCT-DEC",
+          "observedAt": 1609372800000,
+          "vacancies": 586000
+        },
+        {
+          "period": "2021 NOV-JAN",
+          "observedAt": 1612051200000,
+          "vacancies": 603000
+        },
+        {
+          "period": "2021 DEC-FEB",
+          "observedAt": 1614470400000,
+          "vacancies": 609000
+        },
+        {
+          "period": "2021 JAN-MAR",
+          "observedAt": 1617148800000,
+          "vacancies": 621000
+        },
+        {
+          "period": "2021 FEB-APR",
+          "observedAt": 1619740800000,
+          "vacancies": 660000
+        },
+        {
+          "period": "2021 MAR-MAY",
+          "observedAt": 1622419200000,
+          "vacancies": 771000
+        },
+        {
+          "period": "2021 APR-JUN",
+          "observedAt": 1625011200000,
+          "vacancies": 883000
+        },
+        {
+          "period": "2021 MAY-JUL",
+          "observedAt": 1627689600000,
+          "vacancies": 983000
+        },
+        {
+          "period": "2021 JUN-AUG",
+          "observedAt": 1630368000000,
+          "vacancies": 1068000
+        },
+        {
+          "period": "2021 JUL-SEP",
+          "observedAt": 1632960000000,
+          "vacancies": 1132000
+        },
+        {
+          "period": "2021 AUG-OCT",
+          "observedAt": 1635638400000,
+          "vacancies": 1208000
+        },
+        {
+          "period": "2021 SEP-NOV",
+          "observedAt": 1638230400000,
+          "vacancies": 1229000
+        },
+        {
+          "period": "2021 OCT-DEC",
+          "observedAt": 1640908800000,
+          "vacancies": 1244000
+        },
+        {
+          "period": "2022 NOV-JAN",
+          "observedAt": 1643587200000,
+          "vacancies": 1245000
+        },
+        {
+          "period": "2022 DEC-FEB",
+          "observedAt": 1646006400000,
+          "vacancies": 1254000
+        },
+        {
+          "period": "2022 JAN-MAR",
+          "observedAt": 1648684800000,
+          "vacancies": 1259000
+        },
+        {
+          "period": "2022 FEB-APR",
+          "observedAt": 1651276800000,
+          "vacancies": 1277000
+        },
+        {
+          "period": "2022 MAR-MAY",
+          "observedAt": 1653955200000,
+          "vacancies": 1293000
+        },
+        {
+          "period": "2022 APR-JUN",
+          "observedAt": 1656547200000,
+          "vacancies": 1294000
+        },
+        {
+          "period": "2022 MAY-JUL",
+          "observedAt": 1659225600000,
+          "vacancies": 1272000
+        },
+        {
+          "period": "2022 JUN-AUG",
+          "observedAt": 1661904000000,
+          "vacancies": 1257000
+        },
+        {
+          "period": "2022 JUL-SEP",
+          "observedAt": 1664496000000,
+          "vacancies": 1235000
+        },
+        {
+          "period": "2022 AUG-OCT",
+          "observedAt": 1667174400000,
+          "vacancies": 1216000
+        },
+        {
+          "period": "2022 SEP-NOV",
+          "observedAt": 1669766400000,
+          "vacancies": 1170000
+        },
+        {
+          "period": "2022 OCT-DEC",
+          "observedAt": 1672444800000,
+          "vacancies": 1138000
+        },
+        {
+          "period": "2023 NOV-JAN",
+          "observedAt": 1675123200000,
+          "vacancies": 1108000
+        },
+        {
+          "period": "2023 DEC-FEB",
+          "observedAt": 1677542400000,
+          "vacancies": 1101000
+        },
+        {
+          "period": "2023 JAN-MAR",
+          "observedAt": 1680220800000,
+          "vacancies": 1089000
+        },
+        {
+          "period": "2023 FEB-APR",
+          "observedAt": 1682812800000,
+          "vacancies": 1065000
+        },
+        {
+          "period": "2023 MAR-MAY",
+          "observedAt": 1685491200000,
+          "vacancies": 1040000
+        },
+        {
+          "period": "2023 APR-JUN",
+          "observedAt": 1688083200000,
+          "vacancies": 1029000
+        },
+        {
+          "period": "2023 MAY-JUL",
+          "observedAt": 1690761600000,
+          "vacancies": 1018000
+        },
+        {
+          "period": "2023 JUN-AUG",
+          "observedAt": 1693440000000,
+          "vacancies": 999000
+        },
+        {
+          "period": "2023 JUL-SEP",
+          "observedAt": 1696032000000,
+          "vacancies": 984000
+        },
+        {
+          "period": "2023 AUG-OCT",
+          "observedAt": 1698710400000,
+          "vacancies": 958000
+        },
+        {
+          "period": "2023 SEP-NOV",
+          "observedAt": 1701302400000,
+          "vacancies": 951000
+        },
+        {
+          "period": "2023 OCT-DEC",
+          "observedAt": 1703980800000,
+          "vacancies": 923000
+        },
+        {
+          "period": "2024 NOV-JAN",
+          "observedAt": 1706659200000,
+          "vacancies": 910000
+        },
+        {
+          "period": "2024 DEC-FEB",
+          "observedAt": 1709164800000,
+          "vacancies": 895000
+        },
+        {
+          "period": "2024 JAN-MAR",
+          "observedAt": 1711843200000,
+          "vacancies": 893000
+        },
+        {
+          "period": "2024 FEB-APR",
+          "observedAt": 1714435200000,
+          "vacancies": 885000
+        },
+        {
+          "period": "2024 MAR-MAY",
+          "observedAt": 1717113600000,
+          "vacancies": 885000
+        },
+        {
+          "period": "2024 APR-JUN",
+          "observedAt": 1719705600000,
+          "vacancies": 872000
+        },
+        {
+          "period": "2024 MAY-JUL",
+          "observedAt": 1722384000000,
+          "vacancies": 867000
+        },
+        {
+          "period": "2024 JUN-AUG",
+          "observedAt": 1725062400000,
+          "vacancies": 853000
+        },
+        {
+          "period": "2024 JUL-SEP",
+          "observedAt": 1727654400000,
+          "vacancies": 840000
+        },
+        {
+          "period": "2024 AUG-OCT",
+          "observedAt": 1730332800000,
+          "vacancies": 828000
+        },
+        {
+          "period": "2024 SEP-NOV",
+          "observedAt": 1732924800000,
+          "vacancies": 810000
+        },
+        {
+          "period": "2024 OCT-DEC",
+          "observedAt": 1735603200000,
+          "vacancies": 805000
+        },
+        {
+          "period": "2025 NOV-JAN",
+          "observedAt": 1738281600000,
+          "vacancies": 798000
+        },
+        {
+          "period": "2025 DEC-FEB",
+          "observedAt": 1740700800000,
+          "vacancies": 793000
+        },
+        {
+          "period": "2025 JAN-MAR",
+          "observedAt": 1743379200000,
+          "vacancies": 775000
+        },
+        {
+          "period": "2025 FEB-APR",
+          "observedAt": 1745971200000,
+          "vacancies": 759000
+        },
+        {
+          "period": "2025 MAR-MAY",
+          "observedAt": 1748649600000,
+          "vacancies": 738000
+        },
+        {
+          "period": "2025 APR-JUN",
+          "observedAt": 1751241600000,
+          "vacancies": 730000
+        },
+        {
+          "period": "2025 MAY-JUL",
+          "observedAt": 1753920000000,
+          "vacancies": 727000
+        },
+        {
+          "period": "2025 JUN-AUG",
+          "observedAt": 1756598400000,
+          "vacancies": 738000
+        },
+        {
+          "period": "2025 JUL-SEP",
+          "observedAt": 1759190400000,
+          "vacancies": 729000
+        },
+        {
+          "period": "2025 AUG-OCT",
+          "observedAt": 1761868800000,
+          "vacancies": 728000
+        },
+        {
+          "period": "2025 SEP-NOV",
+          "observedAt": 1764460800000,
+          "vacancies": 730000
+        },
+        {
+          "period": "2025 OCT-DEC",
+          "observedAt": 1767139200000,
+          "vacancies": 739000
+        },
+        {
+          "period": "2026 NOV-JAN",
+          "observedAt": 1769817600000,
+          "vacancies": 734000
+        },
+        {
+          "period": "2026 DEC-FEB",
+          "observedAt": 1772236800000,
+          "vacancies": 725000
+        },
+        {
+          "period": "2026 JAN-MAR",
+          "observedAt": 1774915200000,
+          "vacancies": 718000
+        },
+        {
+          "period": "2026 FEB-APR",
+          "observedAt": 1777507200000,
+          "vacancies": 713000
+        },
+        {
+          "period": "2026 MAR-MAY",
+          "observedAt": 1780185600000,
+          "vacancies": 710000
+        },
+        {
+          "period": "2026 APR-JUN",
+          "observedAt": 1782777600000,
+          "vacancies": 711000
+        },
+        {
+          "period": "2026 MAY-JUL",
+          "observedAt": 1785456000000,
+          "vacancies": 706000
+        },
+        {
+          "period": "2026 JUN-AUG",
+          "observedAt": 1788134400000,
+          "vacancies": 702000
+        }
+      ]
+    },
+    "series": {
+      "employmentRate": {
+        "id": "LF24",
+        "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/timeseries/lf24/lms"
+      },
+      "unemploymentRate": {
+        "id": "MGSX",
+        "url": "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/unemployment/timeseries/mgsx/lms"
+      },
+      "inactivityRate": {
+        "id": "LF2S",
+        "url": "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/economicinactivity/timeseries/lf2s/lms"
+      },
+      "vacancies": {
+        "id": "AP2Y",
+        "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/timeseries/ap2y/unem"
+      }
+    },
+    "expiresAt": "2026-11-24T00:00:00.000Z",
+    "__observation": {
+      "status": "current",
+      "period": "May to July 2026",
+      "observedAt": "2026-07-31T00:00:00.000Z",
+      "checkedAt": "2026-10-01T15:26:31.766Z",
+      "maxAgeDays": 70
+    },
+    "__provenance": {
+      "registryVersion": "2026-08-02.1",
+      "section": "employmentStats",
+      "title": "UK labour market",
+      "evidenceClass": "official-data",
+      "geography": "United Kingdom",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "monthly",
+      "operationalStatus": "active",
+      "publicationRequirement": "required",
+      "upstreams": [
+        {
+          "publisher": "Office for National Statistics",
+          "label": "UK labour market bulletin",
+          "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/uklabourmarket/latest",
+          "sourceClass": "official-primary",
+          "caveat": "The Worker keeps Labour Force Survey and vacancies periods explicit and discovers the latest bulletin edition."
+        }
+      ]
+    }
+  }
+}

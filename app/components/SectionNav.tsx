@@ -7,6 +7,7 @@ import type { CategoryGroup } from "../lib/sections";
 import BrandLogo from "./BrandLogo";
 import EvidenceSearch from "./EvidenceSearch";
 import PublicationFreshnessIndicator from "./PublicationFreshnessIndicator";
+import BritishDatelineTicker from "./visuals/BritishDatelineTicker";
 
 const QUICK_LINK_IDS = [
   "gdp",
@@ -92,7 +93,9 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
     "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14243b]";
 
   return (
-    <nav className="border-b border-[#aab4bf] bg-white" aria-label="public-data.org navigation">
+    <header role="banner" className="w-full">
+      <BritishDatelineTicker />
+      <nav className="border-b border-[#aab4bf] bg-white" aria-label="public-data.org navigation">
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-2 md:px-6 md:py-3">
         <Link
           href="/"
@@ -232,5 +235,6 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
         </div>
       )}
     </nav>
+    </header>
   );
 }

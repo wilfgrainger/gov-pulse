@@ -1,0 +1,130 @@
+path,value
+$.contractVersion,1
+$.data.__observation.checkedAt,2026-10-01T15:26:55.766Z
+$.data.__observation.maxAgeDays,220
+$.data.__observation.observedAt,2025-12-31T00:00:00.000Z
+$.data.__observation.period,YE December 2025
+$.data.__observation.status,current
+$.data.__provenance.evidenceClass,official-data
+$.data.__provenance.geography,United Kingdom
+$.data.__provenance.operationalStatus,active
+$.data.__provenance.publicationCadence,periodic
+$.data.__provenance.publicationRequirement,required
+$.data.__provenance.refreshCadence,daily
+$.data.__provenance.registryVersion,2026-08-02.1
+$.data.__provenance.retrieval,scheduled-publication-check
+$.data.__provenance.section,migrationStats
+$.data.__provenance.title,Long-term international migration
+$.data.__provenance.upstreams[0].caveat,The Worker discovers the current edition from the rolling dataset page before retrieving the bulletin; this URL records the edition verified on 14 July 2026.
+$.data.__provenance.upstreams[0].label,"Long-term international migration, provisional bulletin"
+$.data.__provenance.upstreams[0].publisher,Office for National Statistics
+$.data.__provenance.upstreams[0].sourceClass,official-primary
+$.data.__provenance.upstreams[0].url,https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/longterminternationalmigrationprovisional/yearendingdecember2025
+$.data.__provenance.upstreams[1].label,"Long-term immigration, emigration and net migration dataset"
+$.data.__provenance.upstreams[1].publisher,Office for National Statistics
+$.data.__provenance.upstreams[1].sourceClass,official-primary
+$.data.__provenance.upstreams[1].url,https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/longterminternationalimmigrationemigrationandnetmigrationflowsprovisional
+$.data.annualDelta.emigration,-38000
+$.data.annualDelta.immigration,-199000
+$.data.annualDelta.netMigration,-160000
+$.data.comparison[0].netMigration,331000
+$.data.comparison[0].period,YE December 2024
+$.data.comparison[1].netMigration,171000
+$.data.comparison[1].period,YE December 2025
+$.data.expiresAt,2026-12-27T00:00:00.000Z
+$.data.headline.changePercent,-48
+$.data.headline.emigration,642000
+$.data.headline.immigration,813000
+$.data.headline.netMigration,171000
+$.data.headline.observedAt,1767139200000
+$.data.headline.period,YE December 2025
+$.data.headline.previousNetMigration,331000
+$.data.headline.previousPeriod,YE December 2024
+$.data.headline.provisional,true
+$.data.headline.releaseDate,2026-05-21
+$.data.history[0].emigration,523000
+$.data.history[0].immigration,772000
+$.data.history[0].netMigration,249000
+$.data.history[0].observedAt,1483142400000
+$.data.history[0].period,YE December 2016
+$.data.history[1].emigration,544000
+$.data.history[1].immigration,752000
+$.data.history[1].netMigration,208000
+$.data.history[1].observedAt,1514678400000
+$.data.history[1].period,YE December 2017
+$.data.history[2].emigration,549000
+$.data.history[2].immigration,825000
+$.data.history[2].netMigration,276000
+$.data.history[2].observedAt,1546214400000
+$.data.history[2].period,YE December 2018
+$.data.history[3].emigration,605000
+$.data.history[3].immigration,788000
+$.data.history[3].netMigration,184000
+$.data.history[3].observedAt,1577750400000
+$.data.history[3].period,YE December 2019
+$.data.history[4].emigration,569000
+$.data.history[4].immigration,662000
+$.data.history[4].netMigration,93000
+$.data.history[4].observedAt,1609372800000
+$.data.history[4].period,YE December 2020
+$.data.history[5].emigration,480000
+$.data.history[5].immigration,947000
+$.data.history[5].netMigration,467000
+$.data.history[5].observedAt,1640908800000
+$.data.history[5].period,YE December 2021
+$.data.history[6].emigration,508000
+$.data.history[6].immigration,1398000
+$.data.history[6].netMigration,891000
+$.data.history[6].observedAt,1672444800000
+$.data.history[6].period,YE December 2022
+$.data.history[7].emigration,593000
+$.data.history[7].immigration,1441000
+$.data.history[7].netMigration,848000
+$.data.history[7].observedAt,1703980800000
+$.data.history[7].period,YE December 2023
+$.data.history[8].emigration,680000
+$.data.history[8].immigration,1012000
+$.data.history[8].netMigration,331000
+$.data.history[8].observedAt,1735603200000
+$.data.history[8].period,YE December 2024
+$.data.history[9].emigration,642000
+$.data.history[9].immigration,813000
+$.data.history[9].netMigration,171000
+$.data.history[9].observedAt,1767139200000
+$.data.history[9].period,YE December 2025
+$.data.methodology.definition,People moving to or from the UK for 12 months or more
+$.data.methodology.revisionNote,The newest estimates are provisional for a year and earlier periods may be revised when methods or source data improve.
+$.data.methodology.status,Official statistics in development
+$.data.source.bulletinUrl,https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/longterminternationalmigrationprovisional/yearendingdecember2025
+$.data.source.datasetUrl,https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/longterminternationalimmigrationemigrationandnetmigrationflowsprovisional
+$.data.source.edition,yearendingdecember2025
+$.data.source.historyUrl,https://www.ons.gov.uk/visualisations/dvc3538/fig02/data.csv
+$.generatedAt,2026-10-01T15:25:40.068Z
+$.geography,United Kingdom
+$.licence.attribution,"Contains public sector information licensed under the Open Government Licence v3.0, except where the named source states otherwise."
+$.licence.name,"Open Government Licence v3.0, except where otherwise stated"
+$.licence.url,https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/
+$.section,migrationStats
+$.source.cacheState,fresh
+$.source.fetchedAt,2026-10-01T15:26:53.547Z
+$.source.provenance.evidenceClass,official-data
+$.source.provenance.geography,United Kingdom
+$.source.provenance.operationalStatus,active
+$.source.provenance.publicationCadence,periodic
+$.source.provenance.publicationRequirement,required
+$.source.provenance.refreshCadence,daily
+$.source.provenance.registryVersion,2026-08-02.1
+$.source.provenance.retrieval,scheduled-publication-check
+$.source.provenance.section,migrationStats
+$.source.provenance.title,Long-term international migration
+$.source.provenance.upstreams[0].caveat,The Worker discovers the current edition from the rolling dataset page before retrieving the bulletin; this URL records the edition verified on 14 July 2026.
+$.source.provenance.upstreams[0].label,"Long-term international migration, provisional bulletin"
+$.source.provenance.upstreams[0].publisher,Office for National Statistics
+$.source.provenance.upstreams[0].sourceClass,official-primary
+$.source.provenance.upstreams[0].url,https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/longterminternationalmigrationprovisional/yearendingdecember2025
+$.source.provenance.upstreams[1].label,"Long-term immigration, emigration and net migration dataset"
+$.source.provenance.upstreams[1].publisher,Office for National Statistics
+$.source.provenance.upstreams[1].sourceClass,official-primary
+$.source.provenance.upstreams[1].url,https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/longterminternationalimmigrationemigrationandnetmigrationflowsprovisional
+$.source.source,"Long-term international migration, provisional bulletin + Long-term immigration, emigration and net migration dataset"
+$.source.status,ok

@@ -105,6 +105,10 @@ Turn "add a source" into a bounded, contract-driven, accessible-by-default opera
   is collected in `scripts/` under Actions, which the architecture permits.
 - Every onboarded measure ships the accessibility bundle (screen-reader table, keyboard,
   focus, reduced-motion, 360px reflow). No new charting dependency.
+  *Progress update (2026-10-01)*: Delivered 5 accessible publication-point visuals (`ContractsMonthlyPipeline`,
+  `SupplierMarketConcentration`, `EconomicPulseGrid`, `HousingAffordabilityVisual`, `ReceiptsDebtVisual`) and
+  fixed the Government Contracts observation policy mismatch, integrating £13.15B Find a Tender awards with
+  monthly spending totals, supplier market concentration, and a British 538 editorial look and feel.
 
 ## Phase 5 — V1.0 hardening (#53, #73)
 

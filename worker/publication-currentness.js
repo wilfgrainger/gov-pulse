@@ -104,12 +104,19 @@ function sectionCurrentness(section, data, source, now = new Date()) {
       return { current: false, reason: "expiry-not-after-observation" };
     }
 
-    const maximumAgeDays = observation.maxAgeDays;
-    const maximumAgeMs = maximumAgeDays * DAY_MS;
+    const maximumAgeDays =
+      Number.isSafeInteger(observation.maxAgeDays) && observation.maxAgeDays > 0
+        ? observation.maxAgeDays
+        : Number.isFinite(observation.maxAgeHours) && observation.maxAgeHours > 0
+          ? observation.maxAgeHours / 24
+          : null;
+    const maximumAgeMs = maximumAgeDays !== null ? maximumAgeDays * DAY_MS : null;
     if (
-      !Number.isSafeInteger(maximumAgeDays) ||
+      maximumAgeDays === null ||
+      !Number.isFinite(maximumAgeDays) ||
       maximumAgeDays <= 0 ||
-      !Number.isSafeInteger(maximumAgeMs)
+      maximumAgeMs === null ||
+      !Number.isFinite(maximumAgeMs)
     ) {
       return { current: false, reason: "invalid-observation-policy" };
     }
@@ -140,9 +147,17 @@ function sectionValidityDeadline(section, data, source, now = new Date()) {
     : [parsedTime(source.fetchedAt) + retrievalLimit];
 
   if (isRecord(data.__observation) && explicitExpiry === null) {
-    deadlines.push(
-      parsedTime(data.__observation.observedAt) + data.__observation.maxAgeDays * DAY_MS
-    );
+    const ageDays =
+      Number.isSafeInteger(data.__observation.maxAgeDays) && data.__observation.maxAgeDays > 0
+        ? data.__observation.maxAgeDays
+        : Number.isFinite(data.__observation.maxAgeHours) && data.__observation.maxAgeHours > 0
+          ? data.__observation.maxAgeHours / 24
+          : null;
+    if (ageDays !== null) {
+      deadlines.push(
+        parsedTime(data.__observation.observedAt) + ageDays * DAY_MS
+      );
+    }
   }
 
   return Math.min(...deadlines);

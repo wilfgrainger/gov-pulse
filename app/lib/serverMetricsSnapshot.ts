@@ -26,7 +26,11 @@ export const readServerMetricsSnapshot = cache(
 
     // Keep local development deterministic and offline-friendly. Request-time
     // production rendering is exercised by OpenNext/Cloudflare.
-    if (process.env.NODE_ENV !== "production") return null;
+    if (process.env.NODE_ENV !== "production") {
+      return isCompatibleMetricsSnapshot(BUILD_METRICS_SNAPSHOT)
+        ? BUILD_METRICS_SNAPSHOT
+        : null;
+    }
 
     try {
       const loaded = await requestSnapshot(PRODUCTION_SNAPSHOT_URL, "snapshot");

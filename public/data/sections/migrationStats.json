@@ -1,0 +1,191 @@
+{
+  "contractVersion": 1,
+  "section": "migrationStats",
+  "generatedAt": "2026-10-01T15:25:40.068Z",
+  "geography": "United Kingdom",
+  "licence": {
+    "name": "Open Government Licence v3.0, except where otherwise stated",
+    "url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+    "attribution": "Contains public sector information licensed under the Open Government Licence v3.0, except where the named source states otherwise."
+  },
+  "source": {
+    "status": "ok",
+    "cacheState": "fresh",
+    "fetchedAt": "2026-10-01T15:26:53.547Z",
+    "source": "Long-term international migration, provisional bulletin + Long-term immigration, emigration and net migration dataset",
+    "provenance": {
+      "registryVersion": "2026-08-02.1",
+      "section": "migrationStats",
+      "title": "Long-term international migration",
+      "evidenceClass": "official-data",
+      "geography": "United Kingdom",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "periodic",
+      "operationalStatus": "active",
+      "publicationRequirement": "required",
+      "upstreams": [
+        {
+          "publisher": "Office for National Statistics",
+          "label": "Long-term international migration, provisional bulletin",
+          "url": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/longterminternationalmigrationprovisional/yearendingdecember2025",
+          "sourceClass": "official-primary",
+          "caveat": "The Worker discovers the current edition from the rolling dataset page before retrieving the bulletin; this URL records the edition verified on 14 July 2026."
+        },
+        {
+          "publisher": "Office for National Statistics",
+          "label": "Long-term immigration, emigration and net migration dataset",
+          "url": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/longterminternationalimmigrationemigrationandnetmigrationflowsprovisional",
+          "sourceClass": "official-primary"
+        }
+      ]
+    }
+  },
+  "data": {
+    "headline": {
+      "period": "YE December 2025",
+      "observedAt": 1767139200000,
+      "releaseDate": "2026-05-21",
+      "netMigration": 171000,
+      "immigration": 813000,
+      "emigration": 642000,
+      "previousPeriod": "YE December 2024",
+      "previousNetMigration": 331000,
+      "changePercent": -48,
+      "provisional": true
+    },
+    "comparison": [
+      {
+        "period": "YE December 2024",
+        "netMigration": 331000
+      },
+      {
+        "period": "YE December 2025",
+        "netMigration": 171000
+      }
+    ],
+    "methodology": {
+      "definition": "People moving to or from the UK for 12 months or more",
+      "status": "Official statistics in development",
+      "revisionNote": "The newest estimates are provisional for a year and earlier periods may be revised when methods or source data improve."
+    },
+    "source": {
+      "edition": "yearendingdecember2025",
+      "bulletinUrl": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/longterminternationalmigrationprovisional/yearendingdecember2025",
+      "datasetUrl": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/longterminternationalimmigrationemigrationandnetmigrationflowsprovisional",
+      "historyUrl": "https://www.ons.gov.uk/visualisations/dvc3538/fig02/data.csv"
+    },
+    "history": [
+      {
+        "period": "YE December 2016",
+        "observedAt": 1483142400000,
+        "immigration": 772000,
+        "emigration": 523000,
+        "netMigration": 249000
+      },
+      {
+        "period": "YE December 2017",
+        "observedAt": 1514678400000,
+        "immigration": 752000,
+        "emigration": 544000,
+        "netMigration": 208000
+      },
+      {
+        "period": "YE December 2018",
+        "observedAt": 1546214400000,
+        "immigration": 825000,
+        "emigration": 549000,
+        "netMigration": 276000
+      },
+      {
+        "period": "YE December 2019",
+        "observedAt": 1577750400000,
+        "immigration": 788000,
+        "emigration": 605000,
+        "netMigration": 184000
+      },
+      {
+        "period": "YE December 2020",
+        "observedAt": 1609372800000,
+        "immigration": 662000,
+        "emigration": 569000,
+        "netMigration": 93000
+      },
+      {
+        "period": "YE December 2021",
+        "observedAt": 1640908800000,
+        "immigration": 947000,
+        "emigration": 480000,
+        "netMigration": 467000
+      },
+      {
+        "period": "YE December 2022",
+        "observedAt": 1672444800000,
+        "immigration": 1398000,
+        "emigration": 508000,
+        "netMigration": 891000
+      },
+      {
+        "period": "YE December 2023",
+        "observedAt": 1703980800000,
+        "immigration": 1441000,
+        "emigration": 593000,
+        "netMigration": 848000
+      },
+      {
+        "period": "YE December 2024",
+        "observedAt": 1735603200000,
+        "immigration": 1012000,
+        "emigration": 680000,
+        "netMigration": 331000
+      },
+      {
+        "period": "YE December 2025",
+        "observedAt": 1767139200000,
+        "immigration": 813000,
+        "emigration": 642000,
+        "netMigration": 171000
+      }
+    ],
+    "annualDelta": {
+      "immigration": -199000,
+      "emigration": -38000,
+      "netMigration": -160000
+    },
+    "expiresAt": "2026-12-27T00:00:00.000Z",
+    "__observation": {
+      "status": "current",
+      "period": "YE December 2025",
+      "observedAt": "2025-12-31T00:00:00.000Z",
+      "checkedAt": "2026-10-01T15:26:55.766Z",
+      "maxAgeDays": 220
+    },
+    "__provenance": {
+      "registryVersion": "2026-08-02.1",
+      "section": "migrationStats",
+      "title": "Long-term international migration",
+      "evidenceClass": "official-data",
+      "geography": "United Kingdom",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "periodic",
+      "operationalStatus": "active",
+      "publicationRequirement": "required",
+      "upstreams": [
+        {
+          "publisher": "Office for National Statistics",
+          "label": "Long-term international migration, provisional bulletin",
+          "url": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/longterminternationalmigrationprovisional/yearendingdecember2025",
+          "sourceClass": "official-primary",
+          "caveat": "The Worker discovers the current edition from the rolling dataset page before retrieving the bulletin; this URL records the edition verified on 14 July 2026."
+        },
+        {
+          "publisher": "Office for National Statistics",
+          "label": "Long-term immigration, emigration and net migration dataset",
+          "url": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/longterminternationalimmigrationemigrationandnetmigrationflowsprovisional",
+          "sourceClass": "official-primary"
+        }
+      ]
+    }
+  }
+}

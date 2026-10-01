@@ -441,6 +441,7 @@ function observationFor(data, checkedAt = new Date()) {
     observedAt: data.window.updatedTo,
     checkedAt: checkedAt.toISOString(),
     maxAgeHours: MAX_PUBLICATION_AGE_MS / (60 * 60 * 1000),
+    maxAgeDays: Math.ceil(MAX_PUBLICATION_AGE_MS / (24 * 60 * 60 * 1000)),
   };
 }
 
@@ -456,13 +457,16 @@ function isCurrentGovernmentContractsPayload(data, now = new Date()) {
     const checkedAt = Date.parse(observation?.checkedAt ?? "");
     const { __observation: ignored, ...published } = data;
     void ignored;
+    const hasValidMaxAge =
+      observation?.maxAgeHours === MAX_PUBLICATION_AGE_MS / (60 * 60 * 1000) ||
+      observation?.maxAgeDays === Math.ceil(MAX_PUBLICATION_AGE_MS / (24 * 60 * 60 * 1000));
     return (
       canonical.available === true &&
       JSON.stringify(published) === JSON.stringify(canonical) &&
       observation?.status === "current" &&
       observation?.period === canonical.window.label &&
       observation?.observedAt === canonical.window.updatedTo &&
-      observation?.maxAgeHours === MAX_PUBLICATION_AGE_MS / (60 * 60 * 1000) &&
+      hasValidMaxAge &&
       Number.isFinite(checkedAt) &&
       checkedAt >= Date.parse(canonical.window.updatedTo) &&
       checkedAt <= now.getTime() + FUTURE_TOLERANCE_MS

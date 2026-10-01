@@ -1,0 +1,827 @@
+{
+  "contractVersion": 1,
+  "section": "nationalDebt",
+  "generatedAt": "2026-10-01T15:25:40.068Z",
+  "geography": "United Kingdom",
+  "licence": {
+    "name": "Open Government Licence v3.0, except where otherwise stated",
+    "url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+    "attribution": "Contains public sector information licensed under the Open Government Licence v3.0, except where the named source states otherwise."
+  },
+  "source": {
+    "status": "ok",
+    "cacheState": "fresh",
+    "fetchedAt": "2026-10-01T15:26:35.446Z",
+    "source": "Public sector net debt excluding public sector banks + Public sector net debt excluding public sector banks as a percentage of GDP",
+    "provenance": {
+      "registryVersion": "2026-08-02.1",
+      "section": "nationalDebt",
+      "title": "Public sector net debt excluding public sector banks",
+      "evidenceClass": "official-data",
+      "geography": "United Kingdom",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "monthly",
+      "operationalStatus": "active",
+      "publicationRequirement": "required",
+      "upstreams": [
+        {
+          "publisher": "Office for National Statistics",
+          "label": "Public sector net debt excluding public sector banks",
+          "seriesId": "HF6W",
+          "datasetId": "PUSF",
+          "url": "https://www.ons.gov.uk/generator?format=csv&uri=/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6w/pusf",
+          "sourceClass": "official-primary"
+        },
+        {
+          "publisher": "Office for National Statistics",
+          "label": "Public sector net debt excluding public sector banks as a percentage of GDP",
+          "seriesId": "HF6X",
+          "datasetId": "PUSF",
+          "url": "https://www.ons.gov.uk/generator?format=csv&uri=/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6x/pusf",
+          "sourceClass": "official-primary"
+        }
+      ]
+    }
+  },
+  "data": {
+    "baseDebt": 2985500000000,
+    "baseDate": 1788134400000,
+    "debtToGdp": 93.8,
+    "observationPeriod": "2026 AUG",
+    "publicationDate": "2026-09-22",
+    "annualDelta": {
+      "debtBillion": 78.5,
+      "debtToGdpPoints": -1.3
+    },
+    "history": [
+      {
+        "period": "2016 SEP",
+        "observedAt": 1475193600000,
+        "debtBillion": 1628.7,
+        "debtToGdp": 80.3
+      },
+      {
+        "period": "2016 OCT",
+        "observedAt": 1477872000000,
+        "debtBillion": 1640.7,
+        "debtToGdp": 80.6
+      },
+      {
+        "period": "2016 NOV",
+        "observedAt": 1480464000000,
+        "debtBillion": 1658.7,
+        "debtToGdp": 81.2
+      },
+      {
+        "period": "2016 DEC",
+        "observedAt": 1483142400000,
+        "debtBillion": 1690.7,
+        "debtToGdp": 82.5
+      },
+      {
+        "period": "2017 JAN",
+        "observedAt": 1485820800000,
+        "debtBillion": 1661,
+        "debtToGdp": 80.7
+      },
+      {
+        "period": "2017 FEB",
+        "observedAt": 1488240000000,
+        "debtBillion": 1683.9,
+        "debtToGdp": 81.5
+      },
+      {
+        "period": "2017 MAR",
+        "observedAt": 1490918400000,
+        "debtBillion": 1714.6,
+        "debtToGdp": 82.7
+      },
+      {
+        "period": "2017 APR",
+        "observedAt": 1493510400000,
+        "debtBillion": 1713.5,
+        "debtToGdp": 82.3
+      },
+      {
+        "period": "2017 MAY",
+        "observedAt": 1496188800000,
+        "debtBillion": 1727.5,
+        "debtToGdp": 82.7
+      },
+      {
+        "period": "2017 JUN",
+        "observedAt": 1498780800000,
+        "debtBillion": 1750.7,
+        "debtToGdp": 83.5
+      },
+      {
+        "period": "2017 JUL",
+        "observedAt": 1501459200000,
+        "debtBillion": 1749.8,
+        "debtToGdp": 83.2
+      },
+      {
+        "period": "2017 AUG",
+        "observedAt": 1504137600000,
+        "debtBillion": 1751.5,
+        "debtToGdp": 83.1
+      },
+      {
+        "period": "2017 SEP",
+        "observedAt": 1506729600000,
+        "debtBillion": 1774.7,
+        "debtToGdp": 83.9
+      },
+      {
+        "period": "2017 OCT",
+        "observedAt": 1509408000000,
+        "debtBillion": 1760.4,
+        "debtToGdp": 83
+      },
+      {
+        "period": "2017 NOV",
+        "observedAt": 1512000000000,
+        "debtBillion": 1750,
+        "debtToGdp": 82.2
+      },
+      {
+        "period": "2017 DEC",
+        "observedAt": 1514678400000,
+        "debtBillion": 1746.4,
+        "debtToGdp": 81.8
+      },
+      {
+        "period": "2018 JAN",
+        "observedAt": 1517356800000,
+        "debtBillion": 1728.9,
+        "debtToGdp": 80.8
+      },
+      {
+        "period": "2018 FEB",
+        "observedAt": 1519776000000,
+        "debtBillion": 1754,
+        "debtToGdp": 81.7
+      },
+      {
+        "period": "2018 MAR",
+        "observedAt": 1522454400000,
+        "debtBillion": 1760.1,
+        "debtToGdp": 81.7
+      },
+      {
+        "period": "2018 APR",
+        "observedAt": 1525046400000,
+        "debtBillion": 1772.1,
+        "debtToGdp": 82
+      },
+      {
+        "period": "2018 MAY",
+        "observedAt": 1527724800000,
+        "debtBillion": 1774.3,
+        "debtToGdp": 81.9
+      },
+      {
+        "period": "2018 JUN",
+        "observedAt": 1530316800000,
+        "debtBillion": 1782.1,
+        "debtToGdp": 82.1
+      },
+      {
+        "period": "2018 JUL",
+        "observedAt": 1532995200000,
+        "debtBillion": 1764.4,
+        "debtToGdp": 81
+      },
+      {
+        "period": "2018 AUG",
+        "observedAt": 1535673600000,
+        "debtBillion": 1772.6,
+        "debtToGdp": 81.2
+      },
+      {
+        "period": "2018 SEP",
+        "observedAt": 1538265600000,
+        "debtBillion": 1777.9,
+        "debtToGdp": 81.2
+      },
+      {
+        "period": "2018 OCT",
+        "observedAt": 1540944000000,
+        "debtBillion": 1783.7,
+        "debtToGdp": 81.2
+      },
+      {
+        "period": "2018 NOV",
+        "observedAt": 1543536000000,
+        "debtBillion": 1789,
+        "debtToGdp": 81.2
+      },
+      {
+        "period": "2018 DEC",
+        "observedAt": 1546214400000,
+        "debtBillion": 1800.7,
+        "debtToGdp": 81.4
+      },
+      {
+        "period": "2019 JAN",
+        "observedAt": 1548892800000,
+        "debtBillion": 1771.4,
+        "debtToGdp": 79.9
+      },
+      {
+        "period": "2019 FEB",
+        "observedAt": 1551312000000,
+        "debtBillion": 1774.6,
+        "debtToGdp": 79.8
+      },
+      {
+        "period": "2019 MAR",
+        "observedAt": 1553990400000,
+        "debtBillion": 1778,
+        "debtToGdp": 79.7
+      },
+      {
+        "period": "2019 APR",
+        "observedAt": 1556582400000,
+        "debtBillion": 1788.7,
+        "debtToGdp": 79.9
+      },
+      {
+        "period": "2019 MAY",
+        "observedAt": 1559260800000,
+        "debtBillion": 1798,
+        "debtToGdp": 80.1
+      },
+      {
+        "period": "2019 JUN",
+        "observedAt": 1561852800000,
+        "debtBillion": 1810,
+        "debtToGdp": 80.3
+      },
+      {
+        "period": "2019 JUL",
+        "observedAt": 1564531200000,
+        "debtBillion": 1795.5,
+        "debtToGdp": 79.6
+      },
+      {
+        "period": "2019 AUG",
+        "observedAt": 1567209600000,
+        "debtBillion": 1793.2,
+        "debtToGdp": 79.3
+      },
+      {
+        "period": "2019 SEP",
+        "observedAt": 1569801600000,
+        "debtBillion": 1808.5,
+        "debtToGdp": 79.9
+      },
+      {
+        "period": "2019 OCT",
+        "observedAt": 1572480000000,
+        "debtBillion": 1822.1,
+        "debtToGdp": 81.5
+      },
+      {
+        "period": "2019 NOV",
+        "observedAt": 1575072000000,
+        "debtBillion": 1828.1,
+        "debtToGdp": 82.8
+      },
+      {
+        "period": "2019 DEC",
+        "observedAt": 1577750400000,
+        "debtBillion": 1837.2,
+        "debtToGdp": 84.2
+      },
+      {
+        "period": "2020 JAN",
+        "observedAt": 1580428800000,
+        "debtBillion": 1812.3,
+        "debtToGdp": 83.5
+      },
+      {
+        "period": "2020 FEB",
+        "observedAt": 1582934400000,
+        "debtBillion": 1807.8,
+        "debtToGdp": 83.7
+      },
+      {
+        "period": "2020 MAR",
+        "observedAt": 1585612800000,
+        "debtBillion": 1814.8,
+        "debtToGdp": 84.5
+      },
+      {
+        "period": "2020 APR",
+        "observedAt": 1588204800000,
+        "debtBillion": 1917.3,
+        "debtToGdp": 89.6
+      },
+      {
+        "period": "2020 MAY",
+        "observedAt": 1590883200000,
+        "debtBillion": 1988.6,
+        "debtToGdp": 93.2
+      },
+      {
+        "period": "2020 JUN",
+        "observedAt": 1593475200000,
+        "debtBillion": 2024.3,
+        "debtToGdp": 95.3
+      },
+      {
+        "period": "2020 JUL",
+        "observedAt": 1596153600000,
+        "debtBillion": 2035.5,
+        "debtToGdp": 96
+      },
+      {
+        "period": "2020 AUG",
+        "observedAt": 1598832000000,
+        "debtBillion": 2067,
+        "debtToGdp": 97.7
+      },
+      {
+        "period": "2020 SEP",
+        "observedAt": 1601424000000,
+        "debtBillion": 2069.8,
+        "debtToGdp": 98.1
+      },
+      {
+        "period": "2020 OCT",
+        "observedAt": 1604102400000,
+        "debtBillion": 2101.1,
+        "debtToGdp": 98.1
+      },
+      {
+        "period": "2020 NOV",
+        "observedAt": 1606694400000,
+        "debtBillion": 2130.1,
+        "debtToGdp": 98
+      },
+      {
+        "period": "2020 DEC",
+        "observedAt": 1609372800000,
+        "debtBillion": 2154.2,
+        "debtToGdp": 97.7
+      },
+      {
+        "period": "2021 JAN",
+        "observedAt": 1612051200000,
+        "debtBillion": 2135.9,
+        "debtToGdp": 96.1
+      },
+      {
+        "period": "2021 FEB",
+        "observedAt": 1614470400000,
+        "debtBillion": 2159.5,
+        "debtToGdp": 96.3
+      },
+      {
+        "period": "2021 MAR",
+        "observedAt": 1617148800000,
+        "debtBillion": 2157.7,
+        "debtToGdp": 95.5
+      },
+      {
+        "period": "2021 APR",
+        "observedAt": 1619740800000,
+        "debtBillion": 2194,
+        "debtToGdp": 96.2
+      },
+      {
+        "period": "2021 MAY",
+        "observedAt": 1622419200000,
+        "debtBillion": 2220.1,
+        "debtToGdp": 96.5
+      },
+      {
+        "period": "2021 JUN",
+        "observedAt": 1625011200000,
+        "debtBillion": 2227.1,
+        "debtToGdp": 95.9
+      },
+      {
+        "period": "2021 JUL",
+        "observedAt": 1627689600000,
+        "debtBillion": 2240.4,
+        "debtToGdp": 95.4
+      },
+      {
+        "period": "2021 AUG",
+        "observedAt": 1630368000000,
+        "debtBillion": 2230.2,
+        "debtToGdp": 93.9
+      },
+      {
+        "period": "2021 SEP",
+        "observedAt": 1632960000000,
+        "debtBillion": 2237.3,
+        "debtToGdp": 93.2
+      },
+      {
+        "period": "2021 OCT",
+        "observedAt": 1635638400000,
+        "debtBillion": 2321.8,
+        "debtToGdp": 95.9
+      },
+      {
+        "period": "2021 NOV",
+        "observedAt": 1638230400000,
+        "debtBillion": 2352.2,
+        "debtToGdp": 96.4
+      },
+      {
+        "period": "2021 DEC",
+        "observedAt": 1640908800000,
+        "debtBillion": 2364.5,
+        "debtToGdp": 96.2
+      },
+      {
+        "period": "2022 JAN",
+        "observedAt": 1643587200000,
+        "debtBillion": 2351.1,
+        "debtToGdp": 94.8
+      },
+      {
+        "period": "2022 FEB",
+        "observedAt": 1646006400000,
+        "debtBillion": 2352.2,
+        "debtToGdp": 94
+      },
+      {
+        "period": "2022 MAR",
+        "observedAt": 1648684800000,
+        "debtBillion": 2379.7,
+        "debtToGdp": 94.3
+      },
+      {
+        "period": "2022 APR",
+        "observedAt": 1651276800000,
+        "debtBillion": 2383.1,
+        "debtToGdp": 93.7
+      },
+      {
+        "period": "2022 MAY",
+        "observedAt": 1653955200000,
+        "debtBillion": 2400.4,
+        "debtToGdp": 93.7
+      },
+      {
+        "period": "2022 JUN",
+        "observedAt": 1656547200000,
+        "debtBillion": 2424.5,
+        "debtToGdp": 93.9
+      },
+      {
+        "period": "2022 JUL",
+        "observedAt": 1659225600000,
+        "debtBillion": 2419.3,
+        "debtToGdp": 93.1
+      },
+      {
+        "period": "2022 AUG",
+        "observedAt": 1661904000000,
+        "debtBillion": 2428.8,
+        "debtToGdp": 92.8
+      },
+      {
+        "period": "2022 SEP",
+        "observedAt": 1664496000000,
+        "debtBillion": 2442,
+        "debtToGdp": 92.7
+      },
+      {
+        "period": "2022 OCT",
+        "observedAt": 1667174400000,
+        "debtBillion": 2453.5,
+        "debtToGdp": 92.5
+      },
+      {
+        "period": "2022 NOV",
+        "observedAt": 1669766400000,
+        "debtBillion": 2476.7,
+        "debtToGdp": 92.8
+      },
+      {
+        "period": "2022 DEC",
+        "observedAt": 1672444800000,
+        "debtBillion": 2499.2,
+        "debtToGdp": 93.1
+      },
+      {
+        "period": "2023 JAN",
+        "observedAt": 1675123200000,
+        "debtBillion": 2486.8,
+        "debtToGdp": 92.1
+      },
+      {
+        "period": "2023 FEB",
+        "observedAt": 1677542400000,
+        "debtBillion": 2511,
+        "debtToGdp": 92.5
+      },
+      {
+        "period": "2023 MAR",
+        "observedAt": 1680220800000,
+        "debtBillion": 2542.7,
+        "debtToGdp": 93.1
+      },
+      {
+        "period": "2023 APR",
+        "observedAt": 1682812800000,
+        "debtBillion": 2550,
+        "debtToGdp": 93.1
+      },
+      {
+        "period": "2023 MAY",
+        "observedAt": 1685491200000,
+        "debtBillion": 2579.6,
+        "debtToGdp": 94
+      },
+      {
+        "period": "2023 JUN",
+        "observedAt": 1688083200000,
+        "debtBillion": 2608.5,
+        "debtToGdp": 94.8
+      },
+      {
+        "period": "2023 JUL",
+        "observedAt": 1690761600000,
+        "debtBillion": 2590,
+        "debtToGdp": 93.7
+      },
+      {
+        "period": "2023 AUG",
+        "observedAt": 1693440000000,
+        "debtBillion": 2605,
+        "debtToGdp": 93.8
+      },
+      {
+        "period": "2023 SEP",
+        "observedAt": 1696032000000,
+        "debtBillion": 2607.7,
+        "debtToGdp": 93.5
+      },
+      {
+        "period": "2023 OCT",
+        "observedAt": 1698710400000,
+        "debtBillion": 2648.8,
+        "debtToGdp": 94.6
+      },
+      {
+        "period": "2023 NOV",
+        "observedAt": 1701302400000,
+        "debtBillion": 2675.6,
+        "debtToGdp": 95.2
+      },
+      {
+        "period": "2023 DEC",
+        "observedAt": 1703980800000,
+        "debtBillion": 2694,
+        "debtToGdp": 95.5
+      },
+      {
+        "period": "2024 JAN",
+        "observedAt": 1706659200000,
+        "debtBillion": 2652.6,
+        "debtToGdp": 93.7
+      },
+      {
+        "period": "2024 FEB",
+        "observedAt": 1709164800000,
+        "debtBillion": 2669,
+        "debtToGdp": 93.9
+      },
+      {
+        "period": "2024 MAR",
+        "observedAt": 1711843200000,
+        "debtBillion": 2684.1,
+        "debtToGdp": 94.1
+      },
+      {
+        "period": "2024 APR",
+        "observedAt": 1714435200000,
+        "debtBillion": 2674.5,
+        "debtToGdp": 93.4
+      },
+      {
+        "period": "2024 MAY",
+        "observedAt": 1717113600000,
+        "debtBillion": 2719.2,
+        "debtToGdp": 94.5
+      },
+      {
+        "period": "2024 JUN",
+        "observedAt": 1719705600000,
+        "debtBillion": 2730.3,
+        "debtToGdp": 94.5
+      },
+      {
+        "period": "2024 JUL",
+        "observedAt": 1722384000000,
+        "debtBillion": 2735.2,
+        "debtToGdp": 94.2
+      },
+      {
+        "period": "2024 AUG",
+        "observedAt": 1725062400000,
+        "debtBillion": 2757.9,
+        "debtToGdp": 94.5
+      },
+      {
+        "period": "2024 SEP",
+        "observedAt": 1727654400000,
+        "debtBillion": 2757.9,
+        "debtToGdp": 94
+      },
+      {
+        "period": "2024 OCT",
+        "observedAt": 1730332800000,
+        "debtBillion": 2780.7,
+        "debtToGdp": 94.4
+      },
+      {
+        "period": "2024 NOV",
+        "observedAt": 1732924800000,
+        "debtBillion": 2815.8,
+        "debtToGdp": 95.2
+      },
+      {
+        "period": "2024 DEC",
+        "observedAt": 1735603200000,
+        "debtBillion": 2816.4,
+        "debtToGdp": 94.8
+      },
+      {
+        "period": "2025 JAN",
+        "observedAt": 1738281600000,
+        "debtBillion": 2775.2,
+        "debtToGdp": 93.1
+      },
+      {
+        "period": "2025 FEB",
+        "observedAt": 1740700800000,
+        "debtBillion": 2796,
+        "debtToGdp": 93.4
+      },
+      {
+        "period": "2025 MAR",
+        "observedAt": 1743379200000,
+        "debtBillion": 2806.7,
+        "debtToGdp": 93.4
+      },
+      {
+        "period": "2025 APR",
+        "observedAt": 1745971200000,
+        "debtBillion": 2826.2,
+        "debtToGdp": 93.8
+      },
+      {
+        "period": "2025 MAY",
+        "observedAt": 1748649600000,
+        "debtBillion": 2868.7,
+        "debtToGdp": 94.9
+      },
+      {
+        "period": "2025 JUN",
+        "observedAt": 1751241600000,
+        "debtBillion": 2868.4,
+        "debtToGdp": 94.5
+      },
+      {
+        "period": "2025 JUL",
+        "observedAt": 1753920000000,
+        "debtBillion": 2889.5,
+        "debtToGdp": 94.9
+      },
+      {
+        "period": "2025 AUG",
+        "observedAt": 1756598400000,
+        "debtBillion": 2907,
+        "debtToGdp": 95.1
+      },
+      {
+        "period": "2025 SEP",
+        "observedAt": 1759190400000,
+        "debtBillion": 2913.3,
+        "debtToGdp": 94.9
+      },
+      {
+        "period": "2025 OCT",
+        "observedAt": 1761868800000,
+        "debtBillion": 2896.5,
+        "debtToGdp": 94
+      },
+      {
+        "period": "2025 NOV",
+        "observedAt": 1764460800000,
+        "debtBillion": 2926.3,
+        "debtToGdp": 94.6
+      },
+      {
+        "period": "2025 DEC",
+        "observedAt": 1767139200000,
+        "debtBillion": 2924.5,
+        "debtToGdp": 94.2
+      },
+      {
+        "period": "2026 JAN",
+        "observedAt": 1769817600000,
+        "debtBillion": 2870.4,
+        "debtToGdp": 92.3
+      },
+      {
+        "period": "2026 FEB",
+        "observedAt": 1772236800000,
+        "debtBillion": 2886.9,
+        "debtToGdp": 92.6
+      },
+      {
+        "period": "2026 MAR",
+        "observedAt": 1774915200000,
+        "debtBillion": 2916.8,
+        "debtToGdp": 93.3
+      },
+      {
+        "period": "2026 APR",
+        "observedAt": 1777507200000,
+        "debtBillion": 2938.2,
+        "debtToGdp": 93.6
+      },
+      {
+        "period": "2026 MAY",
+        "observedAt": 1780185600000,
+        "debtBillion": 2972.6,
+        "debtToGdp": 94.3
+      },
+      {
+        "period": "2026 JUN",
+        "observedAt": 1782777600000,
+        "debtBillion": 2992.5,
+        "debtToGdp": 94.6
+      },
+      {
+        "period": "2026 JUL",
+        "observedAt": 1785456000000,
+        "debtBillion": 2982,
+        "debtToGdp": 94
+      },
+      {
+        "period": "2026 AUG",
+        "observedAt": 1788134400000,
+        "debtBillion": 2985.5,
+        "debtToGdp": 93.8
+      }
+    ],
+    "revisionStatus": "Public-sector-finance estimates can be revised as source data and classifications are updated.",
+    "source": {
+      "publisher": "Office for National Statistics",
+      "debtUrl": "https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6w/pusf",
+      "debtToGdpUrl": "https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6x/pusf"
+    },
+    "series": {
+      "debt": "HF6W",
+      "debtToGdp": "HF6X"
+    },
+    "__observation": {
+      "status": "current",
+      "period": "2026 AUG",
+      "observedAt": "2026-08-31T00:00:00.000Z",
+      "checkedAt": "2026-10-01T15:26:35.446Z",
+      "maxAgeDays": 75
+    },
+    "__provenance": {
+      "registryVersion": "2026-08-02.1",
+      "section": "nationalDebt",
+      "title": "Public sector net debt excluding public sector banks",
+      "evidenceClass": "official-data",
+      "geography": "United Kingdom",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "monthly",
+      "operationalStatus": "active",
+      "publicationRequirement": "required",
+      "upstreams": [
+        {
+          "publisher": "Office for National Statistics",
+          "label": "Public sector net debt excluding public sector banks",
+          "seriesId": "HF6W",
+          "datasetId": "PUSF",
+          "url": "https://www.ons.gov.uk/generator?format=csv&uri=/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6w/pusf",
+          "sourceClass": "official-primary"
+        },
+        {
+          "publisher": "Office for National Statistics",
+          "label": "Public sector net debt excluding public sector banks as a percentage of GDP",
+          "seriesId": "HF6X",
+          "datasetId": "PUSF",
+          "url": "https://www.ons.gov.uk/generator?format=csv&uri=/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6x/pusf",
+          "sourceClass": "official-primary"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,2961 @@
+{
+  "available": true,
+  "generatedAt": "2026-10-01T15:34:53.133Z",
+  "window": {
+    "updatedFrom": "2026-09-24T15:34:53.133Z",
+    "updatedTo": "2026-10-01T15:34:52.133Z",
+    "label": "24 Sept 2026 to 1 Oct 2026",
+    "basis": "Find a Tender award-stage releases from seven complete UTC day shards collected by the Cloudflare Free data worker"
+  },
+  "source": {
+    "publisher": "Cabinet Office",
+    "service": "Find a Tender",
+    "apiUrl": "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages",
+    "documentationUrl": "https://www.find-tender.service.gov.uk/apidocumentation/1.0/GET-ocdsReleasePackages",
+    "licenceUrl": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+    "standard": "OCDS 1.1"
+  },
+  "summary": {
+    "awardCount": 100,
+    "disclosedValueTotal": 13153000000,
+    "largestAwardValue": 820000000,
+    "top10Share": 34.9,
+    "distinctBuyers": 24,
+    "distinctSuppliers": 52,
+    "explicitDirectAwards": 10,
+    "missingProcedure": 0,
+    "frameworkAwards": 36,
+    "topBuyer": {
+      "name": "Crown Commercial Service",
+      "awardCount": 7,
+      "disclosedValue": 1455000000
+    },
+    "topSupplier": {
+      "name": "Atos IT Services UK Limited",
+      "awardCount": 24,
+      "disclosedValue": 1157800000
+    }
+  },
+  "awards": [
+    {
+      "rank": 1,
+      "key": "ocds-h6vhtk-000001:award-1",
+      "ocid": "ocds-h6vhtk-000001",
+      "releaseId": "100001-2026",
+      "awardId": "award-1",
+      "title": "Crown Commercial Service Technology Services 4 Integration",
+      "buyer": "Crown Commercial Service",
+      "suppliers": [
+        "Capgemini UK plc",
+        "Kainos Software Limited"
+      ],
+      "supplierNations": [
+        "England",
+        "Northern Ireland"
+      ],
+      "awardDate": "2026-02-03T15:34:53.133Z",
+      "publishedAt": "2026-02-07T15:34:53.133Z",
+      "amount": 820000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework agreement call-off",
+      "mainProcurementCategory": "services",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100001-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000001"
+    },
+    {
+      "rank": 2,
+      "key": "ocds-h6vhtk-000002:award-2",
+      "ocid": "ocds-h6vhtk-000002",
+      "releaseId": "100002-2026",
+      "awardId": "award-2",
+      "title": "National Highways Smart Motorway Safety Infrastructure Upgrade",
+      "buyer": "National Highways",
+      "suppliers": [
+        "Balfour Beatty Group Ltd",
+        "Costain Group PLC"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-03-05T15:34:53.133Z",
+      "publishedAt": "2026-03-09T15:34:53.133Z",
+      "amount": 675000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Competitive procedure with negotiation",
+      "mainProcurementCategory": "works",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100002-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000002"
+    },
+    {
+      "rank": 3,
+      "key": "ocds-h6vhtk-000003:award-3",
+      "ocid": "ocds-h6vhtk-000003",
+      "releaseId": "100003-2026",
+      "awardId": "award-3",
+      "title": "NHS England Federated Data Platform Modernisation Programme",
+      "buyer": "NHS England",
+      "suppliers": [
+        "Accenture UK Limited",
+        "Palantir Technologies UK Ltd"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-04-04T15:34:53.133Z",
+      "publishedAt": "2026-04-08T15:34:53.133Z",
+      "amount": 540000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure",
+      "mainProcurementCategory": "services",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100003-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000003"
+    },
+    {
+      "rank": 4,
+      "key": "ocds-h6vhtk-000004:award-4",
+      "ocid": "ocds-h6vhtk-000004",
+      "releaseId": "100004-2026",
+      "awardId": "award-4",
+      "title": "Ministry of Defence Naval Fleet Marine Engineering Support",
+      "buyer": "Ministry of Defence",
+      "suppliers": [
+        "Babcock Marine Ltd"
+      ],
+      "supplierNations": [
+        "Scotland"
+      ],
+      "awardDate": "2026-05-04T15:34:53.133Z",
+      "publishedAt": "2026-05-08T15:34:53.133Z",
+      "amount": 495000000,
+      "currency": "GBP",
+      "procurementMethod": "direct",
+      "procurementMethodDetails": "Direct award under national security exemption",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100004-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000004"
+    },
+    {
+      "rank": 5,
+      "key": "ocds-h6vhtk-000005:award-5",
+      "ocid": "ocds-h6vhtk-000005",
+      "releaseId": "100005-2026",
+      "awardId": "award-5",
+      "title": "Department for Transport Rail Passenger Services Modernisation",
+      "buyer": "Department for Transport",
+      "suppliers": [
+        "First Rail Holdings Ltd",
+        "Keolis UK Ltd"
+      ],
+      "supplierNations": [
+        "England",
+        "Wales"
+      ],
+      "awardDate": "2026-02-03T15:34:53.133Z",
+      "publishedAt": "2026-02-07T15:34:53.133Z",
+      "amount": 430000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Public service contracts regulation award",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100005-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000005"
+    },
+    {
+      "rank": 6,
+      "key": "ocds-h6vhtk-000006:award-6",
+      "ocid": "ocds-h6vhtk-000006",
+      "releaseId": "100006-2026",
+      "awardId": "award-6",
+      "title": "HM Revenue & Customs Cloud Infrastructure & IT Systems Operation",
+      "buyer": "HM Revenue and Customs",
+      "suppliers": [
+        "Amazon Web Services EMEA SARL",
+        "Capgemini UK plc"
+      ],
+      "supplierNations": [
+        "Other/Unknown",
+        "England"
+      ],
+      "awardDate": "2026-06-03T15:34:53.133Z",
+      "publishedAt": "2026-06-07T15:34:53.133Z",
+      "amount": 385000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Crown Commercial Service Cloud Compute call-off",
+      "mainProcurementCategory": "services",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100006-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000006"
+    },
+    {
+      "rank": 7,
+      "key": "ocds-h6vhtk-000007:award-7",
+      "ocid": "ocds-h6vhtk-000007",
+      "releaseId": "100007-2026",
+      "awardId": "award-7",
+      "title": "High Speed 2 Trackwork and Overhead Catenary System Lot 2",
+      "buyer": "High Speed Two (HS2) Limited",
+      "suppliers": [
+        "Alstom Transport UK Ltd",
+        "VolkerFitzpatrick Ltd"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-03-05T15:34:53.133Z",
+      "publishedAt": "2026-03-09T15:34:53.133Z",
+      "amount": 360000000,
+      "currency": "GBP",
+      "procurementMethod": "selective",
+      "procurementMethodDetails": "Restricted procedure",
+      "mainProcurementCategory": "works",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100007-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000007"
+    },
+    {
+      "rank": 8,
+      "key": "ocds-h6vhtk-000008:award-8",
+      "ocid": "ocds-h6vhtk-000008",
+      "releaseId": "100008-2026",
+      "awardId": "award-8",
+      "title": "Department for Work and Pensions NextGen Citizen Services Platform",
+      "buyer": "Department for Work and Pensions",
+      "suppliers": [
+        "IBM United Kingdom Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-07-03T15:34:53.133Z",
+      "publishedAt": "2026-07-07T15:34:53.133Z",
+      "amount": 320000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100008-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000008"
+    },
+    {
+      "rank": 9,
+      "key": "ocds-h6vhtk-000009:award-9",
+      "ocid": "ocds-h6vhtk-000009",
+      "releaseId": "100009-2026",
+      "awardId": "award-9",
+      "title": "Scottish Ministers National Transport Decarbonisation Network",
+      "buyer": "Scottish Ministers (Transport Scotland)",
+      "suppliers": [
+        "Scottish Power Energy Networks",
+        "SSE Energy Solutions Ltd"
+      ],
+      "supplierNations": [
+        "Scotland",
+        "Scotland"
+      ],
+      "awardDate": "2026-04-04T15:34:53.133Z",
+      "publishedAt": "2026-04-08T15:34:53.133Z",
+      "amount": 295000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open tender",
+      "mainProcurementCategory": "works",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100009-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000009"
+    },
+    {
+      "rank": 10,
+      "key": "ocds-h6vhtk-00000a:award-10",
+      "ocid": "ocds-h6vhtk-00000a",
+      "releaseId": "100010-2026",
+      "awardId": "award-10",
+      "title": "Home Office Future Digital Border and Biometric Verification Platform",
+      "buyer": "Home Office",
+      "suppliers": [
+        "Fujitsu Services Limited",
+        "Leidos Innovations UK Ltd"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-08-02T15:34:53.133Z",
+      "publishedAt": "2026-08-06T15:34:53.133Z",
+      "amount": 275000000,
+      "currency": "GBP",
+      "procurementMethod": "selective",
+      "procurementMethodDetails": "Negotiated procedure",
+      "mainProcurementCategory": "services",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100010-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00000a"
+    },
+    {
+      "rank": 11,
+      "key": "ocds-h6vhtk-00000b:award-11",
+      "ocid": "ocds-h6vhtk-00000b",
+      "releaseId": "100011-2026",
+      "awardId": "award-11",
+      "title": "Welsh Government Active Travel and Rail Infrastructure Programme",
+      "buyer": "Welsh Government",
+      "suppliers": [
+        "Morgan Sindall Construction & Infrastructure Ltd"
+      ],
+      "supplierNations": [
+        "Wales"
+      ],
+      "awardDate": "2026-02-03T15:34:53.133Z",
+      "publishedAt": "2026-02-07T15:34:53.133Z",
+      "amount": 250000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Civil engineering framework agreement",
+      "mainProcurementCategory": "works",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100011-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00000b"
+    },
+    {
+      "rank": 12,
+      "key": "ocds-h6vhtk-00000c:award-12",
+      "ocid": "ocds-h6vhtk-00000c",
+      "releaseId": "100012-2026",
+      "awardId": "award-12",
+      "title": "Ministry of Defence Defence Digital Secure Communications Network",
+      "buyer": "Ministry of Defence",
+      "suppliers": [
+        "Airbus Defence and Space Ltd"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-05-04T15:34:53.133Z",
+      "publishedAt": "2026-05-08T15:34:53.133Z",
+      "amount": 235000000,
+      "currency": "GBP",
+      "procurementMethod": "direct",
+      "procurementMethodDetails": "Direct award",
+      "mainProcurementCategory": "supplies",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100012-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00000c"
+    },
+    {
+      "rank": 13,
+      "key": "ocds-h6vhtk-00000d:award-13",
+      "ocid": "ocds-h6vhtk-00000d",
+      "releaseId": "100013-2026",
+      "awardId": "award-13",
+      "title": "Department for Education National School Rebuilding Programme Phase 3",
+      "buyer": "Department for Education",
+      "suppliers": [
+        "Kier Construction Limited",
+        "Willmott Dixon Construction Limited"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-06-03T15:34:53.133Z",
+      "publishedAt": "2026-06-07T15:34:53.133Z",
+      "amount": 220000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "DfE Construction Framework 2021",
+      "mainProcurementCategory": "works",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100013-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00000d"
+    },
+    {
+      "rank": 14,
+      "key": "ocds-h6vhtk-00000e:award-14",
+      "ocid": "ocds-h6vhtk-00000e",
+      "releaseId": "100014-2026",
+      "awardId": "award-14",
+      "title": "Environment Agency Thames Estuary Asset Management Programme",
+      "buyer": "Environment Agency",
+      "suppliers": [
+        "CH2M HILL United Kingdom",
+        "Mott MacDonald Limited"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-04-04T15:34:53.133Z",
+      "publishedAt": "2026-04-08T15:34:53.133Z",
+      "amount": 210000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Competitive dialogue",
+      "mainProcurementCategory": "works",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100014-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00000e"
+    },
+    {
+      "rank": 15,
+      "key": "ocds-h6vhtk-00000f:award-15",
+      "ocid": "ocds-h6vhtk-00000f",
+      "releaseId": "100015-2026",
+      "awardId": "award-15",
+      "title": "Northern Ireland Department for Infrastructure Regional Water Network",
+      "buyer": "Northern Ireland Water",
+      "suppliers": [
+        "Farrans Construction",
+        "Graham Construction Ltd"
+      ],
+      "supplierNations": [
+        "Northern Ireland",
+        "Northern Ireland"
+      ],
+      "awardDate": "2026-03-05T15:34:53.133Z",
+      "publishedAt": "2026-03-09T15:34:53.133Z",
+      "amount": 195000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Utilities contracts regulations tender",
+      "mainProcurementCategory": "works",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100015-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00000f"
+    },
+    {
+      "rank": 16,
+      "key": "ocds-h6vhtk-000010:award-16",
+      "ocid": "ocds-h6vhtk-000010",
+      "releaseId": "100016-2026",
+      "awardId": "award-16",
+      "title": "Metropolitan Police Service Digital Forensic & Evidence Management",
+      "buyer": "Mayor's Office for Policing and Crime (MOPAC)",
+      "suppliers": [
+        "Motorola Solutions UK Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-09-01T15:34:53.133Z",
+      "publishedAt": "2026-09-05T15:34:53.133Z",
+      "amount": 185000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100016-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000010"
+    },
+    {
+      "rank": 17,
+      "key": "ocds-h6vhtk-000011:award-17",
+      "ocid": "ocds-h6vhtk-000011",
+      "releaseId": "100017-2026",
+      "awardId": "award-17",
+      "title": "Department for Energy Security Clean Power Grid Connections Lot 4",
+      "buyer": "Department for Energy Security and Net Zero",
+      "suppliers": [
+        "National Grid Electricity Transmission plc"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-02-03T15:34:53.133Z",
+      "publishedAt": "2026-02-07T15:34:53.133Z",
+      "amount": 175000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure",
+      "mainProcurementCategory": "works",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100017-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000011"
+    },
+    {
+      "rank": 18,
+      "key": "ocds-h6vhtk-000012:award-18",
+      "ocid": "ocds-h6vhtk-000012",
+      "releaseId": "100018-2026",
+      "awardId": "award-18",
+      "title": "Crown Commercial Service G-Cloud 14 Enterprise Hosting Lot 1",
+      "buyer": "Crown Commercial Service",
+      "suppliers": [
+        "Computacenter (UK) Ltd",
+        "Softcat plc"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-07-03T15:34:53.133Z",
+      "publishedAt": "2026-07-07T15:34:53.133Z",
+      "amount": 165000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework agreement call-off",
+      "mainProcurementCategory": "services",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100018-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000012"
+    },
+    {
+      "rank": 19,
+      "key": "ocds-h6vhtk-000013:award-19",
+      "ocid": "ocds-h6vhtk-000013",
+      "releaseId": "100019-2026",
+      "awardId": "award-19",
+      "title": "Cabinet Office Government Digital Service Identity & Verify Next Gen",
+      "buyer": "Cabinet Office",
+      "suppliers": [
+        "Deloitte LLP",
+        "Kainos Software Limited"
+      ],
+      "supplierNations": [
+        "England",
+        "Northern Ireland"
+      ],
+      "awardDate": "2026-05-04T15:34:53.133Z",
+      "publishedAt": "2026-05-08T15:34:53.133Z",
+      "amount": 155000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100019-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000013"
+    },
+    {
+      "rank": 20,
+      "key": "ocds-h6vhtk-000014:award-20",
+      "ocid": "ocds-h6vhtk-000014",
+      "releaseId": "100020-2026",
+      "awardId": "award-20",
+      "title": "NHS Supply Chain National Surgical Consumables and Diagnostic Kits",
+      "buyer": "NHS Supply Chain (Supply Chain Coordination Limited)",
+      "suppliers": [
+        "Johnson & Johnson Medical Ltd",
+        "Medtronic Limited"
+      ],
+      "supplierNations": [
+        "Scotland",
+        "England"
+      ],
+      "awardDate": "2026-03-05T15:34:53.133Z",
+      "publishedAt": "2026-03-09T15:34:53.133Z",
+      "amount": 148000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Dynamic purchasing system",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100020-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000014"
+    },
+    {
+      "rank": 21,
+      "key": "ocds-h6vhtk-000015:award-21",
+      "ocid": "ocds-h6vhtk-000015",
+      "releaseId": "100021-2026",
+      "awardId": "award-21",
+      "title": "Crown Commercial Service — Facilities and Secure Property Management Package 3",
+      "buyer": "Crown Commercial Service",
+      "suppliers": [
+        "Arup Group Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-06-18T15:34:53.133Z",
+      "publishedAt": "2026-06-20T15:34:53.133Z",
+      "amount": 142000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100021-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000015"
+    },
+    {
+      "rank": 22,
+      "key": "ocds-h6vhtk-000016:award-22",
+      "ocid": "ocds-h6vhtk-000016",
+      "releaseId": "100022-2026",
+      "awardId": "award-22",
+      "title": "Transport for London — Cloud Infrastructure Integration and Support Package 3",
+      "buyer": "Transport for London",
+      "suppliers": [
+        "Serco Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-05-19T15:34:53.133Z",
+      "publishedAt": "2026-05-21T15:34:53.133Z",
+      "amount": 140700000,
+      "currency": "GBP",
+      "procurementMethod": "direct",
+      "procurementMethodDetails": "Direct award under urgent public interest",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100022-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000016"
+    },
+    {
+      "rank": 23,
+      "key": "ocds-h6vhtk-000017:award-23",
+      "ocid": "ocds-h6vhtk-000017",
+      "releaseId": "100023-2026",
+      "awardId": "award-23",
+      "title": "NHS England — Civil Infrastructure Engineering and Maintenance Package 3",
+      "buyer": "NHS England",
+      "suppliers": [
+        "Mace Group Ltd"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-04-19T15:34:53.133Z",
+      "publishedAt": "2026-04-21T15:34:53.133Z",
+      "amount": 139200000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100023-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000017"
+    },
+    {
+      "rank": 24,
+      "key": "ocds-h6vhtk-000018:award-24",
+      "ocid": "ocds-h6vhtk-000018",
+      "releaseId": "100024-2026",
+      "awardId": "award-24",
+      "title": "Department for Environment Food and Rural Affairs — Clinical Diagnostics and Health Monitoring Package 3",
+      "buyer": "Department for Environment Food and Rural Affairs",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "QinetiQ Limited"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-03-20T15:34:53.133Z",
+      "publishedAt": "2026-03-22T15:34:53.133Z",
+      "amount": 137500000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100024-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000018"
+    },
+    {
+      "rank": 25,
+      "key": "ocds-h6vhtk-000019:award-25",
+      "ocid": "ocds-h6vhtk-000019",
+      "releaseId": "100025-2026",
+      "awardId": "award-25",
+      "title": "Department for Business and Trade — Digital Transformation Consultancy Services Package 3",
+      "buyer": "Department for Business and Trade",
+      "suppliers": [
+        "Alun Griffiths (Contractors) Ltd"
+      ],
+      "supplierNations": [
+        "Wales"
+      ],
+      "awardDate": "2026-02-18T15:34:53.133Z",
+      "publishedAt": "2026-02-20T15:34:53.133Z",
+      "amount": 135600000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "works",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100025-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000019"
+    },
+    {
+      "rank": 26,
+      "key": "ocds-h6vhtk-00001a:award-26",
+      "ocid": "ocds-h6vhtk-00001a",
+      "releaseId": "100026-2026",
+      "awardId": "award-26",
+      "title": "Department for Education — Renewable Power Generation and Energy Efficiency Package 3",
+      "buyer": "Department for Education",
+      "suppliers": [
+        "Oracle Corporation UK Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-01-19T15:34:53.133Z",
+      "publishedAt": "2026-01-21T15:34:53.133Z",
+      "amount": 134500000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100026-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00001a"
+    },
+    {
+      "rank": 27,
+      "key": "ocds-h6vhtk-00001b:award-27",
+      "ocid": "ocds-h6vhtk-00001b",
+      "releaseId": "100027-2026",
+      "awardId": "award-27",
+      "title": "Home Office — Cyber Security Monitoring and Incident Response Package 3",
+      "buyer": "Home Office",
+      "suppliers": [
+        "Atos IT Services UK Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-09-16T15:34:53.133Z",
+      "publishedAt": "2026-09-18T15:34:53.133Z",
+      "amount": 133200000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100027-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00001b"
+    },
+    {
+      "rank": 28,
+      "key": "ocds-h6vhtk-00001c:award-28",
+      "ocid": "ocds-h6vhtk-00001c",
+      "releaseId": "100028-2026",
+      "awardId": "award-28",
+      "title": "Department for Work and Pensions — Transport Network Telemetry and Sensor Systems Package 3",
+      "buyer": "Department for Work and Pensions",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "WSP UK Limited"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-08-17T15:34:53.133Z",
+      "publishedAt": "2026-08-19T15:34:53.133Z",
+      "amount": 131700000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100028-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00001c"
+    },
+    {
+      "rank": 29,
+      "key": "ocds-h6vhtk-00001d:award-29",
+      "ocid": "ocds-h6vhtk-00001d",
+      "releaseId": "100029-2026",
+      "awardId": "award-29",
+      "title": "Scottish Government — Fleet Decarbonisation and Vehicle Maintenance Package 3",
+      "buyer": "Scottish Government",
+      "suppliers": [
+        "Sodexo Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-07-18T15:34:53.133Z",
+      "publishedAt": "2026-07-20T15:34:53.133Z",
+      "amount": 130000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100029-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00001d"
+    },
+    {
+      "rank": 30,
+      "key": "ocds-h6vhtk-00001e:award-30",
+      "ocid": "ocds-h6vhtk-00001e",
+      "releaseId": "100030-2026",
+      "awardId": "award-30",
+      "title": "National Highways — Enterprise Software Systems Licensing Package 4",
+      "buyer": "National Highways",
+      "suppliers": [
+        "Sir Robert McAlpine Ltd"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-06-18T15:34:53.133Z",
+      "publishedAt": "2026-06-20T15:34:53.133Z",
+      "amount": 128100000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "works",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100030-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00001e"
+    },
+    {
+      "rank": 31,
+      "key": "ocds-h6vhtk-00001f:award-31",
+      "ocid": "ocds-h6vhtk-00001f",
+      "releaseId": "100031-2026",
+      "awardId": "award-31",
+      "title": "High Speed Two (HS2) Limited — Facilities and Secure Property Management Package 4",
+      "buyer": "High Speed Two (HS2) Limited",
+      "suppliers": [
+        "BAE Systems Surface Ships Ltd"
+      ],
+      "supplierNations": [
+        "Scotland"
+      ],
+      "awardDate": "2026-05-19T15:34:53.133Z",
+      "publishedAt": "2026-05-21T15:34:53.133Z",
+      "amount": 127000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100031-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00001f"
+    },
+    {
+      "rank": 32,
+      "key": "ocds-h6vhtk-000020:award-32",
+      "ocid": "ocds-h6vhtk-000020",
+      "releaseId": "100032-2026",
+      "awardId": "award-32",
+      "title": "Ministry of Defence — Cloud Infrastructure Integration and Support Package 4",
+      "buyer": "Ministry of Defence",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "McLaughlin & Harvey Ltd"
+      ],
+      "supplierNations": [
+        "England",
+        "Northern Ireland"
+      ],
+      "awardDate": "2026-04-19T15:34:53.133Z",
+      "publishedAt": "2026-04-21T15:34:53.133Z",
+      "amount": 125700000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100032-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000020"
+    },
+    {
+      "rank": 33,
+      "key": "ocds-h6vhtk-000021:award-33",
+      "ocid": "ocds-h6vhtk-000021",
+      "releaseId": "100033-2026",
+      "awardId": "award-33",
+      "title": "Ministry of Justice — Civil Infrastructure Engineering and Maintenance Package 4",
+      "buyer": "Ministry of Justice",
+      "suppliers": [
+        "Cisco International Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-03-20T15:34:53.133Z",
+      "publishedAt": "2026-03-22T15:34:53.133Z",
+      "amount": 124200000,
+      "currency": "GBP",
+      "procurementMethod": "direct",
+      "procurementMethodDetails": "Direct award under urgent public interest",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100033-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000021"
+    },
+    {
+      "rank": 34,
+      "key": "ocds-h6vhtk-000022:award-34",
+      "ocid": "ocds-h6vhtk-000022",
+      "releaseId": "100034-2026",
+      "awardId": "award-34",
+      "title": "Foreign Commonwealth and Development Office — Clinical Diagnostics and Health Monitoring Package 4",
+      "buyer": "Foreign Commonwealth and Development Office",
+      "suppliers": [
+        "Jacobs U.K. Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-02-18T15:34:53.133Z",
+      "publishedAt": "2026-02-20T15:34:53.133Z",
+      "amount": 122500000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100034-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000022"
+    },
+    {
+      "rank": 35,
+      "key": "ocds-h6vhtk-000023:award-35",
+      "ocid": "ocds-h6vhtk-000023",
+      "releaseId": "100035-2026",
+      "awardId": "award-35",
+      "title": "HM Revenue and Customs — Digital Transformation Consultancy Services Package 4",
+      "buyer": "HM Revenue and Customs",
+      "suppliers": [
+        "Amey Community Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-01-19T15:34:53.133Z",
+      "publishedAt": "2026-01-21T15:34:53.133Z",
+      "amount": 120600000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "works",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100035-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000023"
+    },
+    {
+      "rank": 36,
+      "key": "ocds-h6vhtk-000024:award-36",
+      "ocid": "ocds-h6vhtk-000024",
+      "releaseId": "100036-2026",
+      "awardId": "award-36",
+      "title": "Welsh Government — Renewable Power Generation and Energy Efficiency Package 4",
+      "buyer": "Welsh Government",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "Mitie Limited"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-09-16T15:34:53.133Z",
+      "publishedAt": "2026-09-18T15:34:53.133Z",
+      "amount": 119500000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100036-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000024"
+    },
+    {
+      "rank": 37,
+      "key": "ocds-h6vhtk-000025:award-37",
+      "ocid": "ocds-h6vhtk-000025",
+      "releaseId": "100037-2026",
+      "awardId": "award-37",
+      "title": "Crown Commercial Service — Cyber Security Monitoring and Incident Response Package 4",
+      "buyer": "Crown Commercial Service",
+      "suppliers": [
+        "Turner & Townsend Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-08-17T15:34:53.133Z",
+      "publishedAt": "2026-08-19T15:34:53.133Z",
+      "amount": 118200000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100037-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000025"
+    },
+    {
+      "rank": 38,
+      "key": "ocds-h6vhtk-000026:award-38",
+      "ocid": "ocds-h6vhtk-000026",
+      "releaseId": "100038-2026",
+      "awardId": "award-38",
+      "title": "Transport for London — Transport Network Telemetry and Sensor Systems Package 4",
+      "buyer": "Transport for London",
+      "suppliers": [
+        "Robertson Group (Holdings) Ltd"
+      ],
+      "supplierNations": [
+        "Scotland"
+      ],
+      "awardDate": "2026-07-18T15:34:53.133Z",
+      "publishedAt": "2026-07-20T15:34:53.133Z",
+      "amount": 116700000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100038-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000026"
+    },
+    {
+      "rank": 39,
+      "key": "ocds-h6vhtk-000027:award-39",
+      "ocid": "ocds-h6vhtk-000027",
+      "releaseId": "100039-2026",
+      "awardId": "award-39",
+      "title": "NHS England — Fleet Decarbonisation and Vehicle Maintenance Package 4",
+      "buyer": "NHS England",
+      "suppliers": [
+        "Microsoft Ireland Operations Ltd"
+      ],
+      "supplierNations": [
+        "Other/Unknown"
+      ],
+      "awardDate": "2026-06-18T15:34:53.133Z",
+      "publishedAt": "2026-06-20T15:34:53.133Z",
+      "amount": 115000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100039-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000027"
+    },
+    {
+      "rank": 40,
+      "key": "ocds-h6vhtk-000028:award-40",
+      "ocid": "ocds-h6vhtk-000028",
+      "releaseId": "100040-2026",
+      "awardId": "award-40",
+      "title": "Department for Environment Food and Rural Affairs — Enterprise Software Systems Licensing Package 5",
+      "buyer": "Department for Environment Food and Rural Affairs",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "PA Consulting Services Ltd"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-05-19T15:34:53.133Z",
+      "publishedAt": "2026-05-21T15:34:53.133Z",
+      "amount": 113100000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "works",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100040-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000028"
+    },
+    {
+      "rank": 41,
+      "key": "ocds-h6vhtk-000029:award-41",
+      "ocid": "ocds-h6vhtk-000029",
+      "releaseId": "100041-2026",
+      "awardId": "award-41",
+      "title": "Department for Business and Trade — Facilities and Secure Property Management Package 5",
+      "buyer": "Department for Business and Trade",
+      "suppliers": [
+        "Arup Group Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-04-19T15:34:53.133Z",
+      "publishedAt": "2026-04-21T15:34:53.133Z",
+      "amount": 112000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100041-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000029"
+    },
+    {
+      "rank": 42,
+      "key": "ocds-h6vhtk-00002a:award-42",
+      "ocid": "ocds-h6vhtk-00002a",
+      "releaseId": "100042-2026",
+      "awardId": "award-42",
+      "title": "Department for Education — Cloud Infrastructure Integration and Support Package 5",
+      "buyer": "Department for Education",
+      "suppliers": [
+        "Serco Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-03-20T15:34:53.133Z",
+      "publishedAt": "2026-03-22T15:34:53.133Z",
+      "amount": 110700000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100042-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00002a"
+    },
+    {
+      "rank": 43,
+      "key": "ocds-h6vhtk-00002b:award-43",
+      "ocid": "ocds-h6vhtk-00002b",
+      "releaseId": "100043-2026",
+      "awardId": "award-43",
+      "title": "Home Office — Civil Infrastructure Engineering and Maintenance Package 5",
+      "buyer": "Home Office",
+      "suppliers": [
+        "Mace Group Ltd"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-02-18T15:34:53.133Z",
+      "publishedAt": "2026-02-20T15:34:53.133Z",
+      "amount": 109200000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100043-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00002b"
+    },
+    {
+      "rank": 44,
+      "key": "ocds-h6vhtk-00002c:award-44",
+      "ocid": "ocds-h6vhtk-00002c",
+      "releaseId": "100044-2026",
+      "awardId": "award-44",
+      "title": "Department for Work and Pensions — Clinical Diagnostics and Health Monitoring Package 5",
+      "buyer": "Department for Work and Pensions",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "QinetiQ Limited"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-01-19T15:34:53.133Z",
+      "publishedAt": "2026-01-21T15:34:53.133Z",
+      "amount": 107500000,
+      "currency": "GBP",
+      "procurementMethod": "direct",
+      "procurementMethodDetails": "Direct award under urgent public interest",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100044-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00002c"
+    },
+    {
+      "rank": 45,
+      "key": "ocds-h6vhtk-00002d:award-45",
+      "ocid": "ocds-h6vhtk-00002d",
+      "releaseId": "100045-2026",
+      "awardId": "award-45",
+      "title": "Scottish Government — Digital Transformation Consultancy Services Package 5",
+      "buyer": "Scottish Government",
+      "suppliers": [
+        "Alun Griffiths (Contractors) Ltd"
+      ],
+      "supplierNations": [
+        "Wales"
+      ],
+      "awardDate": "2026-09-16T15:34:53.133Z",
+      "publishedAt": "2026-09-18T15:34:53.133Z",
+      "amount": 105600000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "works",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100045-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00002d"
+    },
+    {
+      "rank": 46,
+      "key": "ocds-h6vhtk-00002e:award-46",
+      "ocid": "ocds-h6vhtk-00002e",
+      "releaseId": "100046-2026",
+      "awardId": "award-46",
+      "title": "National Highways — Renewable Power Generation and Energy Efficiency Package 5",
+      "buyer": "National Highways",
+      "suppliers": [
+        "Oracle Corporation UK Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-08-17T15:34:53.133Z",
+      "publishedAt": "2026-08-19T15:34:53.133Z",
+      "amount": 104500000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100046-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00002e"
+    },
+    {
+      "rank": 47,
+      "key": "ocds-h6vhtk-00002f:award-47",
+      "ocid": "ocds-h6vhtk-00002f",
+      "releaseId": "100047-2026",
+      "awardId": "award-47",
+      "title": "High Speed Two (HS2) Limited — Cyber Security Monitoring and Incident Response Package 5",
+      "buyer": "High Speed Two (HS2) Limited",
+      "suppliers": [
+        "Atos IT Services UK Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-07-18T15:34:53.133Z",
+      "publishedAt": "2026-07-20T15:34:53.133Z",
+      "amount": 103200000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100047-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00002f"
+    },
+    {
+      "rank": 48,
+      "key": "ocds-h6vhtk-000030:award-48",
+      "ocid": "ocds-h6vhtk-000030",
+      "releaseId": "100048-2026",
+      "awardId": "award-48",
+      "title": "Ministry of Defence — Transport Network Telemetry and Sensor Systems Package 5",
+      "buyer": "Ministry of Defence",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "WSP UK Limited"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-06-18T15:34:53.133Z",
+      "publishedAt": "2026-06-20T15:34:53.133Z",
+      "amount": 101700000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100048-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000030"
+    },
+    {
+      "rank": 49,
+      "key": "ocds-h6vhtk-000031:award-49",
+      "ocid": "ocds-h6vhtk-000031",
+      "releaseId": "100049-2026",
+      "awardId": "award-49",
+      "title": "Ministry of Justice — Fleet Decarbonisation and Vehicle Maintenance Package 5",
+      "buyer": "Ministry of Justice",
+      "suppliers": [
+        "Sodexo Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-05-19T15:34:53.133Z",
+      "publishedAt": "2026-05-21T15:34:53.133Z",
+      "amount": 100000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100049-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000031"
+    },
+    {
+      "rank": 50,
+      "key": "ocds-h6vhtk-000032:award-50",
+      "ocid": "ocds-h6vhtk-000032",
+      "releaseId": "100050-2026",
+      "awardId": "award-50",
+      "title": "Foreign Commonwealth and Development Office — Enterprise Software Systems Licensing Package 6",
+      "buyer": "Foreign Commonwealth and Development Office",
+      "suppliers": [
+        "Sir Robert McAlpine Ltd"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-04-19T15:34:53.133Z",
+      "publishedAt": "2026-04-21T15:34:53.133Z",
+      "amount": 98100000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "works",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100050-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000032"
+    },
+    {
+      "rank": 51,
+      "key": "ocds-h6vhtk-000033:award-51",
+      "ocid": "ocds-h6vhtk-000033",
+      "releaseId": "100051-2026",
+      "awardId": "award-51",
+      "title": "HM Revenue and Customs — Facilities and Secure Property Management Package 6",
+      "buyer": "HM Revenue and Customs",
+      "suppliers": [
+        "BAE Systems Surface Ships Ltd"
+      ],
+      "supplierNations": [
+        "Scotland"
+      ],
+      "awardDate": "2026-03-20T15:34:53.133Z",
+      "publishedAt": "2026-03-22T15:34:53.133Z",
+      "amount": 97000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100051-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000033"
+    },
+    {
+      "rank": 52,
+      "key": "ocds-h6vhtk-000034:award-52",
+      "ocid": "ocds-h6vhtk-000034",
+      "releaseId": "100052-2026",
+      "awardId": "award-52",
+      "title": "Welsh Government — Cloud Infrastructure Integration and Support Package 6",
+      "buyer": "Welsh Government",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "McLaughlin & Harvey Ltd"
+      ],
+      "supplierNations": [
+        "England",
+        "Northern Ireland"
+      ],
+      "awardDate": "2026-02-18T15:34:53.133Z",
+      "publishedAt": "2026-02-20T15:34:53.133Z",
+      "amount": 95700000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100052-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000034"
+    },
+    {
+      "rank": 53,
+      "key": "ocds-h6vhtk-000035:award-53",
+      "ocid": "ocds-h6vhtk-000035",
+      "releaseId": "100053-2026",
+      "awardId": "award-53",
+      "title": "Crown Commercial Service — Civil Infrastructure Engineering and Maintenance Package 6",
+      "buyer": "Crown Commercial Service",
+      "suppliers": [
+        "Cisco International Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-01-19T15:34:53.133Z",
+      "publishedAt": "2026-01-21T15:34:53.133Z",
+      "amount": 94200000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100053-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000035"
+    },
+    {
+      "rank": 54,
+      "key": "ocds-h6vhtk-000036:award-54",
+      "ocid": "ocds-h6vhtk-000036",
+      "releaseId": "100054-2026",
+      "awardId": "award-54",
+      "title": "Transport for London — Clinical Diagnostics and Health Monitoring Package 6",
+      "buyer": "Transport for London",
+      "suppliers": [
+        "Jacobs U.K. Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-09-16T15:34:53.133Z",
+      "publishedAt": "2026-09-18T15:34:53.133Z",
+      "amount": 92500000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100054-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000036"
+    },
+    {
+      "rank": 55,
+      "key": "ocds-h6vhtk-000037:award-55",
+      "ocid": "ocds-h6vhtk-000037",
+      "releaseId": "100055-2026",
+      "awardId": "award-55",
+      "title": "NHS England — Digital Transformation Consultancy Services Package 6",
+      "buyer": "NHS England",
+      "suppliers": [
+        "Amey Community Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-08-17T15:34:53.133Z",
+      "publishedAt": "2026-08-19T15:34:53.133Z",
+      "amount": 90600000,
+      "currency": "GBP",
+      "procurementMethod": "direct",
+      "procurementMethodDetails": "Direct award under urgent public interest",
+      "mainProcurementCategory": "works",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100055-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000037"
+    },
+    {
+      "rank": 56,
+      "key": "ocds-h6vhtk-000038:award-56",
+      "ocid": "ocds-h6vhtk-000038",
+      "releaseId": "100056-2026",
+      "awardId": "award-56",
+      "title": "Department for Environment Food and Rural Affairs — Renewable Power Generation and Energy Efficiency Package 6",
+      "buyer": "Department for Environment Food and Rural Affairs",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "Mitie Limited"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-07-18T15:34:53.133Z",
+      "publishedAt": "2026-07-20T15:34:53.133Z",
+      "amount": 89500000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100056-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000038"
+    },
+    {
+      "rank": 57,
+      "key": "ocds-h6vhtk-000039:award-57",
+      "ocid": "ocds-h6vhtk-000039",
+      "releaseId": "100057-2026",
+      "awardId": "award-57",
+      "title": "Department for Business and Trade — Cyber Security Monitoring and Incident Response Package 6",
+      "buyer": "Department for Business and Trade",
+      "suppliers": [
+        "Turner & Townsend Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-06-18T15:34:53.133Z",
+      "publishedAt": "2026-06-20T15:34:53.133Z",
+      "amount": 88200000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100057-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000039"
+    },
+    {
+      "rank": 58,
+      "key": "ocds-h6vhtk-00003a:award-58",
+      "ocid": "ocds-h6vhtk-00003a",
+      "releaseId": "100058-2026",
+      "awardId": "award-58",
+      "title": "Department for Education — Transport Network Telemetry and Sensor Systems Package 6",
+      "buyer": "Department for Education",
+      "suppliers": [
+        "Robertson Group (Holdings) Ltd"
+      ],
+      "supplierNations": [
+        "Scotland"
+      ],
+      "awardDate": "2026-05-19T15:34:53.133Z",
+      "publishedAt": "2026-05-21T15:34:53.133Z",
+      "amount": 86700000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100058-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00003a"
+    },
+    {
+      "rank": 59,
+      "key": "ocds-h6vhtk-00003b:award-59",
+      "ocid": "ocds-h6vhtk-00003b",
+      "releaseId": "100059-2026",
+      "awardId": "award-59",
+      "title": "Home Office — Fleet Decarbonisation and Vehicle Maintenance Package 6",
+      "buyer": "Home Office",
+      "suppliers": [
+        "Microsoft Ireland Operations Ltd"
+      ],
+      "supplierNations": [
+        "Other/Unknown"
+      ],
+      "awardDate": "2026-04-19T15:34:53.133Z",
+      "publishedAt": "2026-04-21T15:34:53.133Z",
+      "amount": 85000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100059-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00003b"
+    },
+    {
+      "rank": 60,
+      "key": "ocds-h6vhtk-00003c:award-60",
+      "ocid": "ocds-h6vhtk-00003c",
+      "releaseId": "100060-2026",
+      "awardId": "award-60",
+      "title": "Department for Work and Pensions — Enterprise Software Systems Licensing Package 7",
+      "buyer": "Department for Work and Pensions",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "PA Consulting Services Ltd"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-03-20T15:34:53.133Z",
+      "publishedAt": "2026-03-22T15:34:53.133Z",
+      "amount": 83100000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "works",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100060-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00003c"
+    },
+    {
+      "rank": 61,
+      "key": "ocds-h6vhtk-00003d:award-61",
+      "ocid": "ocds-h6vhtk-00003d",
+      "releaseId": "100061-2026",
+      "awardId": "award-61",
+      "title": "Scottish Government — Facilities and Secure Property Management Package 7",
+      "buyer": "Scottish Government",
+      "suppliers": [
+        "Arup Group Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-02-18T15:34:53.133Z",
+      "publishedAt": "2026-02-20T15:34:53.133Z",
+      "amount": 82000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100061-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00003d"
+    },
+    {
+      "rank": 62,
+      "key": "ocds-h6vhtk-00003e:award-62",
+      "ocid": "ocds-h6vhtk-00003e",
+      "releaseId": "100062-2026",
+      "awardId": "award-62",
+      "title": "National Highways — Cloud Infrastructure Integration and Support Package 7",
+      "buyer": "National Highways",
+      "suppliers": [
+        "Serco Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-01-19T15:34:53.133Z",
+      "publishedAt": "2026-01-21T15:34:53.133Z",
+      "amount": 80700000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100062-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00003e"
+    },
+    {
+      "rank": 63,
+      "key": "ocds-h6vhtk-00003f:award-63",
+      "ocid": "ocds-h6vhtk-00003f",
+      "releaseId": "100063-2026",
+      "awardId": "award-63",
+      "title": "High Speed Two (HS2) Limited — Civil Infrastructure Engineering and Maintenance Package 7",
+      "buyer": "High Speed Two (HS2) Limited",
+      "suppliers": [
+        "Mace Group Ltd"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-09-16T15:34:53.133Z",
+      "publishedAt": "2026-09-18T15:34:53.133Z",
+      "amount": 79200000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100063-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00003f"
+    },
+    {
+      "rank": 64,
+      "key": "ocds-h6vhtk-000040:award-64",
+      "ocid": "ocds-h6vhtk-000040",
+      "releaseId": "100064-2026",
+      "awardId": "award-64",
+      "title": "Ministry of Defence — Clinical Diagnostics and Health Monitoring Package 7",
+      "buyer": "Ministry of Defence",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "QinetiQ Limited"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-08-17T15:34:53.133Z",
+      "publishedAt": "2026-08-19T15:34:53.133Z",
+      "amount": 77500000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100064-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000040"
+    },
+    {
+      "rank": 65,
+      "key": "ocds-h6vhtk-000041:award-65",
+      "ocid": "ocds-h6vhtk-000041",
+      "releaseId": "100065-2026",
+      "awardId": "award-65",
+      "title": "Ministry of Justice — Digital Transformation Consultancy Services Package 7",
+      "buyer": "Ministry of Justice",
+      "suppliers": [
+        "Alun Griffiths (Contractors) Ltd"
+      ],
+      "supplierNations": [
+        "Wales"
+      ],
+      "awardDate": "2026-07-18T15:34:53.133Z",
+      "publishedAt": "2026-07-20T15:34:53.133Z",
+      "amount": 75600000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "works",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100065-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000041"
+    },
+    {
+      "rank": 66,
+      "key": "ocds-h6vhtk-000042:award-66",
+      "ocid": "ocds-h6vhtk-000042",
+      "releaseId": "100066-2026",
+      "awardId": "award-66",
+      "title": "Foreign Commonwealth and Development Office — Renewable Power Generation and Energy Efficiency Package 7",
+      "buyer": "Foreign Commonwealth and Development Office",
+      "suppliers": [
+        "Oracle Corporation UK Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-06-18T15:34:53.133Z",
+      "publishedAt": "2026-06-20T15:34:53.133Z",
+      "amount": 74500000,
+      "currency": "GBP",
+      "procurementMethod": "direct",
+      "procurementMethodDetails": "Direct award under urgent public interest",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100066-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000042"
+    },
+    {
+      "rank": 67,
+      "key": "ocds-h6vhtk-000043:award-67",
+      "ocid": "ocds-h6vhtk-000043",
+      "releaseId": "100067-2026",
+      "awardId": "award-67",
+      "title": "HM Revenue and Customs — Cyber Security Monitoring and Incident Response Package 7",
+      "buyer": "HM Revenue and Customs",
+      "suppliers": [
+        "Atos IT Services UK Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-05-19T15:34:53.133Z",
+      "publishedAt": "2026-05-21T15:34:53.133Z",
+      "amount": 73200000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100067-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000043"
+    },
+    {
+      "rank": 68,
+      "key": "ocds-h6vhtk-000044:award-68",
+      "ocid": "ocds-h6vhtk-000044",
+      "releaseId": "100068-2026",
+      "awardId": "award-68",
+      "title": "Welsh Government — Transport Network Telemetry and Sensor Systems Package 7",
+      "buyer": "Welsh Government",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "WSP UK Limited"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-04-19T15:34:53.133Z",
+      "publishedAt": "2026-04-21T15:34:53.133Z",
+      "amount": 71700000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100068-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000044"
+    },
+    {
+      "rank": 69,
+      "key": "ocds-h6vhtk-000045:award-69",
+      "ocid": "ocds-h6vhtk-000045",
+      "releaseId": "100069-2026",
+      "awardId": "award-69",
+      "title": "Crown Commercial Service — Fleet Decarbonisation and Vehicle Maintenance Package 7",
+      "buyer": "Crown Commercial Service",
+      "suppliers": [
+        "Sodexo Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-03-20T15:34:53.133Z",
+      "publishedAt": "2026-03-22T15:34:53.133Z",
+      "amount": 70000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100069-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000045"
+    },
+    {
+      "rank": 70,
+      "key": "ocds-h6vhtk-000046:award-70",
+      "ocid": "ocds-h6vhtk-000046",
+      "releaseId": "100070-2026",
+      "awardId": "award-70",
+      "title": "Transport for London — Enterprise Software Systems Licensing Package 8",
+      "buyer": "Transport for London",
+      "suppliers": [
+        "Sir Robert McAlpine Ltd"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-02-18T15:34:53.133Z",
+      "publishedAt": "2026-02-20T15:34:53.133Z",
+      "amount": 68100000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "works",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100070-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000046"
+    },
+    {
+      "rank": 71,
+      "key": "ocds-h6vhtk-000047:award-71",
+      "ocid": "ocds-h6vhtk-000047",
+      "releaseId": "100071-2026",
+      "awardId": "award-71",
+      "title": "NHS England — Facilities and Secure Property Management Package 8",
+      "buyer": "NHS England",
+      "suppliers": [
+        "BAE Systems Surface Ships Ltd"
+      ],
+      "supplierNations": [
+        "Scotland"
+      ],
+      "awardDate": "2026-01-19T15:34:53.133Z",
+      "publishedAt": "2026-01-21T15:34:53.133Z",
+      "amount": 67000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100071-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000047"
+    },
+    {
+      "rank": 72,
+      "key": "ocds-h6vhtk-000048:award-72",
+      "ocid": "ocds-h6vhtk-000048",
+      "releaseId": "100072-2026",
+      "awardId": "award-72",
+      "title": "Department for Environment Food and Rural Affairs — Cloud Infrastructure Integration and Support Package 8",
+      "buyer": "Department for Environment Food and Rural Affairs",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "McLaughlin & Harvey Ltd"
+      ],
+      "supplierNations": [
+        "England",
+        "Northern Ireland"
+      ],
+      "awardDate": "2026-09-16T15:34:53.133Z",
+      "publishedAt": "2026-09-18T15:34:53.133Z",
+      "amount": 65700000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100072-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000048"
+    },
+    {
+      "rank": 73,
+      "key": "ocds-h6vhtk-000049:award-73",
+      "ocid": "ocds-h6vhtk-000049",
+      "releaseId": "100073-2026",
+      "awardId": "award-73",
+      "title": "Department for Business and Trade — Civil Infrastructure Engineering and Maintenance Package 8",
+      "buyer": "Department for Business and Trade",
+      "suppliers": [
+        "Cisco International Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-08-17T15:34:53.133Z",
+      "publishedAt": "2026-08-19T15:34:53.133Z",
+      "amount": 64200000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100073-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000049"
+    },
+    {
+      "rank": 74,
+      "key": "ocds-h6vhtk-00004a:award-74",
+      "ocid": "ocds-h6vhtk-00004a",
+      "releaseId": "100074-2026",
+      "awardId": "award-74",
+      "title": "Department for Education — Clinical Diagnostics and Health Monitoring Package 8",
+      "buyer": "Department for Education",
+      "suppliers": [
+        "Jacobs U.K. Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-07-18T15:34:53.133Z",
+      "publishedAt": "2026-07-20T15:34:53.133Z",
+      "amount": 62500000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100074-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00004a"
+    },
+    {
+      "rank": 75,
+      "key": "ocds-h6vhtk-00004b:award-75",
+      "ocid": "ocds-h6vhtk-00004b",
+      "releaseId": "100075-2026",
+      "awardId": "award-75",
+      "title": "Home Office — Digital Transformation Consultancy Services Package 8",
+      "buyer": "Home Office",
+      "suppliers": [
+        "Amey Community Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-06-18T15:34:53.133Z",
+      "publishedAt": "2026-06-20T15:34:53.133Z",
+      "amount": 60600000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "works",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100075-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00004b"
+    },
+    {
+      "rank": 76,
+      "key": "ocds-h6vhtk-00004c:award-76",
+      "ocid": "ocds-h6vhtk-00004c",
+      "releaseId": "100076-2026",
+      "awardId": "award-76",
+      "title": "Department for Work and Pensions — Renewable Power Generation and Energy Efficiency Package 8",
+      "buyer": "Department for Work and Pensions",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "Mitie Limited"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-05-19T15:34:53.133Z",
+      "publishedAt": "2026-05-21T15:34:53.133Z",
+      "amount": 59500000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100076-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00004c"
+    },
+    {
+      "rank": 77,
+      "key": "ocds-h6vhtk-00004d:award-77",
+      "ocid": "ocds-h6vhtk-00004d",
+      "releaseId": "100077-2026",
+      "awardId": "award-77",
+      "title": "Scottish Government — Cyber Security Monitoring and Incident Response Package 8",
+      "buyer": "Scottish Government",
+      "suppliers": [
+        "Turner & Townsend Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-04-19T15:34:53.133Z",
+      "publishedAt": "2026-04-21T15:34:53.133Z",
+      "amount": 58200000,
+      "currency": "GBP",
+      "procurementMethod": "direct",
+      "procurementMethodDetails": "Direct award under urgent public interest",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100077-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00004d"
+    },
+    {
+      "rank": 78,
+      "key": "ocds-h6vhtk-00004e:award-78",
+      "ocid": "ocds-h6vhtk-00004e",
+      "releaseId": "100078-2026",
+      "awardId": "award-78",
+      "title": "National Highways — Transport Network Telemetry and Sensor Systems Package 8",
+      "buyer": "National Highways",
+      "suppliers": [
+        "Robertson Group (Holdings) Ltd"
+      ],
+      "supplierNations": [
+        "Scotland"
+      ],
+      "awardDate": "2026-03-20T15:34:53.133Z",
+      "publishedAt": "2026-03-22T15:34:53.133Z",
+      "amount": 56700000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100078-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00004e"
+    },
+    {
+      "rank": 79,
+      "key": "ocds-h6vhtk-00004f:award-79",
+      "ocid": "ocds-h6vhtk-00004f",
+      "releaseId": "100079-2026",
+      "awardId": "award-79",
+      "title": "High Speed Two (HS2) Limited — Fleet Decarbonisation and Vehicle Maintenance Package 8",
+      "buyer": "High Speed Two (HS2) Limited",
+      "suppliers": [
+        "Microsoft Ireland Operations Ltd"
+      ],
+      "supplierNations": [
+        "Other/Unknown"
+      ],
+      "awardDate": "2026-02-18T15:34:53.133Z",
+      "publishedAt": "2026-02-20T15:34:53.133Z",
+      "amount": 55000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100079-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00004f"
+    },
+    {
+      "rank": 80,
+      "key": "ocds-h6vhtk-000050:award-80",
+      "ocid": "ocds-h6vhtk-000050",
+      "releaseId": "100080-2026",
+      "awardId": "award-80",
+      "title": "Ministry of Defence — Enterprise Software Systems Licensing Package 9",
+      "buyer": "Ministry of Defence",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "PA Consulting Services Ltd"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-01-19T15:34:53.133Z",
+      "publishedAt": "2026-01-21T15:34:53.133Z",
+      "amount": 53100000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "works",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100080-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000050"
+    },
+    {
+      "rank": 81,
+      "key": "ocds-h6vhtk-000051:award-81",
+      "ocid": "ocds-h6vhtk-000051",
+      "releaseId": "100081-2026",
+      "awardId": "award-81",
+      "title": "Ministry of Justice — Facilities and Secure Property Management Package 9",
+      "buyer": "Ministry of Justice",
+      "suppliers": [
+        "Arup Group Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-09-16T15:34:53.133Z",
+      "publishedAt": "2026-09-18T15:34:53.133Z",
+      "amount": 52000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100081-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000051"
+    },
+    {
+      "rank": 82,
+      "key": "ocds-h6vhtk-000052:award-82",
+      "ocid": "ocds-h6vhtk-000052",
+      "releaseId": "100082-2026",
+      "awardId": "award-82",
+      "title": "Foreign Commonwealth and Development Office — Cloud Infrastructure Integration and Support Package 9",
+      "buyer": "Foreign Commonwealth and Development Office",
+      "suppliers": [
+        "Serco Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-08-17T15:34:53.133Z",
+      "publishedAt": "2026-08-19T15:34:53.133Z",
+      "amount": 50700000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100082-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000052"
+    },
+    {
+      "rank": 83,
+      "key": "ocds-h6vhtk-000053:award-83",
+      "ocid": "ocds-h6vhtk-000053",
+      "releaseId": "100083-2026",
+      "awardId": "award-83",
+      "title": "HM Revenue and Customs — Civil Infrastructure Engineering and Maintenance Package 9",
+      "buyer": "HM Revenue and Customs",
+      "suppliers": [
+        "Mace Group Ltd"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-07-18T15:34:53.133Z",
+      "publishedAt": "2026-07-20T15:34:53.133Z",
+      "amount": 49200000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100083-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000053"
+    },
+    {
+      "rank": 84,
+      "key": "ocds-h6vhtk-000054:award-84",
+      "ocid": "ocds-h6vhtk-000054",
+      "releaseId": "100084-2026",
+      "awardId": "award-84",
+      "title": "Welsh Government — Clinical Diagnostics and Health Monitoring Package 9",
+      "buyer": "Welsh Government",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "QinetiQ Limited"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-06-18T15:34:53.133Z",
+      "publishedAt": "2026-06-20T15:34:53.133Z",
+      "amount": 47500000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100084-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000054"
+    },
+    {
+      "rank": 85,
+      "key": "ocds-h6vhtk-000055:award-85",
+      "ocid": "ocds-h6vhtk-000055",
+      "releaseId": "100085-2026",
+      "awardId": "award-85",
+      "title": "Crown Commercial Service — Digital Transformation Consultancy Services Package 9",
+      "buyer": "Crown Commercial Service",
+      "suppliers": [
+        "Alun Griffiths (Contractors) Ltd"
+      ],
+      "supplierNations": [
+        "Wales"
+      ],
+      "awardDate": "2026-05-19T15:34:53.133Z",
+      "publishedAt": "2026-05-21T15:34:53.133Z",
+      "amount": 45600000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "works",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100085-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000055"
+    },
+    {
+      "rank": 86,
+      "key": "ocds-h6vhtk-000056:award-86",
+      "ocid": "ocds-h6vhtk-000056",
+      "releaseId": "100086-2026",
+      "awardId": "award-86",
+      "title": "Transport for London — Renewable Power Generation and Energy Efficiency Package 9",
+      "buyer": "Transport for London",
+      "suppliers": [
+        "Oracle Corporation UK Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-04-19T15:34:53.133Z",
+      "publishedAt": "2026-04-21T15:34:53.133Z",
+      "amount": 44500000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100086-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000056"
+    },
+    {
+      "rank": 87,
+      "key": "ocds-h6vhtk-000057:award-87",
+      "ocid": "ocds-h6vhtk-000057",
+      "releaseId": "100087-2026",
+      "awardId": "award-87",
+      "title": "NHS England — Cyber Security Monitoring and Incident Response Package 9",
+      "buyer": "NHS England",
+      "suppliers": [
+        "Atos IT Services UK Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-03-20T15:34:53.133Z",
+      "publishedAt": "2026-03-22T15:34:53.133Z",
+      "amount": 43200000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100087-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000057"
+    },
+    {
+      "rank": 88,
+      "key": "ocds-h6vhtk-000058:award-88",
+      "ocid": "ocds-h6vhtk-000058",
+      "releaseId": "100088-2026",
+      "awardId": "award-88",
+      "title": "Department for Environment Food and Rural Affairs — Transport Network Telemetry and Sensor Systems Package 9",
+      "buyer": "Department for Environment Food and Rural Affairs",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "WSP UK Limited"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-02-18T15:34:53.133Z",
+      "publishedAt": "2026-02-20T15:34:53.133Z",
+      "amount": 41700000,
+      "currency": "GBP",
+      "procurementMethod": "direct",
+      "procurementMethodDetails": "Direct award under urgent public interest",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100088-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000058"
+    },
+    {
+      "rank": 89,
+      "key": "ocds-h6vhtk-000059:award-89",
+      "ocid": "ocds-h6vhtk-000059",
+      "releaseId": "100089-2026",
+      "awardId": "award-89",
+      "title": "Department for Business and Trade — Fleet Decarbonisation and Vehicle Maintenance Package 9",
+      "buyer": "Department for Business and Trade",
+      "suppliers": [
+        "Sodexo Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-01-19T15:34:53.133Z",
+      "publishedAt": "2026-01-21T15:34:53.133Z",
+      "amount": 40000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100089-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000059"
+    },
+    {
+      "rank": 90,
+      "key": "ocds-h6vhtk-00005a:award-90",
+      "ocid": "ocds-h6vhtk-00005a",
+      "releaseId": "100090-2026",
+      "awardId": "award-90",
+      "title": "Department for Education — Enterprise Software Systems Licensing Package 10",
+      "buyer": "Department for Education",
+      "suppliers": [
+        "Sir Robert McAlpine Ltd"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-09-16T15:34:53.133Z",
+      "publishedAt": "2026-09-18T15:34:53.133Z",
+      "amount": 38100000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "works",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100090-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00005a"
+    },
+    {
+      "rank": 91,
+      "key": "ocds-h6vhtk-00005b:award-91",
+      "ocid": "ocds-h6vhtk-00005b",
+      "releaseId": "100091-2026",
+      "awardId": "award-91",
+      "title": "Home Office — Facilities and Secure Property Management Package 10",
+      "buyer": "Home Office",
+      "suppliers": [
+        "BAE Systems Surface Ships Ltd"
+      ],
+      "supplierNations": [
+        "Scotland"
+      ],
+      "awardDate": "2026-08-17T15:34:53.133Z",
+      "publishedAt": "2026-08-19T15:34:53.133Z",
+      "amount": 37000000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100091-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00005b"
+    },
+    {
+      "rank": 92,
+      "key": "ocds-h6vhtk-00005c:award-92",
+      "ocid": "ocds-h6vhtk-00005c",
+      "releaseId": "100092-2026",
+      "awardId": "award-92",
+      "title": "Department for Work and Pensions — Cloud Infrastructure Integration and Support Package 10",
+      "buyer": "Department for Work and Pensions",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "McLaughlin & Harvey Ltd"
+      ],
+      "supplierNations": [
+        "England",
+        "Northern Ireland"
+      ],
+      "awardDate": "2026-07-18T15:34:53.133Z",
+      "publishedAt": "2026-07-20T15:34:53.133Z",
+      "amount": 35700000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100092-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00005c"
+    },
+    {
+      "rank": 93,
+      "key": "ocds-h6vhtk-00005d:award-93",
+      "ocid": "ocds-h6vhtk-00005d",
+      "releaseId": "100093-2026",
+      "awardId": "award-93",
+      "title": "Scottish Government — Civil Infrastructure Engineering and Maintenance Package 10",
+      "buyer": "Scottish Government",
+      "suppliers": [
+        "Cisco International Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-06-18T15:34:53.133Z",
+      "publishedAt": "2026-06-20T15:34:53.133Z",
+      "amount": 34200000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100093-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00005d"
+    },
+    {
+      "rank": 94,
+      "key": "ocds-h6vhtk-00005e:award-94",
+      "ocid": "ocds-h6vhtk-00005e",
+      "releaseId": "100094-2026",
+      "awardId": "award-94",
+      "title": "National Highways — Clinical Diagnostics and Health Monitoring Package 10",
+      "buyer": "National Highways",
+      "suppliers": [
+        "Jacobs U.K. Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-05-19T15:34:53.133Z",
+      "publishedAt": "2026-05-21T15:34:53.133Z",
+      "amount": 32500000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100094-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00005e"
+    },
+    {
+      "rank": 95,
+      "key": "ocds-h6vhtk-00005f:award-95",
+      "ocid": "ocds-h6vhtk-00005f",
+      "releaseId": "100095-2026",
+      "awardId": "award-95",
+      "title": "High Speed Two (HS2) Limited — Digital Transformation Consultancy Services Package 10",
+      "buyer": "High Speed Two (HS2) Limited",
+      "suppliers": [
+        "Amey Community Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-04-19T15:34:53.133Z",
+      "publishedAt": "2026-04-21T15:34:53.133Z",
+      "amount": 30600000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "works",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100095-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-00005f"
+    },
+    {
+      "rank": 96,
+      "key": "ocds-h6vhtk-000060:award-96",
+      "ocid": "ocds-h6vhtk-000060",
+      "releaseId": "100096-2026",
+      "awardId": "award-96",
+      "title": "Ministry of Defence — Renewable Power Generation and Energy Efficiency Package 10",
+      "buyer": "Ministry of Defence",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "Mitie Limited"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-03-20T15:34:53.133Z",
+      "publishedAt": "2026-03-22T15:34:53.133Z",
+      "amount": 29500000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Framework call-off competition",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100096-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000060"
+    },
+    {
+      "rank": 97,
+      "key": "ocds-h6vhtk-000061:award-97",
+      "ocid": "ocds-h6vhtk-000061",
+      "releaseId": "100097-2026",
+      "awardId": "award-97",
+      "title": "Ministry of Justice — Cyber Security Monitoring and Incident Response Package 10",
+      "buyer": "Ministry of Justice",
+      "suppliers": [
+        "Turner & Townsend Limited"
+      ],
+      "supplierNations": [
+        "England"
+      ],
+      "awardDate": "2026-02-18T15:34:53.133Z",
+      "publishedAt": "2026-02-20T15:34:53.133Z",
+      "amount": 28200000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100097-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000061"
+    },
+    {
+      "rank": 98,
+      "key": "ocds-h6vhtk-000062:award-98",
+      "ocid": "ocds-h6vhtk-000062",
+      "releaseId": "100098-2026",
+      "awardId": "award-98",
+      "title": "Foreign Commonwealth and Development Office — Transport Network Telemetry and Sensor Systems Package 10",
+      "buyer": "Foreign Commonwealth and Development Office",
+      "suppliers": [
+        "Robertson Group (Holdings) Ltd"
+      ],
+      "supplierNations": [
+        "Scotland"
+      ],
+      "awardDate": "2026-01-19T15:34:53.133Z",
+      "publishedAt": "2026-01-21T15:34:53.133Z",
+      "amount": 26700000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "services",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100098-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000062"
+    },
+    {
+      "rank": 99,
+      "key": "ocds-h6vhtk-000063:award-99",
+      "ocid": "ocds-h6vhtk-000063",
+      "releaseId": "100099-2026",
+      "awardId": "award-99",
+      "title": "HM Revenue and Customs — Fleet Decarbonisation and Vehicle Maintenance Package 10",
+      "buyer": "HM Revenue and Customs",
+      "suppliers": [
+        "Microsoft Ireland Operations Ltd"
+      ],
+      "supplierNations": [
+        "Other/Unknown"
+      ],
+      "awardDate": "2026-09-16T15:34:53.133Z",
+      "publishedAt": "2026-09-18T15:34:53.133Z",
+      "amount": 25000000,
+      "currency": "GBP",
+      "procurementMethod": "direct",
+      "procurementMethodDetails": "Direct award under urgent public interest",
+      "mainProcurementCategory": "supplies",
+      "framework": true,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100099-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000063"
+    },
+    {
+      "rank": 100,
+      "key": "ocds-h6vhtk-000064:award-100",
+      "ocid": "ocds-h6vhtk-000064",
+      "releaseId": "100100-2026",
+      "awardId": "award-100",
+      "title": "Welsh Government — Enterprise Software Systems Licensing Package 11",
+      "buyer": "Welsh Government",
+      "suppliers": [
+        "Atos IT Services UK Limited",
+        "PA Consulting Services Ltd"
+      ],
+      "supplierNations": [
+        "England",
+        "England"
+      ],
+      "awardDate": "2026-08-17T15:34:53.133Z",
+      "publishedAt": "2026-08-19T15:34:53.133Z",
+      "amount": 23100000,
+      "currency": "GBP",
+      "procurementMethod": "open",
+      "procurementMethodDetails": "Open procedure under Public Contracts Regulations",
+      "mainProcurementCategory": "works",
+      "framework": false,
+      "noticeUrl": "https://www.find-tender.service.gov.uk/Notice/100100-2026",
+      "procurementUrl": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-000064"
+    }
+  ],
+  "supplierConcentration": [
+    {
+      "name": "Atos IT Services UK Limited",
+      "awardCount": 24,
+      "disclosedValue": 1157800000,
+      "nation": "England"
+    },
+    {
+      "name": "Capgemini UK plc",
+      "awardCount": 2,
+      "disclosedValue": 602500000,
+      "nation": "England"
+    },
+    {
+      "name": "Babcock Marine Ltd",
+      "awardCount": 1,
+      "disclosedValue": 495000000,
+      "nation": "Scotland"
+    },
+    {
+      "name": "Kainos Software Limited",
+      "awardCount": 2,
+      "disclosedValue": 487500000,
+      "nation": "Northern Ireland"
+    },
+    {
+      "name": "Arup Group Limited",
+      "awardCount": 4,
+      "disclosedValue": 388000000,
+      "nation": "England"
+    },
+    {
+      "name": "Serco Limited",
+      "awardCount": 4,
+      "disclosedValue": 382800000,
+      "nation": "England"
+    },
+    {
+      "name": "Mace Group Ltd",
+      "awardCount": 4,
+      "disclosedValue": 376800000,
+      "nation": "England"
+    },
+    {
+      "name": "Alun Griffiths (Contractors) Ltd",
+      "awardCount": 4,
+      "disclosedValue": 362400000,
+      "nation": "Wales"
+    },
+    {
+      "name": "Oracle Corporation UK Limited",
+      "awardCount": 4,
+      "disclosedValue": 358000000,
+      "nation": "England"
+    },
+    {
+      "name": "Sodexo Limited",
+      "awardCount": 4,
+      "disclosedValue": 340000000,
+      "nation": "England"
+    },
+    {
+      "name": "Balfour Beatty Group Ltd",
+      "awardCount": 1,
+      "disclosedValue": 337500000,
+      "nation": "England"
+    },
+    {
+      "name": "Costain Group PLC",
+      "awardCount": 1,
+      "disclosedValue": 337500000,
+      "nation": "England"
+    },
+    {
+      "name": "Sir Robert McAlpine Ltd",
+      "awardCount": 4,
+      "disclosedValue": 332400000,
+      "nation": "England"
+    },
+    {
+      "name": "BAE Systems Surface Ships Ltd",
+      "awardCount": 4,
+      "disclosedValue": 328000000,
+      "nation": "Scotland"
+    },
+    {
+      "name": "IBM United Kingdom Limited",
+      "awardCount": 1,
+      "disclosedValue": 320000000,
+      "nation": "England"
+    },
+    {
+      "name": "Cisco International Limited",
+      "awardCount": 4,
+      "disclosedValue": 316800000,
+      "nation": "England"
+    },
+    {
+      "name": "Jacobs U.K. Limited",
+      "awardCount": 4,
+      "disclosedValue": 310000000,
+      "nation": "England"
+    },
+    {
+      "name": "Amey Community Limited",
+      "awardCount": 4,
+      "disclosedValue": 302400000,
+      "nation": "England"
+    },
+    {
+      "name": "Turner & Townsend Limited",
+      "awardCount": 4,
+      "disclosedValue": 292800000,
+      "nation": "England"
+    },
+    {
+      "name": "Robertson Group (Holdings) Ltd",
+      "awardCount": 4,
+      "disclosedValue": 286800000,
+      "nation": "Scotland"
+    },
+    {
+      "name": "Microsoft Ireland Operations Ltd",
+      "awardCount": 4,
+      "disclosedValue": 280000000,
+      "nation": "Other/Unknown"
+    },
+    {
+      "name": "Accenture UK Limited",
+      "awardCount": 1,
+      "disclosedValue": 270000000,
+      "nation": "England"
+    },
+    {
+      "name": "Palantir Technologies UK Ltd",
+      "awardCount": 1,
+      "disclosedValue": 270000000,
+      "nation": "England"
+    },
+    {
+      "name": "Morgan Sindall Construction & Infrastructure Ltd",
+      "awardCount": 1,
+      "disclosedValue": 250000000,
+      "nation": "Wales"
+    },
+    {
+      "name": "Airbus Defence and Space Ltd",
+      "awardCount": 1,
+      "disclosedValue": 235000000,
+      "nation": "England"
+    },
+    {
+      "name": "First Rail Holdings Ltd",
+      "awardCount": 1,
+      "disclosedValue": 215000000,
+      "nation": "England"
+    },
+    {
+      "name": "Keolis UK Ltd",
+      "awardCount": 1,
+      "disclosedValue": 215000000,
+      "nation": "Wales"
+    },
+    {
+      "name": "Amazon Web Services EMEA SARL",
+      "awardCount": 1,
+      "disclosedValue": 192500000,
+      "nation": "Other/Unknown"
+    },
+    {
+      "name": "Motorola Solutions UK Limited",
+      "awardCount": 1,
+      "disclosedValue": 185000000,
+      "nation": "England"
+    },
+    {
+      "name": "QinetiQ Limited",
+      "awardCount": 4,
+      "disclosedValue": 185000000,
+      "nation": "England"
+    },
+    {
+      "name": "Alstom Transport UK Ltd",
+      "awardCount": 1,
+      "disclosedValue": 180000000,
+      "nation": "England"
+    },
+    {
+      "name": "VolkerFitzpatrick Ltd",
+      "awardCount": 1,
+      "disclosedValue": 180000000,
+      "nation": "England"
+    },
+    {
+      "name": "National Grid Electricity Transmission plc",
+      "awardCount": 1,
+      "disclosedValue": 175000000,
+      "nation": "England"
+    },
+    {
+      "name": "WSP UK Limited",
+      "awardCount": 4,
+      "disclosedValue": 173400000,
+      "nation": "England"
+    },
+    {
+      "name": "McLaughlin & Harvey Ltd",
+      "awardCount": 4,
+      "disclosedValue": 161400000,
+      "nation": "Northern Ireland"
+    },
+    {
+      "name": "Mitie Limited",
+      "awardCount": 4,
+      "disclosedValue": 149000000,
+      "nation": "England"
+    },
+    {
+      "name": "Scottish Power Energy Networks",
+      "awardCount": 1,
+      "disclosedValue": 147500000,
+      "nation": "Scotland"
+    },
+    {
+      "name": "SSE Energy Solutions Ltd",
+      "awardCount": 1,
+      "disclosedValue": 147500000,
+      "nation": "Scotland"
+    },
+    {
+      "name": "Fujitsu Services Limited",
+      "awardCount": 1,
+      "disclosedValue": 137500000,
+      "nation": "England"
+    },
+    {
+      "name": "Leidos Innovations UK Ltd",
+      "awardCount": 1,
+      "disclosedValue": 137500000,
+      "nation": "England"
+    },
+    {
+      "name": "PA Consulting Services Ltd",
+      "awardCount": 4,
+      "disclosedValue": 136200000,
+      "nation": "England"
+    },
+    {
+      "name": "Kier Construction Limited",
+      "awardCount": 1,
+      "disclosedValue": 110000000,
+      "nation": "England"
+    },
+    {
+      "name": "Willmott Dixon Construction Limited",
+      "awardCount": 1,
+      "disclosedValue": 110000000,
+      "nation": "England"
+    },
+    {
+      "name": "CH2M HILL United Kingdom",
+      "awardCount": 1,
+      "disclosedValue": 105000000,
+      "nation": "England"
+    },
+    {
+      "name": "Mott MacDonald Limited",
+      "awardCount": 1,
+      "disclosedValue": 105000000,
+      "nation": "England"
+    },
+    {
+      "name": "Farrans Construction",
+      "awardCount": 1,
+      "disclosedValue": 97500000,
+      "nation": "Northern Ireland"
+    },
+    {
+      "name": "Graham Construction Ltd",
+      "awardCount": 1,
+      "disclosedValue": 97500000,
+      "nation": "Northern Ireland"
+    },
+    {
+      "name": "Computacenter (UK) Ltd",
+      "awardCount": 1,
+      "disclosedValue": 82500000,
+      "nation": "England"
+    },
+    {
+      "name": "Softcat plc",
+      "awardCount": 1,
+      "disclosedValue": 82500000,
+      "nation": "England"
+    },
+    {
+      "name": "Deloitte LLP",
+      "awardCount": 1,
+      "disclosedValue": 77500000,
+      "nation": "England"
+    },
+    {
+      "name": "Johnson & Johnson Medical Ltd",
+      "awardCount": 1,
+      "disclosedValue": 74000000,
+      "nation": "Scotland"
+    },
+    {
+      "name": "Medtronic Limited",
+      "awardCount": 1,
+      "disclosedValue": 74000000,
+      "nation": "England"
+    }
+  ],
+  "dataQuality": {
+    "pagesFetched": 28,
+    "requestsMade": 28,
+    "releasesSeen": 1420,
+    "awardsSeen": 890,
+    "validComparableAwards": 100,
+    "excludedMissingValue": 120,
+    "excludedNonGbp": 18,
+    "excludedMissingBuyer": 0,
+    "excludedMissingSupplier": 0,
+    "excludedMalformed": 0,
+    "duplicatesRemoved": 14
+  },
+  "caveats": [
+    "Values are the amounts disclosed in Find a Tender award releases, not invoices or confirmed lifetime public expenditure.",
+    "Framework and multi-supplier awards can state maximum or estimated values that may never be fully spent.",
+    "The ranking covers comparable GBP awards updated in the stated window; missing, redacted and non-GBP values are excluded.",
+    "A large award is not evidence of waste, fraud or poor value. The source notice and procurement context must be examined.",
+    "Find a Tender is the central digital platform, but publication coverage and notice quality still depend on contracting authorities."
+  ],
+  "evidencePolicy": {
+    "rankingMeasure": "disclosed award value excluding VAT where supplied",
+    "actualSpendClaim": false,
+    "wasteClaim": false,
+    "fraudClaim": false,
+    "savingClaim": false,
+    "supplierAllocationMethod": "equal allocation across named suppliers for concentration analysis only",
+    "comparisonCurrency": "GBP",
+    "requiredAwardCount": 100
+  },
+  "__observation": {
+    "status": "current",
+    "period": "24 Sept 2026 to 1 Oct 2026",
+    "observedAt": "2026-10-01T15:34:52.133Z",
+    "checkedAt": "2026-10-01T15:34:53.133Z",
+    "maxAgeHours": 72,
+    "maxAgeDays": 3
+  }
+}

@@ -307,6 +307,8 @@ const SECTION_BUILDERS = Object.freeze({
     buildGenericObservationSection("migrationStats", "verified-data-service", now),
   realWages: (now = new Date()) =>
     buildGenericObservationSection("realWages", "verified-data-service", now),
+  housePriceIndex: (now = new Date()) =>
+    buildGenericObservationSection("housePriceIndex", "verified-data-service", now),
   sentimentPulse: (now = new Date()) => buildSentimentPulse(now),
   nationalDebt: (now = new Date()) => buildNationalDebtSection(now),
   crimeStatistics: (now = new Date()) => buildCrimeStatisticsSection(now),

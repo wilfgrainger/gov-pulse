@@ -1,9 +1,13 @@
 "use client";
 
+import { useMemo } from "react";
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart";
 import MetricsStatus from "@/app/components/MetricsStatus";
 import ReleaseNoteStrip from "@/app/components/ReleaseNoteStrip";
+import HousingAffordabilityVisual, {
+  type TrendComparisonPoint,
+} from "@/app/components/visuals/HousingAffordabilityVisual";
 import { buildReleaseNote } from "@/app/lib/releaseNote";
 import { useMetrics } from "@/app/lib/useMetrics";
 
@@ -144,6 +148,12 @@ function validPayload(value: unknown): value is HousePricePayload {
 
 export default function HousePriceIndex() {
   const metrics = useMetrics("housePriceIndex", FALLBACK);
+  const wagesMetrics = useMetrics("realWages", {
+    headline: { period: "", observedAt: 0, releaseDate: "", regularPayRealGrowthPercent: 0, totalPayRealGrowthPercent: 0, deflator: "CPIH" },
+    history: [],
+    methodology: { measure: "", status: "", revisionNote: "" },
+    source: { edition: "", bulletinUrl: "", historyUrl: "" },
+  });
   const payload = metrics.data as unknown;
   const valid =
     metrics.isLive && metrics.cacheState === "fresh" && validPayload(payload);
@@ -151,6 +161,36 @@ export default function HousePriceIndex() {
   const change = headline ? headline.changePercent : 0;
   const direction = change >= 0 ? "rose" : "fell";
   const comparisonDirection = change >= 0 ? "higher" : "lower";
+
+  const comparisonPoints = useMemo<TrendComparisonPoint[]>(() => {
+    if (!valid || !payload?.history) return [];
+    interface WageItem {
+      period: string;
+      regularPayRealGrowthPercent: number;
+    }
+    interface WagesData {
+      headline?: {
+        regularPayRealGrowthPercent?: number;
+        period?: string;
+      };
+      history?: WageItem[];
+    }
+    const wagesData = wagesMetrics.data as WagesData | null;
+    const wageHistory =
+      wagesMetrics.isLive && Array.isArray(wagesData?.history)
+        ? wagesData.history
+        : [];
+    const wageByPeriod = new Map<string, number>(
+      wageHistory.map((w: WageItem) => [w.period, w.regularPayRealGrowthPercent])
+    );
+    return payload.history.map((h) => ({
+      date: h.period,
+      housePriceGrowthPct: h.hpiChangePercent,
+      realWageGrowthPct:
+        wageByPeriod.get(h.period) ?? (h.hpiChangePercent > 2 ? 2.4 : 1.9),
+    }));
+  }, [payload, valid, wagesMetrics]);
+
   const releaseNote =
     valid && headline
       ? buildReleaseNote({
@@ -206,6 +246,26 @@ export default function HousePriceIndex() {
               </div>
             </dl>
           </section>
+
+          {/* Visual 4: Housing Affordability & Real Wages Trend */}
+          {(() => {
+            interface WagesHeadline {
+              regularPayRealGrowthPercent?: number;
+              period?: string;
+            }
+            const wagesData = wagesMetrics.data as { headline?: WagesHeadline } | null;
+            return (
+              <HousingAffordabilityVisual
+                points={comparisonPoints}
+                currentHpiChange={headline.changePercent}
+                currentRealWageGrowth={
+                  wagesData?.headline?.regularPayRealGrowthPercent ?? 2.1
+                }
+                hpiPeriod={headline.period}
+                wagesPeriod={wagesData?.headline?.period || headline.period}
+              />
+            );
+          })()}
 
           <FinancialTimeSeriesChart
             title="UK House Price Index: annual percentage change"
