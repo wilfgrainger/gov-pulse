@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "routeSource": "app/lib/sectionContent.ts",
+  "measureSource": "app/lib/dataExplorer.ts",
+  "topics": ["pm-approval", "election-polls", "betting-odds", "govt-approval", "gov-trust-trend", "national-debt", "gdp", "economy", "tax", "uk-in-context", "government-contracts", "employment", "crime-stats", "nhs", "migration", "real-wages", "early-years", "uk-regions", "policy-links"],
+  "explorerMeasureIds": ["gdp-threeMonthGrowth", "inflation", "unemployment", "waitingPathwaysEstimate", "debt-ratio", "receipts", "netMigration", "regularPayRealGrowth"]
+}

@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "workerZone": "public-data.org",
+  "workerRoutes": [
+    { "pattern": "public-data.org/data/health.json", "zone_name": "public-data.org", "required": true },
+    { "pattern": "public-data.org/data/international-comparison.json", "zone_name": "public-data.org", "required": true },
+    { "pattern": "public-data.org/data/metrics-snapshot.json", "zone_name": "public-data.org", "required": true },
+    { "pattern": "public-data.org/data/measure-catalog.json", "zone_name": "public-data.org" },
+    { "pattern": "public-data.org/data/releases.json", "zone_name": "public-data.org" },
+    { "pattern": "public-data.org/data/editions.json", "zone_name": "public-data.org" },
+    { "pattern": "public-data.org/data/edition.json", "zone_name": "public-data.org", "queryParams": { "edition": "^[A-Za-z0-9_-]{1,96}$" } }
+  ],
+  "topics": [
+    { "id": "pm-approval", "status": "withdrawn" },
+    { "id": "election-polls", "status": "active" },
+    { "id": "betting-odds", "status": "active" },
+    { "id": "govt-approval", "status": "withdrawn" },
+    { "id": "gov-trust-trend", "status": "withdrawn" },
+    { "id": "national-debt", "status": "active" },
+    { "id": "gdp", "status": "active" },
+    { "id": "economy", "status": "active" },
+    { "id": "tax", "status": "active" },
+    { "id": "uk-in-context", "status": "active" },
+    { "id": "government-contracts", "status": "active" },
+    { "id": "employment", "status": "active" },
+    { "id": "crime-stats", "status": "active" },
+    { "id": "nhs", "status": "active" },
+    { "id": "migration", "status": "active" },
+    { "id": "real-wages", "status": "active" },
+    { "id": "early-years", "status": "active" },
+    { "id": "uk-regions", "status": "withdrawn" },
+    { "id": "policy-links", "status": "withdrawn" }
+  ],
+  "explorerMeasureIds": [
+    "gdp-threeMonthGrowth",
+    "inflation",
+    "unemployment",
+    "waitingPathwaysEstimate",
+    "debt-ratio",
+    "receipts",
+    "netMigration",
+    "regularPayRealGrowth"
+  ],
+  "privatePathPrefixes": [
+    "/data/collect/",
+    "/data/internal/",
+    "/internal/"
+  ]
+}
