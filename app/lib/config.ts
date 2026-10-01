@@ -221,6 +221,17 @@ export const DATA_SOURCES: Record<string, DataSourceDefinition> = {
     freshnessRationale: "The latest ONS edition is discovered from the bulletin's rolling /latest alias; the house price %-change history lags the bulletin's own publication by one to two months.",
     freshnessWindowMs: 45 * DAY_MS,
   },
+  realWages: {
+    name: "Real Wages",
+    frequency: "monthly",
+    sources: ["ONS average weekly earnings bulletin"],
+    automation: "automated",
+    evidenceClass: "official-data",
+    geographicCoverage: "Great Britain",
+    freshnessWindow: "Checked within 36 hours",
+    freshnessRationale: "The latest ONS average weekly earnings bulletin is checked regularly, while its publication period is assessed separately.",
+    freshnessWindowMs: 36 * HOUR_MS,
+  },
   earlyYears: {
     name: "Early Years Spotlight",
     frequency: "periodic",

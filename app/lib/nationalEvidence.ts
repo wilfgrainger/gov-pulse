@@ -14,7 +14,8 @@ type SignalId =
   | "national-debt"
   | "nhs-waiting-list"
   | "net-migration"
-  | "house-price-index";
+  | "house-price-index"
+  | "real-wages";
 
 export type SignalHistoryPoint = { observedAt: number; value: number };
 
@@ -110,6 +111,15 @@ const SIGNAL_META: Record<
     href: "/section/house-price-index",
     evidenceClass: DATA_SOURCES.housePriceIndex.evidenceClass,
     geography: "United Kingdom",
+  },
+  "real-wages": {
+    id: "real-wages",
+    anchorId: "real-wages",
+    title: "Real wages",
+    kicker: "Earnings",
+    href: "/section/real-wages",
+    evidenceClass: DATA_SOURCES.realWages.evidenceClass,
+    geography: "Great Britain",
   },
 };
 
@@ -460,6 +470,33 @@ function selectHousePriceIndex(snapshot: MetricsSnapshot): SignalPresentation {
   );
 }
 
+function selectRealWages(snapshot: MetricsSnapshot): SignalPresentation {
+  const data = record(snapshot.realWages);
+  const headline = record(data?.headline);
+  const regularGrowth = finite(headline?.regularPayRealGrowthPercent);
+  const totalGrowth = finite(headline?.totalPayRealGrowthPercent);
+  const period = text(headline?.period);
+  const publishedAt = formatDate(headline?.releaseDate);
+  if (regularGrowth === null || totalGrowth === null || !period || !publishedAt) {
+    return unavailable("real-wages");
+  }
+  const direction = regularGrowth === 0 ? "was unchanged" : regularGrowth > 0 ? "rose" : "fell";
+  return applySourceState(
+    {
+      ...unavailable("real-wages"),
+      value: formatPercent(regularGrowth, true),
+      comparison: `Total pay, real terms (CPIH-adjusted) ${formatPercent(totalGrowth, true)}`,
+      period,
+      publishedAt,
+      history: historyPoints(data?.history, "regularPayRealGrowthPercent"),
+      leadHeadline: `Regular pay ${direction} ${Math.abs(regularGrowth).toFixed(1)}% in real terms (CPIH-adjusted) in ${period}.`,
+      leadSummary: `Total pay, including bonuses, grew ${formatPercent(totalGrowth, true)} in real terms over the same period. This is ONS's own CPIH-adjusted figure, not a public-data.org calculation.`,
+      caveat: "Average weekly earnings are published on a provisional basis and are subject to revision.",
+    },
+    snapshot.meta.sources.realWages
+  );
+}
+
 function emptyEdition(): NationalEvidenceEdition {
   const signals = SIGNAL_ORDER.map(unavailable);
   return {
@@ -480,6 +517,7 @@ export function selectNationalEvidenceEdition(snapshot: unknown): NationalEviden
     selectNhs(snapshot),
     selectMigration(snapshot),
     selectHousePriceIndex(snapshot),
+    selectRealWages(snapshot),
   ].map((signal) => {
     const section = signal.id === "unemployment" ? "employmentStats"
       : signal.id === "national-debt" ? "nationalDebt" : null;

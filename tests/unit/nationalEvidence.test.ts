@@ -138,13 +138,13 @@ function snapshot() {
 }
 
 describe("national evidence presentation", () => {
-  it("selects one lead and six separately dated official signal cards, plus an unavailable house-price signal", () => {
+  it("selects one lead and six separately dated official signal cards, plus unavailable house-price and real-wages signals", () => {
     const edition = selectNationalEvidenceEdition(snapshot());
 
     expect(edition.lead?.id).toBe("gdp");
     expect(edition.lead?.leadHeadline).toBe("UK GDP grew in May 2026 by 0.1%.");
     expect(edition.signals.map((signal) => signal.id)).toEqual([
-      "gdp", "inflation", "unemployment", "national-debt", "nhs-waiting-list", "net-migration", "house-price-index",
+      "gdp", "inflation", "unemployment", "national-debt", "nhs-waiting-list", "net-migration", "house-price-index", "real-wages",
     ]);
     expect(edition.counts.current).toBe(6);
     expect(edition.signals.find((signal) => signal.id === "national-debt")?.value).toBe("£2.98tn");
@@ -153,6 +153,7 @@ describe("national evidence presentation", () => {
     expect(edition.signals.find((signal) => signal.id === "nhs-waiting-list")?.geography).toBe("England");
     expect(edition.signals.find((signal) => signal.id === "net-migration")?.geography).toBe("United Kingdom");
     expect(edition.signals.find((signal) => signal.id === "house-price-index")?.state).toBe("unavailable");
+    expect(edition.signals.find((signal) => signal.id === "real-wages")?.state).toBe("unavailable");
   });
 
   it("does not align economic series onto one shared period", () => {
@@ -212,7 +213,7 @@ describe("national evidence presentation", () => {
     const edition = selectNationalEvidenceEdition(payload);
 
     expect(edition.lead).toBeNull();
-    expect(edition.counts.unavailable).toBe(7);
+    expect(edition.counts.unavailable).toBe(8);
     expect(edition.signals.every((signal) => signal.value === null)).toBe(true);
   });
 });

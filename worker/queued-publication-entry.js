@@ -60,6 +60,7 @@ const GENERIC_SECTIONS = Object.freeze([
   "nationalDebt",
   "migrationStats",
   "housePriceIndex",
+  "realWages",
   "crimeStatistics",
 ]);
 const EXTERNAL_SECTIONS = Object.freeze([

@@ -34,6 +34,7 @@ export const SECTIONS: CategoryGroup[] = [
       { id: "tax", label: "Government receipts", shortLabel: "Receipts" },
       { id: "employment", label: "Employment" },
       { id: "house-price-index", label: "House prices", shortLabel: "House prices" },
+      { id: "real-wages", label: "Real wages" },
     ],
   },
   {

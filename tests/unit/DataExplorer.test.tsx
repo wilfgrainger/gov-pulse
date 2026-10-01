@@ -82,13 +82,13 @@ describe("public data explorer", () => {
     expect(measures.getAllByRole("button")).toHaveLength(2);
     expect(measures.getByRole("button", { name: /Central government receipts/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: "Show unavailable measures" }));
-    expect(measures.getAllByRole("button")).toHaveLength(8);
+    expect(measures.getAllByRole("button")).toHaveLength(9);
     expect(measures.getByRole("button", { name: /NHS waiting list/i })).toHaveTextContent("Unavailable");
   });
 
   it("explains gaps when no core measure has a verified value", () => {
     render(<DataExplorer initialSnapshot={null} />);
-    expect(within(screen.getByRole("list", { name: "Measures" })).getAllByRole("button")).toHaveLength(8);
+    expect(within(screen.getByRole("list", { name: "Measures" })).getAllByRole("button")).toHaveLength(9);
     expect(screen.getByText(/No core measure has a current verified value/i)).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Show unavailable measures" })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: "Show unavailable measures" })).toBeDisabled();

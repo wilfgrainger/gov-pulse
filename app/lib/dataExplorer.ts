@@ -133,6 +133,16 @@ export const MEASURES: MeasureDefinition[] = [
     historyValue: "hpiChangePercent",
     note: "ONS UK House Price Index annual percentage change. The average price level is headline-only and is not part of this history.",
   },
+  {
+    ...base("realWages", "real-wages", "Economy", "Great Britain"),
+    ...headline,
+    id: "regularPayRealGrowth",
+    label: "Real wages: regular pay growth",
+    unit: "%",
+    valuePath: "headline.regularPayRealGrowthPercent",
+    historyValue: "regularPayRealGrowthPercent",
+    note: "ONS's own real-terms (CPIH-adjusted) regular pay growth figure, published directly in the average weekly earnings bulletin. Provisional and subject to revision.",
+  },
 ];
 
 function at(value: unknown, path: string): unknown {

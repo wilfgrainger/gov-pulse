@@ -4,6 +4,7 @@ export const SECTION_DOWNLOAD_IDS = [
   "electionPolling", "nationalDebt", "gdpTracker", "sentimentPulse",
   "taxRevenue", "employmentStats", "crimeStatistics", "nhsStats", "migrationStats",
   "housePriceIndex",
+  "realWages",
 ] as const;
 
 const GEOGRAPHY: Record<(typeof SECTION_DOWNLOAD_IDS)[number], string> = {
@@ -17,6 +18,7 @@ const GEOGRAPHY: Record<(typeof SECTION_DOWNLOAD_IDS)[number], string> = {
   nhsStats: "England",
   migrationStats: "United Kingdom",
   housePriceIndex: "United Kingdom",
+  realWages: "United Kingdom",
 };
 
 const OGL = {

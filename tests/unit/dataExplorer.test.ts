@@ -67,11 +67,11 @@ const payload = {
   },
 };
 describe("data explorer", () => {
-  it("keeps the public explorer to eight core measures and uses the labour publication for unemployment", () => {
+  it("keeps the public explorer to nine core measures and uses the labour publication for unemployment", () => {
     const measures = exploreMeasures(payload, now);
     expect(measures.map((m) => m.id)).toEqual([
       "gdp-threeMonthGrowth", "inflation", "unemployment", "waitingPathwaysEstimate",
-      "debt-ratio", "receipts", "netMigration", "houseAnnualChange",
+      "debt-ratio", "receipts", "netMigration", "houseAnnualChange", "regularPayRealGrowth",
     ]);
     expect(measures.find((m) => m.id === "receipts")?.value).toBe(100);
     expect(measures.find((m) => m.id === "unemployment")).toMatchObject({

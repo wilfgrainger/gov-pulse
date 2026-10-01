@@ -14,6 +14,7 @@ import CrimeStatistics from "@/app/components/CrimeStatistics";
 import NHSStats from "@/app/components/NHSStats";
 import MigrationStats from "@/app/components/MigrationStats";
 import HousePriceIndex from "@/app/components/HousePriceIndex";
+import RealWages from "@/app/components/RealWages";
 import EarlyYearsStats from "@/app/components/EarlyYearsStats";
 import GeographicHeatmap from "@/app/components/GeographicHeatmap";
 import EchoChamberMap from "@/app/components/EchoChamberMap";
@@ -140,6 +141,14 @@ export const SECTION_CONTENT = {
     subtitle: "Long-term immigration, emigration and net migration.",
     component: MigrationStats,
     dataSection: "migrationStats",
+  },
+  "real-wages": {
+    category: "Economy",
+    tag: "Official monthly data",
+    title: "Real wages",
+    subtitle: "ONS's own real-terms (CPIH-adjusted) earnings growth figure.",
+    component: RealWages,
+    dataSection: "realWages",
   },
   "early-years": {
     category: "Society",

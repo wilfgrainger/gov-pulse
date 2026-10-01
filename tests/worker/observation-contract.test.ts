@@ -46,6 +46,10 @@ function currentDescriptors() {
     housePriceIndex: {
       build: async () => published("May 2026", Date.UTC(2026, 5, 0), "2026-07-15"),
     },
+    realWages: {
+      build: async () =>
+        published("May to Jul 2026", Date.UTC(2026, 6, 31), "2026-09-15"),
+    },
     nhsStats: {
       build: async () => nhsPublished("May 2026", Date.UTC(2026, 5, 0), "2026-07-09"),
     },

@@ -96,6 +96,12 @@ export const DATA_SOURCE_DETAILS: Record<string, DataSourceDetail> = {
     revisionStatus: "UK HPI first estimates are provisional and subject to revision as later transaction data is incorporated",
     caveat: "This is ONS's \"Private rent and house prices, UK\" bulletin, not the retired standalone House Price Index bulletin. The average price level is headline-only: no comparable price-level history is published, so only the annual percentage-change series is carried into the history chart. The %-change figure also lags the bulletin's own publication by one to two months.",
   },
+  realWages: {
+    publicationPeriod: "Latest ONS average weekly earnings bulletin edition",
+    unit: "Percentage, real terms (CPIH-adjusted)",
+    revisionStatus: "Average weekly earnings are published on a provisional basis and are subject to revision as later source data and seasonal-adjustment reviews are incorporated",
+    caveat: "This is ONS's own real-terms earnings growth figure, adjusted for inflation using CPIH and published directly in the bulletin — not a calculation performed by public-data.org. The bulletin also quotes a CPI-adjusted figure nearby; this page shows the CPIH-adjusted figure only.",
+  },
   earlyYears: {
     publicationPeriod: "UKHSA COVER 2024/25 and DfE EYFS profile 2024/25",
     unit: "Rates (%) as labelled",

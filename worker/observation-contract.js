@@ -158,6 +158,10 @@ const contracts = {
     maxAgeDays: 45,
     extract: publishedObservation,
   },
+  realWages: {
+    maxAgeDays: 40,
+    extract: publishedObservation,
+  },
   nhsStats: {
     maxAgeDays: 45,
     extract: nhsPublishedObservation,
