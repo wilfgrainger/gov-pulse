@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { fetchMetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import {
   comparePoints,
@@ -18,15 +19,27 @@ const dateLabel = (value: string) =>
     timeZone: "UTC",
   }).format(new Date(value));
 
+const WINDOW_VALUES = ["1", "5", "10", "all"] as const;
+type WindowValue = (typeof WINDOW_VALUES)[number];
+const DEFAULT_WINDOW: WindowValue = "5";
+const isWindowValue = (value: string | null): value is WindowValue =>
+  value !== null && (WINDOW_VALUES as readonly string[]).includes(value);
+
 function MeasureDetail({
   measure,
   allMeasures,
+  years,
+  onYearsChange,
+  compareId,
+  onCompareIdChange,
 }: {
   measure: Measure;
   allMeasures: Measure[];
+  years: WindowValue;
+  onYearsChange: (years: WindowValue) => void;
+  compareId: string;
+  onCompareIdChange: (compareId: string) => void;
 }) {
-  const [years, setYears] = useState("5");
-  const [compareId, setCompareId] = useState("");
   const end = measure.history.at(-1)?.date ?? 0;
   const start = new Date(end);
   start.setUTCFullYear(start.getUTCFullYear() - Number(years));
@@ -115,7 +128,13 @@ function MeasureDetail({
             History window
             <select
               value={years}
-              onChange={(event) => setYears(event.target.value)}
+              onChange={(event) =>
+                onYearsChange(
+                  isWindowValue(event.target.value)
+                    ? event.target.value
+                    : DEFAULT_WINDOW,
+                )
+              }
               className="mt-2 block min-h-11 border border-slate-400 bg-white px-3 py-2"
             >
               <option value="1">1 year</option>
@@ -128,7 +147,7 @@ function MeasureDetail({
             Compare with&hellip;
             <select
               value={compareId}
-              onChange={(event) => setCompareId(event.target.value)}
+              onChange={(event) => onCompareIdChange(event.target.value)}
               className="mt-2 block min-h-11 max-w-[14rem] border border-slate-400 bg-white px-3 py-2"
             >
               <option value="">None</option>
@@ -398,17 +417,34 @@ function MeasureDetail({
   );
 }
 
-export default function DataExplorer({
+function DataExplorerInner({
   initialSnapshot,
 }: {
   initialSnapshot: unknown;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [now, setNow] = useState(() => Date.now());
   const [query, setQuery] = useState("");
   const [topic, setTopic] = useState("All topics");
   const [showUnavailable, setShowUnavailable] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
+
+  const rawMeasureParam = searchParams.get("measure");
+  const rawCompareParam = searchParams.get("compare");
+  const rawWindowParam = searchParams.get("window");
+
+  const [selected, setSelected] = useState<string | null>(
+    () => rawMeasureParam,
+  );
+  const [years, setYears] = useState<WindowValue>(() =>
+    isWindowValue(rawWindowParam) ? rawWindowParam : DEFAULT_WINDOW,
+  );
+  const [compareId, setCompareId] = useState<string>(
+    () => rawCompareParam ?? "",
+  );
+
   useEffect(() => {
     let active = true;
     const refresh = () => {
@@ -445,6 +481,50 @@ export default function DataExplorer({
     )
     .sort((a, b) => Number(b.value !== null) - Number(a.value !== null));
   const detail = filtered.find((m) => m.id === selected) ?? filtered[0];
+
+  // A compare target only makes sense if it exists, differs from the
+  // selected measure, and has comparable history -- the same constraints the
+  // "Compare with..." dropdown already enforces. An unknown/stale id (e.g. a
+  // bookmarked URL from before a measure was renamed or removed) falls back
+  // to "no comparison" rather than breaking the view.
+  const validCompareId =
+    compareId &&
+    detail &&
+    compareId !== detail.id &&
+    measures.some((m) => m.id === compareId && m.history.length > 1)
+      ? compareId
+      : "";
+
+  // validCompareId (above) already derives the effective compare target on
+  // every render, filtering out ids that don't exist, that match the
+  // selected measure, or that have no comparable history -- so a stale raw
+  // compareId (e.g. a leftover value after switching measures) never reaches
+  // rendering or the URL; it is simply never treated as valid.
+
+  // Reflect selection, compare target and history window in the URL so a
+  // specific chart state is shareable/bookmarkable. Uses replace + shallow
+  // routing (no scroll reset) so dropdown changes don't flood browser
+  // history or trigger a full page refetch.
+  useEffect(() => {
+    if (!detail) return;
+    const params = new URLSearchParams();
+    params.set("measure", detail.id);
+    if (validCompareId) params.set("compare", validCompareId);
+    if (years !== DEFAULT_WINDOW) params.set("window", years);
+    const next = params.toString();
+    const current = searchParams.toString();
+    if (next === current) return;
+    router.replace(next ? `${pathname}?${next}` : pathname, {
+      scroll: false,
+    });
+  }, [detail, validCompareId, years, pathname, router, searchParams]);
+
+  const selectMeasure = useCallback((id: string) => {
+    setSelected(id);
+    setCompareId("");
+    setYears(DEFAULT_WINDOW);
+  }, []);
+
   function download() {
     const url = URL.createObjectURL(
       new Blob([measuresCsv(filtered)], { type: "text/csv;charset=utf-8" }),
@@ -536,7 +616,7 @@ export default function DataExplorer({
                 className="border-b border-slate-200 last:border-0"
               >
                 <button
-                  onClick={() => setSelected(m.id)}
+                  onClick={() => selectMeasure(m.id)}
                   aria-pressed={detail?.id === m.id}
                   className={`w-full border-l-4 p-4 text-left hover:bg-slate-50 ${detail?.id === m.id ? "border-[#14243b] bg-slate-100" : "border-transparent"}`}
                 >
@@ -561,9 +641,27 @@ export default function DataExplorer({
               </li>
             ))}
           </ul>
-          {detail && <MeasureDetail key={detail.id} measure={detail} allMeasures={measures} />}
+          {detail && (
+            <MeasureDetail
+              key={detail.id}
+              measure={detail}
+              allMeasures={measures}
+              years={years}
+              onYearsChange={setYears}
+              compareId={validCompareId}
+              onCompareIdChange={setCompareId}
+            />
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+export default function DataExplorer(props: { initialSnapshot: unknown }) {
+  return (
+    <Suspense fallback={null}>
+      <DataExplorerInner {...props} />
+    </Suspense>
   );
 }
