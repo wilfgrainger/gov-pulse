@@ -212,4 +212,69 @@ describe("public data explorer", () => {
     expect(url).not.toContain("compare=");
     expect(url).not.toContain("window=");
   });
+
+  it("is keyboard-focusable and announces period/value via arrow-key scrubbing", () => {
+    render(<DataExplorer initialSnapshot={snapshot} />);
+    const chart = screen.getByRole("img", { name: /Unemployment rate/i });
+    expect(chart).toHaveAttribute("tabindex", "0");
+
+    const liveRegion = document.querySelector('[aria-live="polite"]');
+    expect(liveRegion).not.toBeNull();
+    expect(liveRegion).toHaveTextContent("");
+
+    chart.focus();
+    fireEvent.keyDown(chart, { key: "ArrowRight" });
+    expect(liveRegion).toHaveTextContent(/June to August 2024/);
+    expect(liveRegion).toHaveTextContent(/4\.4%/);
+
+    fireEvent.keyDown(chart, { key: "ArrowRight" });
+    expect(liveRegion).toHaveTextContent(/June to August 2025/);
+    expect(liveRegion).toHaveTextContent(/4\.7%/);
+
+    fireEvent.keyDown(chart, { key: "ArrowLeft" });
+    expect(liveRegion).toHaveTextContent(/June to August 2024/);
+  });
+
+  it("jumps to the first/last observation with Home/End and clamps at the ends", () => {
+    render(<DataExplorer initialSnapshot={snapshot} />);
+    const chart = screen.getByRole("img", { name: /Unemployment rate/i });
+    const liveRegion = document.querySelector('[aria-live="polite"]')!;
+
+    chart.focus();
+    fireEvent.keyDown(chart, { key: "End" });
+    expect(liveRegion).toHaveTextContent(/June to August 2026/);
+    fireEvent.keyDown(chart, { key: "ArrowRight" });
+    expect(liveRegion).toHaveTextContent(/June to August 2026/);
+
+    fireEvent.keyDown(chart, { key: "Home" });
+    expect(liveRegion).toHaveTextContent(/June to August 2024/);
+    fireEvent.keyDown(chart, { key: "ArrowLeft" });
+    expect(liveRegion).toHaveTextContent(/June to August 2024/);
+  });
+
+  it("includes the compared measure's value at the scrubbed point when a comparison is overlaid", () => {
+    render(<DataExplorer initialSnapshot={snapshot} />);
+    const compareSelect = screen.getByRole("combobox", { name: /Compare with/i });
+    fireEvent.change(compareSelect, { target: { value: "receipts" } });
+
+    const chart = screen.getByRole("img", { name: /Unemployment rate/i });
+    const liveRegion = document.querySelector('[aria-live="polite"]')!;
+    chart.focus();
+    fireEvent.keyDown(chart, { key: "ArrowRight" });
+
+    expect(liveRegion).toHaveTextContent(/Unemployment rate/);
+    expect(liveRegion).toHaveTextContent(/Central government receipts/);
+  });
+
+  it("clears the scrub announcement on Escape", () => {
+    render(<DataExplorer initialSnapshot={snapshot} />);
+    const chart = screen.getByRole("img", { name: /Unemployment rate/i });
+    const liveRegion = document.querySelector('[aria-live="polite"]')!;
+    chart.focus();
+    fireEvent.keyDown(chart, { key: "ArrowRight" });
+    expect(liveRegion).toHaveTextContent(/June to August 2024/);
+
+    fireEvent.keyDown(chart, { key: "Escape" });
+    expect(liveRegion).toHaveTextContent("");
+  });
 });

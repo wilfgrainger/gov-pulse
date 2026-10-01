@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useId, useRef, useState, type KeyboardEvent } from "react";
 import {
   CartesianGrid,
   Line,
@@ -89,6 +89,52 @@ export default function FinancialTimeSeriesChart({
       : [];
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
+  // Keyboard-navigable scrubber: ArrowLeft/ArrowRight move a "current index"
+  // through the published data points, driving a vertical reference line, a
+  // visible period/value readout, and an aria-live announcement for screen
+  // reader users. This is purely additive -- mouse hover keeps using
+  // Recharts' own Tooltip, and the scrubber state defaults to "nothing
+  // selected" so it never changes what a non-keyboard reader sees.
+  const [scrubIndex, setScrubIndex] = useState<number | null>(null);
+  const liveRegionId = useId();
+  const scrubPoint = scrubIndex !== null ? data[scrubIndex] : undefined;
+
+  const moveScrub = (delta: number) => {
+    if (data.length === 0) return;
+    setScrubIndex((current) => {
+      const base = current === null ? (delta > 0 ? -1 : data.length) : current;
+      const next = base + delta;
+      return Math.min(Math.max(next, 0), data.length - 1);
+    });
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      moveScrub(1);
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      moveScrub(-1);
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      setScrubIndex(data.length ? 0 : null);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setScrubIndex(data.length ? data.length - 1 : null);
+    } else if (event.key === "Escape") {
+      setScrubIndex(null);
+    }
+  };
+
+  const scrubAnnouncement = scrubPoint
+    ? `${formatTooltipDate(scrubPoint.observedAt)}: ${series
+        .map((entry) => {
+          const value = scrubPoint[entry.key];
+          return `${entry.label} ${typeof value === "number" ? valueFormatter(value) : "not available"}`;
+        })
+        .join(", ")}`
+    : "";
+
   return (
     <figure className="border-y border-black/20 bg-[#f7f9fb] py-5">
       <figcaption className="mb-4 flex flex-wrap items-end justify-between gap-3 px-1">
@@ -100,14 +146,39 @@ export default function FinancialTimeSeriesChart({
       </figcaption>
       <div
         ref={chartContainerRef}
-        role="img"
+        role="group"
+        aria-roledescription="interactive chart"
+        tabIndex={0}
         aria-label={`${title}. ${description}. Period shown: ${range}.${
           events.length
             ? ` Marked reference dates: ${events.map((e) => e.label).join("; ")}.`
             : ""
-        }`}
-        className="border-t border-black/10 pt-3"
+        } Focus and use the left and right arrow keys to scrub through each published point; Home and End jump to the first and last point.`}
+        aria-describedby={scrubPoint ? liveRegionId : undefined}
+        onKeyDown={handleKeyDown}
+        className="border-t border-black/10 pt-3 focus:outline-2 focus:outline-offset-2 focus:outline-[#14243b]"
       >
+        <p
+          id={liveRegionId}
+          aria-live="polite"
+          className="sr-only"
+        >
+          {scrubAnnouncement}
+        </p>
+        {scrubPoint ? (
+          <p
+            aria-hidden="true"
+            className="mb-2 px-1 font-mono text-xs tabular-nums text-[#14243b]"
+          >
+            {formatTooltipDate(scrubPoint.observedAt)} &mdash;{" "}
+            {series
+              .map((entry) => {
+                const value = scrubPoint[entry.key];
+                return `${entry.label}: ${typeof value === "number" ? valueFormatter(value) : "not available"}`;
+              })
+              .join(" · ")}
+          </p>
+        ) : null}
         <ClientOnlyChart heightClass={heightClass}>
           <ResponsiveContainer
             width="100%"
@@ -169,6 +240,15 @@ export default function FinancialTimeSeriesChart({
                   <title>{event.label}</title>
                 </ReferenceLine>
               ))}
+              {scrubPoint ? (
+                <ReferenceLine
+                  x={scrubPoint.observedAt}
+                  stroke="#14243b"
+                  strokeWidth={1.5}
+                  ifOverflow="visible"
+                  zIndex={500}
+                />
+              ) : null}
               <Tooltip
                 cursor={{ stroke: "#8892a0", strokeWidth: 1 }}
                 contentStyle={{
