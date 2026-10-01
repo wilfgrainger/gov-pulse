@@ -32,6 +32,7 @@ const FALLBACK = {
     topSupplier: { name: "", awardCount: 0, disclosedValue: 0 },
   },
   awards: [],
+  supplierConcentration: [],
   dataQuality: {
     pagesFetched: 0,
     releasesSeen: 0,
@@ -65,6 +66,7 @@ type Award = {
   title: string;
   buyer: string;
   suppliers: string[];
+  supplierNations: string[];
   awardDate: string;
   publishedAt: string;
   amount: number;
@@ -77,7 +79,17 @@ type Award = {
   procurementUrl: string;
 };
 
-type ContractsPayload = Omit<typeof FALLBACK, "awards"> & { awards: Award[] };
+type SupplierConcentrationEntry = {
+  name: string;
+  awardCount: number;
+  disclosedValue: number;
+  nation: string;
+};
+
+type ContractsPayload = Omit<typeof FALLBACK, "awards" | "supplierConcentration"> & {
+  awards: Award[];
+  supplierConcentration: SupplierConcentrationEntry[];
+};
 type SortMode = "value-desc" | "value-asc" | "date-desc" | "buyer" | "supplier";
 
 function formatCurrency(value: number, compact = false) {
@@ -123,7 +135,17 @@ function AwardCard({ award }: { award: Award }) {
         </div>
         <div>
           <dt className="font-semibold">Supplier{award.suppliers.length === 1 ? "" : "s"}</dt>
-          <dd className="mt-1 text-gray-700">{award.suppliers.join(", ")}</dd>
+          <dd className="mt-1 text-gray-700">
+            {award.suppliers.map((supplier, index) => (
+              <span key={supplier}>
+                {index > 0 ? ", " : ""}
+                {supplier}{" "}
+                <span className="text-xs text-gray-500">
+                  ({award.supplierNations[index] ?? "Other/Unknown"})
+                </span>
+              </span>
+            ))}
+          </dd>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -154,6 +176,7 @@ export default function GovernmentContracts() {
   const metrics = useMetrics("governmentContracts", FALLBACK);
   const [query, setQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("value-desc");
+  const [nationFilter, setNationFilter] = useState<string>("all");
   const valid =
     metrics.isLive &&
     metrics.cacheState === "fresh" &&
@@ -164,14 +187,17 @@ export default function GovernmentContracts() {
   const displayedAwards = useMemo(() => {
     if (!valid) return [];
     const search = query.trim().toLocaleLowerCase("en-GB");
-    const filtered = search
-      ? data.awards.filter((award) =>
-          [award.title, award.buyer, ...award.suppliers, award.releaseId, award.ocid]
+    const filtered = data.awards.filter((award) => {
+      const matchesSearch = search
+        ? [award.title, award.buyer, ...award.suppliers, award.releaseId, award.ocid]
             .join(" ")
             .toLocaleLowerCase("en-GB")
             .includes(search)
-        )
-      : [...data.awards];
+        : true;
+      const matchesNation =
+        nationFilter === "all" || award.supplierNations.includes(nationFilter);
+      return matchesSearch && matchesNation;
+    });
     return filtered.sort((left, right) => {
       if (sortMode === "value-asc") return left.amount - right.amount;
       if (sortMode === "date-desc") return Date.parse(right.awardDate) - Date.parse(left.awardDate);
@@ -181,7 +207,20 @@ export default function GovernmentContracts() {
       }
       return right.amount - left.amount;
     });
-  }, [data.awards, query, sortMode, valid]);
+  }, [data.awards, nationFilter, query, sortMode, valid]);
+
+  const supplierConcentration = useMemo(() => {
+    if (!valid) return [];
+    if (nationFilter === "all") return data.supplierConcentration;
+    return data.supplierConcentration.filter((entry) => entry.nation === nationFilter);
+  }, [data.supplierConcentration, nationFilter, valid]);
+
+  const availableNations = useMemo(() => {
+    if (!valid) return [];
+    return [...new Set(data.supplierConcentration.map((entry) => entry.nation))].sort(
+      (left, right) => left.localeCompare(right, "en-GB")
+    );
+  }, [data.supplierConcentration, valid]);
 
   if (!valid) {
     return (
@@ -262,6 +301,78 @@ export default function GovernmentContracts() {
         </dl>
       </section>
 
+      <section aria-labelledby="supplier-concentration-title">
+        <div className="border-b border-black/20 pb-5">
+          <p className="text-sm font-semibold text-accent">Who benefits</p>
+          <h3 id="supplier-concentration-title" className="mt-1 text-2xl font-semibold md:text-3xl">
+            Suppliers ranked by total disclosed value
+          </h3>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">
+            Aggregates the 100 ranked awards above by named supplier, using equal allocation where an award names
+            multiple suppliers. This does not combine data from any other source.
+          </p>
+        </div>
+
+        <label className="mt-5 block max-w-xs text-sm font-semibold">
+          Filter by supplier nation
+          <select
+            value={nationFilter}
+            onChange={(event) => setNationFilter(event.target.value)}
+            className="mt-2 min-h-11 w-full border border-black/30 bg-white px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+          >
+            <option value="all">All suppliers</option>
+            {availableNations.map((nation) => (
+              <option key={nation} value={nation}>
+                {nation}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <p role="status" className="mt-4 text-sm text-gray-600">
+          Showing {supplierConcentration.length} of {data.supplierConcentration.length} named suppliers.
+        </p>
+
+        <div className="mt-4 space-y-2" role="list" aria-label="Suppliers ranked by disclosed value">
+          {supplierConcentration.slice(0, 20).map((entry) => {
+            const widthPercent =
+              data.supplierConcentration[0]?.disclosedValue > 0
+                ? Math.max(
+                    2,
+                    (entry.disclosedValue / data.supplierConcentration[0].disclosedValue) * 100
+                  )
+                : 0;
+            return (
+              <div key={entry.name} role="listitem" className="grid grid-cols-[minmax(10rem,1fr)_auto] items-center gap-3 text-sm">
+                <div>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="font-semibold">{entry.name}</span>
+                    <span className="font-mono text-xs text-gray-600">{entry.nation}</span>
+                  </div>
+                  <div className="mt-1 h-3 bg-gray-100">
+                    <div
+                      className="h-3 bg-[#14243b]"
+                      style={{ width: `${widthPercent}%` }}
+                      aria-hidden="true"
+                    />
+                  </div>
+                </div>
+                <span className="font-mono text-sm font-semibold tabular-nums">
+                  {formatCurrency(entry.disclosedValue, true)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        {data.supplierConcentration.every((entry) => entry.nation === "Other/Unknown") && (
+          <p className="mt-4 max-w-3xl text-sm leading-6 text-gray-600">
+            Supplier nation is currently Other/Unknown for every ranked supplier: the collected Find a Tender
+            releases in this window did not carry a usable supplier postal code. The nation breakdown activates
+            automatically once that field is present in a collected release.
+          </p>
+        )}
+      </section>
+
       <section aria-labelledby="contracts-table-title">
         <div className="grid gap-4 border-b border-black/20 pb-5 md:grid-cols-[minmax(0,1fr)_minmax(18rem,32rem)] md:items-end">
           <div>
@@ -310,6 +421,7 @@ export default function GovernmentContracts() {
                 <th scope="col" className="px-4 py-3">Rank</th>
                 <th scope="col" className="px-4 py-3">Award</th>
                 <th scope="col" className="px-4 py-3">Buyer and supplier</th>
+                <th scope="col" className="px-4 py-3">Nation</th>
                 <th scope="col" className="px-4 py-3">Date</th>
                 <th scope="col" className="px-4 py-3 text-right">Disclosed value</th>
                 <th scope="col" className="px-4 py-3">Source</th>
@@ -323,6 +435,9 @@ export default function GovernmentContracts() {
                   <td className="max-w-xs px-4 py-4 align-top">
                     <span className="block font-semibold">{award.buyer}</span>
                     <span className="mt-1 block text-gray-600">{award.suppliers.join(", ")}</span>
+                  </td>
+                  <td className="px-4 py-4 align-top text-gray-600">
+                    {[...new Set(award.supplierNations)].join(", ")}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 align-top">{formatDate(award.awardDate)}</td>
                   <td className="whitespace-nowrap px-4 py-4 text-right align-top font-mono font-semibold tabular-nums">{formatCurrency(award.amount)}</td>

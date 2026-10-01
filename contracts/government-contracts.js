@@ -42,6 +42,84 @@ function round(value, digits = 2) {
   return Math.round((value + Number.EPSILON) * factor) / factor;
 }
 
+// Deterministic, publicly documented UK postcode-area-to-nation mapping.
+// Source: Royal Mail / GOV.UK postcode area allocations. This is a public,
+// objective lookup from postcode AREA letters only (never from a company
+// name or any other heuristic) and defaults unmapped or missing areas to
+// "Other/Unknown" rather than guessing.
+const UK_NATIONS = Object.freeze({
+  SCOTLAND: "Scotland",
+  WALES: "Wales",
+  NORTHERN_IRELAND: "Northern Ireland",
+  ENGLAND: "England",
+  OTHER_UNKNOWN: "Other/Unknown",
+});
+
+// Postcode AREA letters (the leading alphabetic prefix of a UK postcode,
+// e.g. "EH" in "EH1 1AA") that are allocated to Scotland, Wales or Northern
+// Ireland. Any area not listed here, plus every other postcode format in the
+// Open Government postcode allocation list, is England. BT is the sole
+// Northern Ireland area. This set is intentionally the full published list,
+// not a sample.
+const SCOTLAND_POSTCODE_AREAS = Object.freeze([
+  "AB", "DD", "DG", "EH", "FK", "G", "HS", "IV", "KA", "KW", "KY", "ML", "PA",
+  "PH", "TD", "ZE",
+]);
+const WALES_POSTCODE_AREAS = Object.freeze([
+  "CF", "LD", "LL", "NP", "SA", "SY",
+]);
+const NORTHERN_IRELAND_POSTCODE_AREAS = Object.freeze(["BT"]);
+
+// SY and SY-adjacent areas straddle the England/Wales border in Royal Mail's
+// own allocation (e.g. SY postcodes extend into Shropshire, England), as do
+// a few Scotland-bordering areas (e.g. parts of TD extend into England).
+// Royal Mail's postcode area allocation is defined by AREA letters, not by
+// a strict national boundary, so a small number of addresses in a
+// border-straddling area are formally outside the nation their area letters
+// usually indicate. This is a documented limitation of the public mapping
+// itself, not an approximation introduced here; the area-letter mapping
+// below is still the deterministic, objective public assignment used by
+// ONS/Royal Mail area allocation tables.
+const POSTCODE_AREA_TO_NATION = Object.freeze(
+  Object.fromEntries([
+    ...SCOTLAND_POSTCODE_AREAS.map((area) => [area, UK_NATIONS.SCOTLAND]),
+    ...WALES_POSTCODE_AREAS.map((area) => [area, UK_NATIONS.WALES]),
+    ...NORTHERN_IRELAND_POSTCODE_AREAS.map((area) => [area, UK_NATIONS.NORTHERN_IRELAND]),
+  ])
+);
+
+const POSTCODE_AREA_PATTERN = /^([A-Z]{1,2})\d/;
+
+/**
+ * Map a UK postcode to its nation using only the publicly documented
+ * postcode AREA letters (Royal Mail / ONS allocation). Returns
+ * "Other/Unknown" for any postcode that is missing, malformed, or whose
+ * area is not in the published Scotland/Wales/Northern Ireland lists —
+ * such an area is England, EXCEPT this function never infers England from
+ * absence of information: it only returns England when the postcode
+ * genuinely parses as a well-formed UK postcode outside the SC/WAL/NI
+ * areas. Never derives a nation from a supplier name, address text, or any
+ * other non-postcode heuristic.
+ */
+function ukNationFromPostcode(postcode) {
+  const normalized = typeof postcode === "string" ? postcode.trim().toUpperCase() : "";
+  if (!normalized) return UK_NATIONS.OTHER_UNKNOWN;
+  // A well-formed UK postcode outward code is 1-2 letters followed by 1-2
+  // digits (optionally one more letter), e.g. "EH1", "SW1A", "BT1". Reject
+  // anything that does not match this shape rather than guessing.
+  const compact = normalized.replace(/\s+/g, "");
+  const match = compact.match(POSTCODE_AREA_PATTERN);
+  if (!match) return UK_NATIONS.OTHER_UNKNOWN;
+  const area = match[1];
+  return POSTCODE_AREA_TO_NATION[area] ?? UK_NATIONS.ENGLAND;
+}
+
+function normalizeSupplierNation(value) {
+  if (value === null || value === undefined) return UK_NATIONS.OTHER_UNKNOWN;
+  const allowed = new Set(Object.values(UK_NATIONS));
+  return allowed.has(value) ? value : UK_NATIONS.OTHER_UNKNOWN;
+}
+
 function requiredText(value, label, maximum = 500) {
   const text = typeof value === "string" ? value.trim() : "";
   if (!text) throw new Error(`${label} is required`);
@@ -102,6 +180,28 @@ function normalizeSuppliers(value, label) {
   return suppliers.sort((left, right) => left.localeCompare(right, "en-GB"));
 }
 
+// Pairs each RAW (pre-sort) supplier name with its nation, then sorts both
+// together so the result stays aligned with normalizeSuppliers' own sort of
+// the same raw list. Nation values are validated with
+// normalizeSupplierNation and default to "Other/Unknown" for anything not
+// one of the four canonical UK nations plus the unknown bucket.
+function normalizeSupplierNations(rawSuppliers, rawNations, label) {
+  const nations = Array.isArray(rawNations) ? rawNations : [];
+  if (nations.length !== 0 && nations.length !== rawSuppliers.length) {
+    throw new Error(`${label} supplier nations must match the supplier count`);
+  }
+  const names = rawSuppliers.map((supplier, index) =>
+    requiredText(supplier, `${label} supplier ${index + 1}`, 240)
+  );
+  const pairs = names.map((name, index) => ({
+    name,
+    nation: normalizeSupplierNation(nations[index] ?? UK_NATIONS.OTHER_UNKNOWN),
+  }));
+  return pairs
+    .sort((left, right) => left.name.localeCompare(right.name, "en-GB"))
+    .map((pair) => pair.nation);
+}
+
 function normalizeAward(value, index) {
   const label = `Award ${index + 1}`;
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -138,6 +238,7 @@ function normalizeAward(value, index) {
     title: requiredText(value.title, `${label} title`, 300),
     buyer: requiredText(value.buyer, `${label} buyer`, 240),
     suppliers: normalizeSuppliers(value.suppliers, label),
+    supplierNations: normalizeSupplierNations(value.suppliers, value.supplierNations, label),
     awardDate,
     publishedAt,
     amount: round(value.amount, 2),
@@ -169,6 +270,41 @@ function aggregate(awards, field, allocation = false) {
   }
   return [...values.values()]
     .map((entry) => ({ ...entry, disclosedValue: round(entry.disclosedValue, 2) }))
+    .sort(
+      (left, right) =>
+        right.disclosedValue - left.disclosedValue ||
+        left.name.localeCompare(right.name, "en-GB")
+    );
+}
+
+// Ranked-by-total-value supplier concentration: aggregates the EXISTING
+// award data by supplier (equal allocation across co-suppliers on the same
+// award, matching the summary's existing allocation method). Each entry
+// carries the supplier's nation when every award names a consistent,
+// known nation for that supplier, and "Other/Unknown" otherwise — this
+// never cross-references a different data source, only the 100 ranked
+// awards already in this payload.
+function buildSupplierConcentration(awards) {
+  const values = new Map();
+  for (const award of awards) {
+    const allocated = award.amount / award.suppliers.length;
+    award.suppliers.forEach((name, index) => {
+      const nation = award.supplierNations[index] ?? UK_NATIONS.OTHER_UNKNOWN;
+      const current =
+        values.get(name) ?? { name, awardCount: 0, disclosedValue: 0, nations: new Set() };
+      current.awardCount += 1;
+      current.disclosedValue += allocated;
+      current.nations.add(nation);
+      values.set(name, current);
+    });
+  }
+  return [...values.values()]
+    .map((entry) => ({
+      name: entry.name,
+      awardCount: entry.awardCount,
+      disclosedValue: round(entry.disclosedValue, 2),
+      nation: entry.nations.size === 1 ? [...entry.nations][0] : UK_NATIONS.OTHER_UNKNOWN,
+    }))
     .sort(
       (left, right) =>
         right.disclosedValue - left.disclosedValue ||
@@ -291,6 +427,7 @@ function normalizeGovernmentContractsPayload(data, now = new Date()) {
     source: { ...SOURCE },
     summary,
     awards,
+    supplierConcentration: buildSupplierConcentration(awards),
     dataQuality: normalizeDataQuality(data.dataQuality),
     caveats: [...CAVEATS],
     evidencePolicy: { ...EVIDENCE_POLICY },
@@ -344,8 +481,11 @@ export {
   OPEN_GOVERNMENT_LICENCE,
   REQUIRED_AWARD_COUNT,
   SOURCE,
+  UK_NATIONS,
   buildGovernmentContractsPayload,
   buildSummary,
+  buildSupplierConcentration,
+  ukNationFromPostcode,
   isCurrentGovernmentContractsPayload,
   normalizeGovernmentContractsPayload,
 };

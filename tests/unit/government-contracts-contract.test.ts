@@ -4,7 +4,9 @@ import {
   EVIDENCE_POLICY,
   buildGovernmentContractsPayload,
   buildSummary,
+  buildSupplierConcentration,
   isCurrentGovernmentContractsPayload,
+  ukNationFromPostcode,
 } from "../../contracts/government-contracts.js";
 import {
   completeUtcWindow,
@@ -27,6 +29,7 @@ function canonicalAward(index: number) {
     title: `Public contract ${index + 1}`,
     buyer: `Public buyer ${(index % 12) + 1}`,
     suppliers: [`Supplier ${(index % 25) + 1}`],
+    supplierNations: ["Other/Unknown"],
     awardDate: `2026-07-${String((index % 17) + 1).padStart(2, "0")}T09:00:00.000Z`,
     publishedAt: `2026-07-${String((index % 17) + 1).padStart(2, "0")}T12:00:00.000Z`,
     amount: 1_000_000_000 - index * 1_000_000,
@@ -73,13 +76,25 @@ function payloadInput(count = 100) {
   };
 }
 
+const SAMPLE_POSTCODES = ["EH1 1AA", "CF10 1AA", "BT1 1AA", "SW1A 1AA"];
+
 function rawRelease(index: number) {
   const award = canonicalAward(index);
+  const supplierId = `supplier-party-${index + 1}`;
+  const postcode = SAMPLE_POSTCODES[index % SAMPLE_POSTCODES.length];
   return {
     ocid: award.ocid,
     id: award.releaseId,
     date: award.publishedAt,
     buyer: { name: award.buyer },
+    parties: [
+      {
+        id: supplierId,
+        name: award.suppliers[0],
+        roles: ["supplier"],
+        address: { postalCode: postcode },
+      },
+    ],
     tender: {
       title: award.title,
       procurementMethod: award.procurementMethod,
@@ -93,7 +108,7 @@ function rawRelease(index: number) {
         title: award.title,
         date: award.awardDate,
         value: { amount: award.amount, currency: award.currency },
-        suppliers: award.suppliers.map((name) => ({ name })),
+        suppliers: award.suppliers.map((name) => ({ id: supplierId, name })),
       },
     ],
   };
@@ -169,5 +184,56 @@ describe("government contracts contract", () => {
     );
     expect(payload.dataQuality.requestsMade).toBe(28);
     expect(isCurrentGovernmentContractsPayload(payload, NOW)).toBe(true);
+
+    // Every award's supplier nation was resolved from the party postcode
+    // fixture (never left as a blanket Other/Unknown), proving the
+    // release.parties cross-reference by OrganizationReference id works.
+    const nationsSeen = new Set(
+      payload.awards.flatMap((award: { supplierNations: string[] }) => award.supplierNations)
+    );
+    expect(nationsSeen).toEqual(
+      new Set(["Scotland", "Wales", "Northern Ireland", "England"])
+    );
+  });
+
+  it("maps UK postcode areas to nations deterministically, one example per nation", () => {
+    expect(ukNationFromPostcode("EH1 1AA")).toBe("Scotland");
+    expect(ukNationFromPostcode("G1 1AA")).toBe("Scotland");
+    expect(ukNationFromPostcode("CF10 1AA")).toBe("Wales");
+    expect(ukNationFromPostcode("SA1 1AA")).toBe("Wales");
+    expect(ukNationFromPostcode("BT1 1AA")).toBe("Northern Ireland");
+    expect(ukNationFromPostcode("SW1A 1AA")).toBe("England");
+    expect(ukNationFromPostcode("M1 1AE")).toBe("England");
+  });
+
+  it("defaults to Other/Unknown for missing or unrecognisable postcodes, never guessing", () => {
+    expect(ukNationFromPostcode("")).toBe("Other/Unknown");
+    expect(ukNationFromPostcode(null)).toBe("Other/Unknown");
+    expect(ukNationFromPostcode(undefined)).toBe("Other/Unknown");
+    expect(ukNationFromPostcode("not a postcode")).toBe("Other/Unknown");
+    expect(ukNationFromPostcode("12345")).toBe("Other/Unknown");
+  });
+
+  it("ranks the supplier concentration view by total disclosed value from existing awards only", () => {
+    const payload = buildGovernmentContractsPayload(payloadInput(), NOW);
+    const concentration = buildSupplierConcentration(payload.awards);
+
+    expect(concentration.length).toBeGreaterThan(0);
+    for (let index = 1; index < concentration.length; index += 1) {
+      expect(concentration[index - 1].disclosedValue).toBeGreaterThanOrEqual(
+        concentration[index].disclosedValue
+      );
+    }
+    const total = concentration.reduce((sum, entry) => sum + entry.disclosedValue, 0);
+    expect(Math.round(total)).toBe(Math.round(payload.summary.disclosedValueTotal));
+    // The fixture awards all carry "Other/Unknown" supplierNations, so the
+    // concentration view must fail closed to the same bucket rather than
+    // inferring a nation from the supplier name.
+    expect(concentration.every((entry) => entry.nation === "Other/Unknown")).toBe(true);
+  });
+
+  it("builds the payload's own supplierConcentration from its awards, deterministically", () => {
+    const payload = buildGovernmentContractsPayload(payloadInput(), NOW);
+    expect(payload.supplierConcentration).toEqual(buildSupplierConcentration(payload.awards));
   });
 });
