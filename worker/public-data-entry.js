@@ -4,7 +4,11 @@ import {
   FEED_REGISTRY_VERSION,
   REQUIRED_PUBLISHED_SECTION_IDS,
 } from "./feed-registry.js";
-import { filterCurrentSnapshot } from "./publication-currentness.js";
+import {
+  cacheLifetime,
+  filterCurrentSnapshot,
+  snapshotValidityDeadline,
+} from "./publication-currentness.js";
 import {
   PUBLIC_SNAPSHOT_KEY,
   publicSnapshot,
@@ -20,10 +24,21 @@ const HEALTH_PATH = "/data/health.json";
 const COMPARISON_PATH = "/data/international-comparison.json";
 const DEFAULT_SEED_URL =
   "https://public-data-org.pages.dev/data/metrics-snapshot.json";
-const PUBLIC_CACHE_CONTROL =
-  "public, max-age=300, s-maxage=300, stale-while-revalidate=3600";
-const COMPARISON_CACHE_CONTROL =
-  "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400";
+const PUBLIC_CACHE_FRESH_SECONDS = 300;
+const COMPARISON_CACHE_FRESH_SECONDS = 300;
+
+function cacheControlFor(validUntil, now = new Date(), maxFreshSeconds = PUBLIC_CACHE_FRESH_SECONDS) {
+  const remaining = cacheLifetime(validUntil, now);
+  if (remaining <= 0) return "no-store";
+  const fresh = Math.min(remaining, maxFreshSeconds);
+  const staleWhileRevalidate = Math.max(0, remaining - fresh);
+  return `public, max-age=${fresh}, s-maxage=${fresh}, stale-while-revalidate=${staleWhileRevalidate}`;
+}
+
+function earliestDeadline(...values) {
+  const dates = values.map((value) => Date.parse(String(value ?? ""))).filter(Number.isFinite);
+  return dates.length ? new Date(Math.min(...dates)).toISOString() : null;
+}
 
 function requiredMissingFrom(snapshot) {
   if (!snapshot?.meta?.sources || typeof snapshot.meta.sources !== "object") {
@@ -141,6 +156,10 @@ async function readPreparedPublicArtifact(env, now = new Date()) {
 
   return {
     body: JSON.stringify(currentSnapshot),
+    validUntil: earliestDeadline(
+      record.metadata.validUntil,
+      snapshotValidityDeadline(currentSnapshot, now),
+    ),
     generatedAt:
       typeof record.metadata?.generatedAt === "string"
         ? record.metadata.generatedAt
@@ -192,6 +211,9 @@ async function currentPublicArtifact(env, options = {}) {
       const snapshot = publicSnapshot(current);
       return {
         body: JSON.stringify(snapshot),
+        validUntil: snapshotValidityDeadline(current, now) === null
+          ? null
+          : new Date(snapshotValidityDeadline(current, now)).toISOString(),
         generatedAt: snapshot.meta.generatedAt ?? "current",
         delivery: "cloudflare-kv-migration",
       };
@@ -205,6 +227,9 @@ async function currentPublicArtifact(env, options = {}) {
     const snapshot = publicSnapshot(seed);
     return {
       body: JSON.stringify(snapshot),
+      validUntil: snapshotValidityDeadline(seed, now) === null
+        ? null
+        : new Date(snapshotValidityDeadline(seed, now)).toISOString(),
       generatedAt: snapshot.meta.generatedAt ?? "current",
       delivery: "pages-fallback",
     };
@@ -249,13 +274,13 @@ async function snapshotResponse(request, env) {
   if (request.headers.get("If-None-Match") === etag) {
     return new Response(null, {
       status: 304,
-      headers: { ...publicHeaders(PUBLIC_CACHE_CONTROL), ...headers },
+      headers: { ...publicHeaders(cacheControlFor(result.validUntil)), ...headers },
     });
   }
   return new Response(request.method === "HEAD" ? null : result.body, {
     status: 200,
     headers: {
-      ...publicHeaders(PUBLIC_CACHE_CONTROL),
+      ...publicHeaders(cacheControlFor(result.validUntil)),
       "Content-Type": "application/json; charset=utf-8",
       ...headers,
     },
@@ -270,9 +295,16 @@ async function comparisonResponse(request, env) {
       { status: 503, head: request.method === "HEAD" }
     );
   }
+  const liveDeadlines = Object.values(publication.measures)
+    .filter((measure) => measure.comparableCountryCount > 0)
+    .map((measure) => measure.lifecycle?.validUntil)
+    .filter((validUntil) => typeof validUntil === "string");
+  const validUntil = liveDeadlines.length
+    ? earliestDeadline(...liveDeadlines)
+    : null;
   return json(publication, {
     head: request.method === "HEAD",
-    cacheControl: COMPARISON_CACHE_CONTROL,
+    cacheControl: cacheControlFor(validUntil, new Date(), COMPARISON_CACHE_FRESH_SECONDS),
   });
 }
 
@@ -373,6 +405,8 @@ export {
   fetchSeedSnapshot,
   isCompleteSnapshot,
   preparedMetadataIsCurrent,
+  cacheControlFor,
+  earliestDeadline,
   readPreparedPublicArtifact,
   withPublicationState,
 };

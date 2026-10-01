@@ -34,7 +34,7 @@ Tasks 4–19 in the approved implementation plan. Continue in order; update this
 
 ## Current next step
 
-Task 4: fix international measures so a failed per-measure source refresh preserves last-known-good observations and source-specific currentness, while explicit missingness remains visible.
+Task 6: source-parser and editorial correctness pass. Task 5 is complete; Task 2's account/quota and source feasibility checks remain externally blocked/open and do not block independent implementation.
 
 ## Task 4 update
 
@@ -49,3 +49,16 @@ Task 4: fix international measures so a failed per-measure source refresh preser
 Task 5: make expiry consistent across publication, response caching, browser refresh and server-rendered NHS evidence.
 
 Task 4 final verification after daily retry scheduling: `npm test` passed 601 tests / 115 files; `npm run lint`, `npm run build`, budget audit and `git diff --check` passed.
+
+## Task 5 update
+
+- Shared publication currentness now allows still-valid explicit evidence to survive stale retrieval health, expires the three economic indicators independently, and records each indicator's source-owned deadline. Identical international source editions keep their original `validUntil` on later successful checks.
+- Public JSON cache headers cap browser/CDN freshness plus stale-while-revalidate at the evidence deadline; at expiry the route returns `no-store`. Open browser views schedule exact deadline reevaluation and redact only expired indicator values while retaining other current indicators and history.
+- NHS evidence renders in request-time server HTML and hydrates against the same publication clock; the browser rechecks actual time after hydration. Trusted NHS ingestion verifies the exact accepted KV record with bounded retries for eventual consistency.
+- Updated snapshot fixtures to carry valid per-measure metadata, including bootstrap/degraded publication cases.
+- Verification: `npm test` passed 616 tests / 115 files; focused currentness, cache, NHS, comparison and ingest suites passed; `npm run lint`, hosting/architecture/source ownership guards, Free budget audit and `git diff --check` passed. `npm run build:prepare && npm run build` passed. A direct repository-wide `npx tsc --noEmit` remains unsuitable because it includes existing unrelated test/e2e typing errors; the production Next build type check passed.
+- Cloudflare Free quotas/account settings remain unverified due the previously recorded network restriction; the workload derivation currently reports 29 scheduled deliveries/day and 87 project operations/day, with maximum configured retry deliveries 87. This is not billing or headroom evidence.
+
+## Current next step
+
+Task 6: source-parser and editorial correctness pass, beginning with signed/zero/Unicode-minus wage revisions and source-verified text.

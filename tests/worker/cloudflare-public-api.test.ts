@@ -3,6 +3,7 @@
 import { describe, expect, it, vi } from "vitest";
 import publicWorker, {
   currentPublicSnapshot,
+  cacheControlFor,
   isCompleteSnapshot,
   preparedMetadataIsCurrent,
 } from "@/worker/public-data-entry";
@@ -48,6 +49,25 @@ function snapshot(now = new Date()) {
     ])
   );
 
+  const sections = Object.fromEntries(
+    REQUIRED_PUBLISHED_SECTION_IDS.map((section) => [
+      section,
+      section === "sentimentPulse"
+        ? {
+            value: section,
+            order: ["inflation", "bankRate", "unemployment"],
+            series: Object.fromEntries(["inflation", "bankRate", "unemployment"].map((id) => [
+              id,
+              { id, status: "current", value: 1, history: [] },
+            ])),
+            __measureValidity: Object.fromEntries(["inflation", "bankRate", "unemployment"].map((id) => [
+              id,
+              { validUntil: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString() },
+            ])),
+          }
+        : { value: section },
+    ])
+  );
   return {
     meta: {
       registryVersion: FEED_REGISTRY_VERSION,
@@ -59,12 +79,7 @@ function snapshot(now = new Date()) {
       freeTierBudget: { queueOperationsPerDayHealthyTarget: 87 },
       sources,
     },
-    ...Object.fromEntries(
-      REQUIRED_PUBLISHED_SECTION_IDS.map((section) => [
-        section,
-        { value: section },
-      ])
-    ),
+    ...sections,
   };
 }
 
@@ -84,6 +99,14 @@ function environment(current: unknown = snapshot(), now = new Date()) {
 }
 
 describe("Cloudflare public data route", () => {
+  it("caps both browser and shared-cache freshness at the evidence expiry", () => {
+    const now = new Date("2026-08-01T11:50:00.000Z");
+    expect(cacheControlFor("2026-08-01T12:00:00.000Z", now)).toBe(
+      "public, max-age=300, s-maxage=300, stale-while-revalidate=300"
+    );
+    expect(cacheControlFor("2026-08-01T11:50:00.000Z", now)).toBe("no-store");
+  });
+
   it("serves a precomputed sanitised snapshot from KV", async () => {
     const env = environment();
     const response = await publicWorker.fetch(

@@ -374,6 +374,12 @@ function due(publication, now = new Date()) {
     return Number.isFinite(retryAt) && retryAt <= now.getTime();
   });
   if (retryDue) return true;
+  const expiredValues = Object.values(publication?.measures ?? {}).some((measure) => {
+    if (!(measure?.comparableCountryCount > 0)) return false;
+    const validUntil = Date.parse(String(measure?.lifecycle?.validUntil ?? ""));
+    return !Number.isFinite(validUntil) || validUntil <= now.getTime();
+  });
+  if (expiredValues) return true;
   const checkedAt = Date.parse(String(publication?.meta?.checkedAt ?? ""));
   return !Number.isFinite(checkedAt) || now.getTime() - checkedAt >= COMPARISON_REFRESH_MAX_AGE_MS;
 }
@@ -386,19 +392,74 @@ function sourcesDue(publication, now = new Date()) {
   const dueSources = new Set();
   for (const [id, measure] of Object.entries(publication?.measures ?? {})) {
     const retryAt = Date.parse(String(measure?.lifecycle?.retryAfter ?? ""));
-    if (Number.isFinite(retryAt) && retryAt <= now.getTime()) {
+    const validUntil = Date.parse(String(measure?.lifecycle?.validUntil ?? ""));
+    const hasExpiredValues = measure?.comparableCountryCount > 0 &&
+      (!Number.isFinite(validUntil) || validUntil <= now.getTime());
+    if (hasExpiredValues || (Number.isFinite(retryAt) && retryAt <= now.getTime())) {
       for (const source of MEASURE_SOURCE_DEPENDENCIES[id] ?? []) dueSources.add(source);
     }
   }
   return [...dueSources];
 }
 
-async function readInternationalComparison(env) {
+async function readInternationalComparison(env, now = new Date()) {
   if (!env?.METRICS_CACHE?.get) return null;
   const candidate = await env.METRICS_CACHE.get(INTERNATIONAL_COMPARISON_KEY, "json");
   if (!candidate) return null;
   try {
-    return validateInternationalComparisonPublication(candidate);
+    const publication = validateInternationalComparisonPublication(candidate);
+    const measures = { ...publication.measures };
+    let redacted = false;
+    for (const [id, measure] of Object.entries(measures)) {
+      const validUntil = Date.parse(String(measure.lifecycle?.validUntil ?? ""));
+      const current = Number.isFinite(validUntil) && validUntil > now.getTime() &&
+        measure.lifecycle?.status !== "unavailable";
+      if (current || measure.comparableCountryCount === 0) continue;
+      redacted = true;
+      const observations = measure.countries.map((observation) => ({
+        ...observation,
+        value: null,
+        rank: null,
+        source: observation.source ?? null,
+        exclusionReason: "source-validity-expired",
+      }));
+      measures[id] = {
+        ...buildComparisonMeasure({
+          id,
+          definition: measure.definition,
+          observationYear: measure.observationYear,
+          observations,
+        }),
+        lifecycle: {
+          ...(measure.lifecycle ?? {}),
+          sourceEditionId: measure.lifecycle?.sourceEditionId ?? null,
+          validUntil: null,
+          lastSuccessAt: measure.lifecycle?.lastSuccessAt ?? null,
+          retryAfter: measure.lifecycle?.retryAfter &&
+            Number.isFinite(Date.parse(measure.lifecycle.retryAfter)) &&
+            Date.parse(measure.lifecycle.retryAfter) > now.getTime()
+            ? measure.lifecycle.retryAfter
+            : now.toISOString(),
+          status: "unavailable",
+        },
+      };
+    }
+    const meta = {
+      ...publication.meta,
+      ...(redacted || publication.meta.sourceStatus
+        ? {
+            sourceStatus: Object.fromEntries(Object.entries(measures).map(([id, measure]) => [
+              id,
+              measure.comparableCountryCount > 0 ? "available" : "unavailable",
+            ])),
+          }
+        : {}),
+    };
+    return validateInternationalComparisonPublication({
+      ...publication,
+      measures,
+      meta,
+    });
   } catch {
     return null;
   }
@@ -407,7 +468,7 @@ async function readInternationalComparison(env) {
 async function refreshInternationalComparison(env, options = {}) {
   if (!env?.METRICS_CACHE?.put) throw new Error("METRICS_CACHE KV binding is required");
   const now = options.now ?? new Date();
-  const current = await readInternationalComparison(env);
+  const current = await readInternationalComparison(env, now);
   if (!options.force && current && !due(current, now)) {
     return { updated: false, reason: "not-due", publication: current };
   }
@@ -427,7 +488,23 @@ async function refreshInternationalComparison(env, options = {}) {
     }
     const failed = dependencies.some((source) => (candidatePublication.meta.sourceFailures ?? []).includes(source));
     const allDependenciesAttempted = dependencies.every((source) => attempted.includes(source));
-    if (!failed && allDependenciesAttempted) continue;
+    if (!failed && allDependenciesAttempted) {
+      const previousEdition = previous?.lifecycle?.sourceEditionId;
+      const candidateEdition = candidatePublication.measures[id].lifecycle?.sourceEditionId;
+      if (previous && previousEdition && previousEdition === candidateEdition) {
+        mergedMeasures[id] = {
+          ...candidatePublication.measures[id],
+          lifecycle: {
+            ...candidatePublication.measures[id].lifecycle,
+            validUntil: previous.lifecycle.validUntil,
+            lastSuccessAt: previous.lifecycle.lastSuccessAt,
+            retryAfter: null,
+            status: previous.lifecycle.status,
+          },
+        };
+      }
+      continue;
+    }
     const validUntil = Date.parse(String(previous?.lifecycle?.validUntil ?? ""));
     const lifecycle = candidatePublication.measures[id].lifecycle;
     if (previous && Number.isFinite(validUntil) && validUntil > now.getTime()) {
@@ -443,7 +520,7 @@ async function refreshInternationalComparison(env, options = {}) {
         ...candidatePublication.measures[id],
         lifecycle: {
           ...(lifecycle ?? {}),
-          sourceEditionId: null,
+          sourceEditionId: previous?.lifecycle?.sourceEditionId ?? null,
           validUntil: null,
           lastSuccessAt: previous?.lifecycle?.lastSuccessAt ?? null,
           retryAfter: lifecycle?.retryAfter ?? now.toISOString(),

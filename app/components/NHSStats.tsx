@@ -1,6 +1,5 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart";
 import MetricsStatus from "@/app/components/MetricsStatus";
@@ -96,40 +95,6 @@ type MissingTrust = {
   code: string;
 };
 
-const CLOCK_INTERVAL_MS = 60_000;
-const clockListeners = new Set<() => void>();
-let clientNowMs = Date.now();
-let clockTimer: ReturnType<typeof setInterval> | null = null;
-
-function publishClockTick() {
-  clientNowMs = Date.now();
-  for (const listener of clockListeners) listener();
-}
-
-function subscribeToClock(listener: () => void) {
-  clockListeners.add(listener);
-  if (clockTimer === null) {
-    clientNowMs = Date.now();
-    clockTimer = setInterval(publishClockTick, CLOCK_INTERVAL_MS);
-  }
-
-  return () => {
-    clockListeners.delete(listener);
-    if (clockListeners.size === 0 && clockTimer !== null) {
-      clearInterval(clockTimer);
-      clockTimer = null;
-    }
-  };
-}
-
-function getClientClockSnapshot() {
-  return clientNowMs;
-}
-
-function getServerClockSnapshot() {
-  return 0;
-}
-
 function parseDateOnlyUtc(value: unknown) {
   const match =
     typeof value === "string" ? value.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
@@ -188,12 +153,11 @@ function validMissingTrust(value: unknown): value is MissingTrust {
   return nonEmptyText(trust.name) && nonEmptyText(trust.code);
 }
 
-function validPayload(value: typeof FALLBACK, nowMs: number) {
+function validPayload(value: typeof FALLBACK) {
   const headline = value?.headline;
   return (
     value?.available === true &&
     Number.isFinite(Date.parse(value.expiresAt)) &&
-    Date.parse(value.expiresAt) >= nowMs &&
     nonEmptyText(headline?.period) &&
     positiveInteger(headline?.observedAt) &&
     !Number.isNaN(parseDateOnlyUtc(headline?.publicationDate).getTime()) &&
@@ -263,12 +227,7 @@ function formatMissingTrusts(trusts: MissingTrust[]) {
 export default function NHSStats() {
   const metrics = useMetrics("nhsStats", FALLBACK);
   const data = metrics.data;
-  const nowMs = useSyncExternalStore(
-    subscribeToClock,
-    getClientClockSnapshot,
-    getServerClockSnapshot
-  );
-  const valid = nowMs > 0 && validPayload(data, nowMs);
+  const valid = metrics.isLive && validPayload(data);
   const specialties = valid ? (data.specialties as Specialty[]) : [];
   const missingTrusts = valid ? (data.missingTrusts as MissingTrust[]) : [];
   const missingTrustLabel =

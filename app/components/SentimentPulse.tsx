@@ -24,14 +24,14 @@ type Metric = "inflation" | "bankRate" | "unemployment";
 type HistoryPoint = {
   period: string;
   observedAt: string;
-  value: number;
+  value: number | null;
 };
 
 type EconomicSeries = {
   id: Metric;
   label: string;
   shortLabel: string;
-  value: number;
+  value: number | null;
   unit: string;
   color: string;
   period: string;
@@ -45,7 +45,7 @@ type EconomicSeries = {
   frequency: string;
   revisionStatus: string;
   evidenceClass: string;
-  status: "current";
+  status: "current" | "expired";
   nextRelease: string | null;
   annualDelta: number | null;
   annualDeltaUnit: "percentage points";
@@ -73,8 +73,8 @@ function validSeries(value: unknown, id: Metric): value is EconomicSeries {
     series.label.trim().length > 0 &&
     typeof series.shortLabel === "string" &&
     series.shortLabel.trim().length > 0 &&
-    typeof series.value === "number" &&
-    Number.isFinite(series.value) &&
+    ((series.status === "current" && typeof series.value === "number" && Number.isFinite(series.value)) ||
+      (series.status === "expired" && series.value === null)) &&
     typeof series.unit === "string" &&
     typeof series.color === "string" &&
     typeof series.period === "string" &&
@@ -89,7 +89,7 @@ function validSeries(value: unknown, id: Metric): value is EconomicSeries {
     typeof series.revisionStatus === "string" &&
     series.revisionStatus.trim().length > 0 &&
     series.evidenceClass === "official-data" &&
-    series.status === "current" &&
+    (series.status === "current" || series.status === "expired") &&
     (series.annualDelta === null ||
       (typeof series.annualDelta === "number" && Number.isFinite(series.annualDelta))) &&
     series.annualDeltaUnit === "percentage points" &&
@@ -112,12 +112,14 @@ function validPayload(value: EconomicPayload) {
     Array.isArray(value.order) &&
     JSON.stringify(value.order) === JSON.stringify(EXPECTED_ORDER) &&
     EXPECTED_ORDER.every((id) => validSeries(value.series?.[id], id)) &&
+    EXPECTED_ORDER.some((id) => value.series?.[id]?.status === "current") &&
     !("economicData" in value) &&
     !("metricConfig" in value)
   );
 }
 
-function formatValue(value: number, unit: string) {
+function formatValue(value: number | null, unit: string) {
+  if (value === null) return "Unavailable";
   return `${new Intl.NumberFormat("en-GB", {
     minimumFractionDigits: 1,
     maximumFractionDigits: 2,
@@ -157,7 +159,7 @@ export default function SentimentPulse() {
   const metrics = useMetrics("sentimentPulse", FALLBACK);
   const data = metrics.data as EconomicPayload;
   const valid =
-    metrics.isLive && metrics.cacheState === "fresh" && validPayload(data);
+    metrics.isLive && metrics.cacheState !== "expired" && validPayload(data);
   const [metric, setMetric] = useState<Metric>("inflation");
   const selected = valid ? data.series[metric] ?? null : null;
 
@@ -254,6 +256,11 @@ export default function SentimentPulse() {
                     <span className={`mt-1 block text-xs font-semibold ${active ? "text-white" : "text-foreground"}`}>
                       {entry.publisher}
                     </span>
+                    {entry.status === "expired" ? (
+                      <span className={`mt-2 block text-xs font-semibold ${active ? "text-gray-200" : "text-gray-700"}`}>
+                        Latest value expired; history remains available.
+                      </span>
+                    ) : null}
                     <span className={`mt-3 block border-t pt-2 text-xs tabular-nums ${active ? "border-white/25 text-gray-200" : "border-black/15 text-gray-600"}`}>
                       Annual change:{" "}
                       {entry.annualDelta === null

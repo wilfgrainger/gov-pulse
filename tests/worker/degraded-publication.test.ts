@@ -17,6 +17,22 @@ function degradedSnapshot(now = new Date("2026-08-07T12:00:00.000Z")) {
   const fetchedAt = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
   const missing = "employmentStats";
   const included = REQUIRED_PUBLISHED_SECTION_IDS.filter((section) => section !== missing);
+  const sections = Object.fromEntries(included.map((section) => [
+    section,
+    section === "sentimentPulse"
+      ? {
+          value: section,
+          series: Object.fromEntries(["inflation", "bankRate", "unemployment"].map((id) => [
+            id,
+            { id, status: "current", value: 1 },
+          ])),
+          __measureValidity: Object.fromEntries(["inflation", "bankRate", "unemployment"].map((id) => [
+            id,
+            { validUntil: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString() },
+          ])),
+        }
+      : { value: section },
+  ]));
   return {
     meta: {
       registryVersion: FEED_REGISTRY_VERSION,
@@ -31,7 +47,7 @@ function degradedSnapshot(now = new Date("2026-08-07T12:00:00.000Z")) {
         ])
       ),
     },
-    ...Object.fromEntries(included.map((section) => [section, { value: section }])),
+    ...sections,
   };
 }
 

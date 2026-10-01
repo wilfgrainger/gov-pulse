@@ -15,7 +15,7 @@ import {
   buildComparisonMeasure,
 } from "@/worker/international-comparison";
 
-function fixture(now = "2026-08-18T22:00:00.000Z", withLifecycle = true) {
+function fixture(now = new Date().toISOString(), withLifecycle = true) {
   const source = {
     publisher: "Fixture",
     url: "https://example.test/source",
@@ -111,6 +111,29 @@ describe("international comparison publication route", () => {
     expect(response.status).toBe(503);
   });
 
+  it("redacts expired and legacy comparison values on read while preserving the denominator", async () => {
+    const now = new Date("2026-08-20T22:00:00.000Z");
+    const expired = fixture("2026-08-19T22:00:00.000Z");
+    expired.measures.healthcareSpending.lifecycle.validUntil = "2026-08-20T21:59:59.000Z";
+    const { env } = envWith(expired);
+
+    const publication = await readInternationalComparison(env, now);
+    const measure = publication?.measures.healthcareSpending;
+    expect(measure?.comparableCountryCount).toBe(0);
+    expect(measure?.countries).toHaveLength(13);
+    expect(measure?.countries.every((observation) => observation.value === null && observation.rank === null)).toBe(true);
+    expect(measure?.countries[0].exclusionReason).toBe("source-validity-expired");
+    expect(measure?.lifecycle.status).toBe("unavailable");
+    expect(publication?.meta.sourceStatus.healthcareSpending).toBe("unavailable");
+  });
+
+  it("retries expired source editions even when the global check window is fresh", () => {
+    const publication = fixture("2026-08-20T21:00:00.000Z");
+    publication.meta.checkedAt = "2026-08-20T21:00:00.000Z";
+    publication.measures.healthcareSpending.lifecycle.validUntil = "2026-08-20T21:30:00.000Z";
+    expect(due(publication, new Date("2026-08-20T21:30:00.000Z"))).toBe(true);
+  });
+
   it("does not refetch annual sources while the last comparison check is inside the due window", async () => {
     const publication = fixture("2026-08-18T20:00:00.000Z");
     const { env } = envWith(publication);
@@ -124,7 +147,29 @@ describe("international comparison publication route", () => {
     expect(result.updated).toBe(false);
     expect(result.reason).toBe("not-due");
     expect(collect).not.toHaveBeenCalled();
-    expect(await readInternationalComparison(env)).toEqual(publication);
+    expect(await readInternationalComparison(env, new Date("2026-08-18T22:00:00.000Z"))).toEqual(publication);
+  });
+
+  it("does not renew source validity when a successful check returns the same source edition", async () => {
+    const previous = fixture("2026-08-19T22:00:00.000Z");
+    const candidate = fixture("2026-08-20T22:00:00.000Z");
+    const { env } = envWith(previous);
+
+    const result = await refreshInternationalComparison(env, {
+      now: new Date("2026-08-20T22:00:00.000Z"),
+      force: true,
+      collect: async () => candidate,
+    });
+
+    for (const { id } of COMPARISON_MEASURES) {
+      expect(result.publication.measures[id].lifecycle.validUntil).toBe(
+        previous.measures[id].lifecycle.validUntil
+      );
+      expect(result.publication.measures[id].lifecycle.lastSuccessAt).toBe(
+        previous.measures[id].lifecycle.lastSuccessAt
+      );
+    }
+    expect(result.publication.meta.checkedAt).toBe("2026-08-20T22:00:00.000Z");
   });
 
   it("retains the 13-country healthcare result for a transient source failure and schedules an independent retry", async () => {

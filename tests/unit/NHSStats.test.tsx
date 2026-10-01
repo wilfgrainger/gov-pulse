@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 let NHSStats: typeof import("@/app/components/NHSStats").default;
@@ -112,10 +113,10 @@ const current = {
   },
 };
 
-function result(data: unknown) {
+function result(data: unknown, isLive = true) {
   return {
     data,
-    isLive: true,
+    isLive,
     lastUpdated: new Date("2026-07-09T12:00:00Z"),
     source: "worker",
     cacheState: "fresh",
@@ -138,6 +139,15 @@ afterEach(() => {
 });
 
 describe("NHSStats evidence integrity", () => {
+  it("renders the current request-time NHS publication in server HTML", () => {
+    useMetrics.mockReturnValue(result(current));
+
+    const html = renderToString(<NHSStats />);
+
+    expect(html).toContain("Latest NHS England RTT publication");
+    expect(html).toContain("7.3 million<!-- --> treatment pathways");
+  });
+
   it("renders one coherent current NHS RTT publication", () => {
     useMetrics.mockReturnValue(result(current));
 
@@ -190,7 +200,7 @@ describe("NHSStats evidence integrity", () => {
 
   it("fails closed when the publication has expired", () => {
     useMetrics.mockReturnValue(
-      result({ ...current, expiresAt: "2026-07-10T00:00:00.000Z" })
+      result({ ...current, expiresAt: "2026-07-10T00:00:00.000Z" }, false)
     );
 
     render(<NHSStats />);

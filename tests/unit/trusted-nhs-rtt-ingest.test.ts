@@ -1,11 +1,13 @@
 // @vitest-environment node
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { normalizeNhsRttPayload } from "@/worker/nhs-rtt";
 import {
   KV_KEY,
   PUBLICATION_SECTION_PREFIX,
   buildKvRecord,
+  verifyKvWrite,
+  run,
 } from "@/scripts/trusted-nhs-rtt-ingest.mjs";
 
 const latestHistory = {
@@ -160,5 +162,60 @@ describe("trusted-nhs-rtt-ingest KV record shape", () => {
     const staleNow = new Date("2026-09-01T00:00:00.000Z");
 
     expect(() => buildKvRecord(data, staleNow)).toThrow(/currentness window/i);
+  });
+});
+
+describe("trusted NHS KV write verification", () => {
+  it("writes the accepted record unchanged and verifies the exact read-back", async () => {
+    const data = normalizeNhsRttPayload(rawPayload(), now);
+    const expected = buildKvRecord(data, now);
+    let stored: unknown;
+    const fetchImpl = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      if (init?.method === "PUT") {
+        stored = JSON.parse(String(init.body));
+        return new Response(null, { status: 200 });
+      }
+      return new Response(JSON.stringify(stored), { status: 200 });
+    });
+
+    const result = await run({
+      accountId: "account",
+      apiToken: "token",
+      namespaceId: "namespace",
+      now,
+      collectImpl: async () => data,
+      fetchImpl,
+      readBackOptions: { delays: [0], sleep: async () => undefined },
+    });
+
+    expect(result).toEqual({ record: expected, written: true });
+    expect(stored).toEqual(expected);
+  });
+
+  it("retries eventual-consistency reads until the complete record matches", async () => {
+    const record = { fetchedAt: "2026-08-20T22:00:00.000Z", data: { headline: { period: "May 2026" } } };
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ fetchedAt: record.fetchedAt, data: {} })))
+      .mockResolvedValueOnce(new Response(JSON.stringify(record)));
+    const sleep = vi.fn(async () => undefined);
+
+    await expect(verifyKvWrite(fetchImpl, "account", "token", "namespace", "key", record, {
+      attempts: 3,
+      delays: [0, 1, 1],
+      sleep,
+    })).resolves.toBe(true);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails after the bounded read-back retry window when any record field differs", async () => {
+    const record = { fetchedAt: "2026-08-20T22:00:00.000Z", data: { value: 1 } };
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ...record, data: { value: 2 } })));
+    await expect(verifyKvWrite(fetchImpl, "account", "token", "namespace", "key", record, {
+      attempts: 2,
+      delays: [0, 0],
+      sleep: async () => undefined,
+    })).rejects.toThrow(/did not exactly match/);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 });

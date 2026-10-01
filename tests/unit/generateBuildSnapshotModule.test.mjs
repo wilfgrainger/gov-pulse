@@ -93,7 +93,19 @@ describe("build snapshot module generator", () => {
     const sections = Object.fromEntries(
       REQUIRED_PUBLISHED_SECTION_IDS.map((section) => [
         section,
-        { value: section },
+        section === "sentimentPulse"
+          ? {
+              value: section,
+              series: Object.fromEntries(["inflation", "bankRate", "unemployment"].map((id) => [
+                id,
+                { id, status: "current", value: 1 },
+              ])),
+              __measureValidity: Object.fromEntries(["inflation", "bankRate", "unemployment"].map((id) => [
+                id,
+                { validUntil: new Date(Date.parse(now) + 30 * 24 * 60 * 60 * 1000).toISOString() },
+              ])),
+            }
+          : { value: section },
       ])
     );
     sections.electionPolling = { value: "=HYPERLINK(\"bad\")" };

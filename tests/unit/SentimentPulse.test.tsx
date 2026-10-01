@@ -198,15 +198,33 @@ describe("SentimentPulse series-level evidence", () => {
     expect(screen.getByText("7 August 2025 to 18 December 2025")).toBeInTheDocument();
   });
 
-  it("fails closed for a stale Worker record", () => {
+  it("keeps source values current when retrieval health is stale", () => {
     useMetrics.mockReturnValue(result({ cacheState: "stale" }));
 
     render(<SentimentPulse />);
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Current economic indicators unavailable"
-    );
-    expect(screen.queryByText(/Inflation is 3.4%/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Inflation is 3.4%/i })).toBeInTheDocument();
+    expect(screen.getByText(/Panel evidence status/)).toBeInTheDocument();
+  });
+
+  it("marks one expired latest value unavailable while retaining the other indicators and history", () => {
+    useMetrics.mockReturnValue(result({
+      data: {
+        ...data,
+        series: {
+          ...data.series,
+          inflation: { ...data.series.inflation, value: null, annualDelta: null, status: "expired" },
+        },
+      },
+    }));
+
+    render(<SentimentPulse />);
+
+    expect(screen.getByRole("heading", { name: /Inflation is Unavailable/i })).toBeInTheDocument();
+    expect(screen.getByText("Latest value expired; history remains available.")).toBeInTheDocument();
+    expect(screen.getByText("3.75%")).toBeInTheDocument();
+    expect(screen.getByText("4.9%")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "CPI inflation: published history" })).toBeInTheDocument();
   });
 
   it("fails closed for the legacy mixed timeline", () => {

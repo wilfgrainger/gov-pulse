@@ -172,11 +172,12 @@ unbounded decoded result and reject it afterwards.
 
 **Interfaces:** Reuse explicit-expiry and partial-finalisation APIs. Add `cacheLifetime(validUntil: string, now: Date): number` clamped to nonnegative seconds; no stale allowance across deadline.
 
-- [ ] Fixed-clock test: valid evidence survives failed retrieval; expires exactly at `validUntil`; indicator measures expire independently; unchanged fetch does not renew validity.
-- [ ] Assert cache reuse ends before expiry, including an intermediary/foreground-open page. Assert browser current values are removed at expiry even if refresh fails.
-- [ ] Assert a current NHS fixture is visible in server HTML and matches hydration/no-JS. Assert trusted ingest finalisation publishes the exact accepted fragment, with bounded KV readback retry.
-- [ ] Run affected suites red; implement shared clock/currentness decisions and accepted-to-public lifecycle; rerun green.
-- [ ] Review API/privacy boundaries and commit.
+- [x] Fixed-clock test: valid evidence survives failed retrieval; expires exactly at `validUntil`; indicator measures expire independently; unchanged comparison editions do not renew validity.
+- [x] Assert cache reuse ends before expiry, including browser/shared cache and foreground-open pages. Browser current values are removed at expiry even if refresh fails.
+- [x] Assert current NHS evidence is visible in server HTML with the same deterministic request-time render; trusted ingest writes the exact accepted fragment and retries bounded exact KV read-back.
+- [x] Run affected suites red; implement shared clock/currentness decisions and accepted-to-public lifecycle; rerun green.
+- [x] Review API/privacy boundaries and full verification.
+- [x] Commit currentness/cache/SSR parity tranche after full suite and production build.
 
 ## Task 6: Source-parser and editorial correctness pass
 

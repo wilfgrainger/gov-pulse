@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const fallback = {
@@ -17,12 +17,17 @@ const completeLivePayload = {
     bankRate: { label: "BANK OF ENGLAND RATE", unit: "%", color: "#000000", current: "4.0%", target: "Monetary policy" },
     unemployment: { label: "UNEMPLOYMENT RATE", unit: "%", color: "#666666", current: "5.0%", target: "ONS LFS" },
   },
+  series: {
+    inflation: { status: "current", value: 3.1 },
+    bankRate: { status: "current", value: 4 },
+    unemployment: { status: "current", value: 5 },
+  },
 };
 
 const minutesAgo = (minutes: number) =>
   new Date(Date.now() - minutes * 60_000).toISOString();
 
-function snapshotWith(data = completeLivePayload, fetchedAt = minutesAgo(5)) {
+function snapshotWith(data = completeLivePayload, fetchedAt = minutesAgo(5), deadline: string | Record<string, string> = new Date(Date.now() + 60_000).toISOString()) {
   return {
     meta: {
       registryVersion: "2026-08-02.1",
@@ -39,6 +44,12 @@ function snapshotWith(data = completeLivePayload, fetchedAt = minutesAgo(5)) {
         observedAt: minutesAgo(60),
         maxAgeDays: 40,
       },
+      __measureValidity: Object.fromEntries(
+        ["inflation", "bankRate", "unemployment"].map((id) => [
+          id,
+          { validUntil: typeof deadline === "string" ? deadline : deadline[id] },
+        ])
+      ),
     },
   };
 }
@@ -57,6 +68,7 @@ async function loadUseMetrics(
 
 describe("useMetrics", () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
     vi.clearAllMocks();
@@ -97,6 +109,21 @@ describe("useMetrics", () => {
     expect(result?.cacheState).toBe("fresh");
     expect(result?.observationStatus).toBe("current");
     expect(result?.data.economicData[0].date).toBe("Worker");
+  });
+
+  it("keeps the request-time render deterministic for hydration, then rejects expired evidence on the browser clock", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-14T12:02:00.000Z"));
+    const publication = snapshotWith(
+      completeLivePayload,
+      "2026-07-14T12:00:00.000Z",
+      "2026-07-14T12:01:00.000Z",
+    );
+    publication.meta.generatedAt = "2026-07-14T12:00:00.000Z";
+    const { currentMetricsResultFromSnapshot, metricsResultFromSnapshot } = await loadUseMetrics();
+
+    expect(metricsResultFromSnapshot(publication, "sentimentPulse", fallback, 40 * 24 * 60 * 60 * 1000)?.isLive).toBe(true);
+    expect(currentMetricsResultFromSnapshot(publication, "sentimentPulse", fallback, 40 * 24 * 60 * 60 * 1000)).toBeNull();
   });
 
   it("renders the request-time snapshot immediately and retains it when browser refresh fails", async () => {
@@ -144,5 +171,44 @@ describe("useMetrics", () => {
     await waitFor(() => expect(result.current.source).toBe("fallback"));
     expect(result.current.isLive).toBe(false);
     expect(result.current.data).toEqual(fallback);
+  });
+
+  it("clears a browser result at its exact publication expiry", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-14T12:00:00.000Z"));
+    const expiresAt = new Date(Date.now() + 2_000).toISOString();
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("snapshot unavailable")));
+    const { useMetrics } = await loadUseMetrics("production", snapshotWith(completeLivePayload, minutesAgo(5), expiresAt));
+    const { result } = renderHook(() => useMetrics("sentimentPulse", fallback));
+
+    expect(result.current.isLive).toBe(true);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+
+    expect(result.current.isLive).toBe(false);
+    expect(result.current.source).toBe("fallback");
+  });
+
+  it("redacts an expired indicator at its deadline while keeping other current indicators", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-14T12:00:00.000Z"));
+    const near = new Date(Date.now() + 2_000).toISOString();
+    const later = new Date(Date.now() + 20_000).toISOString();
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("snapshot unavailable")));
+    const { useMetrics } = await loadUseMetrics("production", snapshotWith(completeLivePayload, minutesAgo(5), {
+      inflation: later,
+      bankRate: near,
+      unemployment: later,
+    }));
+    const { result } = renderHook(() => useMetrics("sentimentPulse", fallback));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+
+    expect(result.current.isLive).toBe(true);
+    expect(result.current.data.series.bankRate).toMatchObject({ value: null, status: "expired" });
+    expect(result.current.data.series.inflation.value).toBe(3.1);
   });
 });

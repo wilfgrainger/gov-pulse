@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { filterCurrentSnapshot } from "@/worker/publication-currentness";
+import {
+  filterCurrentSnapshot,
+  sectionValidityDeadline,
+} from "@/worker/publication-currentness";
 import { DATA_SOURCES, REFRESH_INTERVAL_MS } from "./config";
 import { useInitialMetricsSnapshot } from "./MetricsSnapshotProvider";
 import {
@@ -22,6 +25,7 @@ export interface MetricsResult<T> {
   observationPeriod: string | null;
   observationStatus: MetricsObservationStatus;
   observedAt: Date | null;
+  validUntil: number | null;
 }
 
 interface RawObservation {
@@ -120,6 +124,7 @@ function fallbackResult<T>(fallback: T): MetricsResult<T> {
     observationPeriod: null,
     observationStatus: null,
     observedAt: null,
+    validUntil: null,
   };
 }
 
@@ -130,6 +135,7 @@ function sourcedResult<T>({
   cacheState,
   freshnessWindowMs,
   now,
+  validUntil,
 }: {
   data: T;
   source: "snapshot" | "worker";
@@ -137,6 +143,7 @@ function sourcedResult<T>({
   cacheState: MetricsCacheState;
   freshnessWindowMs: number | undefined;
   now: number;
+  validUntil: number | null;
 }): MetricsResult<T> {
   const normalizedCacheState = normalizeCacheState(
     timestamp,
@@ -156,6 +163,7 @@ function sourcedResult<T>({
     observationPeriod: observation.observationPeriod,
     observationStatus: observation.observationStatus,
     observedAt: observation.observedAt ? new Date(observation.observedAt) : null,
+    validUntil,
   };
 }
 
@@ -192,6 +200,12 @@ export function metricsResultFromSnapshot<T>(
       ? typedSnapshot.meta.generatedAt
       : ""
   );
+  // The request-time worker has already filtered the snapshot against its
+  // clock. Reuse that edition clock for the first render on both server and
+  // client, then let the exact-deadline timer and live reader use browser now.
+  const resolvedNow = now ?? (Number.isFinite(generatedAt) ? generatedAt : Date.now());
+  const validUntil = sectionValidityDeadline(section, raw, sourceStatus, new Date(resolvedNow));
+  if (validUntil === null || validUntil <= resolvedNow) return null;
 
   return sourcedResult({
     data: raw,
@@ -199,7 +213,8 @@ export function metricsResultFromSnapshot<T>(
     timestamp,
     cacheState: (sourceStatus.cacheState as MetricsCacheState) ?? null,
     freshnessWindowMs,
-    now: now ?? (Number.isFinite(generatedAt) ? generatedAt : Date.now()),
+    now: resolvedNow,
+    validUntil,
   });
 }
 
@@ -224,6 +239,7 @@ export function currentMetricsResultFromSnapshot<T>(
 export function useMetrics<T>(section: string, fallback: T): MetricsResult<T> {
   const fallbackRef = useRef(fallback);
   const initialSnapshot = useInitialMetricsSnapshot();
+  const latestSnapshotRef = useRef<unknown>(initialSnapshot);
   const sourceMeta = DATA_SOURCES[section];
   const shouldFetchLive =
     sourceMeta?.automation === "automated" && process.env.NODE_ENV === "production";
@@ -245,6 +261,23 @@ export function useMetrics<T>(section: string, fallback: T): MetricsResult<T> {
   );
 
   useEffect(() => {
+    if (result.validUntil === null) return;
+    const remaining = result.validUntil - Date.now();
+    const delay = Math.min(Math.max(remaining, 1), 2_147_000_000);
+    const timer = setTimeout(() => {
+      const next = currentMetricsResultFromSnapshot(
+        latestSnapshotRef.current,
+        section,
+        fallbackRef.current,
+        sourceMeta?.freshnessWindowMs,
+        Date.now(),
+      );
+      setResult(next ?? fallbackResult(fallbackRef.current));
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [result.validUntil, section, sourceMeta?.freshnessWindowMs]);
+
+  useEffect(() => {
     if (!shouldFetchLive) return;
 
     let active = true;
@@ -258,42 +291,19 @@ export function useMetrics<T>(section: string, fallback: T): MetricsResult<T> {
       if (active) setResult(readerInitialResult ?? fallbackResult(fallbackRef.current));
     });
 
-    const applyData = (
-      raw: unknown,
-      source: "snapshot" | "worker",
-      timestamp: string | undefined,
-      cacheState: MetricsCacheState
-    ) => {
-      if (!acceptsCompleteLivePayload(fallbackRef.current, raw)) return false;
-
-      const nextResult = sourcedResult({
-        data: raw,
-        source,
-        timestamp,
-        cacheState,
-        freshnessWindowMs: sourceMeta?.freshnessWindowMs,
-        now: Date.now(),
-      });
-      if (active) setResult(nextResult);
-      return true;
-    };
-
     const fetchData = async () => {
       try {
         const loaded = await fetchMetricsSnapshot();
-        const sourceStatus = loaded.payload.meta.sources[section];
-        const data = loaded.payload[section];
-        if (
-          (sourceStatus?.status === "ok" || sourceStatus?.status === "stale") &&
-          data !== null &&
-          data !== undefined &&
-          applyData(
-            data,
-            loaded.delivery,
-            sourceStatus.fetchedAt ?? loaded.payload.meta.generatedAt,
-            (sourceStatus.cacheState as MetricsCacheState) ?? null
-          )
-        ) {
+        latestSnapshotRef.current = loaded.payload;
+        const currentResult = currentMetricsResultFromSnapshot(
+          loaded.payload,
+          section,
+          fallbackRef.current,
+          sourceMeta?.freshnessWindowMs,
+          Date.now(),
+        );
+        if (currentResult) {
+          setResult({ ...currentResult, source: loaded.delivery });
           return;
         }
       } catch {
@@ -301,7 +311,7 @@ export function useMetrics<T>(section: string, fallback: T): MetricsResult<T> {
       }
 
       if (active) {
-        setResult(currentMetricsResultFromSnapshot(initialSnapshot, section, fallbackRef.current, sourceMeta?.freshnessWindowMs) ?? fallbackResult(fallbackRef.current));
+        setResult(currentMetricsResultFromSnapshot(latestSnapshotRef.current, section, fallbackRef.current, sourceMeta?.freshnessWindowMs) ?? fallbackResult(fallbackRef.current));
       }
     };
 
