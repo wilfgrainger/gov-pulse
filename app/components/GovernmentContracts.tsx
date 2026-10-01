@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import MetricsStatus from "@/app/components/MetricsStatus";
 import { useMetrics } from "@/app/lib/useMetrics";
 import { isCurrentGovernmentContractsPayload } from "@/contracts/government-contracts";
@@ -335,6 +336,40 @@ export default function GovernmentContracts() {
           </table>
         </div>
       </section>
+
+      <CoreEvidenceExplanation
+        idPrefix="government-contracts"
+        why={
+          <p>
+            Large public contract awards show where government spending is being committed and to whom. Independent scrutiny of named buyers and suppliers helps readers judge concentration and procurement choices without implying waste, fraud or savings.
+          </p>
+        }
+        definition={
+          <p>
+            {data.evidencePolicy.rankingMeasure}. Only comparable GBP awards in the complete update window are eligible, drawn from Cabinet Office Find a Tender award releases.
+          </p>
+        }
+        unit="Disclosed award value (GBP)"
+        geography="United Kingdom (Find a Tender central government procurement)"
+        interpretation={
+          <p>
+            Values are disclosure figures from award notices, not a claim about cash already spent or value for money. Ranking order reflects disclosed amounts only.
+          </p>
+        }
+        caveat={
+          <p>
+            {data.caveats[0] ?? "See the method and coverage details below for full limitations."} The collector examined {data.dataQuality.releasesSeen.toLocaleString("en-GB")} releases and found {data.dataQuality.validComparableAwards.toLocaleString("en-GB")} comparable awards before selecting the largest 100.
+          </p>
+        }
+        sourceLabel="Find a Tender OCDS API"
+        sourceUrl={data.source.apiUrl}
+        sourceDate={`Refreshed ${formatDate(data.generatedAt)}`}
+        additionalSources={[
+          { label: "API documentation", url: data.source.documentationUrl },
+          { label: "Open Government Licence", url: data.source.licenceUrl },
+        ]}
+        explainLabel="Explain this ranking"
+      />
 
       <details className="border-y border-black/20 py-5">
         <summary className="cursor-pointer text-lg font-semibold">Method, coverage and caveats</summary>

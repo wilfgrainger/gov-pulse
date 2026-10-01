@@ -1,6 +1,7 @@
 "use client";
 
 import MetricsStatus from "@/app/components/MetricsStatus";
+import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart";
 import SeriesEvidence, {
   type SeriesEvidenceItem,
@@ -186,20 +187,31 @@ export default function EmploymentStats() {
 
           <SeriesEvidence items={evidence} title="Freshness and provenance for each labour-market series" />
 
-          <section aria-labelledby="employment-why-title" className="border-l-4 border-foreground pl-4">
-            <h3 id="employment-why-title" className="text-lg font-semibold">Why it matters</h3>
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-700">
-              Employment, unemployment and inactivity describe different parts of the labour market. Vacancies come from a separate employer survey, so their period is shown separately rather than blended into one headline.
-            </p>
-          </section>
-
-          <details className="border-y border-black/20 py-4">
-            <summary className="cursor-pointer text-lg font-semibold">Explain these numbers</summary>
-            <div className="mt-4 grid gap-5 text-sm leading-6 text-gray-700 md:grid-cols-2">
-              <div><strong className="text-foreground">Important caveat</strong><p>{data.methodology.caveat}</p></div>
-              <div><strong className="text-foreground">Official source</strong><p><a className="font-semibold underline underline-offset-4" href={data.source.bulletinUrl} target="_blank" rel="noopener noreferrer">ONS UK labour-market bulletin</a></p></div>
-            </div>
-          </details>
+          <CoreEvidenceExplanation
+            idPrefix="employment-stats"
+            why={
+              <p>
+                Employment, unemployment and inactivity describe different parts of the labour market. Vacancies come from a separate employer survey, so their period is shown separately rather than blended into one headline.
+              </p>
+            }
+            definition={
+              <p>
+                Employment, unemployment and inactivity rates come from the ONS Labour Force Survey. Vacancies come from the separate ONS Vacancy Survey of employers.
+              </p>
+            }
+            unit="Rate (%) for employment/unemployment/inactivity; count for vacancies"
+            geography="United Kingdom"
+            interpretation={
+              <p>
+                The three rates share the same rolling three-month Labour Force Survey period. The vacancies period is kept separate rather than forced onto the Labour Force Survey clock.
+              </p>
+            }
+            caveat={<p>{data.methodology.caveat}</p>}
+            sourceLabel="ONS UK labour-market bulletin"
+            sourceUrl={data.source.bulletinUrl}
+            sourceDate={`Published ${new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "UTC" }).format(parseDateOnlyUtc(data.headline.releaseDate))}`}
+            explainLabel="Explain these numbers"
+          />
         </>
       ) : (
         <section role="status" className="border border-black/20 bg-white p-6">

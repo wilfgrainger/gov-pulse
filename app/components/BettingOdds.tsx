@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import MetricsStatus from "@/app/components/MetricsStatus";
 import { useMetrics } from "@/app/lib/useMetrics";
 import { isCurrentBettingMarketPayload } from "@/contracts/betting-markets";
@@ -167,30 +168,35 @@ export default function BettingOdds() {
             </p>
           </section>
 
-          <section aria-labelledby="betting-why-title" className="border-l-4 border-foreground pl-4">
-            <h3 id="betting-why-title" className="text-lg font-semibold">Why it matters</h3>
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-700">
-              Political market prices can move within minutes and reflect liquidity, bookmaker margins, market rules and trader behaviour. public-data.org therefore shows raw reciprocal prices, names the exact market and withdraws the panel completely when the snapshot is older than four hours.
-            </p>
-          </section>
-
-          <details className="border-y border-black/20 py-4">
-            <summary className="cursor-pointer text-lg font-semibold">Explain these prices</summary>
-            <div className="mt-4 grid gap-5 text-sm leading-6 text-gray-700 md:grid-cols-3">
-              <div>
-                <strong className="text-foreground">Decimal odds</strong>
-                <p>The listed return including stake for each £1 wager, subject to the provider&apos;s terms.</p>
-              </div>
-              <div>
-                <strong className="text-foreground">Implied percentage</strong>
-                <p>Calculated as 100 divided by decimal odds. public-data.org does not force the market to sum to 100%.</p>
-              </div>
-              <div>
-                <strong className="text-foreground">Evidence boundary</strong>
-                <p>No embedded prices, candidate roles or secondary fallback are used. An incomplete, redirected or expired snapshot is unavailable.</p>
-              </div>
-            </div>
-          </details>
+          <CoreEvidenceExplanation
+            idPrefix="betting-odds"
+            why={
+              <p>
+                Political market prices can move within minutes and reflect liquidity, bookmaker margins, market rules and trader behaviour. public-data.org therefore shows raw reciprocal prices, names the exact market and withdraws the panel completely when the snapshot is older than four hours.
+              </p>
+            }
+            definition={
+              <p>
+                Decimal odds are the listed return including stake for each £1 wager, subject to the provider&apos;s terms. Implied percentage is calculated as 100 divided by decimal odds; public-data.org does not force the market to sum to 100%.
+              </p>
+            }
+            unit="Decimal odds and raw reciprocal implied probability (%)"
+            geography="UK-facing commercial betting market (Oddschecker-aggregated)"
+            interpretation={
+              <p>
+                This is a market signal, not a forecast, poll or probability endorsed by public-data.org. No embedded prices, candidate roles or secondary fallback are used.
+              </p>
+            }
+            caveat={
+              <p>
+                An incomplete, redirected or expired snapshot is unavailable. The verified feed is a four-hour market snapshot, not a stable historical series, so no trend is drawn until like-for-like snapshots accumulate for the same named market.
+              </p>
+            }
+            sourceLabel="Open the Oddschecker provider"
+            sourceUrl={markets[0]?.sourceUrl ?? "https://www.oddschecker.com/"}
+            sourceDate={`Observed ${formatTimestamp(metrics.data.observedAt)}`}
+            explainLabel="Explain these prices"
+          />
         </>
       ) : (
         <section role="status" className="border border-black/20 bg-white p-6">
