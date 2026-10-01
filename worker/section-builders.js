@@ -41,6 +41,7 @@ import {
   buildNationalDebt,
 } from "./national-debt.js";
 import { buildMigrationStats } from "./migration.js";
+import { buildRealWagesStats } from "./real-wages.js";
 import {
   buildCrimeStatistics,
   isCurrentCrimeStatisticsPayload,
@@ -162,6 +163,7 @@ const GENERIC_SECTIONS = Object.freeze([
   "employmentStats",
   "nationalDebt",
   "migrationStats",
+  "realWages",
   "crimeStatistics",
 ]);
 
@@ -193,6 +195,7 @@ const observationDescriptors = Object.fromEntries(
 observationDescriptors.gdpTracker.build = buildGdpTracker;
 observationDescriptors.employmentStats.build = buildEmploymentStats;
 observationDescriptors.migrationStats.build = buildMigrationStats;
+observationDescriptors.realWages.build = buildRealWagesStats;
 observationDescriptors.nationalDebt.build = buildNationalDebt;
 observationDescriptors.sentimentPulse.build = () => buildCurrentEconomicIndicators(fetch);
 observationDescriptors.taxRevenue.build = async () => {
@@ -301,6 +304,8 @@ const SECTION_BUILDERS = Object.freeze({
     buildGenericObservationSection("employmentStats", "verified-data-service", now),
   migrationStats: (now = new Date()) =>
     buildGenericObservationSection("migrationStats", "verified-data-service", now),
+  realWages: (now = new Date()) =>
+    buildGenericObservationSection("realWages", "verified-data-service", now),
   sentimentPulse: (now = new Date()) => buildSentimentPulse(now),
   nationalDebt: (now = new Date()) => buildNationalDebtSection(now),
   crimeStatistics: (now = new Date()) => buildCrimeStatisticsSection(now),

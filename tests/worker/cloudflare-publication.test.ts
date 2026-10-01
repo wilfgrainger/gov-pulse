@@ -24,6 +24,7 @@ const REQUIRED = [
   "nationalDebt",
   "taxRevenue",
   "migrationStats",
+  "realWages",
   "electionPolling",
   "nhsStats",
 ];
@@ -66,6 +67,7 @@ function snapshot() {
     },
     ...Object.fromEntries(REQUIRED.map((section) => [section, { value: section }])),
     migrationStats: { headline: { netMigration: 171_000 } },
+    realWages: { headline: { regularPayRealGrowthPercent: 0.6, totalPayRealGrowthPercent: 0.9 } },
   };
 }
 
@@ -116,7 +118,7 @@ describe("Cloudflare Free data publication", () => {
       cronInvocationsPerDay: 9,
       queueJobsPerDayMax: 28,
       queueOperationsPerDayMax: 84,
-      officialSectionsPerDay: 10,
+      officialSectionsPerDay: 11,
       contractRequestsPerDayMax: 36,
       kvWritesPerDayTargetMax: 120,
       kvReadsPerDayTargetMax: 300,
@@ -128,8 +130,8 @@ describe("Cloudflare Free data publication", () => {
 
   it("schedules every public section and contracts daily", () => {
     const jobs = jobsForDay();
-    expect(jobs).toHaveLength(11);
-    expect(jobs.filter((job) => job.type === "refresh-section")).toHaveLength(7);
+    expect(jobs).toHaveLength(12);
+    expect(jobs.filter((job) => job.type === "refresh-section")).toHaveLength(8);
     expect(
       jobs.filter((job) => job.type === "refresh-external-section")
     ).toHaveLength(3);
