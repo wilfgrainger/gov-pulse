@@ -1,6 +1,7 @@
 const COMPARISON_SET_ID = "uk-context-13-v2";
 const COMPARISON_SCHEMA_VERSION = 1;
 const UNIT_USD_PER_RESIDENT = "USD per resident";
+const LIFECYCLE_STATUSES = new Set(["current", "historical", "unavailable"]);
 
 const COMPARISON_COUNTRIES = Object.freeze([
   Object.freeze({ id: "GBR", name: "United Kingdom" }),
@@ -139,6 +140,35 @@ function validateObservation(observation) {
   return observation;
 }
 
+function validateMeasureLifecycle(lifecycle, id) {
+  if (!isRecord(lifecycle)) throw new Error(`Comparison measure '${id}' lifecycle is invalid`);
+  if (
+    lifecycle.sourceEditionId !== null &&
+    (typeof lifecycle.sourceEditionId !== "string" || !lifecycle.sourceEditionId.trim())
+  ) {
+    throw new Error(`Comparison measure '${id}' sourceEditionId is invalid`);
+  }
+  for (const field of ["validUntil", "lastSuccessAt", "retryAfter"]) {
+    if (
+      lifecycle[field] !== null &&
+      (typeof lifecycle[field] !== "string" || !Number.isFinite(Date.parse(lifecycle[field])))
+    ) {
+      throw new Error(`Comparison measure '${id}' lifecycle ${field} is invalid`);
+    }
+  }
+  if (!LIFECYCLE_STATUSES.has(lifecycle.status)) {
+    throw new Error(`Comparison measure '${id}' lifecycle status is invalid`);
+  }
+  if (
+    lifecycle.validUntil !== null &&
+    lifecycle.lastSuccessAt !== null &&
+    Date.parse(lifecycle.validUntil) <= Date.parse(lifecycle.lastSuccessAt)
+  ) {
+    throw new Error(`Comparison measure '${id}' validity must end after its last successful check`);
+  }
+  return lifecycle;
+}
+
 function rankComparisonObservations(observations) {
   if (!Array.isArray(observations)) {
     throw new Error("Comparison observations must be an array");
@@ -219,6 +249,12 @@ function validateInternationalComparisonPublication(publication) {
   if (publication.meta.comparisonSetId !== COMPARISON_SET_ID) {
     throw new Error("International comparison set is invalid");
   }
+  for (const field of ["sourceFailures", "attemptedSources"]) {
+    const value = publication.meta[field];
+    if (value !== undefined && (!Array.isArray(value) || value.some((entry) => typeof entry !== "string" || !entry.trim()))) {
+      throw new Error(`International comparison ${field} is invalid`);
+    }
+  }
   if (!Number.isFinite(Date.parse(publication.meta.generatedAt))) {
     throw new Error("International comparison generatedAt is invalid");
   }
@@ -240,6 +276,7 @@ function validateInternationalComparisonPublication(publication) {
     if (!Array.isArray(measure.countries)) {
       throw new Error(`International comparison measure '${id}' has no country observations`);
     }
+    if (measure.lifecycle !== undefined) validateMeasureLifecycle(measure.lifecycle, id);
     const measureCountries = measure.countries.map(({ country }) => country);
     if (JSON.stringify([...measureCountries].sort()) !== JSON.stringify([...expectedCountries].sort())) {
       throw new Error(`International comparison measure '${id}' does not cover the fixed country universe`);

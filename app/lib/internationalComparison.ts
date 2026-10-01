@@ -56,6 +56,13 @@ export interface ComparisonMeasure {
   observationYear: number;
   comparableCountryCount: number;
   caveat?: string;
+  lifecycle?: {
+    sourceEditionId: string | null;
+    validUntil: string | null;
+    lastSuccessAt: string | null;
+    retryAfter: string | null;
+    status: "current" | "historical" | "unavailable";
+  };
   countries: ComparisonObservation[];
 }
 
@@ -99,6 +106,15 @@ export function isInternationalComparisonPublication(
       if (!VALUE_TYPES.has(observation.valueType as ComparisonValueType)) return false;
       if (observation.value !== null && !Number.isFinite(observation.value)) return false;
       if (observation.rank !== null && !Number.isInteger(observation.rank)) return false;
+    }
+    if (measure.lifecycle !== undefined) {
+      if (!isRecord(measure.lifecycle)) return false;
+      if (!new Set(["current", "historical", "unavailable"]).has(String(measure.lifecycle.status))) return false;
+      for (const field of ["validUntil", "lastSuccessAt", "retryAfter"]) {
+        const date = measure.lifecycle[field];
+        if (date !== null && (typeof date !== "string" || !Number.isFinite(Date.parse(date)))) return false;
+      }
+      if (measure.lifecycle.sourceEditionId !== null && typeof measure.lifecycle.sourceEditionId !== "string") return false;
     }
   }
   return true;

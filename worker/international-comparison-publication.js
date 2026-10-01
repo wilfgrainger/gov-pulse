@@ -20,6 +20,29 @@ import {
 const COUNTRY_IDS = COMPARISON_COUNTRIES.map(({ id }) => id);
 const OECD_IDS = new Set(OECD_COMPARABLE_IDS);
 const DESCRIPTORS = new Map(COMPARISON_MEASURES.map((measure) => [measure.id, measure]));
+const MEASURE_SOURCE_DEPENDENCIES = Object.freeze({
+  governmentDebt: ["imf-gdp-2026", "imf-debt-2026"],
+  officialDevelopmentAssistance: ["world-bank-population-2025", "oecd-oda-2025"],
+  defenceSpending: ["world-bank-population-2025", "sipri-2025"],
+  publicSocialExpenditure: ["imf-gdp-2023", "oecd-socx-2023"],
+  healthcareSpending: ["world-bank-health-2024"],
+  taxRevenue: ["imf-gdp-2024", "oecd-tax-2024"],
+  debtInterest: ["imf-gdp-2024", "imf-interest-2024"],
+});
+const INTERNATIONAL_SOURCES = Object.freeze([
+  "imf-gdp-2023",
+  "imf-gdp-2024",
+  "imf-gdp-2026",
+  "world-bank-population-2025",
+  "imf-debt-2026",
+  "imf-interest-2024",
+  "oecd-oda-2025",
+  "sipri-2025",
+  "oecd-socx-2023",
+  "world-bank-health-2024",
+  "oecd-tax-2024",
+]);
+const COMPARISON_VALIDITY_MS = 30 * 24 * 60 * 60 * 1000;
 
 const SOURCES = Object.freeze({
   imfWEO2026: Object.freeze({
@@ -72,6 +95,47 @@ function comparisonSourceBundle(values = {}) {
     socialPctGdp2023: values.socialPctGdp2023 ?? null,
     healthPerCapita2024: values.healthPerCapita2024 ?? null,
     taxPctGdp2024: values.taxPctGdp2024 ?? null,
+    sourceFailures: Array.isArray(values.sourceFailures) ? values.sourceFailures : [],
+    attemptedSources: Array.isArray(values.attemptedSources) ? values.attemptedSources : [...INTERNATIONAL_SOURCES],
+  };
+}
+
+function fingerprint(value) {
+  const text = JSON.stringify(value);
+  let hash = 2_166_136_261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16_777_619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function lifecycleFor(id, comparisonMeasure, now, sourceFailures) {
+  const failed = MEASURE_SOURCE_DEPENDENCIES[id].some((source) => sourceFailures.includes(source));
+  const nowText = now.toISOString();
+  if (failed) {
+    return {
+      sourceEditionId: null,
+      validUntil: null,
+      lastSuccessAt: null,
+      retryAfter: nowText,
+      status: "unavailable",
+    };
+  }
+  const sourceEdition = comparisonMeasure.countries.map(({ country, value, source }) => [
+    country,
+    value,
+    source?.url ?? null,
+    source?.series ?? null,
+  ]);
+  const hasValues = comparisonMeasure.comparableCountryCount > 0;
+  const historical = comparisonMeasure.observationYear < now.getUTCFullYear();
+  return {
+    sourceEditionId: `${id}-${comparisonMeasure.observationYear}-${fingerprint(sourceEdition)}`,
+    validUntil: new Date(now.getTime() + COMPARISON_VALIDITY_MS).toISOString(),
+    lastSuccessAt: nowText,
+    retryAfter: null,
+    status: hasValues ? (historical ? "historical" : "current") : "unavailable",
   };
 }
 
@@ -210,6 +274,10 @@ function buildInternationalComparisonPublication(bundle, now = new Date()) {
     ),
   };
 
+  for (const [id, item] of Object.entries(measures)) {
+    item.lifecycle = lifecycleFor(id, item, now, bundle.sourceFailures ?? []);
+  }
+
   return validateInternationalComparisonPublication({
     meta: {
       schemaVersion: COMPARISON_SCHEMA_VERSION,
@@ -219,15 +287,18 @@ function buildInternationalComparisonPublication(bundle, now = new Date()) {
       sourceStatus: Object.fromEntries(
         Object.entries(measures).map(([id, item]) => [id, item.comparableCountryCount > 0 ? "available" : "unavailable"])
       ),
+      sourceFailures: [...(bundle.sourceFailures ?? [])],
+      attemptedSources: [...(bundle.attemptedSources ?? INTERNATIONAL_SOURCES)],
     },
     measures,
   });
 }
 
-async function settledMap(factory, label) {
+async function settledMap(factory, label, failures) {
   try {
     return await factory();
   } catch (error) {
+    failures.push(label);
     console.error("International comparison source unavailable", {
       source: label,
       error: error instanceof Error ? error.message : String(error),
@@ -236,7 +307,12 @@ async function settledMap(factory, label) {
   }
 }
 
-async function collectInternationalComparison(fetchImpl = fetch, now = new Date()) {
+async function collectInternationalComparison(fetchImpl = fetch, now = new Date(), options = {}) {
+  const sourceFailures = [];
+  const requested = options.sourceIds ? new Set(options.sourceIds) : new Set(INTERNATIONAL_SOURCES);
+  const attempt = (id, factory) => requested.has(id)
+    ? settledMap(factory, id, sourceFailures)
+    : Promise.resolve(null);
   const [
     gdpPerCapita2023,
     gdpPerCapita2024,
@@ -250,17 +326,17 @@ async function collectInternationalComparison(fetchImpl = fetch, now = new Date(
     healthPerCapita2024,
     taxPctGdp2024,
   ] = await Promise.all([
-    settledMap(() => fetchImfSeries("NGDPDPC", 2023, fetchImpl), "imf-gdp-2023"),
-    settledMap(() => fetchImfSeries("NGDPDPC", 2024, fetchImpl), "imf-gdp-2024"),
-    settledMap(() => fetchImfSeries("NGDPDPC", 2026, fetchImpl), "imf-gdp-2026"),
-    settledMap(() => fetchWorldBankSeries("SP.POP.TOTL", 2025, fetchImpl), "world-bank-population-2025"),
-    settledMap(() => fetchImfSeries("GGXWDG_NGDP", 2026, fetchImpl), "imf-debt-2026"),
-    settledMap(() => fetchImfSeries("ie", 2024, fetchImpl), "imf-interest-2024"),
-    settledMap(() => fetchOecdSeries(SOURCE_QUERIES.oecdOda2025, 2025, fetchImpl), "oecd-oda-2025"),
-    settledMap(() => fetchSipri2025Series(fetchImpl), "sipri-2025"),
-    settledMap(() => fetchOecdSeries(SOURCE_QUERIES.oecdSocx2023, 2023, fetchImpl), "oecd-socx-2023"),
-    settledMap(() => fetchWorldBankSeries("SH.XPD.CHEX.PC.CD", 2024, fetchImpl), "world-bank-health-2024"),
-    settledMap(() => fetchOecdSeries(SOURCE_QUERIES.oecdTax2024, 2024, fetchImpl), "oecd-tax-2024"),
+    attempt("imf-gdp-2023", () => fetchImfSeries("NGDPDPC", 2023, fetchImpl)),
+    attempt("imf-gdp-2024", () => fetchImfSeries("NGDPDPC", 2024, fetchImpl)),
+    attempt("imf-gdp-2026", () => fetchImfSeries("NGDPDPC", 2026, fetchImpl)),
+    attempt("world-bank-population-2025", () => fetchWorldBankSeries("SP.POP.TOTL", 2025, fetchImpl)),
+    attempt("imf-debt-2026", () => fetchImfSeries("GGXWDG_NGDP", 2026, fetchImpl)),
+    attempt("imf-interest-2024", () => fetchImfSeries("ie", 2024, fetchImpl)),
+    attempt("oecd-oda-2025", () => fetchOecdSeries(SOURCE_QUERIES.oecdOda2025, 2025, fetchImpl)),
+    attempt("sipri-2025", () => fetchSipri2025Series(fetchImpl)),
+    attempt("oecd-socx-2023", () => fetchOecdSeries(SOURCE_QUERIES.oecdSocx2023, 2023, fetchImpl)),
+    attempt("world-bank-health-2024", () => fetchWorldBankSeries("SH.XPD.CHEX.PC.CD", 2024, fetchImpl)),
+    attempt("oecd-tax-2024", () => fetchOecdSeries(SOURCE_QUERIES.oecdTax2024, 2024, fetchImpl)),
   ]);
 
   return buildInternationalComparisonPublication(
@@ -276,6 +352,8 @@ async function collectInternationalComparison(fetchImpl = fetch, now = new Date(
       socialPctGdp2023,
       healthPerCapita2024,
       taxPctGdp2024,
+      sourceFailures,
+      attemptedSources: [...requested],
     }),
     now
   );
@@ -291,8 +369,28 @@ const INTERNATIONAL_COMPARISON_KEY = "v1:international-comparison:current";
 const COMPARISON_REFRESH_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 function due(publication, now = new Date()) {
+  const retryDue = Object.values(publication?.measures ?? {}).some((measure) => {
+    const retryAt = Date.parse(String(measure?.lifecycle?.retryAfter ?? ""));
+    return Number.isFinite(retryAt) && retryAt <= now.getTime();
+  });
+  if (retryDue) return true;
   const checkedAt = Date.parse(String(publication?.meta?.checkedAt ?? ""));
   return !Number.isFinite(checkedAt) || now.getTime() - checkedAt >= COMPARISON_REFRESH_MAX_AGE_MS;
+}
+
+function sourcesDue(publication, now = new Date()) {
+  const checkedAt = Date.parse(String(publication?.meta?.checkedAt ?? ""));
+  if (!Number.isFinite(checkedAt) || now.getTime() - checkedAt >= COMPARISON_REFRESH_MAX_AGE_MS) {
+    return [...INTERNATIONAL_SOURCES];
+  }
+  const dueSources = new Set();
+  for (const [id, measure] of Object.entries(publication?.measures ?? {})) {
+    const retryAt = Date.parse(String(measure?.lifecycle?.retryAfter ?? ""));
+    if (Number.isFinite(retryAt) && retryAt <= now.getTime()) {
+      for (const source of MEASURE_SOURCE_DEPENDENCIES[id] ?? []) dueSources.add(source);
+    }
+  }
+  return [...dueSources];
 }
 
 async function readInternationalComparison(env) {
@@ -315,25 +413,60 @@ async function refreshInternationalComparison(env, options = {}) {
   }
 
   const collect = options.collect ?? collectInternationalComparison;
-  const candidate = await collect(options.fetchImpl ?? fetch, now);
+  const selectedSources = current && !options.force ? sourcesDue(current, now) : [...INTERNATIONAL_SOURCES];
+  const candidate = await collect(options.fetchImpl ?? fetch, now, { sourceIds: selectedSources });
+  const candidatePublication = validateInternationalComparisonPublication(candidate);
+  const mergedMeasures = { ...candidatePublication.measures };
+  for (const [id, dependencies] of Object.entries(MEASURE_SOURCE_DEPENDENCIES)) {
+    const attempted = candidatePublication.meta.attemptedSources ?? INTERNATIONAL_SOURCES;
+    const measureAttempted = dependencies.filter((source) => attempted.includes(source));
+    const previous = current?.measures?.[id];
+    if (measureAttempted.length === 0) {
+      if (previous) mergedMeasures[id] = previous;
+      continue;
+    }
+    const failed = dependencies.some((source) => (candidatePublication.meta.sourceFailures ?? []).includes(source));
+    const allDependenciesAttempted = dependencies.every((source) => attempted.includes(source));
+    if (!failed && allDependenciesAttempted) continue;
+    const validUntil = Date.parse(String(previous?.lifecycle?.validUntil ?? ""));
+    const lifecycle = candidatePublication.measures[id].lifecycle;
+    if (previous && Number.isFinite(validUntil) && validUntil > now.getTime()) {
+      mergedMeasures[id] = {
+        ...previous,
+        lifecycle: {
+          ...previous.lifecycle,
+          retryAfter: lifecycle?.retryAfter ?? now.toISOString(),
+        },
+      };
+    } else {
+      mergedMeasures[id] = {
+        ...candidatePublication.measures[id],
+        lifecycle: {
+          ...(lifecycle ?? {}),
+          sourceEditionId: null,
+          validUntil: null,
+          lastSuccessAt: previous?.lifecycle?.lastSuccessAt ?? null,
+          retryAfter: lifecycle?.retryAfter ?? now.toISOString(),
+          status: "unavailable",
+        },
+      };
+    }
+  }
   const publication = validateInternationalComparisonPublication({
-    ...candidate,
+    ...candidatePublication,
+    measures: mergedMeasures,
     meta: {
-      ...candidate.meta,
+      ...candidatePublication.meta,
       checkedAt: now.toISOString(),
+      sourceStatus: Object.fromEntries(Object.entries(mergedMeasures).map(([id, item]) => [
+        id,
+        item.comparableCountryCount > 0 ? "available" : "unavailable",
+      ])),
     },
   });
   const availableMeasureCount = Object.values(publication.measures).filter(
     (measure) => measure.comparableCountryCount > 0
   ).length;
-  if (availableMeasureCount === 0) {
-    return {
-      updated: false,
-      reason: "no-available-measures",
-      publication: current,
-    };
-  }
-
   await env.METRICS_CACHE.put(
     INTERNATIONAL_COMPARISON_KEY,
     JSON.stringify(publication)
@@ -350,10 +483,13 @@ export {
   COMPARISON_REFRESH_MAX_AGE_MS,
   INTERNATIONAL_COMPARISON_KEY,
   SOURCES,
+  COMPARISON_VALIDITY_MS,
+  INTERNATIONAL_SOURCES,
   buildInternationalComparisonPublication,
   collectInternationalComparison,
   comparisonSourceBundle,
   due,
+  sourcesDue,
   readInternationalComparison,
   refreshInternationalComparison,
 };

@@ -35,3 +35,17 @@ Tasks 4–19 in the approved implementation plan. Continue in order; update this
 ## Current next step
 
 Task 4: fix international measures so a failed per-measure source refresh preserves last-known-good observations and source-specific currentness, while explicit missingness remains visible.
+
+## Task 4 update
+
+- International comparison rows now carry a source-edition fingerprint, successful check, `validUntil`, status and per-measure retry time; observation year remains separate and historical editions are labeled as historical.
+- Source failures are tracked independently. A still-valid previous measure is retained; genuine successful missingness is published as missing; expired or metadata-free legacy values are dropped. A due healthcare retry requests only its dependent source and does not overwrite other measures.
+- Added one daily queued comparison refresh. Updated the workload model to 30 healthy deliveries / 90 project operations, with 120 / 360 configured retry upper bound.
+- Updated the comparison UI to show source-specific validity instead of implying `generatedAt` is observation currentness.
+- Verification: `npm test` passed 601 tests / 115 files; `npm run lint`, architecture/source/hosting checks, budget audit and `npm run build` passed.
+
+## Current next step
+
+Task 5: make expiry consistent across publication, response caching, browser refresh and server-rendered NHS evidence.
+
+Task 4 final verification after daily retry scheduling: `npm test` passed 601 tests / 115 files; `npm run lint`, `npm run build`, budget audit and `git diff --check` passed.

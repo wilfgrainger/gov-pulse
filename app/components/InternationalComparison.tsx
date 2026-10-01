@@ -76,6 +76,19 @@ function unavailableCountries(measure: ComparisonMeasure) {
   return measure.countries.filter((observation) => observation.value === null);
 }
 
+function sourceLifecycleLabel(measure: ComparisonMeasure) {
+  const lifecycle = measure.lifecycle;
+  if (!lifecycle) return "Source-specific validity was not recorded for this edition.";
+  if (lifecycle.validUntil && lifecycle.lastSuccessAt) {
+    const retry = lifecycle.retryAfter ? ` A retry is due ${lifecycle.retryAfter.slice(0, 10)}.` : "";
+    return `${lifecycle.status === "historical" ? "Historical source edition" : "Source edition"}; last checked ${lifecycle.lastSuccessAt.slice(0, 10)}, valid through ${lifecycle.validUntil.slice(0, 10)}.${retry}`;
+  }
+  if (lifecycle.retryAfter) {
+    return `No valid source edition is available; an independent retry has been eligible since ${lifecycle.retryAfter.slice(0, 10)}.`;
+  }
+  return "No source-valid comparison edition is available.";
+}
+
 function strongestUkPosition(publication: InternationalComparisonPublication) {
   return COMPARISON_MEASURE_ORDER.map((id) => publication.measures[id])
     .map((measure) => ({ measure, uk: ukObservation(measure) }))
@@ -109,6 +122,9 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
             {measure.label}
           </h3>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-700">{measure.definition}</p>
+          <p className="mt-3 max-w-3xl text-xs leading-5 text-gray-600" data-testid={`comparison-lifecycle-${measure.id}`}>
+            {sourceLifecycleLabel(measure)}
+          </p>
           {measure.caveat ? (
             <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-700">{measure.caveat}</p>
           ) : null}

@@ -138,10 +138,10 @@ describe("Cloudflare Free data publication", () => {
   it("reports the healthy schedule and configured retry workload transparently", () => {
     expect(FREE_TIER_BUDGET).toMatchObject({
       cronInvocationsPerDay: 9,
-      queueJobsPerDayHealthyTarget: 29,
-      queueOperationsPerDayHealthyTarget: 87,
-      queueJobsPerDayConfiguredRetryUpperBound: 116,
-      queueOperationsPerDayConfiguredRetryUpperBound: 348,
+      queueJobsPerDayHealthyTarget: 30,
+      queueOperationsPerDayHealthyTarget: 90,
+      queueJobsPerDayConfiguredRetryUpperBound: 120,
+      queueOperationsPerDayConfiguredRetryUpperBound: 360,
       officialSectionsPerDay: 11,
       contractRequestsPerDayMax: 36,
       kvWritesPerDayTargetMax: 120,
@@ -154,14 +154,15 @@ describe("Cloudflare Free data publication", () => {
     expect(FREE_TIER_BUDGET.kvReadsPerDayTargetMax).toBeLessThan(100_000);
   });
 
-  it("schedules every public section and contracts daily", () => {
+  it("schedules every public section, evidence feed and international comparison daily", () => {
     const jobs = jobsForDay();
-    expect(jobs).toHaveLength(12);
+    expect(jobs).toHaveLength(13);
     expect(jobs.filter((job) => job.type === "refresh-section")).toHaveLength(8);
     expect(
       jobs.filter((job) => job.type === "refresh-external-section")
     ).toHaveLength(3);
     expect(jobs.filter((job) => job.type === "refresh-contracts")).toHaveLength(1);
+    expect(jobs.filter((job) => job.type === "refresh-international-comparison")).toHaveLength(1);
   });
 
   it("uses a single betting-only refresh between daily runs", () => {

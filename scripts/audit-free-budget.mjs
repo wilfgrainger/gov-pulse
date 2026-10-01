@@ -31,7 +31,7 @@ function deriveScheduledWork(registry, crons, { retryDeliveries = 0 } = {}) {
   const runs = crons.map((cron) => ({ cron, count: executionsPerDay(cron) }));
   const dailyCronRuns = runs.filter(({ cron }) => cron.includes(" ") && !cron.split(/\s+/)[1].startsWith("*/")).reduce((sum, run) => sum + run.count, 0);
   const intervalRuns = runs.filter(({ cron }) => cron.split(/\s+/)[1].startsWith("*/")).reduce((sum, run) => sum + run.count, 0);
-  const scheduled = dailyCronRuns * (dailyFeeds.length + 1 /* contract refresh */ + 1 /* finaliser */) +
+  const scheduled = dailyCronRuns * (dailyFeeds.length + 1 /* contract refresh */ + 1 /* international comparison */ + 1 /* finaliser */) +
     intervalRuns * (bettingFeeds.length + 1 /* finaliser */);
   const messagesPerDay = scheduled + retryDeliveries;
   return {

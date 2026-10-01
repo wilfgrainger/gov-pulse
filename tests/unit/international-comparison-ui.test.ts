@@ -73,6 +73,14 @@ describe("UK in context presentation", () => {
     ).toBe("5th highest of 10 comparable donors");
   });
 
+  it("shows source-edition validity instead of treating the generated timestamp as currentness", () => {
+    const component = fs.readFileSync("app/components/InternationalComparison.tsx", "utf8");
+    expect(component).toContain("Historical source edition");
+    expect(component).toContain("valid through");
+    expect(component).toContain("Source-specific validity was not recorded");
+    expect(component).not.toMatch(/valid(?:ity)?\s+.*generatedAt/i);
+  });
+
   it("derives the memorable comparison from the actual countries above the UK", () => {
     const countries = [
       observation("USA", 80_000, 1),
