@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import {
   CartesianGrid,
   ErrorBar,
@@ -10,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import ChartExportButtons from "@/app/components/ChartExportButtons";
 import ClientOnlyChart from "@/app/components/ClientOnlyChart";
 import {
   fieldworkMidpointMs,
@@ -121,13 +123,15 @@ export default function PollingUncertaintyChart<PartyKey extends string>({
     first && latest
       ? `${fieldworkLabel(first)} to ${fieldworkLabel(latest)}`
       : "Published history unavailable";
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartTitle = "Each verified poll publication, with its own margin of error";
 
   return (
     <figure className="border-y border-black/20 bg-[#f7f9fb] py-5">
       <figcaption className="mb-4 flex flex-wrap items-end justify-between gap-3 px-1">
         <div>
           <h4 className="text-xl font-semibold tracking-[-0.015em]">
-            Each verified poll publication, with its own margin of error
+            {chartTitle}
           </h4>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-600">
             Every point is one primary poll publication for one party, plotted at its
@@ -140,6 +144,7 @@ export default function PollingUncertaintyChart<PartyKey extends string>({
         <p className="font-mono text-xs tabular-nums text-gray-500">{range}</p>
       </figcaption>
       <div
+        ref={chartContainerRef}
         role="img"
         aria-label={`Scatter plot of individual poll publications by party share, each with a sample-size-derived margin of error band. Period shown: ${range}. No average or trend line is shown. See the data table below for exact per-poll values.`}
         className="border-t border-black/10 pt-3"
@@ -260,17 +265,20 @@ export default function PollingUncertaintyChart<PartyKey extends string>({
           </tbody>
         </table>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 px-1 text-xs text-gray-600">
-        {seriesByParty.map((series) => (
-          <span key={series.key} className="inline-flex items-center gap-2">
-            <span
-              aria-hidden="true"
-              className="inline-block h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: series.meta.color }}
-            />
-            {series.meta.label}
-          </span>
-        ))}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 px-1">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-gray-600">
+          {seriesByParty.map((series) => (
+            <span key={series.key} className="inline-flex items-center gap-2">
+              <span
+                aria-hidden="true"
+                className="inline-block h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: series.meta.color }}
+              />
+              {series.meta.label}
+            </span>
+          ))}
+        </div>
+        <ChartExportButtons containerRef={chartContainerRef} title={chartTitle} />
       </div>
       <p className="mt-3 max-w-3xl px-1 text-xs leading-5 text-gray-500">
         Margin of error is estimated from each poll&apos;s disclosed sample size using the
