@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import queuedWorker, {
   FREE_TIER_BUDGET,
   RUN_PREFIX,
@@ -14,7 +15,9 @@ import { PUBLICATION_CURRENT_KEY } from "@/worker/publication-entry";
 import {
   buildContractsFromShards,
   previousCompleteDays,
+  rankDailyAwards,
 } from "@/worker/government-contracts-cloudflare";
+import { ukNationFromPostcode } from "@/contracts/government-contracts";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 
 const REQUIRED = [
@@ -109,6 +112,25 @@ function award(index: number, day: string) {
     framework: false,
     noticeUrl: `https://www.find-tender.service.gov.uk/Notice/${release}-2026`,
     procurementUrl: `https://www.find-tender.service.gov.uk/procurement/${ocid}`,
+  };
+}
+
+function rawRelease(
+  index: number,
+  day: string,
+  amount: number,
+  id = `award-${index}`,
+  releaseId = `${String(index).padStart(6, "0")}-2026`,
+  ocid = `ocds-h6vhtk-${index.toString(16).padStart(8, "0")}`,
+) {
+  return {
+    ocid,
+    id: releaseId,
+    date: `${day}T13:00:00.000Z`,
+    buyer: { name: "Buyer" },
+    tender: { title: "Contract", procurementMethod: "open", mainProcurementCategory: "services" },
+    awards: [{ id, title: "Award", date: `${day}T12:00:00.000Z`, value: { amount, currency: "GBP" }, suppliers: [{ name: "Supplier", id: "supplier-1" }] }],
+    parties: [{ id: "supplier-1", address: { postalCode: "SY1 1AA" } }],
   };
 }
 
@@ -343,5 +365,89 @@ describe("Cloudflare Free data publication", () => {
     expect(payload?.dataQuality.validComparableAwards).toBe(140);
     expect(payload?.window.updatedFrom).toBe(`${days[0]}T00:00:00.000Z`);
     expect(payload?.window.updatedTo).toBe(`${days[6]}T23:59:59.999Z`);
+  });
+
+  it("keeps revisions outside each day's top 100 so the newest revision wins across shards", () => {
+    const now = new Date("2026-07-18T12:00:00.000Z");
+    const days = previousCompleteDays(now, 7);
+    const amendment = JSON.parse(readFileSync(new URL("../fixtures/contracts/downward-amendment.json", import.meta.url), "utf8"));
+    const initial = [
+      rawRelease(1, days[0], amendment.original.amount, amendment.awardId, amendment.original.releaseId, amendment.ocid),
+      ...Array.from({ length: 100 }, (_, index) => rawRelease(index + 2, days[0], 2_000)),
+    ];
+    const daily = rankDailyAwards(initial, days[0], now);
+    const revision = rankDailyAwards([
+      rawRelease(1, days[1], amendment.revision.amount, amendment.awardId, amendment.revision.releaseId, amendment.ocid),
+    ], days[1], now);
+    const shards = [daily, revision, ...days.slice(2).map((day) => ({
+      schemaVersion: 1,
+      day,
+      complete: true,
+      collectedAt: now.toISOString(),
+      awards: [],
+      dataQuality: quality(0),
+    }))];
+
+    expect(daily.awards).toHaveLength(101);
+    const publication = buildContractsFromShards(shards, now);
+    expect(publication?.awards).toHaveLength(100);
+    expect(publication?.awards.some((item) => item.amount === 1_000_000)).toBe(false);
+    expect(publication?.awards.some((item) => item.awardId === amendment.awardId)).toBe(false);
+  });
+
+  it("does not classify border-straddling postcodes as a UK nation", () => {
+    expect(ukNationFromPostcode("SY1 1AA")).toBe("Other/Unknown");
+    expect(ukNationFromPostcode("TD1 1AA")).toBe("Other/Unknown");
+    expect(ukNationFromPostcode("JE1 1AA")).toBe("Other/Unknown");
+  });
+
+  it("rejects a day shard above its retained-award cap instead of truncating it", () => {
+    const now = new Date("2026-07-18T12:00:00.000Z");
+    const day = previousCompleteDays(now, 7)[0];
+    const releases = Array.from({ length: 2_501 }, (_, index) =>
+      rawRelease(index + 1, day, 10_000 + index),
+    );
+    expect(() => rankDailyAwards(releases, day, now)).toThrow(/2,?500-award shard limit/i);
+  });
+
+  it("retains cancellation tombstones so an earlier active release is removed", () => {
+    const now = new Date("2026-07-18T12:00:00.000Z");
+    const days = previousCompleteDays(now, 7);
+    const active = rawRelease(1, days[0], 1_000_000, "award-1");
+    const cancelled = rawRelease(1, days[1], 1_000_000, "award-1");
+    cancelled.awards[0].status = "cancelled";
+    delete cancelled.awards[0].value;
+    delete cancelled.awards[0].suppliers;
+    const first = rankDailyAwards([active, ...Array.from({ length: 100 }, (_, index) =>
+      rawRelease(index + 2, days[0], 2_000, `award-${index + 2}`))], days[0], now);
+    const second = rankDailyAwards([cancelled], days[1], now);
+    const rest = days.slice(2).map((day) => ({
+      schemaVersion: 1, day, complete: true, collectedAt: now.toISOString(), awards: [], dataQuality: quality(0),
+    }));
+
+    expect(buildContractsFromShards([first, second, ...rest], now)?.awards).toHaveLength(100);
+    expect(buildContractsFromShards([first, second, ...rest], now)?.awards.some((item) => item.awardId === "award-1")).toBe(false);
+  });
+
+  it("uses the higher release sequence when duplicate notices share a publication timestamp", () => {
+    const now = new Date("2026-07-18T12:00:00.000Z");
+    const day = previousCompleteDays(now, 7)[0];
+    const original = rawRelease(1, day, 1_000_000, "award-1", "100001-2026");
+    const latest = rawRelease(1, day, 900_000, "award-1", "100002-2026");
+    const shard = rankDailyAwards([latest, original], day, now);
+    expect(shard.awards).toHaveLength(1);
+    expect(shard.awards[0].releaseId).toBe("100002-2026");
+    expect(shard.awards[0].amount).toBe(900_000);
+  });
+
+  it("does not build a publication from an incomplete or wrong seven-day window", () => {
+    const now = new Date("2026-07-18T12:00:00.000Z");
+    const days = previousCompleteDays(now, 7);
+    const shards = days.map((day) => ({
+      schemaVersion: 1, day, complete: true, collectedAt: now.toISOString(), awards: [], dataQuality: quality(0),
+    }));
+    shards[0].complete = false;
+    expect(buildContractsFromShards(shards, now)).toBeNull();
+    expect(buildContractsFromShards(shards.slice(1), now)).toBeNull();
   });
 });

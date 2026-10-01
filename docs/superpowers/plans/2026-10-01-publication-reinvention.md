@@ -112,11 +112,11 @@ Planning already added supersession notices and an authorized-reinvention
 section to `AGENTS.md`; inspect these before editing. The task still owns full
 replacement guidance, inventories and executable guard/test alignment.
 
-- [ ] Write `tests/unit/publication-programme.test.ts` asserting every current topic is covered, new bounded route patterns accepted, private collectors rejected, and historical scope docs are not active authority.
-- [ ] Run `npx vitest run tests/unit/publication-programme.test.ts`; verify it fails against current fixed-route/preferences.
-- [ ] Apply the review's amendment table. Preserve audits/withdrawal reasons; mark old scope contracts historical. Correct NHS/real-wage membership, used Framer Motion, bootstrap and budget descriptions against actual code.
-- [ ] Verify `expect(unmappedDisplayedMeasures).toEqual([])` and `expect(publicRouteAllowed('/internal/collect')).toBe(false)`; run source/hosting/governance guards.
-- [ ] Review and commit the governance/inventory tranche. No unrelated document deletion.
+- [x] Write `tests/unit/publicationProgramme.test.ts` asserting every current topic is covered, new bounded route patterns accepted, private collectors rejected, and historical scope docs are not active authority.
+- [x] Run the publication-programme test red against the fixed-route guard, then green against the manifest.
+- [x] Apply the review's amendment table. Preserve audits/withdrawal reasons; mark old scope contracts historical. Correct NHS/real-wage membership, Framer Motion, bootstrap and budget descriptions against actual code.
+- [x] Verify no unmapped displayed measures and reject `/internal/collect`; run source/hosting/governance guards.
+- [x] Review and commit the governance/inventory tranche as `981e4eb`; no unrelated document deletion.
 
 ## Task 2: Prove source and Cloudflare Free feasibility
 
@@ -130,15 +130,16 @@ Workbook decoding accepts a validated limits object with `maxEntryBytes`,
 by stream-counted inflate and worksheet parsing; do not first allocate the
 unbounded decoded result and reject it afterwards.
 
-- [ ] Test the current healthy schedule: `expect(work.messagesPerDay).toBe(29)` and `expect(work.operationsPerDay).toBe(87)` before retries. Test registry additions change the budget and failed jobs consume retry operations.
-- [ ] Run `npx vitest run tests/unit/freeBudget.test.ts`; verify current hardcoded maximum fails.
-- [ ] Write/run failing workbook tests: highly compressed entry expands to 8 MiB + 1 and is rejected before accumulation; aggregate entries exceed 24 MiB; stored entries obey the same cap; worksheet row and total cell caps reject over-bound inputs; forged ZIP size fields do not bypass byte counts. Named real publication fixtures below caps still reconcile.
-- [ ] Implement expansion/row/cell bounds and account for string/XML allocations; run `npx vitest run tests/worker/workbook-limits.test.ts` and affected XLSX/NHS tests.
+- [x] Test the current healthy schedule: 29 deliveries and 87 project operations before retries. Registry additions and failed-job retry deliveries raise the derived totals.
+- [x] Run `npx vitest run tests/unit/freeBudget.test.ts`; the initial red test found the absent derivation.
+- [x] Write/run failing workbook tests: >8 MiB entry, aggregate entry expansion, stored-entry cap, worksheet row/cell caps, forged ZIP sizes and shared-string cap.
+- [x] Implement expansion/row/cell bounds and count all workbook sheets; focused XLSX, international XLSX and NHS parser tests pass.
 - [ ] Confirm current official limits and account Free settings when network permits. Measure representative OpenNext routes and largest accepted workbook/PDF jobs. Document low/expected/peak traffic and at least 20% target headroom; test per-key/per-request hard limits.
 - [ ] Prove named primary-source routes for rent history, a second pollster, MOJ and Early Years. Reuse NHS trusted importer; check existing credential names/presence and actual authorized operation before requesting secure bindings.
 - [ ] If renderer measurement fails, invoke the design's thin-Worker contingency and write a focused replacement spec/plan before cutover. If a source is blocked, record exact destination/operation and continue independent tasks.
 - [ ] If valid ingestion exceeds Free CPU/memory, prove independently bounded module/sheet decomposition or reuse the approved free trusted-ingest pattern with identical validation. If neither works within a verified free allowance, mark the source blocked; do not raise limits blindly or substitute unverifiable data.
-- [ ] Review and commit verified tooling/methodology. This task cannot be declared passed using repository-stated quotas alone.
+- [x] Commit verified workbook and workload methodology as `bbf41da`.
+- [ ] Confirm official Free limits/account settings, measure route/workbook runtime and demonstrate 20% headroom. This task cannot be declared passed using repository-stated quotas alone.
 
 ## Task 3: Repair procurement versions and geographic truth
 
@@ -146,11 +147,12 @@ unbounded decoded result and reject it afterwards.
 
 **Interfaces:** Existing `rankDailyAwards`/`buildContractsFromShards` retain caller compatibility or use explicitly versioned shard migration. Preserve full bounded revision identity before top-N.
 
-- [ ] Add downward-amendment fixture: £1m award becomes £1 amid 100 £2k awards; assert no £1m version remains. Add cancellation, duplicate/latest notice and incomplete-window cases.
-- [ ] Add geographic assertions: SY1/TD15 border areas require exact official lookup; Jersey/garbage cannot become England. Proven input codes classify correctly; missing lookup returns unknown.
-- [ ] Run focused contract/publication tests and confirm regressions fail.
-- [ ] Resolve complete-window versions before truncation, preserving bounded payloads. Use official identifiers or a reproducible static join; remove heuristic geography claims.
-- [ ] Run affected procurement/Worker tests, budget checks, review and commit.
+- [x] Add a downward-amendment fixture (£1m to £1 among 100 £2k awards), cancellation tombstone and incomplete-window cases; preserve latest release identity.
+- [x] Add geographic assertions: SY1/TD15/JE1 cannot classify a nation from postcode; exact publisher country names classify and absent lookup stays unknown.
+- [x] Run focused tests red against top-100 truncation, border postcode guesses and missing cancellation handling.
+- [x] Resolve revisions/cancellations across the full bounded 7-day window before top-100 selection; cap each shard at 2,500 awards and 4 MiB.
+- [x] Run all procurement/Worker tests, the full suite and production build; lint, budget, source/hosting/architecture checks pass.
+- [ ] Review and commit the procurement tranche.
 
 ## Task 4: Repair independent international measure lifecycle
 

@@ -367,8 +367,8 @@ export default function GovernmentContracts() {
         {data.supplierConcentration.every((entry) => entry.nation === "Other/Unknown") && (
           <p className="mt-4 max-w-3xl text-sm leading-6 text-gray-600">
             Supplier nation is currently Other/Unknown for every ranked supplier: the collected Find a Tender
-            releases in this window did not carry a usable supplier postal code. The nation breakdown activates
-            automatically once that field is present in a collected release.
+            releases in this window did not carry an explicit nation name. Postcode areas can cross national
+            borders, so they are not used to classify a supplier&apos;s nation.
           </p>
         )}
       </section>

@@ -23,3 +23,15 @@ Tasks 4–19 in the approved implementation plan. Continue in order; update this
 - `npx vitest run tests/unit/publicationProgramme.test.ts tests/worker/workbook-limits.test.ts`: 10 passed.
 - `npm run lint`, `npm run hosting:check`, `node scripts/check-static-architecture.mjs`, `node scripts/check-source-ownership.mjs`, `git diff --check`: passed.
 - Prior baseline full suite: 577 tests across 113 files passed before workbook-guard implementation.
+
+## Task 3 update
+
+- Preserved all valid award revisions per UTC day before top-100 ranking; resolved later releases (release ID breaks equal-date ties) across seven shards.
+- Added cancellation tombstones, incomplete-window rejection coverage, and a per-shard bound of 2,500 candidate records / 4 MiB serialized.
+- Nation labels now require an exact publisher `countryName` matching a UK nation. Postcode-only inference is disabled; the public-money UI explains why unknown remains unknown.
+- Replaced the hosting boundary check's stale Pages-primary claim; it now enforces OpenNext + data Worker deployment and permits Pages only under the explicit manual fallback gate.
+- Verification: `npm test` passed 594 tests / 115 files; `npm run lint`, architecture/source ownership/hosting guards passed; `npm run build` passed.
+
+## Current next step
+
+Task 4: fix international measures so a failed per-measure source refresh preserves last-known-good observations and source-specific currentness, while explicit missingness remains visible.
