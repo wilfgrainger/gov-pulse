@@ -30,7 +30,7 @@
     "test:release": "node scripts/release-smoke.mjs"
   },
   "dependencies": {
-    "next": "16.2.11",
+    "next": "16.3.8",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "recharts": "^3.9.2"
@@ -49,13 +49,13 @@
     "jsdom": "^29.1.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^5",
-    "vitest": "^4.1.10",
+    "vitest": "^5.0.3",
     "wrangler": "^4.111.0"
   },
   "overrides": {
     "@babel/core": "^7.29.7",
     "picomatch": "^4.0.5",
-    "postcss": "^8.5.19",
+    "postcss": "^8.5.28",
     "minimatch@3.1.5": {
       "brace-expansion": "^1.1.16"
     },
