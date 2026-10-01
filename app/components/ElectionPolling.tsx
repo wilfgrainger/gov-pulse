@@ -2,6 +2,7 @@
 
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import MetricsStatus from "@/app/components/MetricsStatus";
+import PollingUncertaintyChart from "@/app/components/PollingUncertaintyChart";
 import { useMetrics } from "@/app/lib/useMetrics";
 
 const FALLBACK = {
@@ -206,6 +207,27 @@ export default function ElectionPolling() {
             <p className="max-w-3xl text-sm leading-6 text-gray-700">
               The latest accepted publication places {PARTY_META[leader[0]].label} at {leader[1].toFixed(0)}%. public-data.org does not compare this with a differently designed poll or claim a movement from one observation.
             </p>
+          </section>
+
+          <section aria-labelledby="poll-uncertainty-title">
+            <div className="mb-4 border-b border-black/15 pb-3">
+              <p className="text-sm font-semibold text-accent">Uncertainty over time</p>
+              <h4 id="poll-uncertainty-title" className="mt-1 text-2xl font-semibold">
+                Individual publications and their margin of error, not an average
+              </h4>
+            </div>
+            <p className="max-w-3xl text-sm leading-6 text-gray-700">
+              Each point below is one verified primary poll publication, kept separate from
+              every other publication. public-data.org does not compute, show, or imply a
+              polling average or composite line across these points.
+            </p>
+            <div className="mt-4">
+              <PollingUncertaintyChart
+                polls={polls}
+                partyMeta={PARTY_META}
+                partyOrder={Object.keys(PARTY_META) as PartyKey[]}
+              />
+            </div>
           </section>
 
           <section aria-labelledby="poll-method-title" className="border-l-4 border-foreground pl-4">
