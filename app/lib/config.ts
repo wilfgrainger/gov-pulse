@@ -210,6 +210,17 @@ export const DATA_SOURCES: Record<string, DataSourceDefinition> = {
     freshnessRationale: "The latest ONS edition is checked regularly, while its publication period is assessed separately.",
     freshnessWindowMs: 36 * HOUR_MS,
   },
+  housePriceIndex: {
+    name: "House Price Index",
+    frequency: "monthly",
+    sources: ["ONS Private rent and house prices, UK bulletin"],
+    automation: "automated",
+    evidenceClass: "official-data",
+    geographicCoverage: "United Kingdom",
+    freshnessWindow: "Checked within 45 days",
+    freshnessRationale: "The latest ONS edition is discovered from the bulletin's rolling /latest alias; the house price %-change history lags the bulletin's own publication by one to two months.",
+    freshnessWindowMs: 45 * DAY_MS,
+  },
   earlyYears: {
     name: "Early Years Spotlight",
     frequency: "periodic",

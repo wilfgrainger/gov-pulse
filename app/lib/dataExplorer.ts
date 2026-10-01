@@ -123,6 +123,16 @@ export const MEASURES: MeasureDefinition[] = [
     historyValue: "netMigration",
     note: "ONS long-term migration estimates. Provisional and subject to revision; not a count of small-boat arrivals.",
   },
+  {
+    ...base("housePriceIndex", "house-price-index", "Economy"),
+    ...headline,
+    id: "houseAnnualChange",
+    label: "House price annual change",
+    unit: "%",
+    valuePath: "headline.changePercent",
+    historyValue: "hpiChangePercent",
+    note: "ONS UK House Price Index annual percentage change. The average price level is headline-only and is not part of this history.",
+  },
 ];
 
 function at(value: unknown, path: string): unknown {

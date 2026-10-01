@@ -129,6 +129,14 @@
       "sourceKey": "migrationStats",
       "sameAs": ["https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration"]
     },
+    "house-price-index": {
+      "title": "UK House Price Index",
+      "description": "Average UK house price and annual house price inflation from the latest ONS Private rent and house prices bulletin.",
+      "category": "Economy",
+      "kind": "dataset",
+      "sourceKey": "housePriceIndex",
+      "sameAs": ["https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/privaterentandhousepricesuk/latest"]
+    },
     "early-years": {
       "title": "Early years evidence in England",
       "description": "Child vaccination and school-readiness indicators in England with dated official sources and historical context.",

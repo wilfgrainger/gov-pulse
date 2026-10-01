@@ -13,7 +13,8 @@ type SignalId =
   | "unemployment"
   | "national-debt"
   | "nhs-waiting-list"
-  | "net-migration";
+  | "net-migration"
+  | "house-price-index";
 
 export type SignalHistoryPoint = { observedAt: number; value: number };
 
@@ -99,6 +100,15 @@ const SIGNAL_META: Record<
     kicker: "Population",
     href: "/section/migration",
     evidenceClass: DATA_SOURCES.migrationStats.evidenceClass,
+    geography: "United Kingdom",
+  },
+  "house-price-index": {
+    id: "house-price-index",
+    anchorId: "house-price-index",
+    title: "Average UK house price",
+    kicker: "Housing",
+    href: "/section/house-price-index",
+    evidenceClass: DATA_SOURCES.housePriceIndex.evidenceClass,
     geography: "United Kingdom",
   },
 };
@@ -418,6 +428,38 @@ function selectMigration(snapshot: MetricsSnapshot): SignalPresentation {
   );
 }
 
+function selectHousePriceIndex(snapshot: MetricsSnapshot): SignalPresentation {
+  const data = record(snapshot.housePriceIndex);
+  const headline = record(data?.headline);
+  const avgPriceGbp = finite(headline?.avgPriceGbp);
+  const change = finite(headline?.changePercent);
+  const previousChange = finite(headline?.previousChangePercent);
+  const period = text(headline?.period);
+  const previousPeriod = text(headline?.previousPeriod);
+  const publishedAt = formatDate(headline?.releaseDate);
+  if (avgPriceGbp === null || avgPriceGbp <= 0 || change === null || !period || !publishedAt) {
+    return unavailable("house-price-index");
+  }
+  const direction = change === 0 ? "was unchanged" : change > 0 ? "rose" : "fell";
+  const comparison = previousChange === null || !previousPeriod
+    ? "Previous-period comparison unavailable"
+    : `${formatPercent(previousChange)} in the 12 months to ${previousPeriod}`;
+  return applySourceState(
+    {
+      ...unavailable("house-price-index"),
+      value: `£${formatPeople(avgPriceGbp)}`,
+      comparison,
+      period,
+      publishedAt,
+      history: historyPoints(data?.history, "hpiChangePercent"),
+      leadHeadline: `The average UK house price ${direction} to £${formatPeople(avgPriceGbp)} in the 12 months to ${period}.`,
+      leadSummary: `Annual house price inflation is ${formatPercent(change)}${previousChange === null ? "." : `, compared with ${comparison}.`}`,
+      caveat: "The average price level is headline-only and is not tracked as a time series; only the annual %-change is.",
+    },
+    snapshot.meta.sources.housePriceIndex
+  );
+}
+
 function emptyEdition(): NationalEvidenceEdition {
   const signals = SIGNAL_ORDER.map(unavailable);
   return {
@@ -437,6 +479,7 @@ export function selectNationalEvidenceEdition(snapshot: unknown): NationalEviden
     selectDebt(snapshot),
     selectNhs(snapshot),
     selectMigration(snapshot),
+    selectHousePriceIndex(snapshot),
   ].map((signal) => {
     const section = signal.id === "unemployment" ? "employmentStats"
       : signal.id === "national-debt" ? "nationalDebt" : null;
