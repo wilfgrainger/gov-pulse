@@ -398,6 +398,7 @@ export default function NHSStats() {
           <FinancialTimeSeriesChart
             title="RTT waiting list: ten-year direction"
             description="Incomplete consultant-led pathways and, where published, estimated unique patients. Gaps mean NHS England did not publish that measure for the period."
+            citation={`NHS England · ${data.source.timeseriesUrl} · published ${data.headline.publicationDate} · observation period ${data.headline.period} · unique patient counts are estimates; unpublished measures remain gaps.`}
             data={data.history}
             series={[
               { key: "waitingPathwaysEstimate", label: "Waiting pathways", color: "#14243b" },
@@ -410,6 +411,7 @@ export default function NHSStats() {
           <FinancialTimeSeriesChart
             title="18-week performance"
             description="Share of incomplete pathways waiting no more than 18 weeks, compared with the 92% NHS Constitution standard. Pandemic-era service and reporting disruption is visible in 2020."
+            citation={`NHS England · ${data.source.timeseriesUrl} · published ${data.headline.publicationDate} · observation period ${data.headline.period} · 92% NHS Constitution standard; pandemic-era service and reporting disruption affects comparability.`}
             data={data.history}
             series={[{ key: "within18WeeksPercent", label: "Within 18 weeks", color: "#1f5c8a" }]}
             valueFormatter={(value) => `${value.toFixed(1)}%`}
@@ -420,6 +422,7 @@ export default function NHSStats() {
           <FinancialTimeSeriesChart
             title="Typical and upper-end waits"
             description="Median and 92nd-percentile waits in weeks. These show the centre and the long end of the distribution; pandemic-era disruption is visible in 2020."
+            citation={`NHS England · ${data.source.timeseriesUrl} · published ${data.headline.publicationDate} · observation period ${data.headline.period} · median and 92nd percentile are distribution summaries.`}
             data={data.history}
             series={[
               { key: "medianWaitWeeks", label: "Median wait", color: "#14243b" },
@@ -431,6 +434,7 @@ export default function NHSStats() {
           <FinancialTimeSeriesChart
             title="Very long waits"
             description="Published counts above 52, 65, 78 and 104 weeks. A gap is retained where a threshold was not yet reported."
+            citation={`NHS England · ${data.source.timeseriesUrl} · published ${data.headline.publicationDate} · observation period ${data.headline.period} · gaps mean a threshold was not published.`}
             data={data.history}
             series={[
               { key: "over52Weeks", label: "Over 52 weeks", color: "#14243b" },
@@ -445,6 +449,7 @@ export default function NHSStats() {
           <FinancialTimeSeriesChart
             title="RTT pathway activity"
             description="New pathways and completed admitted or non-admitted pathways in each month, including NHS England estimates where supplied."
+            citation={`NHS England · ${data.source.timeseriesUrl} · published ${data.headline.publicationDate} · observation period ${data.headline.period} · includes estimates where NHS England supplied them.`}
             data={data.history}
             series={[
               { key: "newPathways", label: "New pathways", color: "#14243b" },

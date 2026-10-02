@@ -33,23 +33,35 @@ async function assertNoHorizontalOverflow(page: Parameters<typeof test>[0]["page
     viewport: document.documentElement.clientWidth,
     documentWidth: document.documentElement.scrollWidth,
     bodyWidth: document.body.scrollWidth,
+    path: location.pathname,
+    overflowing: Array.from(document.body.querySelectorAll("*"))
+      .map((element) => ({
+        tag: element.tagName.toLowerCase(),
+        id: element.id,
+        className: typeof element.className === "string" ? element.className : "",
+        right: Math.round(element.getBoundingClientRect().right),
+        text: (element.textContent ?? "").trim().slice(0, 50),
+      }))
+      .filter((element) => element.right > document.documentElement.clientWidth + 1)
+      .slice(0, 8),
   }));
 
-  expect(dimensions.documentWidth).toBeLessThanOrEqual(dimensions.viewport + 1);
-  expect(dimensions.bodyWidth).toBeLessThanOrEqual(dimensions.viewport + 1);
+  expect(dimensions.documentWidth, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
+  expect(dimensions.bodyWidth, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
 }
 
 async function assertPulseApp(page: Parameters<typeof test>[0]["page"]) {
   await page.goto("./");
   await expect(page.getByRole("heading", { level: 1, name: "Britain, in evidence." })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Explore 7 measures/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Explore the data/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Read the latest briefing" })).toBeVisible();
   await expect(page.locator("header").getByRole("link", { name: "Sources and dates" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Latest figures" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Six measures, separate clocks" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The country at a glance" })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Go deeper by topic/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Number, period, source." })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: /Inspect the claim, not our confidence/i })).toHaveCount(0);
-  await expect(page.getByTestId("signal-card")).toHaveCount(6);
+  await expect(page.getByTestId("signal-card")).toHaveCount(7);
   await expect(page.locator("details[id^='category-']")).toHaveCount(0);
   await expect(page.locator("#more-evidence").getByRole("link", { name: /Crime statistics/i })).toBeVisible();
   await expect(page.locator("#more-evidence").getByRole("link", { name: /Government contracts/i })).toBeVisible();
@@ -74,7 +86,7 @@ test("global evidence search routes keyboard users to supported evidence", async
   await expect(input).toBeFocused();
   await input.fill("NHS waiting list");
 
-  const result = page.locator("#global-evidence-search-results").getByRole("link", { name: /NHS waiting times/i });
+  const result = page.locator("#global-evidence-search-results").getByRole("link", { name: /NHS waiting list/i });
   await expect(result).toBeVisible();
   await input.press("ArrowDown");
   await expect(result).toBeFocused();
@@ -126,6 +138,48 @@ test("sources page and public trust record load cleanly", async ({ page }) => {
     await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
   }
   expect(errors).toEqual([]);
+});
+
+test("all new publication routes render their honest server state without overflow", async ({ page }) => {
+  const routes = [
+    ["/explore", "Explore the numbers"],
+    ["/measure", "Measure library"],
+    ["/compare", "Comparison studio"],
+    ["/briefing", "The briefing"],
+    ["/calendar", "Release calendar"],
+    ["/cost-of-living", "Cost of living"],
+    ["/money", "Public money dossiers"],
+    ["/editions", "Editions and revisions"],
+    ["/stories/household-budgets", "How to read the household pressure signals"],
+    ["/stories/public-finances", "Debt, receipts and economic output"],
+  ] as const;
+
+  for (const [path, heading] of routes) {
+    await page.goto(`.${path}`);
+    await expect(page.locator("main")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
+    await expect(page.locator('a[href^="#"]').first()).toBeAttached();
+    await assertNoHorizontalOverflow(page);
+  }
+});
+
+test("home, comparison and release tools fit 320px and 360px layouts", async ({ page }) => {
+  for (const width of [320, 360]) {
+    await page.setViewportSize({ width, height: 800 });
+    for (const path of ["/", "/compare", "/calendar", "/cost-of-living", "/money"]) {
+      await page.goto(`.${path}`);
+      await expect(page.locator("main")).toBeVisible();
+      await assertNoHorizontalOverflow(page);
+    }
+  }
+});
+
+test("measure-library route keeps its truthful HTML available without JavaScript", async ({ browser }) => {
+  const page = await browser.newPage({ baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173", javaScriptEnabled: false });
+  await page.goto("./measure");
+  await expect(page.getByRole("heading", { level: 1, name: "Measure library" })).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("No validated measure catalog is available");
+  await page.close();
 });
 
 test("section pages explain absent downloads in an unseeded local edition", async ({ page }) => {
@@ -210,4 +264,26 @@ test("all section pages render cleanly without global feed telemetry", async ({ 
   }
 
   expect(errors).toEqual([]);
+});
+
+test("topic and feature routes stay usable at a 200% zoom-equivalent width with reduced motion", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop-chrome", "Route-wide zoom audit runs once in the desktop project");
+  await page.setViewportSize({ width: 640, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+
+  const routes = [
+    "/section/pm-approval", "/section/election-polls", "/section/betting-odds",
+    "/section/govt-approval", "/section/gov-trust-trend", "/section/national-debt",
+    "/section/gdp", "/section/economy", "/section/tax", "/section/employment",
+    "/section/uk-in-context", "/section/government-contracts", "/section/crime-stats",
+    "/section/nhs", "/section/migration", "/section/early-years", "/section/uk-regions",
+    "/section/policy-links", "/measure", "/compare", "/briefing", "/calendar",
+    "/cost-of-living", "/money", "/editions", "/sources",
+  ];
+
+  for (const path of routes) {
+    await page.goto(`.${path}`);
+    await expect(page.locator("main")).toBeVisible();
+    await assertNoHorizontalOverflow(page);
+  }
 });

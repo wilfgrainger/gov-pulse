@@ -8,6 +8,12 @@ describe("Cloudflare-free scheduled workload accounting", () => {
     expect(deriveScheduledWork(FEED_REGISTRY, [DAILY_CRON, BETTING_CRON])).toMatchObject({
       messagesPerDay: 29,
       operationsPerDay: 87,
+      archiveKv: {
+        finalizerRunsPerDay: 1,
+        readsPerRun: 2,
+        maximumOperationsPerRun: 8,
+        maximumConfiguredOperationsPerDay: 32,
+      },
     });
   });
 

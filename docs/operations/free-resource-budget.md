@@ -13,6 +13,15 @@ planning factor of three queue operations per delivery, or 87 operations/day;
 this factor is a conservative project estimate, not a Cloudflare billing
 definition.
 
+The national finaliser checks the edition archive once per daily run. A steady
+duplicate publication costs two KV reads for the existing summary and index.
+A worst-case new edition adds a content existence read, three KV writes and up
+to two retention deletes: at most eight archive KV operations per successful
+finaliser. With all three configured Queue retries applied to each daily
+finaliser, the modeled archive upper bound is 32 KV operations/day. This is
+separate from source-fragment KV activity and origin cache misses on the
+read-only edition routes; public request traffic still needs measurement.
+
 The queue allows three retries. If every scheduled delivery exhausts all three
 retries, the configured upper bound is 116 deliveries/day and 348 project
 operations/day. This is a failure bound, not a healthy target. Bootstrap and

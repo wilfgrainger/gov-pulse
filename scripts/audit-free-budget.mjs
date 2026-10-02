@@ -34,12 +34,28 @@ function deriveScheduledWork(registry, crons, { retryDeliveries = 0 } = {}) {
   const scheduled = dailyCronRuns * (dailyFeeds.length + 1 /* contract refresh */ + 1 /* finaliser */) +
     intervalRuns * (bettingFeeds.length + 1 /* finaliser */);
   const messagesPerDay = scheduled + retryDeliveries;
+  const dailyRuns = runs.filter(({ cron }) => cron.includes(" ") && !cron.split(/\s+/)[1].startsWith("*/"))
+    .reduce((sum, run) => sum + run.count, 0);
+  // Edition archives are touched by every national finaliser. A duplicate
+  // check reads its summary and index. A new edition adds one content check,
+  // three writes and up to two retention deletes.
+  const archiveKv = {
+    finalizerRunsPerDay: dailyRuns,
+    readsPerRun: 2,
+    maximumReadsPerRun: 3,
+    maximumWritesPerRun: 3,
+    maximumDeletesPerRun: 2,
+    maximumOperationsPerRun: 8,
+    maximumConfiguredRetryRunsPerDay: dailyRuns * 4,
+    maximumConfiguredOperationsPerDay: dailyRuns * 4 * 8,
+  };
   return {
     messagesPerDay,
     operationsPerDay: messagesPerDay * 3,
     scheduledMessagesPerDay: scheduled,
     retryDeliveries,
     maximumConfiguredRetryDeliveries: scheduled * 3,
+    archiveKv,
   };
 }
 

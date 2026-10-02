@@ -77,8 +77,8 @@ describe("MigrationStats evidence integrity", () => {
         name: "Net migration fell to 171,000 in the year ending December 2025.",
       })
     ).toBeInTheDocument();
-    expect(screen.getByText("813,000")).toBeInTheDocument();
-    expect(screen.getByText("642,000")).toBeInTheDocument();
+    expect(screen.getAllByText("813,000").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("642,000").length).toBeGreaterThan(0);
     expect(screen.getAllByText("171,000").length).toBeGreaterThan(0);
     expect(screen.getByText(/48% lower than the updated YE December 2024/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Published 21 May 2026/i).length).toBeGreaterThan(1);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type RefObject } from "react";
+import { useState, useSyncExternalStore, type RefObject } from "react";
 import {
   canRasterizeToPng,
   chartExportFilename,
@@ -8,16 +8,26 @@ import {
   downloadChartSvg,
   findChartSvg,
 } from "@/app/lib/chartExport";
+import type { ChartMetadata } from "@/app/lib/chartExport";
+import { exportPackageCitation, type ExportPackage } from "@/app/lib/chartModel";
 
 type Props = {
   /** Ref to the chart's container element (holds the rendered <svg>). */
   containerRef: RefObject<HTMLElement | SVGSVGElement | null>;
   /** Chart title, embedded as the exported file's accessible <title>. */
-  title: string;
+  title?: string;
+  exportPackage?: ExportPackage;
   /** Source-citation line reused verbatim from the chart's own citation, if any. */
   citation?: string;
+  chartMetadata?: ChartMetadata;
   className?: string;
 };
+
+const subscribeToPngSupport = () => () => {};
+const getServerPngSupport = () => false;
+function getClientPngSupport() {
+  return canRasterizeToPng();
+}
 
 /**
  * "Download chart as image" controls, alongside a chart's existing
@@ -29,9 +39,11 @@ type Props = {
  * PNG export additionally needs canvas rasterisation support; the button is
  * omitted (rather than shown and failing) when that is not available.
  */
-export default function ChartExportButtons({ containerRef, title, citation, className }: Props) {
+export default function ChartExportButtons({ containerRef, title, exportPackage, citation, chartMetadata, className }: Props) {
   const [error, setError] = useState<string | null>(null);
-  const pngSupported = canRasterizeToPng();
+  const pngSupported = useSyncExternalStore(subscribeToPngSupport, getClientPngSupport, getServerPngSupport);
+  const exportTitle = exportPackage?.title ?? title ?? "Evidence chart";
+  const exportCitation = exportPackage ? exportPackageCitation(exportPackage) : citation;
 
   function withSvg(action: (svg: SVGSVGElement) => void) {
     const svg = findChartSvg(containerRef.current ?? null);
@@ -44,12 +56,12 @@ export default function ChartExportButtons({ containerRef, title, citation, clas
   }
 
   function handleSvgDownload() {
-    withSvg((svg) => downloadChartSvg(svg, chartExportFilename(title, "svg"), { title, citation }));
+    withSvg((svg) => downloadChartSvg(svg, chartExportFilename(exportTitle, "svg"), { title: exportTitle, citation: exportCitation, exportPackage, chartMetadata }));
   }
 
   async function handlePngDownload() {
     withSvg((svg) => {
-      downloadChartPng(svg, chartExportFilename(title, "png"), { title, citation }).catch(() => {
+      downloadChartPng(svg, chartExportFilename(exportTitle, "png"), { title: exportTitle, citation: exportCitation, exportPackage, chartMetadata }).catch(() => {
         setError("Could not create a PNG image of this chart. SVG export remains available.");
       });
     });

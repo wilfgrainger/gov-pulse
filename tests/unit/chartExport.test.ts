@@ -5,6 +5,7 @@ import {
   findChartSvg,
   serializeChartSvg,
 } from "@/app/lib/chartExport";
+import type { ExportPackage } from "@/app/lib/chartModel";
 
 function makeChartSvg(): SVGSVGElement {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement;
@@ -87,6 +88,55 @@ describe("serializeChartSvg", () => {
     const markup = serializeChartSvg(svg, { citation: "Source: ONS, published 1 January 2026" });
     expect(markup).toContain("Source: ONS, published 1 January 2026");
     expect(markup).toMatch(/height="318"/); // 300 + 18px footer
+  });
+
+  it("wraps long citations into a larger readable footer at narrow and wide sizes", () => {
+    const citation = "Source edition ons-labour-2026-06 https://www.ons.gov.uk/labour-market published 2026-05-19 covering January to March 2026; survey estimate subject to sampling uncertainty and revision.";
+    const narrow = makeChartSvg();
+    narrow.setAttribute("viewBox", "0 0 240 180");
+    narrow.setAttribute("width", "240");
+    narrow.setAttribute("height", "180");
+    const narrowMarkup = serializeChartSvg(narrow, { citation });
+    const wideMarkup = serializeChartSvg(makeChartSvg(), { citation });
+
+    expect(narrowMarkup).toMatch(/height="\d{3}"/);
+    expect(wideMarkup).toMatch(/height="\d{3}"/);
+    expect(narrowMarkup).toContain("uncertainty and revision.");
+  });
+
+  it("embeds the export package as portable SVG metadata", () => {
+    const exportPackage = {
+      title: "Unemployment rate",
+      dateWindow: { start: "2026-01-01", end: "2026-03-31" },
+      measures: [{ id: "unemployment", sourceUrl: "https://www.ons.gov.uk/labour-market", sourceEditionId: "ons-labour-2026-06" }],
+      caveats: ["Survey estimate."],
+    } as unknown as ExportPackage;
+    const markup = serializeChartSvg(makeChartSvg(), { exportPackage });
+    expect(markup).toContain('id="public-data-export-package"');
+    expect(markup).toContain("ons-labour-2026-06");
+    expect(markup).toContain("2026-01-01");
+    expect(markup).toContain("Survey estimate.");
+  });
+
+  it("embeds legacy financial chart citation, plotted window, series and caveat as structured SVG metadata", () => {
+    const chartMetadata = {
+      schemaVersion: 1,
+      title: "GDP growth",
+      sourceCitation: "ONS · https://www.ons.gov.uk/gdp · published 2026-09-01",
+      observationWindow: {
+        start: { period: "August 2026", observedAt: "2026-08-01T00:00:00.000Z" },
+        end: { period: "September 2026", observedAt: "2026-09-01T00:00:00.000Z" },
+      },
+      series: [{ key: "growth", label: "Three-month growth" }],
+      caveats: ["Early estimate; subject to revision."],
+    };
+    const markup = serializeChartSvg(makeChartSvg(), { chartMetadata });
+
+    expect(markup).toContain('id="public-data-chart-metadata"');
+    expect(markup).toContain("https://www.ons.gov.uk/gdp");
+    expect(markup).toContain("September 2026");
+    expect(markup).toContain("Three-month growth");
+    expect(markup).toContain("subject to revision");
   });
 
   it("does not mutate the original live chart <svg>", () => {

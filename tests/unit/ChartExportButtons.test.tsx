@@ -1,4 +1,5 @@
 import { createRef } from "react";
+import { renderToString } from "react-dom/server";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ChartExportButtons from "@/app/components/ChartExportButtons";
@@ -28,12 +29,21 @@ describe("ChartExportButtons", () => {
     expect(screen.getByRole("button", { name: "SVG" })).toBeInTheDocument();
   });
 
-  it("renders a PNG control when canvas rasterisation is supported", () => {
+  it("renders a PNG control when canvas rasterisation is supported", async () => {
     vi.spyOn(chartExport, "canRasterizeToPng").mockReturnValue(true);
     const { ref } = containerWithSvg();
     render(<ChartExportButtons containerRef={ref} title="Example chart" />);
 
-    expect(screen.getByRole("button", { name: "PNG" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "PNG" })).toBeInTheDocument();
+  });
+
+  it("keeps PNG capability out of server-rendered markup until browser hydration", () => {
+    vi.spyOn(chartExport, "canRasterizeToPng").mockReturnValue(true);
+    const ref = createRef<HTMLDivElement>();
+
+    const html = renderToString(<ChartExportButtons containerRef={ref} title="Example chart" />);
+
+    expect(html).not.toContain(">PNG<");
   });
 
   it("omits the PNG control when canvas rasterisation is not supported", () => {

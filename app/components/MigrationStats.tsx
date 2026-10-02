@@ -283,6 +283,7 @@ export default function MigrationStats() {
           <FinancialTimeSeriesChart
             title="Long-term migration: ten annual observations"
             description="December year-ending estimates from the latest ONS revised time series. Components are independently rounded, so older arithmetic can differ from published net migration by up to 1,000."
+            citation={`Office for National Statistics · ${payload.source.bulletinUrl} · published ${headline.releaseDate} · observation period ${headline.period} · provisional estimates may be revised; independently rounded components can differ from net migration by up to 1,000.`}
             data={payload.history}
             series={[
               { key: "immigration", label: "Immigration", color: "#14243b" },

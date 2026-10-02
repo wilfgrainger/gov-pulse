@@ -14,6 +14,13 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(currentSearch),
 }));
 
+vi.mock("@/app/components/ChartExportButtons", () => ({
+  default: ({ citation, chartMetadata }: { citation: string; chartMetadata: unknown }) => <>
+    <output data-testid="chart-export-citation">{citation}</output>
+    <output data-testid="chart-export-metadata">{JSON.stringify(chartMetadata)}</output>
+  </>,
+}));
+
 vi.mock("@/app/lib/metricsSnapshot", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/lib/metricsSnapshot")>()),
   fetchMetricsSnapshot: () => Promise.reject(new Error("offline test")),
@@ -109,6 +116,13 @@ describe("public data explorer", () => {
     expect(strongLabel).toHaveTextContent("Central government receipts");
     expect(screen.getByText(/right axis, own scale/i)).toBeInTheDocument();
     expect(screen.getByText(/Source for Central government receipts/i)).toBeInTheDocument();
+    expect(screen.getByTestId("chart-export-citation")).toHaveTextContent("https://www.ons.gov.uk/employmentandlabourmarket/uklabourmarket/september2026");
+    expect(screen.getByTestId("chart-export-citation")).toHaveTextContent("https://www.ons.gov.uk/economy/publicsectorfinances/august2026");
+    expect(screen.getByTestId("chart-export-citation")).toHaveTextContent("published 2026-09-17");
+    expect(screen.getByTestId("chart-export-citation")).toHaveTextContent("published 2026-09-22");
+    const exportMetadata = JSON.parse(screen.getByTestId("chart-export-metadata").textContent ?? "null") as { series: { label: string }[]; caveats: string[] };
+    expect(exportMetadata.series).toHaveLength(2);
+    expect(exportMetadata.caveats.join(" ")).toMatch(/separate vertical scale/i);
     const img = screen.getByRole("img", { name: /Unemployment rate/i });
     expect(img.getAttribute("aria-label")).toMatch(/Overlaid for comparison: Central government receipts/);
     expect(img.getAttribute("aria-label")).toMatch(/Not combined into one value/);

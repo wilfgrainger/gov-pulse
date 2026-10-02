@@ -13,6 +13,7 @@ import {
 import ChartExportButtons from "@/app/components/ChartExportButtons";
 import ClientOnlyChart from "@/app/components/ClientOnlyChart";
 import { fieldworkMidpointMs } from "@/app/lib/pollingDates";
+import { buildPublicationExportPackage } from "@/app/lib/chartModel";
 
 type PartyMeta = { label: string; color: string };
 
@@ -22,6 +23,16 @@ type PollLike = {
   fieldworkStart: string;
   fieldworkEnd: string;
   sampleSize: number;
+  title: string;
+  commissioner: string;
+  publicationDate: string;
+  geography: string;
+  population: string;
+  mode: string;
+  headlineMethod: string;
+  sourceUrl: string;
+  methodologyUrl: string;
+  uncertainty: string | null;
   parties: Record<string, number | undefined>;
 };
 
@@ -113,6 +124,31 @@ export default function PollingPublicationChart<PartyKey extends string>({
       : "Published history unavailable";
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartTitle = "Individual poll publications by party share";
+  const exportPackage = polls.length ? buildPublicationExportPackage({
+    title: chartTitle,
+    dateWindow: {
+      start: polls.map((poll) => poll.fieldworkStart).toSorted()[0],
+      end: polls.map((poll) => poll.fieldworkEnd).toSorted().at(-1)!,
+    },
+    publications: polls.map((poll) => ({
+      id: poll.id,
+      publisher: poll.pollster,
+      sourceUrl: poll.sourceUrl,
+      methodologyUrl: poll.methodologyUrl,
+      publishedAt: poll.publicationDate,
+      fieldworkStart: poll.fieldworkStart,
+      fieldworkEnd: poll.fieldworkEnd,
+      disclosures: [
+        poll.title,
+        `Commissioned by ${poll.commissioner}`,
+        poll.headlineMethod,
+        `${poll.population}; ${poll.geography}; ${poll.mode}`,
+        `Sample size ${poll.sampleSize.toLocaleString("en-GB")}`,
+        poll.uncertainty ?? "No publication-specific numeric uncertainty statement verified.",
+      ],
+    })),
+    caveats: ["Each mark is one publisher-reported poll result; the sample count is not used to calculate uncertainty. No average or forecast is presented."],
+  }) : undefined;
 
   return (
     <figure className="border-y border-black/20 bg-[#f7f9fb] py-5">
@@ -254,7 +290,7 @@ export default function PollingPublicationChart<PartyKey extends string>({
             </span>
           ))}
         </div>
-        <ChartExportButtons containerRef={chartContainerRef} title={chartTitle} />
+        <ChartExportButtons containerRef={chartContainerRef} title={chartTitle} exportPackage={exportPackage} />
       </div>
       <p className="mt-3 max-w-3xl px-1 text-xs leading-5 text-gray-500">
         The sample count does not establish a representative simple random sample.

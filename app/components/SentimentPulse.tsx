@@ -276,6 +276,7 @@ export default function SentimentPulse() {
           <FinancialTimeSeriesChart
             title={`${selected.label}: published history`}
             description={`${selected.publisher}. Exact publication points; no smoothing, interpolation or filled area.`}
+            citation={`${selected.publisher} · ${selected.sourceUrl} · published ${formatPublishedAt(selected.publishedAt)} · observation period ${selected.period} · ${selected.revisionStatus}`}
             data={chartData}
             series={[
               {

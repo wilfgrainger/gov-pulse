@@ -3,6 +3,13 @@ import { SECTIONS } from "../lib/sections";
 import BrandLogo from "./BrandLogo";
 
 const publicationLinks = [
+  ["Measure library", "/measure/"],
+  ["Comparison studio", "/compare/"],
+  ["Latest briefing", "/briefing/"],
+  ["Release calendar", "/calendar/"],
+  ["Cost-of-living lens", "/cost-of-living/"],
+  ["Public-money dossiers", "/money/"],
+  ["Edition archive", "/editions/"],
   ["Sources and methods", "/sources"],
   ["About", "/about"],
   ["Editorial policy", "/editorial-policy"],

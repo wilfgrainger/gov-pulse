@@ -27,6 +27,7 @@ import { buildPublicationDiagnostics } from "../contracts/publication-diagnostic
 import { FEED_REGISTRY } from "./feed-registry.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
 import { refreshInternationalComparison } from "./international-comparison-publication.js";
+import { archiveEdition } from "./edition-archive.js";
 
 const PUBLICATION_SECTION_PREFIX = "v12:publication:section:";
 const PUBLICATION_HISTORY_TTL_SECONDS = 14 * 24 * 60 * 60;
@@ -269,6 +270,20 @@ async function publishFromCaches(env, options = {}) {
 
   const publication = preserveEditionClock(currentCandidate, current);
   const changed = !current || !samePublicationEvidence(publication, current);
+  if (publication.meta.measureCatalog && publication.meta.editionSummary) {
+    try {
+      await archiveEdition(env, publication.meta.measureCatalog, publication.meta.editionSummary);
+      publication.meta.editionArchiveStatus = "ready";
+    } catch (error) {
+      publication.meta.editionArchiveStatus = "unavailable";
+      console.error("Publication edition archive failed", {
+        editionId: publication.meta.measureCatalog.editionId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  } else {
+    publication.meta.editionArchiveStatus = "unavailable";
+  }
   publication.meta.delivery = "published-snapshot";
   publication.meta.publicationDiagnostics = buildPublicationDiagnostics(
     publication,

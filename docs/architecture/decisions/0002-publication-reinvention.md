@@ -25,6 +25,13 @@ before selecting the top 100. Postcode-area letters alone do not establish a
 UK nation; use an exact publisher-provided nation name or retain
 `Other/Unknown` until an address-level authoritative lookup can be verified.
 
+The exact data Worker public surface includes two read-only edition archive
+contracts, `/data/editions.json` and `/data/edition.json?edition=...`. The list
+is capped at 60 retained releases; lookup accepts one validated edition id and
+returns its immutable historical catalog with an explicit as-of date. Both
+routes must be present in `contracts/public-surfaces.json` and the Worker's
+exact route table. Wildcard data ingress remains prohibited.
+
 ## Consequences
 
 New public routes require a manifest change and a route test. Displayed measures

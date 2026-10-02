@@ -16,6 +16,12 @@ export interface MetricsSnapshot {
     generatedAt?: string;
     sources: Record<string, SnapshotSourceStatus>;
     measureCatalog?: MeasureCatalog;
+    editionSummary?: {
+      id: string;
+      publishedAt: string;
+      sourceEditionIds: string[];
+      changes: { measureId: string; kind: "new-observation" | "revision" | "method-change"; observedAt: string | null; period: string | null; previousSourceEditionId: string | null; nextSourceEditionId: string; previousRevisionId: string | null; nextRevisionId: string; previous: number | null; next: number | null }[];
+    };
     [key: string]: unknown;
   };
   [section: string]: unknown;

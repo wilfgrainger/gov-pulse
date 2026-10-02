@@ -10,15 +10,11 @@ import { MEASURE_COUNTS_BY_ROUTE } from "../../app/lib/sections";
 const wrangler = readFileSync("worker/wrangler.toml", "utf8");
 
 describe("approved public evidence surfaces", () => {
-  it("accepts a new exact read-only catalog route when the public manifest authorizes it", () => {
-    const additionalRoute = [
-      "[[routes]]",
-      'pattern = "public-data.org/data/measure-catalog.json"',
-      'zone_name = "public-data.org"',
-      "",
-    ].join("\n");
-
-    expect(unsupportedWorkerIngress(`${wrangler}\n${additionalRoute}`)).toEqual([]);
+  it("authorizes the exact edition archive routes and leaves retired endpoints closed", () => {
+    expect(unsupportedWorkerIngress(wrangler)).toEqual([]);
+    expect(publicRouteAllowed("/data/editions.json")).toBe(true);
+    expect(publicRouteAllowed("/data/edition.json?edition=catalog-1.2-a")).toBe(true);
+    expect(publicRouteAllowed("/data/measure-catalog.json")).toBe(false);
   });
 
   it("does not turn an approved data route into public collector access", () => {

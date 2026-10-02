@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import MetricsStatus from "@/app/components/MetricsStatus";
 import PollingPublicationChart from "@/app/components/PollingPublicationChart";
+import { barWidthPercent } from "@/app/lib/chartModel";
+import { filterPollingPublications, pollingLabOptions } from "@/app/lib/pollingLab";
 import { useMetrics } from "@/app/lib/useMetrics";
 
 const FALLBACK = {
@@ -146,14 +149,50 @@ export default function ElectionPolling() {
   const data = metrics.data;
   const valid =
     metrics.isLive && metrics.cacheState === "fresh" && validPayload(data);
-  const polls = valid ? (data.polls as PrimaryPoll[]) : [];
+  const allPolls = valid ? (data.polls as PrimaryPoll[]) : [];
+  const [filters, setFilters] = useState({ pollster: "all", from: "", to: "" });
+  const pollsters = pollingLabOptions(allPolls);
+  const polls = filterPollingPublications(allPolls, filters);
   const latest = polls[0] ?? null;
   const parties = latest ? rankedParties(latest) : [];
   const leader = parties[0] ?? null;
 
   return (
     <div className="space-y-8">
-      {latest && leader ? (
+      {valid ? (
+        <section aria-labelledby="polling-lab-title" className="border-y border-foreground bg-white p-5 md:p-6">
+          <p className="eyebrow">Primary publications, kept separate</p>
+          <h3 id="polling-lab-title" className="mt-2 text-2xl font-bold">Polling lab</h3>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-700">
+            Filter actual pollster releases by publisher and overlapping fieldwork dates. Each result remains one named publication; no poll average or seat forecast is calculated.
+          </p>
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            <label className="grid gap-1 text-sm font-semibold">
+              <span>Pollster</span>
+              <select aria-label="Filter polling by pollster" value={filters.pollster} onChange={(event) => setFilters((current) => ({ ...current, pollster: event.target.value }))} className="min-h-11 border border-foreground bg-white px-3">
+                <option value="all">All verified pollsters</option>
+                {pollsters.map((pollster) => <option key={pollster} value={pollster}>{pollster}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-semibold">
+              <span>Fieldwork from</span>
+              <input aria-label="Polling fieldwork from" type="date" value={filters.from} onChange={(event) => setFilters((current) => ({ ...current, from: event.target.value }))} className="min-h-11 border border-foreground bg-white px-3" />
+            </label>
+            <label className="grid gap-1 text-sm font-semibold">
+              <span>Fieldwork to</span>
+              <input aria-label="Polling fieldwork to" type="date" value={filters.to} onChange={(event) => setFilters((current) => ({ ...current, to: event.target.value }))} className="min-h-11 border border-foreground bg-white px-3" />
+            </label>
+          </div>
+          <p className="mt-3 text-sm text-gray-600" aria-live="polite">Showing {polls.length} of {allPolls.length} verified publications.</p>
+        </section>
+      ) : null}
+
+      {valid && polls.length === 0 ? (
+        <section role="status" className="border-l-4 border-accent bg-white p-6">
+          <h3 className="text-xl font-semibold">No poll publications match these filters</h3>
+          <p className="mt-2 text-sm text-gray-700">Widen the fieldwork window or select another verified pollster. No values are filled in between publications.</p>
+        </section>
+      ) : latest && leader ? (
         <>
           <section aria-labelledby="polling-briefing-title" className="border-y border-foreground py-6">
             <p className="text-sm font-semibold text-accent">Latest verified primary publication</p>
@@ -186,7 +225,7 @@ export default function ElectionPolling() {
                     <div
                       className="h-full"
                       style={{
-                        width: `${Math.min(100, Math.max(0, share))}%`,
+                        width: `${barWidthPercent(share, 100)}%`,
                         backgroundColor: PARTY_META[key].color,
                       }}
                     />

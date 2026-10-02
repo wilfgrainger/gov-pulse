@@ -1,4 +1,5 @@
 import { readServerInternationalComparison } from "@/app/lib/serverInternationalComparison";
+import CountryComparisonFigures from "@/app/components/CountryComparisonFigures";
 import {
   COMPARISON_COUNTRY_NAMES,
   COMPARISON_MEASURE_ORDER,
@@ -241,6 +242,8 @@ export default async function InternationalComparison() {
           </p>
         </aside>
       ) : null}
+
+      {publication ? <CountryComparisonFigures measures={publication.measures} /> : null}
 
       <div className="mt-7 border-y border-[#14243b]">
         <div className="overflow-x-auto">

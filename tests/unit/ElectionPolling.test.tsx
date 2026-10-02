@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ElectionPolling from "@/app/components/ElectionPolling";
 
@@ -96,6 +96,8 @@ describe("ElectionPolling evidence integrity", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/2,285 GB adults/i)).toBeInTheDocument();
     expect(screen.getByText(/This is one poll publication, not a polling average/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Polling lab" })).toBeInTheDocument();
+    expect(screen.getByText("Showing 1 of 1 verified publications.")).toBeInTheDocument();
     expect(screen.getByText("What changed?")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "One current publication; no trend is inferred" })
@@ -115,6 +117,28 @@ describe("ElectionPolling evidence integrity", () => {
       current.polls[0].methodologyUrl
     );
     expect(screen.queryByText(/public-data\.org polling average/i)).not.toBeInTheDocument();
+  });
+
+  it("filters actual pollster publications by fieldwork without combining them", () => {
+    const secondPoll = {
+      ...current.polls[0],
+      id: "ipsos-2026-07-12",
+      pollster: "Ipsos",
+      title: "Ipsos voting intention publication",
+      publicationDate: "2026-07-12",
+      fieldworkStart: "2026-07-11",
+      fieldworkEnd: "2026-07-12",
+      sourceUrl: "https://www.ipsos.com/en-uk/voting-intention",
+      methodologyUrl: "https://www.ipsos.com/en-uk/methodology",
+    };
+    useMetrics.mockReturnValue(result({ ...current, polls: [current.polls[0], secondPoll] }));
+
+    render(<ElectionPolling />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Filter polling by pollster" }), { target: { value: "Ipsos" } });
+
+    expect(screen.getByText("Showing 1 of 2 verified publications.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ipsos reports Reform UK at 24%." })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "YouGov reports Reform UK at 24%." })).not.toBeInTheDocument();
   });
 
   it("shows the publication disclosure register", () => {

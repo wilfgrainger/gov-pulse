@@ -18,10 +18,13 @@ import {
   refreshInternationalComparison,
 } from "./international-comparison-publication.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
+import { listEditionSummaries, readEdition } from "./edition-archive.js";
 
 const SNAPSHOT_PATH = "/data/metrics-snapshot.json";
 const HEALTH_PATH = "/data/health.json";
 const COMPARISON_PATH = "/data/international-comparison.json";
+const EDITIONS_PATH = "/data/editions.json";
+const EDITION_PATH = "/data/edition.json";
 const DEFAULT_SEED_URL =
   "https://public-data-org.pages.dev/data/metrics-snapshot.json";
 const PUBLIC_CACHE_FRESH_SECONDS = 300;
@@ -308,6 +311,23 @@ async function comparisonResponse(request, env) {
   });
 }
 
+async function editionsResponse(request, env) {
+  const url = new URL(request.url);
+  if (url.searchParams.size) return json({ error: "Release listing does not accept query parameters" }, { status: 400, head: request.method === "HEAD" });
+  const editions = await listEditionSummaries(env);
+  return json({ editions, retention: editions.length }, { head: request.method === "HEAD", cacheControl: "public, max-age=60, s-maxage=60" });
+}
+
+async function editionResponse(request, env, url) {
+  const values = url.searchParams.getAll("edition");
+  if (values.length !== 1 || url.searchParams.size !== 1 || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/.test(values[0])) {
+    return json({ error: "A single valid edition id is required" }, { status: 400, head: request.method === "HEAD" });
+  }
+  const result = await readEdition(env, values[0]);
+  if (!result) return json({ error: "Edition not found" }, { status: 404, head: request.method === "HEAD" });
+  return json({ edition: result.summary.id, asOf: result.asOf, availability: "historical", measureCatalog: result.catalog, summary: result.summary }, { head: request.method === "HEAD", cacheControl: "public, max-age=31536000, s-maxage=31536000, immutable" });
+}
+
 async function healthResponse(request, env) {
   if (!env?.METRICS_CACHE?.getWithMetadata) {
     return json(
@@ -356,7 +376,7 @@ async function healthResponse(request, env) {
 const publicDataWorker = {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (![SNAPSHOT_PATH, HEALTH_PATH, COMPARISON_PATH].includes(url.pathname)) {
+    if (![SNAPSHOT_PATH, HEALTH_PATH, COMPARISON_PATH, EDITIONS_PATH, EDITION_PATH].includes(url.pathname)) {
       return json({ error: "Not found" }, { status: 404 });
     }
     if (request.method === "OPTIONS") {
@@ -368,6 +388,8 @@ const publicDataWorker = {
     try {
       if (url.pathname === HEALTH_PATH) return healthResponse(request, env);
       if (url.pathname === COMPARISON_PATH) return comparisonResponse(request, env);
+      if (url.pathname === EDITIONS_PATH) return editionsResponse(request, env);
+      if (url.pathname === EDITION_PATH) return editionResponse(request, env, url);
       return snapshotResponse(request, env);
     } catch {
       return json(
@@ -397,9 +419,13 @@ const publicDataWorker = {
 
 export {
   COMPARISON_PATH,
+  EDITION_PATH,
+  EDITIONS_PATH,
   HEALTH_PATH,
   SNAPSHOT_PATH,
   comparisonResponse,
+  editionResponse,
+  editionsResponse,
   currentPublicArtifact,
   currentPublicSnapshot,
   fetchSeedSnapshot,

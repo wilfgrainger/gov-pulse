@@ -78,3 +78,60 @@ Task 7: canonical catalog and additive publication migration. Task 2 Free-accoun
 ## Current next step
 
 Task 8: repair and standardize every existing evidence figure, beginning with common clipping/observation table/export contracts. Continue to carry Task 2 Free-quota/account/source limitations and Task 6 live source collection explicitly; neither has been verified externally.
+
+## Continuation through Tasks 8–19 (implementation remains in progress)
+
+- Added a common publication-point figure for validated catalog measures, date-window clipping, gap/revision segmentation, an exact observation table, disclosed axis bounds, and portable source packages. The existing financial and polling charts now show accessible observation tables; polling dots remain disconnected and contracting bars retain zero-based proportions. Legacy chart owners still need source-complete export packages and populated browser fixtures, so Task 8 is not closed.
+- Applied the coral/teal/ochre editorial system, updated the masthead, chart-led home and feature navigation. Desktop and mobile screenshots were inspected for home and comparison; the full browser sweep walks the active topic pages, but populated source states and every route's screenshot review remain outstanding.
+- Added the measure library and measure detail routes (records come only from the validated catalog), comparison workspace with URL state, dated briefing/RSS edition notes and cited guide stories, publisher-announced release calendar with ICS, and an on-device watchlist with bounded import/export. These pages use honest empty states when the local build has no publication snapshot.
+- Added a cost-of-living lens with separate CPI, real-pay and Bank Rate figures. Private rent remains unavailable pending a verifiable named ONS release and live source access.
+- Added publication/date filters to the polling lab. The currently verified collector still returns only one recent YouGov publication; a second named pollster and bounded real historical collection could not be validated through the blocked source proxy.
+- Added corrected-award search/dossiers, interactive country dot figures with denominator/status disclosures, dated source records, revision summaries and a content-addressed 60-edition archive. Archive routes are now attached as two exact read-only Cloudflare Worker routes and are contract-tested. The public-site lookup is code-reviewed locally; production-origin archive reads remain unobserved because no deployment was performed.
+- Updated the free workload model to include an archive upper bound of 32 KV operations/day under the modeled daily finaliser retry bound. It remains a model; account entitlements, actual cache-miss traffic and 20% quota headroom are not verified.
+
+### Latest verification
+
+- `npm test`: 706 tests across 131 files passed after the legacy chart export metadata change.
+- `npm run lint`: passed.
+- `npm run build:prepare && npm run build`: passed; Next generated 60 routes, including all new routes.
+- `npm run test:e2e` with the system Chromium binary: 21 passed, 3 skipped (the deployment-only live mobile audit and project-specific mobile checks); desktop and mobile route sweeps, active sections, 320/360px layouts and the no-JavaScript measure-library response passed.
+- `npm run hosting:check`, static architecture, source ownership, free-budget audit and `git diff --check`: passed. Static architecture recognizes five exact public data routes.
+- Playwright's bundled Chromium download failed with HTTP 403 from the environment proxy; E2E was run with `/usr/bin/chromium` via the explicit local executable setting.
+- Added a route-wide 640px viewport audit as a 200% zoom-equivalent, with reduced motion enabled. The new check passed across all 18 topic routes plus the principal atlas, comparison, briefing, calendar, cost, money, edition and source routes. This still exercises the unseeded local edition; component fixtures cover populated page data but not every chart in the browser.
+
+### Continuation: legacy time-series export provenance
+
+- Added source-citation watermarks to every `FinancialTimeSeriesChart` export, including publisher/source URL, publication date, observation period and chart-specific caveat where the owning payload provides those fields. Bank Rate now uses its own series source fields rather than a generic snapshot citation.
+- The shared chart appends the actual plotted observation range and description to the supplied source line and embeds a versioned JSON metadata block in each SVG/PNG source image with citation, first/last observations, series labels and caveats. Regression tests cover both the visible footer and metadata.
+- Full verification after this change: `npm test` passed 706 tests across 131 files; lint and `npm run build:prepare && npm run build` passed (60 routes). Task 8 remains open for populated/expired/historical browser coverage and chart owners outside this financial-series component.
+- A new route-wide 200% zoom-equivalent/reduced-motion Playwright audit passed across all topic routes and principal feature/source routes. The unseeded full browser sweep passed 21 tests / 3 skips before this added check; the new desktop check also passed by itself (its mobile-project counterpart is intentionally skipped).
+
+### Review follow-up: comparison exports and public-money dossiers
+
+- Data Explorer comparison images now carry both source URLs, publication dates, and each measure's plotted period in the visible export citation and versioned SVG metadata. The metadata includes both series labels and explicitly records their independent scales and non-interpolated lines.
+- Public-money dossiers now offer single-notice, exact-buyer-string, and exact-supplier-string views over the visible filtered award universe. Totals and notice links are bounded to that universe; the UI warns that name matches do not establish entity identity, multi-supplier values are not allocated, and the publication window is not a complete revision history.
+- Focused regressions for Data Explorer exports and grouped notice dossiers passed (39 tests, then 21 additional page/data tests). Full verification after these changes passed 708 tests across 132 files, lint, `npm run build:prepare && npm run build` (60 routes), and Playwright (22 passed, 4 skipped).
+- Remaining review gaps: the measure atlas covers only the eight canonical records currently registered; the polling lab still lacks a second live primary publisher; populated browser chart fixtures and complete export migration for non-financial chart owners remain open.
+
+### Continuation: portable country exports and truthful procurement count
+
+- Country-comparison SVG exports now carry the selected country/value/year/evidence/rank rows, source URLs and publication dates, visible denominator, and exclusion/measure caveats in their versioned metadata. The rendered chart remains paired with the exact selected-observations table.
+- Procurement concentration now says it draws the first 20 of the filtered suppliers and gives the full-publication count; the ranked chart does not imply that all suppliers are drawn.
+- Fixed PNG capability detection to use an SSR-stable external-store snapshot. The server and hydration markup both omit PNG until the browser checks canvas support, removing the previously observed server/browser mismatch.
+- Regression tests covered selected chart-export content, server-rendered export controls and the procurement display cap. Verification: `npm test` passed 710 tests across 132 files; lint, changed-text policy, architecture, source ownership, hosting boundary, Free budget audit and `git diff --check` passed. `npm run build:prepare && npm run build` passed and generated 60 routes. Playwright passed 22 tests with 4 deployment-only/mobile skips; this still uses an unseeded publication and does not prove populated chart journeys.
+
+### Continuation: supplier ranking export and live-source retry
+
+- Replaced the procurement supplier concentration strips with one zero-based SVG figure using the current nation filter. Its SVG/PNG exports retain every plotted supplier name, disclosed value, award count, nation, full-publication denominator, source API link, complete update window and allocation caveats. The graphic continues to show at most 20 ranks and explicitly reports the filtered and full counts.
+- Added tests for export metadata and the populated component export action, including the unavailable-publication path.
+- Retried read-only access to Ipsos, Opinium, ONS private-rent and Cloudflare limits pages on 2 October 2026. Every connection failed at the environment proxy with CONNECT 403; no additional source or account-limit claims could be validated.
+- Added an exact semantic observation table for the plotted supplier rows, plus a filtered CSV download in Public Money. The CSV contains only the current visible awards, is correctly quoted, and includes each official notice and procurement-history link; click tests confirm buyer filtering is reflected in the file.
+- Verification after these changes: `npm test` passed 713 tests across 133 files; lint and changed-text policy passed; `npm run build:prepare && npm run build` passed and generated 60 routes. The populated procurement chart and filtered CSV are exercised by unit fixtures. No new browser pass was run because the local E2E edition remains unseeded and would not exercise the populated chart state.
+
+### Still open
+
+- Task 2: verify Cloudflare account Free-plan quotas and required headroom from an authorized network; quantify public archive-cache misses and source egress.
+- Task 6/14: obtain live MoJ, Early Years and ONS private-rent source records; the earlier proxy CONNECT 403 prevents live source validation.
+- Task 8/19: complete populated, partial, expired and historical browser fixtures at 200% zoom, with reduced-motion, keyboard and export coverage. The latest E2E run uses an unseeded local publication and is not evidence that populated production charts render correctly. Small sparklines are contextual summaries; political-compass and individual procurement bars remain non-downloadable, with surrounding source/evidence or direct notice links.
+- Task 15: verify a second primary polling publisher and a real historical release stream before describing the lab as multi-pollster.
+- No Worker was deployed, and no production URL or active revision was checked.

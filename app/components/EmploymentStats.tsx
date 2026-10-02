@@ -182,6 +182,7 @@ export default function EmploymentStats() {
           <FinancialTimeSeriesChart
             title="Labour-force rates: ten-year direction"
             description="Rolling three-month ONS estimates. Each line uses the same Labour Force Survey period; straight segments join published observations."
+            citation={`Office for National Statistics · ${data.source.bulletinUrl} · published ${data.headline.releaseDate} · Labour Force Survey observation period ${data.headline.period} · estimates carry sampling uncertainty and may be revised.`}
             data={data.history.labourForce}
             series={[
               { key: "employmentRate", label: "Employment", color: "#14243b" },
@@ -194,6 +195,7 @@ export default function EmploymentStats() {
           <FinancialTimeSeriesChart
             title="UK vacancies: ten-year direction"
             description="Rolling three-month ONS Vacancy Survey estimate. This is a separate employer survey and is not forced onto the Labour Force Survey clock."
+            citation={`Office for National Statistics · ${data.source.bulletinUrl} · published ${data.headline.releaseDate} · Vacancy Survey observation period ${data.headline.vacanciesPeriod} · separate employer survey; not the Labour Force Survey.`}
             data={data.history.vacancies}
             series={[{ key: "vacancies", label: "Vacancies", color: "#14243b" }]}
             valueFormatter={formatPeople}

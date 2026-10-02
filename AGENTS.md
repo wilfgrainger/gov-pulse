@@ -60,9 +60,11 @@ The product has three deliberately small delivery planes:
    currentness decision. Static application assets are served from the same
    Worker bundle.
 2. Cloudflare Worker `worker/public-data-entry.js` owns the runtime data plane.
-   Its only public HTTP routes are the more-specific
-   `/data/metrics-snapshot.json`, `/data/health.json`, and
-   `/data/international-comparison.json`; all other paths return 404. The
+   Its only public HTTP routes are the exact manifest entries in
+   `contracts/public-surfaces.json`: `/data/metrics-snapshot.json`,
+   `/data/health.json`, `/data/international-comparison.json`,
+   `/data/editions.json`, and `/data/edition.json` (one validated `edition`
+   query value); all other paths return 404. The
    application and browser consume these as same-origin public contracts; no
    collector or operational route is exposed.
 3. Cloudflare Pages retains a bounded static seed/fallback export. It is not the

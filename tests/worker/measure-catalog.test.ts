@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildMeasureCatalog } from "../../worker/measure-catalog.js";
+import { buildMeasureCatalog, catalogRevisionIdentity } from "../../worker/measure-catalog.js";
 import { FEED_REGISTRY_VERSION } from "../../worker/feed-registry.js";
 
 const now = new Date("2026-07-01T12:00:00.000Z");
@@ -70,5 +70,27 @@ describe("Worker measure catalog", () => {
     const value = snapshot();
     value.meta.registryVersion = "old-version";
     expect(Object.keys(buildMeasureCatalog(value, now).measures)).toEqual([]);
+  });
+
+  it("keeps a publication identity stable across fetch refreshes but changes it for historical corrections", () => {
+    const original = buildMeasureCatalog(snapshot(), now);
+    const refreshedSnapshot = snapshot();
+    refreshedSnapshot.meta.generatedAt = "2026-07-02T10:00:00.000Z";
+    refreshedSnapshot.meta.sources.employmentStats = {
+      ...source,
+      fetchedAt: "2026-07-02T10:00:00.000Z",
+    };
+    const refreshed = buildMeasureCatalog(refreshedSnapshot, new Date("2026-07-02T12:00:00.000Z"));
+    expect(refreshed.editionId).toBe(original.editionId);
+
+    const correctedSnapshot = snapshot();
+    correctedSnapshot.employmentStats.history.labourForce.unshift({
+      period: "January 2026",
+      observedAt: "2026-02-28T00:00:00.000Z",
+      unemploymentRate: 4.7,
+    });
+    const corrected = buildMeasureCatalog(correctedSnapshot, now);
+    expect(corrected.measures.unemployment).toBeDefined();
+    expect(catalogRevisionIdentity(corrected.measures)).not.toBe(original.editionId);
   });
 });

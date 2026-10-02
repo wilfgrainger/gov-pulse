@@ -200,6 +200,7 @@ export default function RealWages() {
           <FinancialTimeSeriesChart
             title="Real earnings growth: recent rolling three-month periods"
             description="Three-month annual growth rates, adjusted for inflation using CPIH, from the ONS average weekly earnings bulletin's published history."
+            citation={`Office for National Statistics · ${payload.source.bulletinUrl} · published ${headline.releaseDate} · observation period ${headline.period} · CPIH-adjusted; ${payload.methodology.revisionNote}`}
             data={payload.history}
             series={[
               { key: "regularPayRealGrowthPercent", label: "Regular pay (real)", color: "#14243b" },

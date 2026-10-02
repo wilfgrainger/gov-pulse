@@ -11,7 +11,7 @@ public-data.org uses a Cloudflare-first data plane with the repository as the so
 - **Cloudflare Queues** serialise source work, retries and run finalisation.
 - **Cloudflare Workers** collect, validate and publish evidence.
 - **Workers KV** stores source records, run state, the canonical private publication and a pre-sanitised public snapshot.
-- The data Worker serves three exact same-origin routes: `/data/metrics-snapshot.json`, `/data/health.json` and `/data/international-comparison.json`.
+- The data Worker serves five exact same-origin routes: the current snapshot, health and international comparison, plus a bounded edition list and immutable historical edition lookup. All routes are enumerated in [`contracts/public-surfaces.json`](./contracts/public-surfaces.json).
 - **GitHub Actions** tests, builds and deploys repository code. It does not collect recurring data or manually promote daily editions.
 
 A merge to `main` validates source, builds the application once, deploys both Workers and runs bounded revision/route/health checks. Source collection runs independently in Cloudflare. Manual dispatch can bootstrap evidence or refresh the secondary Pages seed. See [deployment and recovery](./docs/operations/deployment-ci-frugality.md).

@@ -151,6 +151,30 @@ function makeMeasure(snapshot, definition, now) {
   return validateMeasureRecord(record);
 }
 
+function catalogRevisionIdentity(measures) {
+  const revisionInput = Object.values(measures).sort((left, right) => left.id.localeCompare(right.id)).map((measure) => ({
+    id: measure.id,
+    label: measure.label,
+    evidenceClass: measure.evidenceClass,
+    comparisonKey: measure.comparisonKey,
+    cadence: measure.cadence,
+    unit: measure.unit,
+    basis: measure.basis,
+    geography: measure.geography,
+    sourceId: measure.sourceId,
+    sourceUrl: measure.sourceUrl,
+    sourceEditionId: measure.sourceEditionId,
+    observationPeriod: measure.observationPeriod,
+    publishedAt: measure.publishedAt,
+    availability: measure.availability,
+    value: measure.value,
+    revisionId: measure.revisionId,
+    points: measure.points,
+    caveats: measure.caveats,
+  }));
+  return `catalog-${fnv64(JSON.stringify(revisionInput))}`;
+}
+
 function buildMeasureCatalog(snapshot, now = new Date()) {
   const generatedAt = new Date(now);
   if (!Number.isFinite(generatedAt.getTime())) throw new Error("Catalog generation time is invalid");
@@ -166,16 +190,24 @@ function buildMeasureCatalog(snapshot, now = new Date()) {
     }
   }
   const deadlines = Object.values(measures).filter((measure) => measure.availability === "current").map((measure) => Date.parse(measure.validUntil));
-  const editionIds = [...new Set(Object.values(measures).map((measure) => measure.sourceEditionId))].sort();
   return {
     schemaVersion: 2,
-    editionId: `catalog-${editionIds.join(".") || "empty"}`,
+    editionId: catalogRevisionIdentity(measures),
     generatedAt: generatedAt.toISOString(),
     validUntil: deadlines.length ? new Date(Math.min(...deadlines)).toISOString() : null,
     measures,
   };
 }
 
+function fnv64(value) {
+  let hash = 0xcbf29ce484222325n;
+  for (const byte of new TextEncoder().encode(value)) {
+    hash ^= BigInt(byte);
+    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
+  }
+  return hash.toString(16).padStart(16, "0");
+}
+
 const MEASURE_IDS = Object.freeze(DEFINITIONS.map(({ id }) => id));
 
-export { buildMeasureCatalog, MEASURE_IDS };
+export { buildMeasureCatalog, catalogRevisionIdentity, MEASURE_IDS, fnv64 };

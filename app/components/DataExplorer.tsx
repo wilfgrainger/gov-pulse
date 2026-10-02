@@ -14,6 +14,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import ChartExportButtons from "@/app/components/ChartExportButtons";
 import CountUpNumber from "@/app/components/CountUpNumber";
+import EvidenceFigure from "@/app/components/charts/EvidenceFigure";
 import { fetchMetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import {
   comparePoints,
@@ -23,6 +24,9 @@ import {
   type Measure,
 } from "@/app/lib/dataExplorer";
 import { visibleChartEvents } from "@/app/lib/chartEvents";
+import type { ChartMetadata } from "@/app/lib/chartExport";
+import { selectMeasure as selectCatalogMeasure, type MeasureCatalog, type MeasureRecord } from "@/app/lib/measureCatalog";
+import type { DateWindow } from "@/app/lib/chartModel";
 
 const dateLabel = (value: string) =>
   new Intl.DateTimeFormat("en-GB", {
@@ -38,6 +42,8 @@ const isWindowValue = (value: string | null): value is WindowValue =>
 
 function MeasureDetail({
   measure,
+  canonicalMeasure,
+  comparedCanonicalMeasure,
   allMeasures,
   years,
   onYearsChange,
@@ -45,6 +51,8 @@ function MeasureDetail({
   onCompareIdChange,
 }: {
   measure: Measure;
+  canonicalMeasure: MeasureRecord | null;
+  comparedCanonicalMeasure: MeasureRecord | null;
   allMeasures: Measure[];
   years: WindowValue;
   onYearsChange: (years: WindowValue) => void;
@@ -105,7 +113,29 @@ function MeasureDetail({
   const yCompare = (value: number) => 165 - ((value - compareMin) / compareSpan) * 120;
   const events = visibleChartEvents(windowStart, windowEnd);
   const svgRef = useRef<SVGSVGElement>(null);
-  const compareCitation = compareMeasure?.sourceUrl ? `Comparison source: ${compareMeasure.label}` : undefined;
+  const primaryExportCitation = `Primary measure: ${measure.label} (${measure.unit}) · ${measure.sourceUrl ?? "source URL unavailable"} · published ${measure.publishedAt ?? "date unavailable"} · observations ${points[0]?.period ?? "unavailable"} to ${points.at(-1)?.period ?? "unavailable"}`;
+  const comparisonExportCitation = compareMeasure
+    ? `Comparison measure: ${compareMeasure.label} (${compareMeasure.unit}) · ${compareMeasure.sourceUrl ?? "source URL unavailable"} · published ${compareMeasure.publishedAt ?? "date unavailable"} · observations ${comparePointsForWindow[0]?.period ?? "unavailable"} to ${comparePointsForWindow.at(-1)?.period ?? "unavailable"}`
+    : null;
+  const compareCitation = [primaryExportCitation, comparisonExportCitation].filter(Boolean).join(" · ");
+  const chartMetadata: ChartMetadata = {
+    schemaVersion: 1,
+    title: compareMeasure ? `${measure.label} compared with ${compareMeasure.label}` : measure.label,
+    sourceCitation: compareCitation,
+    observationWindow: {
+      start: points[0] ? { period: points[0].period, observedAt: new Date(points[0].date).toISOString() } : null,
+      end: points.at(-1) ? { period: points.at(-1)!.period, observedAt: new Date(points.at(-1)!.date).toISOString() } : null,
+    },
+    series: [
+      { key: measure.id, label: `${measure.label} (${measure.unit})` },
+      ...(compareMeasure ? [{ key: compareMeasure.id, label: `${compareMeasure.label} (${compareMeasure.unit})` }] : []),
+    ],
+    caveats: [
+      "Lines join published observations and leave long gaps open; no smoothing or interpolation is applied.",
+      `The vertical scale spans ${formatMeasure(min, measure.unit)} to ${formatMeasure(max, measure.unit)} for the primary measure.`,
+      ...(compareMeasure ? [`${compareMeasure.label} uses a separate vertical scale in ${compareMeasure.unit}; the two series do not share one magnitude axis.`] : []),
+    ],
+  };
 
   // Keyboard-navigable scrubber across the plotted points of the currently
   // selected measure (and the compared measure, when present, at the same
@@ -245,7 +275,28 @@ function MeasureDetail({
           overlaid here. Its own current value, if any, remains available on its own measure page.
         </p>
       )}
-      {points.length > 1 ? (
+      {canonicalMeasure ? (
+        <div className="mt-8 grid gap-8">
+          <EvidenceFigure
+            measure={canonicalMeasure}
+            title={canonicalMeasure.label}
+            description={canonicalMeasure.caveats[0] ?? canonicalMeasure.basis}
+            window={canonicalWindow(canonicalMeasure, years, points[0]?.date, points.at(-1)?.date)}
+            variant="line"
+          />
+          {comparedCanonicalMeasure ? (
+            <EvidenceFigure
+              measure={comparedCanonicalMeasure}
+              title={`Comparison panel: ${comparedCanonicalMeasure.label}`}
+              description={`${comparedCanonicalMeasure.basis} · ${comparedCanonicalMeasure.geography.label}. This is shown on its own scale.`}
+              window={canonicalWindow(comparedCanonicalMeasure, years, points[0]?.date, points.at(-1)?.date)}
+              variant="line"
+            />
+          ) : compareMeasure ? (
+            <p className="border-l-2 border-amber-700 bg-amber-50 px-3 py-2 text-sm text-amber-900">No valid catalog record is available for {compareMeasure.label}; it is not plotted.</p>
+          ) : null}
+        </div>
+      ) : points.length > 1 ? (
         <figure className="mt-8 border-y border-slate-200 py-5">
           <div className="mb-3 flex items-center justify-end">
             <span className="keyboard-scrub-hint" aria-hidden="true">
@@ -425,7 +476,7 @@ function MeasureDetail({
             {events.length ? " Dashed vertical lines mark known UK dates, for reference only." : ""}
           </figcaption>
           <div className="mt-2">
-            <ChartExportButtons containerRef={svgRef} title={measure.label} citation={compareCitation} />
+            <ChartExportButtons containerRef={svgRef} title={chartMetadata.title} citation={compareCitation} chartMetadata={chartMetadata} />
           </div>
           {compareMeasure && (
             <div className="mt-3 flex flex-wrap items-start justify-between gap-4 border-t border-slate-200 pt-3 text-sm">
@@ -555,6 +606,17 @@ function MeasureDetail({
   );
 }
 
+function canonicalWindow(measure: MeasureRecord, years: WindowValue, startMs?: number, endMs?: number): DateWindow {
+  const observations = measure.points;
+  const latest = observations.at(-1)?.observedAt ?? measure.observationPeriod.end;
+  const requestedStart = years === "all" || startMs === undefined
+    ? measure.observationPeriod.start
+    : new Date(startMs).toISOString().slice(0, 10);
+  const start = observations.find((point) => point.observedAt >= requestedStart)?.observedAt ?? requestedStart;
+  const end = endMs === undefined ? latest : new Date(endMs).toISOString().slice(0, 10);
+  return { start: start <= end ? start : end, end: end >= start ? end : start };
+}
+
 function DataExplorerInner({
   initialSnapshot,
 }: {
@@ -632,6 +694,15 @@ function DataExplorerInner({
     measures.some((m) => m.id === compareId && m.history.length > 1)
       ? compareId
       : "";
+  const rawMeta = snapshot && typeof snapshot === "object" && "meta" in snapshot
+    ? (snapshot as { meta?: { measureCatalog?: unknown } }).meta
+    : undefined;
+  const rawCatalog = rawMeta?.measureCatalog as MeasureCatalog | undefined;
+  const nowDate = new Date(now);
+  const canonicalMeasure = detail && rawCatalog ? selectCatalogMeasure(rawCatalog, detail.id, nowDate) : null;
+  const comparedCanonicalMeasure = validCompareId && rawCatalog
+    ? selectCatalogMeasure(rawCatalog, validCompareId, nowDate)
+    : null;
 
   // validCompareId (above) already derives the effective compare target on
   // every render, filtering out ids that don't exist, that match the
@@ -783,6 +854,8 @@ function DataExplorerInner({
             <MeasureDetail
               key={detail.id}
               measure={detail}
+              canonicalMeasure={canonicalMeasure}
+              comparedCanonicalMeasure={comparedCanonicalMeasure}
               allMeasures={measures}
               years={years}
               onYearsChange={setYears}

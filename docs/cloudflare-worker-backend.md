@@ -2,7 +2,7 @@
 
 > Corrected 2026-09-29 to match shipped code. Prior revisions described this
 > Worker as an internal, route-less, four-hour-cron component deployed manually.
-> That is no longer true: the data Worker owns three public `/data/*` routes,
+> That is no longer true: the data Worker owns five exact public `/data/*` routes,
 > runs a daily plus three-hourly cron, and deploys automatically from `main`.
 > Ground truth lives in `worker/wrangler.toml`, `worker/public-data-entry.js`
 > and `.github/workflows/deploy.yml`; this document only describes them.
@@ -17,18 +17,21 @@ routes as same-origin public contracts.
 
 ## Public HTTP boundary
 
-The Worker exposes exactly three public routes, attached in `worker/wrangler.toml`:
+The Worker exposes exactly five public routes, attached in `worker/wrangler.toml` and enumerated in `contracts/public-surfaces.json`:
 
 - `/data/metrics-snapshot.json`
 - `/data/health.json`
 - `/data/international-comparison.json`
+- `/data/editions.json`
+- `/data/edition.json?edition=<validated-edition-id>`
 
 Every other path returns 404. `workers_dev = false` and `preview_urls = false`
 still prevent `workers.dev` and preview hostnames, so the only public ingress is
-the three zoned routes above. No collector, refresh or diagnostic route is
-public. Do not add a fourth public route, a wildcard `/data/*`, a browser-to-
-collector call, or an exposed cache key or secret without an explicit recorded
-architecture decision.
+the five zoned routes above. The edition routes are read-only, bounded, and
+serve only retained historical evidence. No collector, refresh or diagnostic
+route is public. Do not add a wildcard `/data/*`, a browser-to-collector call,
+or an exposed cache key or secret without an explicit recorded architecture
+decision and manifest/test updates.
 
 ## Scheduled responsibilities
 

@@ -38,9 +38,10 @@ refuses to show a number it cannot stand behind.
   alternatives, mobile reflow at 360px, and reduced-motion behaviour. No smoothing,
   interpolation, decoration, or combining of materially different units.
 - The architecture stays small and Cloudflare-first: the OpenNext web Worker serves the
-  request-time app; the data Worker exposes exactly three public routes
+  request-time app; the data Worker exposes exactly five public routes
   (`/data/metrics-snapshot.json`, `/data/health.json`,
-  `/data/international-comparison.json`); Cron + Queue + KV own recurring collection;
+  `/data/international-comparison.json`, `/data/editions.json`, and the
+  validated historical lookup `/data/edition.json`); Cron + Queue + KV own recurring collection;
   Cloudflare Pages is a bounded seed/fallback only. GitHub Actions tests, builds and
   deploys — it does not collect data.
 - The whole plane runs inside the Cloudflare Free allowance and adds no paid product,
@@ -89,10 +90,11 @@ definition and must be rejected in review.
    as honestly unavailable/degraded. A degraded edition declares `publicationState:
    "degraded"` and an exact `missingRequiredSections` manifest, and `/data/health.json`
    reports `ready: false`.
-6. **Never expand the public surface or the plane.** No new public Worker route, no
-   wildcard `/data/*`, no browser-to-collector calls, no exposed cache keys or secrets, no
-   Vercel or paid Cloudflare product, no tracking or personal-data collection — without an
-   explicit recorded architecture decision.
+6. **Keep the public surface exact and read-only.** Routes must be individually
+   listed in the public-surface manifest and backed by contract tests. No wildcard
+   `/data/*`, browser-to-collector calls, exposed cache keys or secrets, Vercel or
+   paid Cloudflare product, tracking, or personal-data collection. New routes
+   require an explicit recorded architecture decision.
 7. **Never assert interpretation as fact.** Spending is not labelled waste/fraud/saving,
    ideological labels are not ground truth, and stakeholder reactions are attributed, not
    asserted.

@@ -151,6 +151,7 @@ export default function NationalDebtCounter() {
           <FinancialTimeSeriesChart
             title="Public sector net debt: ten-year direction"
             description="End-month ONS debt stock excluding public sector banks. Values are dated observations, not a live counter."
+            citation={`Office for National Statistics · ${data.source.debtUrl} · published ${data.publicationDate} · observation period ${period} · dated public sector net debt stock, excluding public sector banks.`}
             data={data.history}
             series={[{ key: "debtBillion", label: "Debt stock", color: "#14243b" }]}
             valueFormatter={(value) => `£${value.toFixed(1)}bn`}
@@ -160,6 +161,7 @@ export default function NationalDebtCounter() {
           <FinancialTimeSeriesChart
             title="Debt relative to GDP"
             description="The matching ONS debt-to-GDP series places the stock against the size of the economy on the same publication basis."
+            citation={`Office for National Statistics · ${data.source.debtToGdpUrl} · published ${data.publicationDate} · observation period ${period} · matched debt-to-GDP series.`}
             data={data.history}
             series={[{ key: "debtToGdp", label: "Debt-to-GDP", color: "#1f5c8a" }]}
             valueFormatter={(value) => `${value.toFixed(1)}%`}

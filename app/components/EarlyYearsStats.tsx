@@ -204,6 +204,7 @@ export default function EarlyYearsStats() {
           <FinancialTimeSeriesChart
             title="MMR 1st dose vaccination rate history"
             description="The percentage of children immunized by age two in England. A standard WHO reference target is shown at 95%."
+            citation={`${data.source.mmrPublisher} · ${data.source.mmrUrl} · edition ${data.source.mmrEditionId} · published ${data.source.mmrPublicationDate} · observation period ${data.headline.mmrPeriod} · 95% WHO reference target; school-readiness and MMR series have separate sources and periods.`}
             data={history}
             series={[{ key: "mmrRate", label: "MMR coverage rate", color: "#1f5c8a" }]}
             valueFormatter={(value) => `${value.toFixed(1)}%`}
