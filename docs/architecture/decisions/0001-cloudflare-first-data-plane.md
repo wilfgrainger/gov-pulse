@@ -10,23 +10,19 @@
 > longer match shipped code and are recorded here rather than edited into the
 > historical decision:
 >
-> 1. **Route count — Decision point 3 ("two exact routes").** The public data
->    Worker now exposes **three** exact routes:
->    `/data/metrics-snapshot.json`, `/data/health.json`, and
->    `/data/international-comparison.json`. The international comparison route
->    shipped after this ADR; it is a deliberately isolated publication
->    (`v1:international-comparison:current`) that never blocks national
->    readiness, and `worker/public-data-entry.js` enforces exactly these three
->    paths (all others return 404). The "exact routes, no wildcard" principle
->    this ADR adopted is unchanged — only the count moved from two to three.
+> 1. **Route surface — Decision point 3 ("two exact routes").** The data Worker
+>    now exposes the exact routes listed in `contracts/public-surfaces.json`,
+>    including international comparison and read-only edition archive routes.
+>    The no-wildcard principle remains; `worker/public-data-entry.js` rejects
+>    all other paths.
 > 2. **Delivery model — Decision points 1 and 5 ("Cloudflare Pages serves the
 >    static Next.js application").** The request-time application is now served
 >    by the OpenNext web Worker (`public-data-web`); Cloudflare Pages is retained
 >    only as a bounded seed/fallback. Deployment is automatic from `main` via
 >    `.github/workflows/deploy.yml`, which deploys both the web and data Workers.
 >
-> See `docs/cloudflare-worker-backend.md` (corrected in PR #86) and
-> `north_star.md` for the current shipped architecture. No decision in this ADR
+> See `docs/cloudflare-worker-backend.md`, `AGENTS.md` and ADR-0002 for the
+> current shipped architecture. No decision in this ADR
 > is reversed; this note records what shipped since.
 
 ## Context

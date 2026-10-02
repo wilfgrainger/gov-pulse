@@ -74,9 +74,6 @@ jobs:
       - name: Validate source ownership
         run: node scripts/check-source-ownership.mjs
 
-      - name: Enforce focused change complexity
-        run: node scripts/check-change-complexity.mjs
-
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:

@@ -10,11 +10,8 @@ const DOC_ONLY_FILES = new Set([
 ]);
 const DOC_ONLY_PREFIXES = [".agents/", "docs/", ".github/ISSUE_TEMPLATE/"];
 
-// Any Markdown or plain-text file anywhere in the tree is documentation: it
-// cannot change application behaviour, so it does not need the full build/test
-// lane. This widens the cheap "docs" lane to cover root-level planning docs
-// (north_star.md, roadmap.md, tasks.md) and any *.md/*.txt added later, which
-// previously fell into the expensive "full" lane for no benefit.
+// Markdown and plain-text files use the cheap docs lane unless they are in a
+// code-owning location; the file list and count remain visible in the summary.
 const DOC_ONLY_EXTENSIONS = new Set([".md", ".markdown", ".txt"]);
 
 function extensionOf(file) {

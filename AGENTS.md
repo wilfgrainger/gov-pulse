@@ -10,11 +10,11 @@ dashboard exclusions, fixed route counts, unchanged frameworks or no migration
 must not veto that authorized work. The architecture below describes the
 existing system, not an immutable target.
 
-The proposed review, design and execution sequence are in
+The review, approved design and execution sequence are in
 `docs/superpowers/specs/2026-10-01-publication-reinvention-review.md`,
 `docs/superpowers/specs/2026-10-01-publication-reinvention-design.md`, and
-`docs/superpowers/plans/2026-10-01-publication-reinvention.md`. They are planning
-artifacts for user review, not evidence of implementation or deployment.
+`docs/superpowers/plans/2026-10-01-publication-reinvention.md`. They describe
+authorized local implementation; they are not evidence of production deployment.
 Preserve source accuracy, explicit uncertainty/missingness, accessibility,
 privacy, credential protection and free-only operation. Update obsolete
 executable guards and tests through reviewed changes; do not bypass them.
@@ -40,7 +40,7 @@ trend. A missing, stale, incomplete, ambiguous or unreconciled value is
 replacement. Fail closed when evidence cannot be proved. Crime Survey estimates, police-recorded crime and court measures
 remain separate. Rankings require a complete universe, date window, currency
 basis, exclusions and missingness. Spending is not labelled waste, fraud,
-corruption or a saving without direct evidence. Never publish a synthetic crime total or a combined national score. Never publish a combined crime total.
+corruption or a saving without direct evidence. Never publish a synthetic crime total or a combined national score.
 
 Charts use publication points, explicit units, purposeful accessible colour,
 text alternatives and mobile reflow. Accessibility includes semantic HTML,
@@ -60,13 +60,10 @@ The product has three deliberately small delivery planes:
    currentness decision. Static application assets are served from the same
    Worker bundle.
 2. Cloudflare Worker `worker/public-data-entry.js` owns the runtime data plane.
-   Its only public HTTP routes are the exact manifest entries in
-   `contracts/public-surfaces.json`: `/data/metrics-snapshot.json`,
-   `/data/health.json`, `/data/international-comparison.json`,
-   `/data/editions.json`, and `/data/edition.json` (one validated `edition`
-   query value); all other paths return 404. The
-   application and browser consume these as same-origin public contracts; no
-   collector or operational route is exposed.
+   `contracts/public-surfaces.json` is the source of truth for its exact public
+   routes; all other paths return 404. The application and browser consume
+   those routes as same-origin public contracts; no collector or operational
+   route is exposed.
 3. Cloudflare Pages retains a bounded static seed/fallback export. It is not the
    normal application plane. The data Worker may use a validated Pages seed only
    inside the documented fallback boundary, and the deployment workflow keeps
@@ -112,13 +109,10 @@ or downgrade the UK national publication.
 
 ## Evidence registry and contracts
 
-`worker/feed-registry.js` is the source-of-truth registry. Required sections
-are `sentimentPulse`, `gdpTracker`, `employmentStats`, `nationalDebt`,
-`taxRevenue`, `migrationStats`, `realWages` and `electionPolling`. Optional
-sections are `nhsStats`, `bettingOdds` and `crimeStatistics`; government contracts
-is a separate bounded publication source. Registry entries define publisher, source
-class, geography, cadence, retrieval method, freshness policy and direct source
-links.
+`worker/feed-registry.js` is the source of truth for feed membership and
+publication requirements. Registry entries define publisher, source class,
+geography, cadence, retrieval method, freshness policy and direct source links.
+Do not duplicate a fixed required/optional feed list in guidance.
 
 Collectors discover the latest official edition, retain observation and
 publication clocks separately, validate the source identity and shape, build
@@ -179,7 +173,9 @@ journey are observed.
 ## Delivery and verification
 
 `main` is the release branch. Pull requests run source/architecture guards,
-lint, repository unit/Worker tests and one Next.js application build. Production
+lint, repository unit/Worker tests and one Next.js application build. There are
+no CI file-count, concern-count or line-count limits; the PR lane summary lists
+changed files. Production
 uses one environment-gated job, one installation per locked toolchain and one
 OpenNext compilation. It deploys the web and data Workers and performs bounded
 revision/route/health checks. Valid degraded evidence does not block a code

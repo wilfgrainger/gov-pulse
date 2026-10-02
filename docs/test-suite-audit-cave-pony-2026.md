@@ -18,12 +18,16 @@ Baseline before this audit: 104 test files, 532 tests, `npm run lint` and
 | CONSOLIDATE / REWRITE | 1 | gov-metrics-master-skill (slim to real guarantees; drop missing-skill ceremony) |
 | KEEP | rest | evidence contracts, currentness/fail-closed, worker collectors, accessibility, security boundaries, crime composition, deployment/release verifiers |
 
-The CI PR-policing *scripts* (`check-change-complexity.mjs`,
-`check-pr-description.mjs`, `classify-pr-validation.mjs`) stay wired into
-`.github/workflows/pr-validation.yml` and keep running. This audit only removes
-the redundant vitest unit tests *of those helpers* — the process enforcement is
-unchanged, we simply stop unit-testing agent/PR-process logic as if it were
-product behaviour.
+The PR description validator and validation-lane classifier remain wired into
+`.github/workflows/pr-validation.yml`. The change-size gate and its helper were
+removed on 2 October 2026: changed files are still listed in the lane summary,
+but file count, concern count and line count do not block validation.
+The same cleanup removed `steering-and-crime-composition.test.ts`, which
+asserted Markdown wording and source-string composition already covered by
+route-level, component and procurement tests. It also removed
+`gov-metrics-master-skill.test.ts`, a second prose-only test of `AGENTS.md`;
+executable architecture and source contracts remain covered by their guards
+and behavior tests.
 
 ## Findings, ranked by impact
 
@@ -60,17 +64,12 @@ product behaviour.
   and `pr-changed-files.mjs` (still invoked by `check-pr-description.mjs` in
   CI).
 
-### 3. Change-complexity / validation-lane process gates tested as behaviour
+### 3. Change-size limits are process policy, not product behaviour
 
-- Defect: `change-complexity.test.ts` asserts a PR-size/concern-group budget;
-  `pr-validation-lane.test.ts` asserts CI lane routing (docs vs full).
-- Evidence: `assessChanges`, `concernForPath`, `validationLane`,
-  `isDocumentationOnlyPath`.
-- Consequence: these police how a change is *shaped and routed through CI*, not
-  what the product does. `check-change-complexity.mjs` and
-  `classify-pr-validation.mjs` remain wired in `pr-validation.yml`.
-- Smallest correction: delete both test files; keep the helpers and their CI
-  wrappers.
+- The former size gate rejected changes over arbitrary file, concern, source-
+  line and lockfile thresholds. It has been removed; changed files remain
+  visible in the PR validation summary. Architecture, lockfile integrity,
+  source ownership, lint, tests and builds still enforce concrete guarantees.
 
 ### 4. Workflow-cost reporter tested for a script wired nowhere
 

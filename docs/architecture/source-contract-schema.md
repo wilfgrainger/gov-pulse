@@ -6,7 +6,7 @@ Every automated PULSE feed must define:
 - `title`: user-facing evidence title.
 - `evidenceClass`: official data, public opinion or market signal.
 - `geography`: exact territorial coverage.
-- `retrieval`: Worker fetch or GitHub Actions ingest.
+- `retrieval`: Cloudflare Worker fetch, or an explicitly approved source-specific upstream ingest recorded in the registry. The trusted NHS importer is the current exception; this field does not authorize general scheduled GitHub collection.
 - `refreshCadence`: retrieval cadence, not publication cadence.
 - `publicationCadence`: expected upstream publication rhythm.
 - `operationalStatus`: active or an explicit debt state.

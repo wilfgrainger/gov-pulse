@@ -4,14 +4,13 @@ This document records the current evidence-source priorities. Historical task wo
 
 Every source tranche must include deterministic parser or contract tests, fixture provenance where fixtures are used, observation-currentness checks, review resolution, exact-head CI and production verification.
 
-## Priority 1 — Crime publication discovery
+## Priority 1 — Crime publication and revision checks
 
-Current public evidence is the ONS `Crime in England and Wales: year ending December 2025` release, with separate Crime Survey, police-recorded and court-timeliness modules.
+The collector already discovers the latest ONS bulletin through its rolling official URL. Do not pin a dated release here. Keep Crime Survey, police-recorded and court-timeliness evidence separate.
 
 Required next work:
 
-- discover the latest ONS bulletin and data edition from rolling official pages rather than keeping the December 2025 URL pinned;
-- validate release identity, reporting period, next-release metadata and every approved measure before replacing the current edition;
+- validate each discovered release identity, reporting period, next-release metadata and every approved measure before replacing the current edition;
 - retain CSEW, police-recorded crime and criminal-court statistics as separate systems;
 - keep regional comparisons unavailable until one complete versioned Police Force Area dataset is joined to official geography and population inputs with reproducible rate calculations;
 - fail closed if the next edition cannot be discovered, parsed and reconciled.

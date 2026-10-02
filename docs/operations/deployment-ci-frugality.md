@@ -1,7 +1,7 @@
 # Deployment and resource use
 
 Reviewed against `.github/workflows/pr-validation.yml`,
-`.github/workflows/deploy.yml` and the current Worker configuration on 1 October
+`.github/workflows/deploy.yml` and the current Worker configuration on 2 October
 2026. This document describes current workflows; it does not restrict the
 user-authorized publication reinvention.
 
@@ -13,6 +13,12 @@ build). A distinct non-blocking Lighthouse job independently installs/builds
 the application and uploads its report. Lighthouse is outside the required
 `quality` result. The full-quality and Lighthouse jobs therefore do duplicate
 build work on a code PR. Change this only with measured review of gate coverage.
+
+There is no CI maximum for changed-file count, concern groups or added lines.
+The lane summary reports the changed-file list. Split a change when its parts
+are independently useful or reviewable; do not split cohesive work to satisfy
+a size threshold. Architecture, source, lockfile, lint, test and build checks
+remain blocking.
 
 ## Production release
 

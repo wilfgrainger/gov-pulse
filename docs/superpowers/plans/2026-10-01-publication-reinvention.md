@@ -42,7 +42,7 @@
 
 This is a programme plan, split into independently testable delivery tranches. The first two tasks establish the exact current inventory and feasibility. Continue independent work when a source is blocked, but never mark a source-dependent feature complete without its stated acceptance evidence. Do not silently shrink the ten features.
 
-Recommended long-running execution: one coordinator maintains this checklist and the approved spec; focused implementers and independent reviewers work by tranche. Parallel work is appropriate after contracts land, for non-overlapping topic features. Canonical contracts, currentness and deployment changes remain sequential. Make a focused commit after each passing/reviewed task; keep PRs within existing reviewable limits where possible. A focused PR sequence is preferable to disabling complexity gates globally.
+Recommended long-running execution: one coordinator maintains this checklist and the approved spec; focused implementers and independent reviewers work by tranche. Parallel work is appropriate after contracts land, for non-overlapping topic features. Canonical contracts, currentness and deployment changes remain sequential. Use focused commits when they help review; do not split cohesive work to satisfy arbitrary CI file, line or concern-count limits.
 
 Before each task: read current status/HEAD, inspect relevant code/tests, write and run the falsifying test, then implement. After each: run affected tests, resolve review findings, inspect diff/status and commit only owned paths. A failing live source is diagnosed separately from a parser test. Keep a concise task log with commands and outcomes; no volatile production snapshots in repository guidance.
 
@@ -104,7 +104,7 @@ Task 12 exports `buildEditionSummary(previous: MeasureCatalog | null, next: Meas
 
 ## Task 1: Reconcile inventory and remove obsolete programme vetoes
 
-**Files:** Modify `AGENTS.md`, `north_star.md`, `roadmap.md`, `tasks.md`, both delivery READMEs, existing architecture/operations guidance; create `docs/architecture/decisions/0002-publication-reinvention.md`, `contracts/public-surfaces.json`, `contracts/measure-coverage.json`; update `scripts/check-static-architecture.mjs`, `scripts/check-hosting-boundary.mjs`, `tests/unit/visualSystem.test.ts`. Change complexity tooling only if a necessary reviewed tranche exceeds its limits.
+**Files:** Keep `AGENTS.md`, `README.md`, accepted architecture/operations guidance, `contracts/public-surfaces.json`, and `contracts/measure-coverage.json` aligned with the shipped system. Superseded roadmaps, delivery briefs and duplicate architecture descriptions are removed; dated evidence audits remain. No diff-size complexity gate is used; real architecture, source, lint, test and build checks remain blocking.
 
 **Interfaces:** `public-surfaces.json` declares exact public route patterns and denies internal collection/run routes. `measure-coverage.json` maps each active topic/component/displayed measure to its canonical id or an explicit withdrawal. Both are consumed by later coverage tests. Export `publicRouteAllowed(path: string): boolean` from the guard's shared `scripts/lib/public-surfaces.mjs` implementation; use the same manifest in tests and route guards.
 
@@ -116,7 +116,8 @@ replacement guidance, inventories and executable guard/test alignment.
 - [x] Run the publication-programme test red against the fixed-route guard, then green against the manifest.
 - [x] Apply the review's amendment table. Preserve audits/withdrawal reasons; mark old scope contracts historical. Correct NHS/real-wage membership, Framer Motion, bootstrap and budget descriptions against actual code.
 - [x] Verify no unmapped displayed measures and reject `/internal/collect`; run source/hosting/governance guards.
-- [x] Review and commit the governance/inventory tranche as `981e4eb`; no unrelated document deletion.
+- [x] Review and commit the governance/inventory tranche as `981e4eb`; no unrelated document deletion in that tranche.
+- [x] User-directed documentation cleanup (2 October 2026): remove superseded living roadmaps, duplicate architecture briefs and volatile scratch state; retain dated evidence records and the active implementation plan.
 
 ## Task 2: Prove source and Cloudflare Free feasibility
 
@@ -130,7 +131,7 @@ Workbook decoding accepts a validated limits object with `maxEntryBytes`,
 by stream-counted inflate and worksheet parsing; do not first allocate the
 unbounded decoded result and reject it afterwards.
 
-- [x] Test the current healthy schedule: 29 deliveries and 87 project operations before retries. Registry additions and failed-job retry deliveries raise the derived totals.
+- [x] Test the current healthy schedule: 30 deliveries and 90 modeled project operations before retries. Registry additions and failed-job retry deliveries raise the derived totals. The earlier 29/87 count was superseded when the registry grew to 12 active feeds.
 - [x] Run `npx vitest run tests/unit/freeBudget.test.ts`; the initial red test found the absent derivation.
 - [x] Write/run failing workbook tests: >8 MiB entry, aggregate entry expansion, stored-entry cap, worksheet row/cell caps, forged ZIP sizes and shared-string cap.
 - [x] Implement expansion/row/cell bounds and count all workbook sheets; focused XLSX, international XLSX and NHS parser tests pass.

@@ -1,6 +1,6 @@
 # Public-data.org reinvention: design brief
 
-Status: proposed design for user review. No product implementation or deployment is authorized by this document alone.
+Status: approved for local implementation by the user on 2 October 2026. This approval does not authorize production deployment; deployment remains a separate decision.
 
 ## Intent and success
 
@@ -71,7 +71,7 @@ Retain Next.js for authoring/app development and the current OpenNext renderer i
 
 Replace repeated origin self-fetches with a shared delivery adapter and optional service binding after measurement. Trust/static routes do not require a national snapshot read. Cache immutable edition artifacts by identity. For current artifacts, TTL is no longer than the earliest served validity boundary; no stale revalidation may promote expired evidence. Reader-specific watchlists are never edge-cache inputs.
 
-The bounded public-contract manifest retains the existing three endpoints and can add catalog, release calendar and edition archive endpoints. Archive edition identifiers are strictly validated. Internal collector/KV/run interfaces remain private. New public routes are permitted by the user's brief and approved manifest, not an open wildcard data API.
+The bounded public-contract manifest is the source of truth for the exact public routes, including the current edition archive contracts. Archive edition identifiers are strictly validated. Internal collector/KV/run interfaces remain private. New public routes are permitted by the user's brief and approved manifest, not an open wildcard data API.
 
 Keep 60 dated edition summaries by default, with content-addressed bounded change records and shared history rather than duplicating large national datasets per visit. Retention and artifact sizes must be tested against verified storage/write budgets. Historical records have an as-of label and cannot seed a current number without current validity validation.
 
@@ -101,7 +101,7 @@ CI remains free repository tooling. Reuse the existing trusted NHS workflow rath
 
 ## Documentation authority
 
-Before product implementation, update `AGENTS.md`, north star, roadmap, tasks and delivery rules to express this approved brief. Mark older scope-specific contracts/plans historical; preserve evidence audits and methodological withdrawal records. Replace aesthetic veto tests with approved design/accessibility checks. Replace hardcoded route counts with the public-contract manifest. Prefer small reviewable PRs over globally disabling complexity checks; grant only an explicit documented migration allowance if a necessary tranche exceeds them.
+Keep `AGENTS.md`, the public-contract manifest and accepted architecture decisions authoritative. Retire superseded living roadmaps and duplicate architecture summaries; preserve dated evidence audits and methodological withdrawal records. Replace aesthetic veto tests with approved design/accessibility checks. Do not impose fixed file-count, concern-count or line-count CI limits: CI reports the changed-file list, while architecture guards, lint, tests and builds remain blocking.
 
 ## Execution and acceptance
 

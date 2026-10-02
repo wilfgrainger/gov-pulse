@@ -20,7 +20,7 @@ The [data explorer](https://public-data.org/explore/) presents 27 separately sou
 
 The repository-level GitHub Pages setting must remain disabled. A `public/CNAME` file and GitHub Pages deployment actions are prohibited because they can compete with the Cloudflare Pages production route. `npm run hosting:check` enforces this boundary in every test pass.
 
-See [the control-plane architecture](./docs/architecture/free-tier-feed-control-plane.md) and [ADR-0001](./docs/architecture/decisions/0001-cloudflare-first-data-plane.md).
+See the [current Worker contract](./docs/cloudflare-worker-backend.md), [accepted publication decision](./docs/architecture/decisions/0002-publication-reinvention.md), and [deployment and recovery guide](./docs/operations/deployment-ci-frugality.md).
 
 ## Code and licensing
 
