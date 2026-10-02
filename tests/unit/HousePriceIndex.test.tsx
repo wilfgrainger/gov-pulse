@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import HousePriceIndex from "@/app/components/HousePriceIndex";
 
@@ -129,6 +129,24 @@ describe("HousePriceIndex evidence integrity", () => {
     expect(screen.getByRole("status")).toHaveTextContent("House price estimate unavailable");
     expect(screen.queryByText(/The average UK house price rose to £273,000/i)).not.toBeInTheDocument();
     expect(screen.queryByTestId("release-note")).not.toBeInTheDocument();
+  });
+
+  it("does not fill unmatched wage periods or headline values with estimated numbers", () => {
+    useMetrics
+      .mockReturnValueOnce(metricResult(current))
+      .mockReturnValueOnce({ ...metricResult({
+        headline: { regularPayRealGrowthPercent: 2.1, period: "May to July 2026" },
+        history: [{ period: "May to July 2026", regularPayRealGrowthPercent: 2.1 }],
+      }), cacheState: "stale" });
+
+    render(<HousePriceIndex />);
+
+    fireEvent.click(screen.getByRole("button", { name: "View screen-reader table" }));
+    const rows = within(screen.getByRole("table", { name: /historical comparison table/i })).getAllByRole("row");
+    expect(rows).toHaveLength(3);
+    for (const row of rows.slice(1)) {
+      expect(within(row).getAllByText("Unavailable")).toHaveLength(2);
+    }
   });
 
   it.each([
