@@ -190,7 +190,7 @@ describe("SentimentPulse series-level evidence", () => {
     useMetrics.mockReturnValue(result());
 
     render(<SentimentPulse />);
-    fireEvent.click(screen.getByRole("button", { name: /Bank Rate/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /Bank Rate/i }).at(-1)!);
 
     expect(
       screen.getByRole("heading", { name: "Official Bank Rate: published history" })

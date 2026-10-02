@@ -106,10 +106,12 @@ export default function EconomicPulseGrid({ series }: EconomicPulseGridProps) {
           const isSelected = activeSeriesId === item.id;
 
           return (
-            <div
+            <button
               key={item.id}
+              type="button"
+              aria-pressed={isSelected}
               onClick={() => setActiveSeriesId(isSelected ? null : item.id)}
-              className={`flex flex-col justify-between rounded-xs border p-4 transition-all cursor-pointer ${
+              className={`flex w-full flex-col justify-between rounded-xs border p-4 text-left transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 ${
                 isSelected
                   ? "border-blue-600 bg-blue-50/40 ring-1 ring-blue-500"
                   : "border-slate-200 bg-slate-50/50 hover:border-slate-300 hover:bg-slate-50"
@@ -161,7 +163,7 @@ export default function EconomicPulseGrid({ series }: EconomicPulseGridProps) {
                   {item.publisher}
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
