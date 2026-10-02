@@ -64,6 +64,15 @@ describe("NHS RTT runtime source discovery", () => {
     ).toThrow(/sortable month and year/i);
   });
 
+  it("reports an upstream AWS WAF challenge separately from a changed page shape", () => {
+    const challenge = `<!DOCTYPE html><title></title><script>
+      window.awsWafCookieDomainList = [];
+      window.gokuProps = { key: "challenge-token" };
+    </script>`;
+
+    expect(() => discoverNhsRttDataPage(challenge)).toThrow(/AWS WAF access challenge/i);
+  });
+
   it("rejects lookalike external hosts and unexpected NHS paths", () => {
     expect(() =>
       discoverNhsRttDataPage(

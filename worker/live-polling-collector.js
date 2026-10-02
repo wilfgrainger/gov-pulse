@@ -54,10 +54,21 @@ function parseArticleDateRange(title) {
   };
 }
 
-function parsePublishedDate(text) {
-  const match = String(text).match(
-    /\bPublished\s*:?\s*(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(20\d{2})\b/i
+function parsePublishedDate(source) {
+  const value = String(source);
+  const byline = value.match(
+    /<[^>]*\bdata-test\s*=\s*(["'])published-at\1[^>]*>([\s\S]*?)<\/[^>]+>/i
   );
+  const dateLabel = byline
+    ? decodeHtml(byline[2].replace(/<[^>]*>/g, " "))
+    : value;
+  const match = byline
+    ? dateLabel.match(
+        /\b(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(20\d{2})\b/i
+      )
+    : dateLabel.match(
+        /\bPublished\s*:?\s*(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(20\d{2})\b/i
+      );
   if (!match) throw new Error("YouGov article did not expose a publication date");
   return isoDate(
     Number(match[3]),
@@ -67,7 +78,9 @@ function parsePublishedDate(text) {
 }
 
 function commissionerFromArticle(text) {
-  const matches = [...String(text).matchAll(/poll for ([^.]+?)\s*,?\s*shows/gi)]
+  const matches = [...String(text).matchAll(
+    /poll for ([^.]+?)\s*,?\s*(?:continues\s+to\s+)?shows?\b/gi
+  )]
     .map((match) => match[1].trim())
     .filter(Boolean);
   const unique = [...new Set(matches)];
@@ -271,8 +284,15 @@ async function extractPdfText(arrayBuffer) {
 }
 
 function sampleSizeFromPdfText(text) {
-  const direct = String(text).match(/Sample\s*Size\s*:?\s*((?:\d{1,3}(?:,\d{3})+)|\d{3,5})\s*GB\s*Adults\b/i);
-  if (direct) return Number(direct[1].replace(/,/g, ""));
+  const source = String(text);
+  const direct = source.match(
+    /Sample\s*Size\s*:?\s*((?:\d{1,3}(?:,\d{3})+)|\d{3,5})\s*GB\s*Adults\b/i
+  );
+  const adultsInGb = source.match(
+    /Sample\s*Size\s*:?\s*((?:\d{1,3}(?:,\d{3})+)|\d{3,5})\s+adults\s+in\s+GB\b/i
+  );
+  const match = direct ?? adultsInGb;
+  if (match) return Number(match[1].replace(/,/g, ""));
   throw new Error("YouGov primary tables did not expose a sample size");
 }
 
@@ -293,7 +313,7 @@ async function collectElectionPolling(fetchImpl = fetch, now = new Date()) {
       ""
   );
   const fieldwork = parseArticleDateRange(title);
-  const publicationDate = parsePublishedDate(articleText);
+  const publicationDate = parsePublishedDate(articleHtml);
   const pdfUrl = findPdfUrl(articleHtml, articleUrl);
   const pdfResponse = await fetchResponse(pdfUrl, fetchImpl, "application/pdf");
   const pdfText = await extractPdfText(

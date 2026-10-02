@@ -201,6 +201,62 @@ describe("Cloudflare deployment bootstrap", () => {
     expect(result).toMatchObject({ triggered: true, attempts: 2 });
   });
 
+  it("accepts the first finalised run before dispatching its scheduled recovery", async () => {
+    let now = 0;
+    let pushes = 0;
+    const fetchImpl = vi.fn(async (input) => {
+      const url = String(input);
+      if (url.endsWith("/data/health.json")) {
+        return jsonResponse({ status: "ready", ready: true });
+      }
+      if (url.includes("/queues?per_page=")) {
+        return jsonResponse({
+          success: true,
+          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
+        });
+      }
+      if (url.includes("/queues/queue-id/messages")) {
+        pushes += 1;
+        return jsonResponse({ success: true });
+      }
+      if (url.includes(encodeURIComponent(`v13:publication:run:bootstrap-${SHA}`))) {
+        const finalised = now >= 20_000;
+        return jsonResponse({
+          status: finalised ? "incomplete" : "running",
+          finalisedAt: finalised ? "2026-10-02T00:00:20.000Z" : null,
+        });
+      }
+      if (url.endsWith("/data/metrics-snapshot.json")) {
+        return new Response(JSON.stringify({
+          meta: { delivery: "published-snapshot", publicationDiagnostics: {} },
+        }), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Publication-Delivery": "cloudflare-kv",
+          },
+        });
+      }
+      return jsonResponse({ status: "running", finalisedAt: null });
+    });
+
+    const result = await bootstrapCloudflarePublication({
+      accountId: "account",
+      apiToken: "token",
+      deploymentId: SHA,
+      forceRefresh: true,
+      fetchImpl,
+      timeoutMs: 30_000,
+      pollIntervalMs: 10_000,
+      recoveryIntervalMs: 20_000,
+      nowImpl: () => now,
+      sleepImpl: async (milliseconds) => { now += milliseconds; },
+    });
+
+    expect(result).toMatchObject({ triggered: true, attempts: 1 });
+    expect(pushes).toBe(1);
+  });
+
   it("derives deterministic but distinct recovery identifiers", () => {
     expect(bootstrapAttemptId(SHA, 0)).toBe(SHA);
     expect(bootstrapAttemptId(SHA, 1)).toMatch(/^[0-9a-f]{40}$/);

@@ -327,33 +327,58 @@ async function bootstrapCloudflarePublication(options = {}) {
   let latestAttemptId = null;
   let nextAttemptAt = nowImpl();
   let lastHealth = initialHealth;
+  const dispatchAttempt = async () => {
+    const attemptId = bootstrapAttemptId(deploymentId, attempt);
+    await pushBootstrapMessage(
+      fetchImpl,
+      accountId,
+      apiToken,
+      queueId,
+      attemptId
+    );
+    latestAttemptId = attemptId;
+    attempt += 1;
+    nextAttemptAt = nowImpl() + recoveryIntervalMs;
+  };
 
   while (nowImpl() < deadline) {
-    if (nowImpl() >= nextAttemptAt) {
-      const attemptId = bootstrapAttemptId(deploymentId, attempt);
-      await pushBootstrapMessage(
+    if (forceRefresh && latestAttemptId) {
+      const run = await readKvValue(
         fetchImpl,
         accountId,
         apiToken,
-        queueId,
-        attemptId
+        namespaceId,
+        `v13:publication:run:bootstrap-${latestAttemptId}`
       );
-      latestAttemptId = attemptId;
-      attempt += 1;
-      nextAttemptAt = nowImpl() + recoveryIntervalMs;
+      // A previously serveable edition cannot prove that this deployment's
+      // collectors ran. Forced refresh requires the active run to finalise.
+      if (run?.finalisedAt && ["published", "no-change", "incomplete"].includes(run.status)) {
+        lastHealth = await readHealth(fetchImpl, healthUrl);
+        if (lastHealth?.ready === true && await hasPreparedPublication(fetchImpl, healthUrl)) {
+          return { triggered: true, attempts: attempt, health: lastHealth };
+        }
+        // A STABLE degraded publication (ready:false + non-empty
+        // missingRequiredSections) is an accepted terminal state once the
+        // active run finalised and its prepared artifact is readable.
+        if (
+          isDegradedPublicationHealth(lastHealth) &&
+          (await hasPreparedPublication(fetchImpl, healthUrl))
+        ) {
+          return { triggered: true, attempts: attempt, health: lastHealth };
+        }
+      }
     }
 
-    const run = forceRefresh
-      ? await readKvValue(
-          fetchImpl, accountId, apiToken, namespaceId,
-          `v13:publication:run:bootstrap-${latestAttemptId}`
-        )
-      : null;
-    // A previously serveable edition cannot prove that this deployment's
-    // collectors ran. Forced refresh requires the new run to finalise first.
-    if (!forceRefresh || (run?.finalisedAt && ["published", "no-change", "incomplete"].includes(run.status))) {
+    // For an ordinary deployment retain the original fast path: dispatch the
+    // initial attempt, then inspect health. For forced refresh, inspect the
+    // active attempt above before replacing its ID with a recovery attempt.
+    if (!forceRefresh && nowImpl() >= nextAttemptAt) {
+      await dispatchAttempt();
+    }
+
+    if (!forceRefresh) {
       lastHealth = await readHealth(fetchImpl, healthUrl);
-      if (lastHealth?.ready === true && (!forceRefresh || await hasPreparedPublication(fetchImpl, healthUrl))) {
+      if (lastHealth?.ready === true) {
         return { triggered: true, attempts: attempt, health: lastHealth };
       }
       // A STABLE degraded publication (ready:false + non-empty
@@ -370,6 +395,10 @@ async function bootstrapCloudflarePublication(options = {}) {
       ) {
         return { triggered: true, attempts: attempt, health: lastHealth };
       }
+    }
+
+    if (forceRefresh && nowImpl() >= nextAttemptAt) {
+      await dispatchAttempt();
     }
 
     const remainingMs = deadline - nowImpl();
