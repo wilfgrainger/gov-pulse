@@ -21,6 +21,7 @@ type PollLike = {
   pollster: string;
   fieldworkStart: string;
   fieldworkEnd: string;
+  sampleSize: number;
   parties: Record<string, number | undefined>;
 };
 

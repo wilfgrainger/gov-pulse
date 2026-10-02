@@ -1,5 +1,6 @@
 import { SECTION_BUILDERS } from "./section-builders.js";
 import { FEED_REGISTRY_VERSION } from "./feed-registry.js";
+import { buildMeasureCatalog } from "./measure-catalog.js";
 import {
   MAX_REQUESTS_PER_RUN as CONTRACT_MAX_REQUESTS_PER_RUN,
 } from "./government-contracts-cloudflare.js";
@@ -129,6 +130,7 @@ function mergePublication(previous, refreshedRecords, contractsRecord, now = new
     publicationMode: "daily-rotating-free-tier",
     freeTierBudget: FREE_TIER_BUDGET,
   };
+  base.meta.measureCatalog = buildMeasureCatalog(base, now);
   return base;
 }
 

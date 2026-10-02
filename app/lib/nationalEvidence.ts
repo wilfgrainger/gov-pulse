@@ -5,6 +5,7 @@ import {
   type SnapshotSourceStatus,
 } from "./metricsSnapshot";
 import { describeChange, describePercentageChange } from "./changeLanguage";
+import { selectMeasure, type MeasureCatalog, type MeasureRecord } from "./measureCatalog";
 
 export type EvidenceState = "current" | "update-due" | "unavailable";
 
@@ -32,6 +33,7 @@ export type SignalPresentation = {
   comparison: string | null;
   period: string | null;
   publishedAt: string | null;
+  sourceUrl: string | null;
   history: SignalHistoryPoint[];
   leadHeadline: string | null;
   leadSummary: string | null;
@@ -206,6 +208,60 @@ function historyPoints(value: unknown, valueKey: string): SignalHistoryPoint[] {
     .slice(-36);
 }
 
+const CATALOG_BINDINGS = [
+  { id: "gdp-threeMonthGrowth", section: "gdpTracker", valuePath: "headline.threeMonthGrowth", periodPath: "headline.period", publishedPath: "headline.releaseDate", historyPath: "history", historyKey: "threeMonthGrowth" },
+  { id: "inflation", section: "sentimentPulse", valuePath: "series.inflation.value", periodPath: "series.inflation.period", publishedPath: "series.inflation.publishedAt", historyPath: "series.inflation.history", historyKey: "value" },
+  { id: "unemployment", section: "employmentStats", valuePath: "headline.unemploymentRate", periodPath: "headline.period", publishedPath: "headline.releaseDate", historyPath: "history.labourForce", historyKey: "unemploymentRate" },
+  { id: "debt-ratio", section: "nationalDebt", valuePath: "debtToGdp", periodPath: "observationPeriod", publishedPath: "publicationDate", historyPath: "history", historyKey: "debtToGdp" },
+  { id: "waitingPathwaysEstimate", section: "nhsStats", valuePath: "headline.waitingPathwaysEstimate", periodPath: "headline.period", publishedPath: "headline.publicationDate", historyPath: "history", historyKey: "waitingPathwaysEstimate" },
+  { id: "netMigration", section: "migrationStats", valuePath: "headline.netMigration", periodPath: "headline.period", publishedPath: "headline.releaseDate", historyPath: "history", historyKey: "netMigration" },
+  { id: "regularPayRealGrowth", section: "realWages", valuePath: "headline.regularPayRealGrowthPercent", periodPath: "headline.period", publishedPath: "headline.releaseDate", historyPath: "history", historyKey: "regularPayRealGrowthPercent" },
+] as const;
+
+function setPath(root: Record<string, unknown>, path: string, value: unknown) {
+  const parts = path.split(".");
+  let target = root;
+  for (const part of parts.slice(0, -1)) {
+    const child = record(target[part]);
+    if (!child) target[part] = {};
+    target = target[part] as Record<string, unknown>;
+  }
+  target[parts.at(-1)!] = value;
+}
+
+function projectCatalogMeasures(snapshot: MetricsSnapshot, now: Date): MetricsSnapshot {
+  if (!Object.hasOwn(snapshot.meta, "measureCatalog")) return snapshot;
+  const rawCatalog = record(snapshot.meta.measureCatalog);
+  const projected = structuredClone(snapshot);
+  const catalog = rawCatalog as unknown as MeasureCatalog;
+  for (const binding of CATALOG_BINDINGS) {
+    const measure = selectMeasure(catalog, binding.id, now);
+    const current: MeasureRecord | null = measure?.availability === "current" ? measure : null;
+    const section = record(projected[binding.section]) ?? {};
+    projected[binding.section] = section;
+    section.available = current !== null;
+    setPath(section, binding.valuePath, current?.value ?? null);
+    setPath(section, binding.periodPath, current?.observationPeriod.label ?? null);
+    setPath(section, binding.publishedPath, current?.publishedAt ?? null);
+    const history = current?.points.flatMap((point) => point.value === null ? [] : [{
+      observedAt: Date.parse(`${point.observedAt}T00:00:00.000Z`),
+      period: point.period,
+      [binding.historyKey]: point.value,
+    }]) ?? [];
+    setPath(section, binding.historyPath, history);
+    const sources = projected.meta.sources as Record<string, Record<string, unknown> | undefined>;
+    const source = { ...(record(sources[binding.section]) ?? {}) };
+    const states = { ...(record(source.catalogMeasureStates) ?? {}) };
+    const urls = { ...(record(source.catalogMeasureSources) ?? {}) };
+    states[binding.id] = current ? "current" : measure ? "historical" : "unavailable";
+    if (measure) urls[binding.id] = measure.sourceUrl;
+    source.catalogMeasureStates = states;
+    source.catalogMeasureSources = urls;
+    sources[binding.section] = source;
+  }
+  return projected;
+}
+
 function sourceState(source: SnapshotSourceStatus | undefined): EvidenceState {
   if (!source || (source.status !== "ok" && source.status !== "stale")) return "unavailable";
   if (source.cacheState === "missing" || source.cacheState === "expired") return "unavailable";
@@ -234,6 +290,7 @@ function unavailable(id: SignalId): SignalPresentation {
     comparison: null,
     period: null,
     publishedAt: null,
+    sourceUrl: null,
     history: [],
     leadHeadline: null,
     leadSummary: null,
@@ -245,6 +302,22 @@ function applySourceState(
   signal: SignalPresentation,
   source: SnapshotSourceStatus | undefined
 ): SignalPresentation {
+  const catalogId = ({
+    gdp: "gdp-threeMonthGrowth",
+    inflation: "inflation",
+    unemployment: "unemployment",
+    "national-debt": "debt-ratio",
+    "nhs-waiting-list": "waitingPathwaysEstimate",
+    "net-migration": "netMigration",
+    "real-wages": "regularPayRealGrowth",
+  } as const)[signal.id];
+  const catalogState = record(record(source)?.catalogMeasureStates)?.[catalogId];
+  const sourceUrl = record(record(source)?.catalogMeasureSources)?.[catalogId];
+  if (catalogState === "historical" || catalogState === "unavailable") return unavailable(signal.id);
+  if (catalogState === "current") {
+    const currentness = source?.status === "ok" && source.cacheState === "fresh" ? "current" : "update-due";
+    return { ...signal, state: currentness, sourceUrl: typeof sourceUrl === "string" ? sourceUrl : null };
+  }
   const state = sourceState(source);
   return state === "unavailable"
     ? unavailable(signal.id)
@@ -255,25 +328,25 @@ function selectGdp(snapshot: MetricsSnapshot): SignalPresentation {
   const data = record(snapshot.gdpTracker);
   const headline = record(data?.headline);
   const period = text(headline?.period);
-  const monthly = finite(headline?.monthlyGrowth);
   const threeMonth = finite(headline?.threeMonthGrowth);
   const annual = finite(headline?.annualGrowth);
   const publishedAt = formatDate(headline?.releaseDate);
+  const monthly = finite(headline?.monthlyGrowth);
   if (data?.available !== true || !period || monthly === null || threeMonth === null || annual === null || !publishedAt) {
     return unavailable("gdp");
   }
-  const movement = monthly === 0 ? "was unchanged" : monthly > 0 ? "grew" : "fell";
+  const movement = threeMonth === 0 ? "was unchanged" : threeMonth > 0 ? "grew" : "fell";
   const broader = threeMonth === 0 ? "was unchanged" : threeMonth > 0 ? "grew" : "fell";
   return applySourceState(
     {
       ...unavailable("gdp"),
-      value: formatPercent(monthly, true),
-      comparison: `Latest three months ${formatPercent(threeMonth, true)} · from a year earlier ${formatPercent(annual, true)}`,
+      value: formatPercent(threeMonth, true),
+      comparison: `Latest month ${formatPercent(monthly, true)} · from a year earlier ${formatPercent(annual, true)}`,
       period,
       publishedAt,
-      history: historyPoints(data?.history, "index"),
-      leadHeadline: `UK GDP ${movement} in ${period}${monthly === 0 ? "." : ` by ${Math.abs(monthly).toFixed(1)}%.`}`,
-      leadSummary: `Across the latest three months, real GDP ${broader}${threeMonth === 0 ? "." : ` by ${Math.abs(threeMonth).toFixed(1)}%.`}`,
+      history: historyPoints(data?.history, "threeMonthGrowth"),
+      leadHeadline: `UK GDP ${movement} across the latest three months to ${period}${threeMonth === 0 ? "." : ` by ${Math.abs(threeMonth).toFixed(1)}%.`}`,
+      leadSummary: `GDP ${broader}${threeMonth === 0 ? "." : ` by ${Math.abs(threeMonth).toFixed(1)}% over the latest three months.`} Monthly growth was ${formatPercent(monthly, true)}.`,
       caveat: "Monthly GDP is an early estimate and may be revised.",
     },
     snapshot.meta.sources.gdpTracker
@@ -344,17 +417,17 @@ function selectDebt(snapshot: MetricsSnapshot): SignalPresentation {
     : rawPeriod ?? formatDate(data?.baseDate, true);
   const publishedAt = formatDate(data?.publicationDate);
   if (debt === null || debt <= 0 || ratio === null || !period || !publishedAt) return unavailable("national-debt");
-  const value = `£${(debt / 1_000_000_000_000).toFixed(2)}tn`;
+  const value = `${ratio.toFixed(1)}% of GDP`;
   return applySourceState(
     {
       ...unavailable("national-debt"),
       value,
-      comparison: `${ratio.toFixed(1)}% of GDP${annualDebt === null ? "" : ` · annual change ${annualDebt > 0 ? "+" : "-"}£${Math.abs(annualDebt).toFixed(1)}bn`}`,
+      comparison: `Debt stock £${(debt / 1_000_000_000_000).toFixed(2)}tn${annualDebt === null ? "" : ` · annual change ${annualDebt > 0 ? "+" : "-"}£${Math.abs(annualDebt).toFixed(1)}bn`}`,
       period,
       publishedAt,
-      history: historyPoints(data?.history, "debtBillion"),
-      leadHeadline: `UK public sector net debt stands at ${value}.`,
-      leadSummary: `The matching official release puts debt at ${ratio.toFixed(1)}% of GDP for ${period}.`,
+      history: historyPoints(data?.history, "debtToGdp"),
+      leadHeadline: `UK public sector net debt was ${value} in ${period}.`,
+      leadSummary: `The same release puts the debt stock at £${(debt / 1_000_000_000_000).toFixed(2)}tn.`,
       caveat: "This is a dated stock, not a real-time counter.",
     },
     snapshot.meta.sources.nationalDebt
@@ -466,20 +539,21 @@ function emptyEdition(): NationalEvidenceEdition {
   };
 }
 
-export function selectNationalEvidenceEdition(snapshot: unknown): NationalEvidenceEdition {
+export function selectNationalEvidenceEdition(snapshot: unknown, now = new Date()): NationalEvidenceEdition {
   if (!isCompatibleMetricsSnapshot(snapshot)) return emptyEdition();
+  const currentSnapshot = projectCatalogMeasures(snapshot, now);
   const signals = [
-    selectGdp(snapshot),
-    selectEconomicSeries(snapshot, "inflation", "inflation"),
-    selectUnemployment(snapshot),
-    selectDebt(snapshot),
-    selectNhs(snapshot),
-    selectMigration(snapshot),
-    selectRealWages(snapshot),
+    selectGdp(currentSnapshot),
+    selectEconomicSeries(currentSnapshot, "inflation", "inflation"),
+    selectUnemployment(currentSnapshot),
+    selectDebt(currentSnapshot),
+    selectNhs(currentSnapshot),
+    selectMigration(currentSnapshot),
+    selectRealWages(currentSnapshot),
   ].map((signal) => {
     const section = signal.id === "unemployment" ? "employmentStats"
       : signal.id === "national-debt" ? "nationalDebt" : null;
-    return section && signal.state === "current" && hasNewerRelatedRelease(snapshot, section)
+    return section && signal.state === "current" && hasNewerRelatedRelease(currentSnapshot, section)
       ? { ...signal, state: "update-due" as const }
       : signal;
   });
@@ -492,7 +566,7 @@ export function selectNationalEvidenceEdition(snapshot: unknown): NationalEviden
     { current: 0, "update-due": 0, unavailable: 0 }
   );
   return {
-    generatedAt: formatDate(snapshot.meta.generatedAt),
+    generatedAt: formatDate(currentSnapshot.meta.generatedAt),
     lead: preferred("current") ?? preferred("update-due"),
     signals,
     counts,

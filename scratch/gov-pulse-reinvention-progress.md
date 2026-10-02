@@ -61,4 +61,20 @@ Task 4 final verification after daily retry scheduling: `npm test` passed 601 te
 
 ## Current next step
 
-Task 6: source-parser and editorial correctness pass, beginning with signed/zero/Unicode-minus wage revisions and source-verified text.
+Task 7: canonical catalog and additive publication migration. Task 2 Free-account/resource verification and Task 6 live source collection remain externally blocked; continue independent work without treating those sources or limits as verified.
+
+## Task 6 update
+
+- Wage parsers accept signed and Unicode-minus bulletin values; shared editorial wording avoids phrases such as “fell -0.6%”. Poll ingestion now requires exact labelled metadata and supported primary-source method evidence; sample counts are disclosed without deriving unsupported numeric uncertainty. Crime modules no longer present an old checked-in court release as a newly collected edition. Early Years and court data fail closed until exact current publisher records can be collected.
+- Verification: focused wage, polling, migration wording, crime and Early Years regressions passed; full suite passed 623 tests / 118 files after a stale MoJ expectation update. Source discovery/live retrieval remains blocked by the proxy CONNECT 403.
+
+## Task 7 update
+
+- Added a versioned common measure record/catalog contract, runtime validation and comparability checks. Worker publication assembly adds a catalog as optional metadata while preserving the old snapshot shape for existing readers. Current values require a source-owned deadline after retrieval; historic editions may retain an earlier expiry without being promoted to current.
+- The catalog registers eight core measures with source edition, source URL, publication/fetch/validity dates, observation periods, geography, units, basis, revision identity and caveats. The explorer and national evidence consume the same current record; seven shared headlines now match on value, period, source URL and state at a fixed clock. Catalog expiry, key mismatches, impossible/future timestamps and corrupted envelopes fail closed.
+- Measure search and topic route counts derive from the measure definitions, with duplicate topic destinations collapsed to the best matching search result. Existing snapshots without a catalog continue to use the compatibility path; source-specific polling and procurement payloads remain distinct.
+- Verification: `npm test` passed 646 tests / 118 files; `npm run lint`, source ownership, static architecture, hosting boundary, budget audit and `git diff --check` passed. `npm run build:prepare && npm run build` completed with Next production type checking and all 54 generated pages. Worktree also includes a TypeScript declaration fix for the polling sample-size disclosure exposed by that build.
+
+## Current next step
+
+Task 8: repair and standardize every existing evidence figure, beginning with common clipping/observation table/export contracts. Continue to carry Task 2 Free-quota/account/source limitations and Task 6 live source collection explicitly; neither has been verified externally.

@@ -4,6 +4,8 @@ import { unsupportedWorkerIngress } from "../../scripts/check-static-architectur
 import { publicRouteAllowed } from "../../scripts/lib/public-surfaces.mjs";
 import { SECTION_CONTENT } from "../../app/lib/sectionContent";
 import { MEASURES } from "../../app/lib/dataExplorer";
+import { MEASURE_IDS } from "../../worker/measure-catalog.js";
+import { MEASURE_COUNTS_BY_ROUTE } from "../../app/lib/sections";
 
 const wrangler = readFileSync("worker/wrangler.toml", "utf8");
 
@@ -50,6 +52,10 @@ describe("approved public evidence surfaces", () => {
       surfaces.topics.map((topic: { id: string }) => topic.id).toSorted(),
     );
     expect(MEASURES.map(({ id }) => id).toSorted()).toEqual(surfaces.explorerMeasureIds.toSorted());
+    expect(MEASURE_IDS.toSorted()).toEqual(coverage.canonicalMeasureIds.toSorted());
+    expect(MEASURE_IDS.toSorted()).toEqual(MEASURES.map(({ id }) => id).toSorted());
+    expect(Object.values(MEASURE_COUNTS_BY_ROUTE).reduce((total, count) => total + count, 0)).toBe(MEASURE_IDS.length);
+    expect(Object.keys(MEASURE_COUNTS_BY_ROUTE).toSorted()).toEqual([...new Set(MEASURES.map(({ route }) => route.replace(/\/$/, "")))].toSorted());
     expect(coverage.explorerMeasureIds.toSorted()).toEqual(surfaces.explorerMeasureIds.toSorted());
   });
 

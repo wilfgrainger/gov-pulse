@@ -1,7 +1,8 @@
 {
   "version": 1,
   "routeSource": "app/lib/sectionContent.ts",
-  "measureSource": "app/lib/dataExplorer.ts",
+  "measureSource": "worker/measure-catalog.js",
   "topics": ["pm-approval", "election-polls", "betting-odds", "govt-approval", "gov-trust-trend", "national-debt", "gdp", "economy", "tax", "uk-in-context", "government-contracts", "employment", "crime-stats", "nhs", "migration", "real-wages", "early-years", "uk-regions", "policy-links"],
+  "canonicalMeasureIds": ["gdp-threeMonthGrowth", "inflation", "unemployment", "waitingPathwaysEstimate", "debt-ratio", "receipts", "netMigration", "regularPayRealGrowth"],
   "explorerMeasureIds": ["gdp-threeMonthGrowth", "inflation", "unemployment", "waitingPathwaysEstimate", "debt-ratio", "receipts", "netMigration", "regularPayRealGrowth"]
 }
