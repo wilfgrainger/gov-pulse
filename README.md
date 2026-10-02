@@ -11,12 +11,12 @@ public-data.org uses a Cloudflare-first data plane with the repository as the so
 - **Cloudflare Queues** serialise source work, retries and run finalisation.
 - **Cloudflare Workers** collect, validate and publish evidence.
 - **Workers KV** stores source records, run state, the canonical private publication and a pre-sanitised public snapshot.
-- The data Worker serves five exact same-origin routes: the current snapshot, health and international comparison, plus a bounded edition list and immutable historical edition lookup. All routes are enumerated in [`contracts/public-surfaces.json`](./contracts/public-surfaces.json).
+- The data Worker serves five allow-listed same-origin contracts: the current snapshot, health and international comparison, plus a bounded edition list and immutable historical edition lookup. The edition detail route accepts one validated `edition` query parameter. Routes are enumerated in [`contracts/public-surfaces.json`](./contracts/public-surfaces.json).
 - **GitHub Actions** tests, builds and deploys repository code. It does not collect recurring data or manually promote daily editions.
 
-A merge to `main` validates source, builds the application once, deploys both Workers and runs bounded revision/route/health checks. Source collection runs independently in Cloudflare. Manual dispatch can bootstrap evidence or refresh the secondary Pages seed. See [deployment and recovery](./docs/operations/deployment-ci-frugality.md).
+A merge to `main` validates and builds the application, deploys both Workers and runs bounded revision/route/health checks. Cloudflare runs scheduled collection independently. Optional evidence recovery is a separate manual job; the secondary Pages seed also has an explicit recovery path. See [deployment and recovery](./docs/operations/deployment-ci-frugality.md).
 
-The [data explorer](https://public-data.org/explore/) presents 27 separately sourced measures with search, topic filters, published history, endpoint comparisons and CSV export. It shows only evidence that remains within its source-owned validity window.
+The [data explorer](https://public-data.org/explore/) provides search, topic filters, published history, comparisons and CSV export for its supported measures. It shows only evidence that remains within its source-owned validity window.
 
 The repository-level GitHub Pages setting must remain disabled. A `public/CNAME` file and GitHub Pages deployment actions are prohibited because they can compete with the Cloudflare Pages production route. `npm run hosting:check` enforces this boundary in every test pass.
 
@@ -66,14 +66,15 @@ npm run build:check
 npm run test:e2e
 ```
 
-Pull requests run governance, architecture, source-ownership, hosting-boundary, lint, unit/Worker and application-build checks. Browser and exhaustive production diagnostics are explicit checks. The named aggregate `quality` job is the branch-protection gate.
+Pull requests run changed-text, architecture and source-ownership checks, lint, unit/Worker tests and one application build. Lighthouse, browser and exhaustive production diagnostics are explicit checks. The named aggregate `quality` job reports the selected documentation or code lane.
 
 ## Deployment
 
-The repository contains two active workflows:
+The repository contains three active workflows:
 
 - **Pull Request Validation** — assurance only; never mutates Cloudflare.
-- **Deploy public-data.org** — runs automatically after relevant changes reach `main` and deploys Worker then Pages in that order.
+- **Deploy public-data.org** — runs automatically after relevant changes reach `main` and deploys the web and data Workers. Pages refresh remains an explicit recovery operation.
+- **Manual Lighthouse audit** — builds the selected revision and uploads an optional local production-build report.
 
 The production workflow creates or reconciles the `public-data-jobs` Queue before deploying the Worker, so a fresh Cloudflare account does not depend on an undocumented manual Queue step.
 

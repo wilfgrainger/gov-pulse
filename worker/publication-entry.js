@@ -132,7 +132,9 @@ function mergePublication(previous, refreshedRecords, contractsRecord, now = new
     freeTierBudget: FREE_TIER_BUDGET,
   };
   const previousCatalog = base.meta.measureCatalog ?? null;
-  base.meta.measureCatalog = buildMeasureCatalog(base, now);
+  base.meta.measureCatalog = buildMeasureCatalog(base, now, {
+    onOmission: ({ measureId, reason }) => console.warn("Measure record omitted", { measureId, reason }),
+  });
   base.meta.editionSummary = buildEditionSummary(previousCatalog, base.meta.measureCatalog);
   return base;
 }

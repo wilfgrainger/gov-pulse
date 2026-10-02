@@ -1,6 +1,6 @@
 # Data Reliability Repair Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Historical plan, superseded for execution.** Use the [round-two plan](2026-10-02-publication-reinvention-round-2.md) for current scope and sequencing. This document preserves earlier implementation rationale only.
 
 **Goal:** Preserve still-valid verified official evidence through transient refresh failures and repair the current GDP, employment, migration and NHS publication collectors.
 

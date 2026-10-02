@@ -1,5 +1,7 @@
 # Data Reliability Repair Design
 
+> Historical design. Current implementation scope and sequencing are in the [round-two plan](../plans/2026-10-02-publication-reinvention-round-2.md).
+
 ## Goal
 
 Keep verified official statistics publicly available for their statistical validity window even when a refresh attempt fails, while making collector failures observable and repairing the GDP, employment, migration and NHS collectors against current official publications.

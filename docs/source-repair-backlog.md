@@ -1,14 +1,17 @@
-# Source integrity programme
+# Historical source integrity notes
 
-This document records the current evidence-source priorities. Historical task wording is not retained as an active backlog after the repository has implemented a different or stronger source contract.
-
-Every source tranche must include deterministic parser or contract tests, fixture provenance where fixtures are used, observation-currentness checks, review resolution, exact-head CI and production verification.
+> Source rationale and observations below are retained for reference. The ordered
+> work and active priorities are in the [round-two plan](superpowers/plans/2026-10-02-publication-reinvention-round-2.md).
+> Verify every dated source and implementation claim against the current registry
+> and primary publication before relying on it. This file is not a release gate.
+> The lists below are saved research leads, not required work or a competing
+> execution order.
 
 ## Priority 1 — Crime publication and revision checks
 
 The collector already discovers the latest ONS bulletin through its rolling official URL. Do not pin a dated release here. Keep Crime Survey, police-recorded and court-timeliness evidence separate.
 
-Required next work:
+Research leads from the prior review:
 
 - validate each discovered release identity, reporting period, next-release metadata and every approved measure before replacing the current edition;
 - retain CSEW, police-recorded crime and criminal-court statistics as separate systems;
@@ -19,7 +22,7 @@ Required next work:
 
 The base Find a Tender contract is implemented: the latest complete seven-day update window is collected in paced six-hour slices, comparable disclosed GBP awards are validated, and the largest 100 are published through the same-origin snapshot with direct source links and an explicit unavailable state.
 
-Required next work:
+Research leads from the prior review:
 
 - observe repeated production collections and retain diagnostics for page completeness, exclusions, duplicate releases, source latency and bounded fallback use;
 - distinguish award notices from later contract-change notices, lots, frameworks and confirmed expenditure before adding any lifecycle or spend comparison;
@@ -58,4 +61,5 @@ The following are implemented evidence contracts and should not be described as 
 - modular ONS/Home Office/MOJ crime evidence;
 - Cabinet Office Find a Tender top-100 award publication and independent procurement-scrutiny view.
 
-An open GitHub issue that still describes superseded implementation work should be reconciled against `main` and closed or rewritten before new code begins.
+Issue references in old audits may no longer reflect GitHub state; check them
+live before making a current-status claim.

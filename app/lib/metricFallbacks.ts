@@ -79,6 +79,12 @@ export const AUTOMATED_METRIC_FALLBACKS = {
   },
   housePriceIndex: {
     headline: {
+      privateRentPeriod: "",
+      privateRentObservedAt: 0,
+      avgMonthlyPrivateRentGbp: 0,
+      privateRentAnnualChangePercent: 0,
+      previousPrivateRentPeriod: "",
+      previousPrivateRentAnnualChangePercent: 0,
       period: "",
       observedAt: 0,
       releaseDate: "",
@@ -92,6 +98,7 @@ export const AUTOMATED_METRIC_FALLBACKS = {
       measure: "",
       status: "",
       revisionNote: "",
+      privateRentRevisionNote: "",
     },
     source: {
       edition: "",

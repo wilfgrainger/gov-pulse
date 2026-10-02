@@ -13,7 +13,7 @@ import {
 import ChartExportButtons from "@/app/components/ChartExportButtons";
 import ClientOnlyChart from "@/app/components/ClientOnlyChart";
 import { fieldworkMidpointMs } from "@/app/lib/pollingDates";
-import { buildPublicationExportPackage } from "@/app/lib/chartModel";
+import { buildPublicationExportPackage, timeAxisDomain, timeAxisTicks } from "@/app/lib/chartModel";
 
 type PartyMeta = { label: string; color: string };
 
@@ -118,9 +118,17 @@ export default function PollingPublicationChart<PartyKey extends string>({
 
   const first = polls.at(-1);
   const latest = polls.at(0);
+  const fieldworkMidpoints = polls.map((poll) => fieldworkMidpointMs(poll.fieldworkStart, poll.fieldworkEnd));
+  const axisDomain = timeAxisDomain(fieldworkMidpoints);
+  const axisTicks = timeAxisTicks(fieldworkMidpoints);
+  const axisTickCount = new Set(fieldworkMidpoints).size === 1 ? 3 : 6;
+  const firstPeriod = first ? fieldworkLabel(first) : undefined;
+  const latestPeriod = latest ? fieldworkLabel(latest) : undefined;
   const range =
-    first && latest
-      ? `${fieldworkLabel(first)} to ${fieldworkLabel(latest)}`
+    firstPeriod && latestPeriod
+      ? firstPeriod === latestPeriod
+        ? firstPeriod
+        : `${firstPeriod} to ${latestPeriod}`
       : "Published history unavailable";
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartTitle = "Individual poll publications by party share";
@@ -186,12 +194,13 @@ export default function PollingPublicationChart<PartyKey extends string>({
                 dataKey="fieldworkMid"
                 type="number"
                 scale="time"
-                domain={["dataMin", "dataMax"]}
+                domain={axisDomain}
+                hide={axisTicks !== undefined}
                 tickFormatter={formatAxisDate}
                 tick={{ fontSize: 11, fontFamily: "ui-monospace, monospace", fill: "#586170" }}
                 axisLine={{ stroke: "#111827", strokeWidth: 1 }}
                 tickLine={false}
-                tickCount={6}
+                tickCount={axisTickCount}
                 minTickGap={44}
                 name="Fieldwork midpoint"
               />

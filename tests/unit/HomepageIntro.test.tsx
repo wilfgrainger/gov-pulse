@@ -18,7 +18,8 @@ describe("HomepageIntro", () => {
     render(<HomepageIntro />);
 
     expect(screen.getByRole("link", { name: /Explore the data/i })).toHaveAttribute("href", "/explore");
-    expect(screen.getByRole("link", { name: /Is the NHS waiting list shrinking/i })).toHaveAttribute("href", "/section/nhs");
+    expect(screen.getByRole("link", { name: /Read the latest briefing/i })).toHaveAttribute("href", "/briefing");
     expect(screen.getByRole("link", { name: "Sources and dates" })).toHaveAttribute("href", "/sources");
+    expect(screen.queryByRole("navigation", { name: "Start with a question" })).not.toBeInTheDocument();
   });
 });

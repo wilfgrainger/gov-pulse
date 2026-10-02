@@ -47,12 +47,17 @@ export function publicRouteAllowed(input, surfaces = JSON.parse(fs.readFileSync(
     return false;
   }
 
-  const route = surfaces.workerRoutes.find(
-    (entry) => entry.pattern === `${url.hostname}${pathname}` && entry.zone_name === url.hostname,
-  );
+  const query = [...url.searchParams.entries()];
+  const route = surfaces.workerRoutes.find((entry) => {
+    const hostPrefix = `${url.hostname}/`;
+    if (entry.zone_name !== url.hostname || !entry.pattern.startsWith(hostPrefix)) return false;
+    const configuredPath = entry.pattern.slice(url.hostname.length);
+    const matchesQuery = configuredPath.endsWith("*");
+    const exactPath = matchesQuery ? configuredPath.slice(0, -1) : configuredPath;
+    return exactPath === pathname && (query.length === 0 || matchesQuery);
+  });
   if (!route) return false;
 
-  const query = [...url.searchParams.entries()];
   const allowed = route.queryParams ?? {};
   if (query.some(([name]) => !Object.hasOwn(allowed, name))) return false;
   for (const [name, expression] of Object.entries(allowed)) {
@@ -77,7 +82,8 @@ export function surfacesForWorkerIngress(config, surfaces = readPublicSurfaces()
     const signature = `${route.pattern ?? ""}|${route.zone_name ?? ""}`;
     if (configured.has(signature)) errors.push(`duplicate Worker route '${route.pattern}'`);
     configured.add(signature);
-    if (!allowed.has(signature) || publicRouteAllowed(route.pattern, surfaces) !== true) {
+    const requestPattern = route.pattern.endsWith("*") ? route.pattern.slice(0, -1) : route.pattern;
+    if (!allowed.has(signature) || publicRouteAllowed(requestPattern, surfaces) !== true) {
       errors.push(`Worker route '${route.pattern ?? ""}' is not in the approved public-surface manifest`);
     }
   }
@@ -89,4 +95,3 @@ export function surfacesForWorkerIngress(config, surfaces = readPublicSurfaces()
   }
   return errors;
 }
-

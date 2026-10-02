@@ -1,6 +1,6 @@
 # Public-data.org Reinvention Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Historical plan — superseded for execution by [round two](2026-10-02-publication-reinvention-round-2.md).** This document records earlier design and implementation decisions; its mandatory sub-skills, task order and completion statements are not current instructions.
 
 **Goal:** Repair every existing evidence/chart journey and deliver exactly ten capabilities in a vibrant UK public-data publication.
 

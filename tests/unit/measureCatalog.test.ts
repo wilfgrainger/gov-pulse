@@ -5,6 +5,7 @@ import {
   validateMeasureRecord,
 } from "../../contracts/measure-record.js";
 import { isCompatibleMetricsSnapshot } from "../../app/lib/metricsSnapshot";
+import { measureForDisplay } from "../../app/lib/measureCatalog";
 import { FEED_REGISTRY_VERSION } from "../../worker/feed-registry.js";
 
 const instant = "2026-07-01T00:00:00.000Z";
@@ -37,6 +38,18 @@ describe("canonical measure contract", () => {
     expect(validateMeasureRecord(measure())).toMatchObject({ id: "unemployment-rate", value: 4.9 });
   });
 
+  it("allows a later explicit missing observation while matching the current value to the latest numeric point", () => {
+    const record = validateMeasureRecord(measure({
+      observationPeriod: { start: "2026-08-01", end: "2026-08-31", label: "August 2026" },
+      points: [
+        { period: "July 2026", observedAt: "2026-07-31", value: 4.9, valueStatus: "estimate", revisionId: "edition-2026-06" },
+        { period: "August 2026", observedAt: "2026-08-31", value: null, valueStatus: "estimate", revisionId: "edition-2026-06" },
+      ],
+    }));
+    expect(record.points.at(-1)?.value).toBeNull();
+    expect(record.value).toBe(4.9);
+  });
+
   it.each([
     ["future timestamp", { publishedAt: "not-a-date" }],
     ["impossible UTC timestamp", { fetchedAt: "2026-02-30T00:00:00.000Z" }],
@@ -65,6 +78,19 @@ describe("canonical measure contract", () => {
     expect(selectMeasure(catalog, "unemployment-rate", new Date("2026-07-07T23:59:59.000Z"))?.value).toBe(4.9);
     expect(selectMeasure(catalog, "unemployment-rate", new Date("2026-07-08T00:00:00.000Z"))).toBeNull();
     expect(selectMeasure(catalog, "missing", new Date(instant))).toBeNull();
+  });
+
+  it("keeps a verified expired record discoverable as historical", () => {
+    const catalog = {
+      schemaVersion: 2,
+      editionId: "catalog-2026-07-01",
+      generatedAt: instant,
+      validUntil: "2026-07-08T00:00:00.000Z",
+      measures: { "unemployment-rate": validateMeasureRecord(measure()) },
+    };
+    expect(measureForDisplay(catalog, "unemployment-rate", new Date("2026-07-09T00:00:00.000Z")))
+      .toMatchObject({ availability: "historical", value: 4.9, validUntil: "2026-07-08T00:00:00.000Z" });
+    expect(measureForDisplay(catalog, "missing", new Date("2026-07-09T00:00:00.000Z"))).toBeNull();
   });
 
   it("retains historical provenance when a publisher republishes the same expired edition", () => {

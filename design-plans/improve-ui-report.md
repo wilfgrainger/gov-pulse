@@ -1,4 +1,7 @@
 # UI Improvement Audit Report: Comprehensive Site-Wide Review
+
+> Historical visual audit, dated 16 July 2026. Its palette and page assumptions do not govern current work; use the [round-two plan](../docs/superpowers/plans/2026-10-02-publication-reinvention-round-2.md).
+
 *Date: 16 July 2026*
 
 This audit report identifies critical contrast, legibility, layout shift, and aesthetic issues across the entire public-data.org codebase, satisfying the requirement to consider each page and file under the `improve-ui` guidelines.
@@ -28,3 +31,4 @@ This audit report identifies critical contrast, legibility, layout shift, and ae
 
 ## Improve first
 **Finding #3 (National Debt text-accent on bg-black)**: This is a major contrast violation on the public sector net debt dashboard block. Red text on a black background yields an extremely low contrast ratio (~2.2:1), creating massive readability strain. Correcting it to `text-white` instantly brings the page into WCAG AA compliance and unifies the design with the overview text.
+# Historical interface review. Round-two scope and visual direction supersede its presentation constraints.

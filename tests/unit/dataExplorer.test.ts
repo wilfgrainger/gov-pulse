@@ -6,6 +6,7 @@ import {
   formatMeasure,
   measuresCsv,
 } from "@/app/lib/dataExplorer";
+import { MEASURES } from "@/app/lib/measureDefinitions";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 const now = new Date("2026-09-07T12:00:00Z");
 const payload = {
@@ -96,12 +97,13 @@ describe("data explorer", () => {
       .find(({ id }) => id === "unemployment")?.value).toBeNull();
   });
 
-  it("keeps the public explorer to eight canonical measures and uses the labour publication for unemployment", () => {
+  it("uses the canonical inventory and the UK labour publication for unemployment", () => {
     const measures = exploreMeasures(payload, now);
-    expect(measures.map((m) => m.id)).toEqual([
-      "gdp-threeMonthGrowth", "inflation", "unemployment", "waitingPathwaysEstimate",
-      "debt-ratio", "receipts", "netMigration", "regularPayRealGrowth",
-    ]);
+    expect(measures.map((m) => m.id)).toEqual(MEASURES.map((measure) => measure.id));
+    expect(measures.map((measure) => measure.id)).toEqual(expect.arrayContaining([
+      "gdp-monthlyGrowth", "employmentRate", "vacancies", "debt-stock",
+      "immigration", "emigration", "totalPayRealGrowth", "housePriceChange",
+    ]));
     expect(measures.find((m) => m.id === "receipts")?.value).toBe(100);
     expect(measures.find((m) => m.id === "unemployment")).toMatchObject({
       value: 4.9, period: "April to June 2026",

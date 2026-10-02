@@ -219,12 +219,18 @@ function parseHpiHistoryCsv(text) {
     const columns = parseCsvColumns(row).map((value) => value.replace(/^"|"$/g, "").trim());
     const rawPeriod = columns[index.Date];
     if (!rawPeriod || !/^[A-Za-z]+\s+\d{4}$/.test(rawPeriod)) continue;
-    // UK HPI lags PIPR by one to two months and is blank for the most recent
-    // rows; skip those rather than treat the last CSV row as the latest HPI.
-    const rawHpi = columns[index["UK HPI"]];
-    if (!rawHpi) continue;
-    const hpiChangePercent = Number.parseFloat(rawHpi);
-    if (!Number.isFinite(hpiChangePercent)) continue;
+    // UK HPI lags PIPR by one to two months. Keep each publication month and
+    // its explicit HPI gap so the private-rent series can use the newer rows
+    // without pretending they are house-price observations.
+    const parseOptionalPercent = (value, label) => {
+      if (!value) return null;
+      const parsed = Number.parseFloat(value);
+      if (!Number.isFinite(parsed)) throw new Error(`ONS house price index history has an invalid ${label} value`);
+      return parsed;
+    };
+    const privateRentAnnualChangePercent = parseOptionalPercent(columns[index.PIPR], "PIPR");
+    const hpiChangePercent = parseOptionalPercent(columns[index["UK HPI"]], "UK HPI");
+    if (privateRentAnnualChangePercent === null && hpiChangePercent === null) continue;
     const period = normalizeMonthlyPeriod(rawPeriod);
     if (seen.has(period)) {
       throw new Error(`ONS house price index history contains duplicate period '${period}'`);
@@ -233,14 +239,17 @@ function parseHpiHistoryCsv(text) {
     history.push({
       period,
       observedAt: monthlyPeriodEnd(period),
+      privateRentAnnualChangePercent,
       hpiChangePercent,
     });
   }
-  if (history.length < 2) {
-    throw new Error("ONS house price index history did not expose comparable observations");
-  }
   history.sort((left, right) => left.observedAt - right.observedAt);
-  return history.slice(-120);
+  const bounded = history.slice(-120);
+  if (bounded.filter((point) => point.privateRentAnnualChangePercent !== null).length < 2 ||
+      bounded.filter((point) => point.hpiChangePercent !== null).length < 2) {
+    throw new Error("ONS house price index history did not expose comparable observations for both measures");
+  }
+  return bounded;
 }
 
 function parseHpiBulletin(html, edition) {
@@ -250,6 +259,17 @@ function parseHpiBulletin(html, edition) {
     /Release date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})/i,
     "release date"
   )[1];
+  const rentHeadlineMatch = matchRequired(
+    text,
+    /Average UK monthly private rent increased by\s+([\d.]+)%,\s+to\s+£([\d,]+),\s+in the 12 months to\s+([A-Za-z]+\s+\d{4})/i,
+    "private rent headline"
+  );
+  const afterRentHeadline = text.slice(text.indexOf(rentHeadlineMatch[0]) + rentHeadlineMatch[0].length);
+  const previousRentMatch = matchRequired(
+    afterRentHeadline,
+    /^(?:\s*\([^)]*\))?\s*;?\s*this annual growth rate is (?:up|down) from\s+([\d.]+)%\s+in the 12 months to\s+([A-Za-z]+\s+\d{4})/i,
+    "previous private rent annual growth"
+  );
   const headlineMatch = matchRequired(
     text,
     /Average UK house prices increased by\s+([\d.]+)%,\s+to\s+£([\d,]+),\s+in the 12 months to\s+([A-Za-z]+\s+\d{4})/i,
@@ -275,9 +295,20 @@ function parseHpiBulletin(html, edition) {
   }
   const previousPeriod = normalizeMonthlyPeriod(previousMatch[2]);
   const previousChangePercent = numeric(previousMatch[1], "previous house price annual change");
+  const privateRentPeriod = normalizeMonthlyPeriod(rentHeadlineMatch[3]);
+  const avgMonthlyPrivateRentGbp = Number.parseInt(rentHeadlineMatch[2].replace(/,/g, ""), 10);
+  if (!Number.isFinite(avgMonthlyPrivateRentGbp) || avgMonthlyPrivateRentGbp <= 0) {
+    throw new Error("Unable to parse average UK monthly private rent");
+  }
 
   return {
     headline: {
+      privateRentPeriod,
+      privateRentObservedAt: monthlyPeriodEnd(privateRentPeriod),
+      avgMonthlyPrivateRentGbp,
+      privateRentAnnualChangePercent: numeric(rentHeadlineMatch[1], "private rent annual change"),
+      previousPrivateRentPeriod: normalizeMonthlyPeriod(previousRentMatch[2]),
+      previousPrivateRentAnnualChangePercent: numeric(previousRentMatch[1], "previous private rent annual change"),
       period,
       observedAt: monthlyPeriodEnd(period),
       releaseDate: isoDate(releaseDate, "house price index release date"),
@@ -291,6 +322,8 @@ function parseHpiBulletin(html, edition) {
       status: "Official statistics",
       revisionNote:
         "UK HPI first estimates are provisional and subject to revision as later transaction data is incorporated; price levels are headline-only and are not carried into the %-change history.",
+      privateRentRevisionNote:
+        "ONS private-rent estimates are provisional and subject to revision. The latest UK series observations include estimates for Northern Ireland; the source explains the country-level collection and comparability limits.",
     },
     source: {
       edition,
@@ -309,12 +342,19 @@ async function buildHousePriceIndex(fetchImpl = fetch) {
     sourceName: "ONS",
   });
   const history = parseHpiHistoryCsv(historyText);
-  const latest = history.at(-1);
+  const latest = [...history].reverse().find((point) => point.hpiChangePercent !== null);
   if (
-    latest.period !== parsed.headline.period ||
+    latest?.period !== parsed.headline.period ||
     latest.hpiChangePercent !== parsed.headline.changePercent
   ) {
     throw new Error("ONS house price index history does not reconcile with the current bulletin headline");
+  }
+  const latestRent = [...history].reverse().find((point) => point.privateRentAnnualChangePercent !== null);
+  if (
+    latestRent?.period !== parsed.headline.privateRentPeriod ||
+    latestRent.privateRentAnnualChangePercent !== parsed.headline.privateRentAnnualChangePercent
+  ) {
+    throw new Error("ONS private-rent history does not reconcile with the current bulletin headline");
   }
 
   return {

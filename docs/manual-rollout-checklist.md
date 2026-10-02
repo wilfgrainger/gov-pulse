@@ -1,29 +1,35 @@
 # Operations and recovery checklist
 
+> Current production steps are described here. Source collection recovery is
+> independent of code release, and Pages is a bounded fallback. Verify these
+> commands against `.github/workflows/deploy.yml` when that workflow changes.
+
 Routine data publication is automatic on Cloudflare. This checklist is for repository release verification, incident response and rollback—not a daily manual process.
 
 ## One-time account setup
 
-- Confirm the `public-data-org` Cloudflare Pages project owns `public-data.org`.
-- Create GitHub environments named `cloudflare-internal-worker` and `cloudflare-pages`.
-- Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` to each environment.
+- Create the `cloudflare-internal-worker` GitHub environment and add
+  `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` to it.
 - Restrict the token to the intended account and `public-data.org` zone while permitting Worker deployment, Worker routes, Queues, KV bindings and Pages deployment.
 - Do not manually create `public-data-jobs`; the production workflow creates or reconciles it.
-- Review environment protection rules. Required reviewers turn an otherwise automatic deployment into an approval step.
+- Do not add environment approval requirements unless the user asks for them.
 
 ## Normal release
 
 1. Merge a validated pull request into `main`.
 2. The `Deploy public-data.org` workflow automatically:
-   - validates and builds the repository;
+   - prepares assets and compiles the deployable OpenNext Worker once (the
+     required PR `quality` result already ran lint, tests and the app build);
    - creates or reconciles `public-data-jobs` with one-day retention;
    - deploys the Worker, Cron triggers, routes and bindings from `worker/wrangler.toml`;
-   - verifies `/data/health.json`;
-   - deploys the same tested static artifact to Cloudflare Pages;
-   - verifies the deployed revision and a Pages-owned evidence download.
+   - verifies the deployed revision, reader routes and `/data/health.json`;
+   - leaves the Pages fallback untouched unless explicitly requested.
 3. No action is required for subsequent data refreshes. Cloudflare Cron and Queue own them.
 
-Manual workflow dispatch is appropriate only after a transient failed release or when deliberately redeploying the current `main` revision.
+Manual dispatch on `main` validates the selected source, then can redeploy it,
+request source recovery after deployment, or refresh the bounded Pages fallback.
+Evidence recovery runs in a separate job; its result does not block the deploy
+job's revision and reader-route verification.
 
 ## Runtime verification
 

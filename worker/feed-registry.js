@@ -184,7 +184,7 @@ export const FEED_REGISTRY = Object.freeze({
         label: "Private rent and house prices, UK bulletin",
         url: "https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/privaterentandhousepricesuk/latest",
         sourceClass: "official-primary",
-        caveat: "The Worker discovers the latest bulletin edition from the /latest alias (ONS serves this bulletin directly, without an HTTP redirect) and reads the UK House Price Index (HPI) percentage-change figure only; the average price level is headline-only and is not carried into the %-change history, which lags HPI's own publication by one to two months.",
+        caveat: "The Worker discovers the latest bulletin edition from the /latest alias (ONS serves this bulletin directly, without an HTTP redirect), then keeps the Price Index of Private Rents (PIPR), its average-rent headline, and UK House Price Index (HPI) percentage-change series separate. The latest Figure 1 rows can contain PIPR while HPI is not yet published; those HPI gaps remain explicit. HPI average price is headline-only and is not carried into the %-change history.",
       },
     ],
   },

@@ -82,6 +82,12 @@ describe("latest ONS house price index connector", () => {
     const result = parseHpiBulletin(bulletinHtml, "september2026");
 
     expect(result.headline).toEqual({
+      privateRentPeriod: "Aug 2026",
+      privateRentObservedAt: Date.UTC(2026, 7, 31),
+      avgMonthlyPrivateRentGbp: 1400,
+      privateRentAnnualChangePercent: 3.8,
+      previousPrivateRentPeriod: "Jul 2026",
+      previousPrivateRentAnnualChangePercent: 3.7,
       period: "Jul 2026",
       observedAt: Date.UTC(2026, 6, 31),
       releaseDate: "2026-09-16",
@@ -102,20 +108,22 @@ describe("latest ONS house price index connector", () => {
     );
   });
 
-  it("parses the Figure 1 history CSV, skipping the preamble and the blank-HPI latest row", () => {
+  it("keeps separate private-rent and house-price observations, including an explicit HPI gap", () => {
     const history = parseHpiHistoryCsv(historyCsv);
-    expect(history).toHaveLength(5);
+    expect(history).toHaveLength(6);
     expect(history.map((point) => point.period)).toEqual([
       "Mar 2026",
       "Apr 2026",
       "May 2026",
       "Jun 2026",
       "Jul 2026",
+      "Aug 2026",
     ]);
     expect(history.at(-1)).toEqual({
-      period: "Jul 2026",
-      observedAt: Date.UTC(2026, 6, 31),
-      hpiChangePercent: 1.4,
+      period: "Aug 2026",
+      observedAt: Date.UTC(2026, 7, 31),
+      privateRentAnnualChangePercent: 3.8,
+      hpiChangePercent: null,
     });
   });
 
@@ -138,9 +146,15 @@ describe("latest ONS house price index connector", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(result.headline.changePercent).toBe(1.4);
     expect(result.headline.avgPriceGbp).toBe(273000);
+    expect(result.headline.avgMonthlyPrivateRentGbp).toBe(1400);
+    expect(result.history.at(-1)).toMatchObject({
+      period: "Aug 2026",
+      privateRentAnnualChangePercent: 3.8,
+      hpiChangePercent: null,
+    });
     expect(result.source.edition).toBe("september2026");
     expect(result.source.bulletinUrl).toContain("september2026");
-    expect(result.history).toHaveLength(5);
+    expect(result.history).toHaveLength(6);
     expect(result).not.toHaveProperty("visaTypes");
   });
 
@@ -160,5 +174,17 @@ describe("latest ONS house price index connector", () => {
     await expect(buildHousePriceIndex(fetchImpl)).rejects.toThrow(
       "does not reconcile"
     );
+  });
+
+  it("fails closed when the private-rent headline and PIPR history do not reconcile", async () => {
+    const mismatchedCsv = historyCsv.replace('"Aug 2026","3.8",""', '"Aug 2026","3.6",""');
+    const fetchImpl = vi.fn(async (url: string) => ({
+      ok: true,
+      status: 200,
+      url: BULLETIN_LATEST_URL,
+      text: async () => url.includes("/generator?uri=") ? mismatchedCsv : bulletinHtml,
+    })) as unknown as typeof fetch;
+
+    await expect(buildHousePriceIndex(fetchImpl)).rejects.toThrow("private-rent history does not reconcile");
   });
 });

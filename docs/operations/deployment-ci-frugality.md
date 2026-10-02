@@ -1,39 +1,39 @@
 # Deployment and resource use
 
-Reviewed against `.github/workflows/pr-validation.yml`,
-`.github/workflows/deploy.yml` and the current Worker configuration on 2 October
-2026. This document describes current workflows; it does not restrict the
-user-authorized publication reinvention.
+Reviewed against the workflows and Worker configuration during publication
+reinvention round two. This document describes current delivery behavior; it
+does not restrict product scope.
 
 ## Pull request checks
 
-`pr-validation.yml` classifies documentation-only work separately. Code PRs run
-the `full-quality` job (root npm install, lint, unit/Worker tests and a Next
-build). A distinct non-blocking Lighthouse job independently installs/builds
-the application and uploads its report. Lighthouse is outside the required
-`quality` result. The full-quality and Lighthouse jobs therefore do duplicate
-build work on a code PR. Change this only with measured review of gate coverage.
+`pr-validation.yml` sends Markdown-only changes through text checks without
+installing dependencies. Code and executable configuration changes
+run source/architecture guards, one root npm install, lint, unit/Worker tests
+and one Next build. The required `quality` result reflects the selected lane.
+Lighthouse is opt-in through `lighthouse.yml`; it builds only when explicitly
+requested.
 
 There is no CI maximum for changed-file count, concern groups or added lines.
-The lane summary reports the changed-file list. Split a change when its parts
-are independently useful or reviewable; do not split cohesive work to satisfy
-a size threshold. Architecture, source, lockfile, lint, test and build checks
-remain blocking.
+Machine-readable and executable files do not qualify for the Markdown-only
+lane. Lockfile-only changes run the same locked install, tests and build as
+other code changes.
 
 ## Production release
 
-On a relevant push to `main`, `deploy.yml` installs both locked root and
-worker-local npm toolchains, validates source, prepares assets, performs one
-OpenNext build and deploys the web Worker. It reconciles the Queue, then deploys
-and verifies the data Worker. A following bootstrap/readiness step runs on
-**every push**; its bounded timeout is 420 seconds (7 minutes). The full job has
-a 15-minute timeout. A reader-route/revision check follows.
+The `quality` PR result is required by the `main` branch ruleset. A merged PR
+therefore carries the source checks, tests and application build used to gate
+that release. On a relevant push to `main`, `deploy.yml` installs both locked
+root and worker-local npm toolchains, prepares assets, performs one OpenNext
+build and deploys the web Worker. Manual deployments run the source checks.
+It reconciles the Queue, then deploys
+and verifies the data Worker. It then checks the deployed revision, reader
+routes and health contract without waiting for source collection. The full job
+has a 15-minute timeout.
 
-Manual dispatch can separately bootstrap publication or rebuild/deploy the
-secondary Cloudflare Pages seed. Pages is the fallback, not the request-time
-web application. Automatic deployment occurs after an authorized merge/push to
-the release branch; the workflow must not be run manually by development work
-unless production release is explicitly approved.
+Manual dispatch can run a separate evidence-recovery job after deployment or
+rebuild/deploy the secondary Cloudflare Pages seed. Recovery failure remains
+visible on its own job and cannot skip or invalidate the completed code release
+checks. Runtime data collection and KV publication continue independently.
 
 ## Free resource accounting
 
@@ -43,9 +43,9 @@ Worker requests, CPU, Queue messages/retries, KV reads/writes/storage, artifact
 size and egress from actual schedules and traffic. Existing Worker budget
 constants are subject to review; do not treat them as quota evidence.
 
-Upstream collection has a source-specific trusted NHS GitHub Actions importer
-because the NHS origin challenges Cloudflare egress. Reuse its existing
-reconciled parser and publication path. Confirm the runner/account free
-allowance and successful publication readback; do not add a paid executor.
+The NHS importer recently received an upstream access challenge from its
+GitHub runner. Treat retrieval as unverified until an allowed primary-source
+path successfully publishes reconciled data. Do not bypass access controls or
+add a paid executor.
 
 GitHub Pages must remain disabled. Public hosting/runtime is Cloudflare Free.

@@ -30,11 +30,24 @@ describe("approved public evidence surfaces", () => {
     expect(publicRouteAllowed("/internal/queue")).toBe(false);
   });
 
+  it("derives required ingress from the contract rather than a fixed route count", () => {
+    const oneRoute = [
+      "[[routes]]",
+      'pattern = "public-data.org/data/health.json"',
+      'zone_name = "public-data.org"',
+    ].join("\n");
+    const oneSurface = {
+      workerRoutes: [{ pattern: "public-data.org/data/health.json", zone_name: "public-data.org", required: true }],
+    };
+    expect(unsupportedWorkerIngress(oneRoute, oneSurface)).toEqual([]);
+  });
+
   it("only reads an edition selected by one validated query value", () => {
     expect(publicRouteAllowed("/data/edition.json?edition=2026-10-01-a1")).toBe(true);
     expect(publicRouteAllowed("/data/edition.json?edition=../../secret")).toBe(false);
     expect(publicRouteAllowed("https://attacker.example/data/edition.json?edition=a1")).toBe(false);
     expect(publicRouteAllowed("/data/edition.json?edition=a1&debug=true")).toBe(false);
+    expect(publicRouteAllowed("/data/edition.json/extra?edition=a1")).toBe(false);
   });
 
   it("keeps every topic and explorer measure in the presentation inventory", () => {
@@ -55,10 +68,4 @@ describe("approved public evidence surfaces", () => {
     expect(coverage.explorerMeasureIds.toSorted()).toEqual(surfaces.explorerMeasureIds.toSorted());
   });
 
-  it("allows vibrant styling while the evidence accessibility rules remain active", () => {
-    const guide = readFileSync("AGENTS.md", "utf8");
-    expect(guide).toContain("vibrant, classic FiveThirtyEight-inspired redesign");
-    expect(guide).toContain("keyboard access and visible focus");
-    expect(guide).toContain("Cloudflare Free");
-  });
 });

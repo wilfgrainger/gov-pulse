@@ -1,5 +1,9 @@
 # Test-suite audit (cave-pony `audit` mode) — 2026-09-28
 
+> Historical test inventory. Its baseline counts and statements about current
+> pipeline wiring are dated; inspect the live scripts and workflows before
+> using them as implementation guidance.
+
 Read-only philosophy: do less, prove enough. Keep every test that would fail if
 real product behaviour regressed. Cut tests that only assert governance-document
 wording, police pull-request or commit process, or scrape source strings that a
@@ -18,10 +22,10 @@ Baseline before this audit: 104 test files, 532 tests, `npm run lint` and
 | CONSOLIDATE / REWRITE | 1 | gov-metrics-master-skill (slim to real guarantees; drop missing-skill ceremony) |
 | KEEP | rest | evidence contracts, currentness/fail-closed, worker collectors, accessibility, security boundaries, crime composition, deployment/release verifiers |
 
-The PR description validator and validation-lane classifier remain wired into
-`.github/workflows/pr-validation.yml`. The change-size gate and its helper were
-removed on 2 October 2026: changed files are still listed in the lane summary,
-but file count, concern count and line count do not block validation.
+The PR description validator and validation-lane classifier were present when
+this audit was written. Round-two changes simplified both policies; inspect the
+current scripts and workflow for live behavior. Changed-file count, concern
+count and line count are not limits.
 The same cleanup removed `steering-and-crime-composition.test.ts`, which
 asserted Markdown wording and source-string composition already covered by
 route-level, component and procurement tests. It also removed
@@ -60,9 +64,9 @@ and behavior tests.
 - Consequence: agent/process behaviour, not product behaviour. The helpers stay
   wired into `pr-validation.yml`, so cutting these vitest files loses no
   enforcement; it removes duplicate, brittle tests of English-prose rules.
-- Smallest correction: delete both test files. Keep `pr-description-policy.mjs`
-  and `pr-changed-files.mjs` (still invoked by `check-pr-description.mjs` in
-  CI).
+- Smallest correction (historical): delete both prose-policy test files. The
+  redundant changed-path helper has since been removed; the short empty-body
+  check remains.
 
 ### 3. Change-size limits are process policy, not product behaviour
 

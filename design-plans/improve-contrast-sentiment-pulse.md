@@ -1,5 +1,7 @@
 # Fix Active Card Text Contrast on SentimentPulse
 
+> Historical contrast note. Keep any verified accessibility finding; visual direction is set by the [round-two plan](../docs/superpowers/plans/2026-10-02-publication-reinvention-round-2.md), not this old palette preference.
+
 Written against: 5ab09c32965aba0365ecc94159d02f12907c04e6
 
 ## Evidence chain
@@ -48,3 +50,4 @@ Unify the active state of all cards in the `SentimentPulse` selection grid. When
 ## Design documentation
 
 - After acceptance and validation: None.
+# Historical contrast review. Preserve accessibility findings; round-two visual design governs presentation.

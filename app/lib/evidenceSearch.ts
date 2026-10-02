@@ -13,7 +13,7 @@ export type EvidenceSearchItem = {
 };
 
 const FIXED_EVIDENCE_SEARCH_ITEMS: readonly EvidenceSearchItem[] = [
-  { id: 'explore', title: 'Explore core measures', category: 'Data tools', evidenceClass: 'Source-linked statistics', description: 'Search eight core measures, inspect history, compare periods and download CSV.', href: '/explore/', aliases: ['data explorer', 'download', 'CSV', 'compare', 'history', 'all data'], questions: ['Can I download the data?', 'How have the figures changed?'], priority: 0 },
+  { id: 'explore', title: 'Explore published measures', category: 'Data tools', evidenceClass: 'Source-linked statistics', description: 'Search available measures, inspect definitions and published history, compare periods and download source-linked data.', href: '/explore/', aliases: ['data explorer', 'download', 'CSV', 'compare', 'history', 'all data'], questions: ['Can I download the data?', 'How have the figures changed?'], priority: 0 },
   {
     id: "key-indicators",
     title: "Prices, rates and jobs",

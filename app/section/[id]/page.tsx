@@ -100,11 +100,15 @@ export default async function SectionPage({
           subtitle={section.subtitle}
           current={section.category}
         />
-        <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-14">
+        <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
+          <Reveal as="article" className="evidence-article v3-evidence-article p-5 md:p-8 lg:p-12">
+            <h2 className="sr-only">{section.title}: latest evidence and sources</h2>
+            <SectionComponent />
+          </Reveal>
           {dataSection ? (
             <aside
               aria-label={`${section.title} data downloads`}
-              className="evidence-downloads mb-6 grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center md:p-5"
+              className="evidence-downloads mt-8 grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center md:p-5"
             >
               <div>
                 <p className="eyebrow">Verified edition downloads</p>
@@ -115,27 +119,15 @@ export default async function SectionPage({
                 </p>
               </div>
               {hasDownload && <div className="flex flex-wrap gap-2">
-                <a
-                  href={`/data/sections/${dataSection}.json`}
-                  className="v3-secondary-action"
-                  download
-                >
+                <a href={`/data/sections/${dataSection}.json`} className="v3-secondary-action" download>
                   Download JSON
                 </a>
-                <a
-                  href={`/data/sections/${dataSection}.csv`}
-                  className="v3-secondary-action"
-                  download
-                >
+                <a href={`/data/sections/${dataSection}.csv`} className="v3-secondary-action" download>
                   Download CSV
                 </a>
               </div>}
             </aside>
           ) : null}
-          <Reveal as="article" className="evidence-article v3-evidence-article p-5 md:p-8 lg:p-12">
-            <h2 className="sr-only">{section.title}: latest evidence and sources</h2>
-            <SectionComponent />
-          </Reveal>
         </div>
       </main>
       <SiteFooter />

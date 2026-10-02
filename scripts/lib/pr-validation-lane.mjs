@@ -4,15 +4,12 @@ const DOC_ONLY_FILES = new Set([
   "SECURITY.md",
   "CONTRIBUTING.md",
   ".github/pull_request_template.md",
-  ".gitignore",
-  ".gitattributes",
-  ".editorconfig",
 ]);
-const DOC_ONLY_PREFIXES = [".agents/", "docs/", ".github/ISSUE_TEMPLATE/"];
+const DOC_ONLY_PREFIXES = [];
 
-// Markdown and plain-text files use the cheap docs lane unless they are in a
-// code-owning location; the file list and count remain visible in the summary.
-const DOC_ONLY_EXTENSIONS = new Set([".md", ".markdown", ".txt"]);
+// Only prose files use the cheap lane. Executable or machine-readable files in
+// documentation and agent directories still run the full quality checks.
+const DOC_ONLY_EXTENSIONS = new Set([".md", ".markdown"]);
 
 function extensionOf(file) {
   const dot = file.lastIndexOf(".");

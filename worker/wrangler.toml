@@ -27,7 +27,7 @@ pattern = "public-data.org/data/editions.json"
 zone_name = "public-data.org"
 
 [[routes]]
-pattern = "public-data.org/data/edition.json"
+pattern = "public-data.org/data/edition.json*"
 zone_name = "public-data.org"
 
 [triggers]

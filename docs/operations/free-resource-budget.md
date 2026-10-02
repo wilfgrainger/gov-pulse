@@ -1,5 +1,9 @@
 # Free-runtime workload budget (model refreshed 2 October 2026)
 
+> This is a workload estimate. The 20% headroom figure below is a planning
+> target, not a product, code-size or blanket release gate; reassess it against
+> measured traffic and current account limits.
+
 This is a repository workload model, not evidence of Cloudflare account
 entitlement. It is derived from `worker/feed-registry.js`, the scheduled cron
 expressions in `worker/queued-publication-entry.js`, and `worker/wrangler.toml`.

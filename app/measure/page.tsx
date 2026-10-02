@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import MeasureLibrary from "@/app/components/MeasureLibrary";
+import type { MeasureLibraryItem } from "@/app/components/MeasureLibrary";
 import SectionNav from "@/app/components/SectionNav";
 import SiteFooter from "@/app/components/SiteFooter";
-import { availableMeasures } from "@/app/lib/measureCatalog";
+import { measureForDisplay } from "@/app/lib/measureCatalog";
+import { MEASURES } from "@/app/lib/measureDefinitions";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
 import { SECTIONS } from "@/app/lib/sections";
 
@@ -15,7 +17,30 @@ export const metadata: Metadata = {
 export default async function MeasureIndexPage() {
   const snapshot = await readServerMetricsSnapshot();
   const catalog = snapshot?.meta.measureCatalog;
-  const measures = availableMeasures(catalog, new Date());
+  const now = new Date();
+  const measures: MeasureLibraryItem[] = MEASURES.map((definition) => {
+    const record = measureForDisplay(catalog, definition.id, now);
+    const source = snapshot?.meta.sources[definition.section];
+    const provenance = source && typeof source === "object"
+      ? (source as { provenance?: { upstreams?: { publisher?: string }[] } }).provenance
+      : undefined;
+    const publisher = provenance?.upstreams?.map((upstream) => upstream.publisher).find(Boolean) ?? "Publisher not identified";
+    const status = source && typeof source === "object" ? (source as { status?: string }).status : undefined;
+    const availabilityReason = record?.availability === "historical"
+      ? `This verified publication is outside its current validity window${record.validUntil ? ` (valid through ${record.validUntil.slice(0, 10)})` : ""}.`
+      : record ? null
+        : !snapshot ? "No current national evidence edition is available."
+          : status === "error" || !source ? "The source section is unavailable in this edition."
+            : "No record passed the source, period and history checks for this edition.";
+    return {
+      ...definition,
+      publisher,
+      record,
+      availability: record?.availability ?? "unavailable",
+      observationPeriod: record?.observationPeriod.label ?? null,
+      availabilityReason,
+    };
+  });
   return <div className="min-h-screen bg-background text-foreground">
     <a href="#measure-library" className="sr-only focus:not-sr-only focus:block focus:bg-white focus:p-4">Skip to measure library</a>
     <SectionNav sections={SECTIONS} />
@@ -23,9 +48,9 @@ export default async function MeasureIndexPage() {
       <header className="mb-10 border-b-4 border-foreground bg-surface-warm p-5 md:p-8">
         <p className="eyebrow">Searchable public evidence</p>
         <h1 className="mt-2 text-5xl font-black tracking-[-0.06em] md:text-7xl">Measure library</h1>
-        <p className="mt-4 max-w-3xl text-base leading-7 text-gray-700">Each record keeps its source, observation period, definition, geography and validity together. Only measures that pass the current catalog contract appear here.</p>
+        <p className="mt-4 max-w-3xl text-base leading-7 text-gray-700">Search measures by topic, publisher, geography, frequency, unit or availability. Verified observations keep their source and revision context; unavailable entries explain why no value is shown.</p>
       </header>
-      {measures.length ? <MeasureLibrary measures={measures} /> : <section role="status" className="border-l-4 border-accent bg-white p-6"><h2 className="text-xl font-bold">No validated measure catalog is available</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-gray-700">This edition does not include current catalog records. The library will fill when a valid publication is available; no measures are inferred from display cards.</p></section>}
+      <MeasureLibrary measures={measures} />
     </main>
     <SiteFooter />
   </div>;

@@ -19,6 +19,24 @@ export type ExportPackage = {
   caveats: string[];
 };
 
+const DAY_MS = 86_400_000;
+
+/** Give a one-date chart a readable axis without adding or shifting observations. */
+export function timeAxisDomain(values: number[]): [number, number] {
+  const dates = values.filter(Number.isFinite);
+  if (dates.length === 0) return [0, 1];
+  const min = Math.min(...dates);
+  const max = Math.max(...dates);
+  return min === max ? [min - 31 * DAY_MS, max + 31 * DAY_MS] : [min, max];
+}
+
+/** Avoid a generated center tick sharing a key with a lone published date. */
+export function timeAxisTicks(values: number[]): number[] | undefined {
+  const dates = values.filter(Number.isFinite);
+  if (dates.length === 0 || Math.min(...dates) !== Math.max(...dates)) return undefined;
+  return timeAxisDomain(dates);
+}
+
 function isDate(value: unknown): value is string {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00.000Z`);
