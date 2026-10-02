@@ -9,7 +9,7 @@ export type ReceiptsMonthPoint = {
 
 interface ReceiptsDebtVisualProps {
   receiptsHistory: ReceiptsMonthPoint[];
-  currentReceiptsBillion: number;
+  currentReceiptsBillion: number | null;
   currentDebtBillion: number;
   debtToGdpRatio: number;
   receiptsPeriod: string;
@@ -41,7 +41,7 @@ export default function ReceiptsDebtVisual({
   }, [validHistory]);
 
   const meanMonthlyReceipts = useMemo(() => {
-    if (validHistory.length === 0) return 0;
+    if (validHistory.length === 0) return null;
     const sum = validHistory.reduce((acc, p) => acc + p.receiptsMillionGbp, 0);
     return sum / validHistory.length / 1000;
   }, [validHistory]);
@@ -75,7 +75,7 @@ export default function ReceiptsDebtVisual({
         <div className="rounded-xs border border-slate-200 bg-slate-50/60 p-4">
           <span className="font-mono text-[11px] font-bold uppercase text-slate-500">Monthly Tax Receipts</span>
           <p className="mt-1 font-mono text-3xl font-extrabold tabular-nums text-slate-950">
-            {formatBillion(currentReceiptsBillion)}
+            {currentReceiptsBillion === null ? "Unavailable" : formatBillion(currentReceiptsBillion)}
           </p>
           <p className="mt-0.5 text-xs text-slate-600">
             {receiptsPeriod} · ONS ANBV central receipts
@@ -116,7 +116,7 @@ export default function ReceiptsDebtVisual({
           <div className="flex items-center justify-between text-xs font-semibold text-slate-700 mb-2">
             <span>Monthly Cash Receipts Timeline (Past 12 Months)</span>
             <span className="font-mono text-xs text-slate-500">
-              Mean: {formatBillion(meanMonthlyReceipts)}/mo
+            {meanMonthlyReceipts === null ? "No published receipts observations" : `Mean: ${formatBillion(meanMonthlyReceipts)}/mo`}
             </span>
           </div>
 

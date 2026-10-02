@@ -1,11 +1,11 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import NationalDebtCounter from "@/app/components/NationalDebtCounter";
 
 const useMetrics = vi.fn();
 
 vi.mock("@/app/lib/useMetrics", () => ({
-  useMetrics: () => useMetrics(),
+  useMetrics: (section: string) => useMetrics(section),
 }));
 
 vi.mock("@/app/components/MetricsStatus", () => ({
@@ -105,5 +105,32 @@ describe("NationalDebtCounter evidence integrity", () => {
 
     expect(screen.getByRole("status")).toHaveTextContent("Debt observation unavailable");
     expect(screen.queryByText(/£2,984/)).not.toBeInTheDocument();
+  });
+
+  it("keeps missing receipts unavailable and omits missing history points", () => {
+    useMetrics.mockImplementation((section: string) => ({
+      data: section === "nationalDebt"
+        ? currentDebt
+        : {
+            headline: { period: "May 2026", receiptsBillion: null },
+            history: [
+              { period: "April 2026", receiptsBillion: null },
+              { period: "May 2026", receiptsBillion: 120 },
+            ],
+          },
+      isLive: true,
+      lastUpdated: new Date("2026-06-19T06:00:00Z"),
+      source: "worker",
+      cacheState: "fresh",
+    }));
+
+    render(<NationalDebtCounter />);
+
+    expect(screen.getByText("Unavailable")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "View screen-reader table" }));
+    const table = screen.getByRole("table", { name: /monthly public sector receipts/i });
+    expect(within(table).getAllByRole("row")).toHaveLength(2);
+    expect(within(table).getByText("May 2026")).toBeInTheDocument();
+    expect(within(table).queryByText("April 2026")).not.toBeInTheDocument();
   });
 });
