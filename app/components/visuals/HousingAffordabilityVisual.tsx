@@ -5,13 +5,13 @@ import { useId, useMemo, useState } from "react";
 export type TrendComparisonPoint = {
   date: string;
   housePriceGrowthPct: number;
-  realWageGrowthPct: number;
+  realWageGrowthPct: number | null;
 };
 
 interface HousingAffordabilityVisualProps {
   points: TrendComparisonPoint[];
   currentHpiChange: number;
-  currentRealWageGrowth: number;
+  currentRealWageGrowth: number | null;
   hpiPeriod: string;
   wagesPeriod: string;
 }
@@ -27,8 +27,10 @@ export default function HousingAffordabilityVisual({
   const [showTable, setShowTable] = useState(false);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
-  const gap = currentRealWageGrowth - currentHpiChange;
-  const payOutpacing = gap >= 0;
+  const gap = currentRealWageGrowth !== null && wagesPeriod === hpiPeriod
+    ? currentRealWageGrowth - currentHpiChange
+    : null;
+  const payOutpacing = gap !== null && gap >= 0;
 
   const validPoints = useMemo(() => {
     return Array.isArray(points) ? points.slice(-12) : [];
@@ -36,7 +38,10 @@ export default function HousingAffordabilityVisual({
 
   const { minVal, maxVal } = useMemo(() => {
     if (validPoints.length === 0) return { minVal: -2, maxVal: 6 };
-    const allVals = validPoints.flatMap((p) => [p.housePriceGrowthPct, p.realWageGrowthPct]);
+    const allVals = validPoints.flatMap((p) => [
+      p.housePriceGrowthPct,
+      ...(p.realWageGrowthPct === null ? [] : [p.realWageGrowthPct]),
+    ]);
     return {
       minVal: Math.min(...allVals, 0) - 1,
       maxVal: Math.max(...allVals, 0) + 1,
@@ -44,6 +49,21 @@ export default function HousingAffordabilityVisual({
   }, [validPoints]);
 
   const activePoint = hoverIndex !== null ? validPoints[hoverIndex] : validPoints[validPoints.length - 1];
+  const linePath = (valueFor: (point: TrendComparisonPoint) => number | null) => {
+    let connected = false;
+    return validPoints.flatMap((point, index) => {
+      const value = valueFor(point);
+      if (value === null) {
+        connected = false;
+        return [];
+      }
+      const x = validPoints.length < 2 ? 250 : (index / (validPoints.length - 1)) * 500;
+      const y = 140 - ((value - minVal) / (maxVal - minVal)) * 140;
+      const command = `${connected ? "L" : "M"} ${x.toFixed(1)} ${y.toFixed(1)}`;
+      connected = true;
+      return [command];
+    }).join(" ");
+  };
 
   return (
     <div className="border border-black/20 bg-white p-5 md:p-6 shadow-sm">
@@ -74,7 +94,9 @@ export default function HousingAffordabilityVisual({
         <div className="rounded-xs border border-blue-200 bg-blue-50/40 p-3.5">
           <span className="font-mono text-[11px] font-semibold uppercase text-blue-700">Real Pay Growth (A3WW)</span>
           <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-blue-950">
-            {currentRealWageGrowth > 0 ? `+${currentRealWageGrowth.toFixed(1)}%` : `${currentRealWageGrowth.toFixed(1)}%`}
+            {currentRealWageGrowth === null
+              ? "Unavailable"
+              : `${currentRealWageGrowth > 0 ? "+" : ""}${currentRealWageGrowth.toFixed(1)}%`}
           </p>
           <p className="mt-0.5 text-xs text-blue-800/80">{wagesPeriod} · ONS Earnings</p>
         </div>
@@ -92,10 +114,12 @@ export default function HousingAffordabilityVisual({
             Affordability Momentum
           </span>
           <p className={`mt-1 font-mono text-2xl font-bold tabular-nums ${payOutpacing ? "text-emerald-950" : "text-amber-950"}`}>
-            {gap > 0 ? `+${gap.toFixed(1)}%` : `${gap.toFixed(1)}%`}
+            {gap === null ? "Unavailable" : `${gap > 0 ? "+" : ""}${gap.toFixed(1)}%`}
           </p>
           <p className="mt-0.5 text-xs text-slate-700">
-            {payOutpacing ? "Pay growing faster than house prices" : "House prices growing faster than real pay"}
+            {gap === null
+              ? "No matching source observation periods"
+              : payOutpacing ? "Pay growing faster than house prices" : "House prices growing faster than real pay"}
           </p>
         </div>
       </div>
@@ -116,7 +140,7 @@ export default function HousingAffordabilityVisual({
             </div>
             {activePoint && (
               <span className="font-mono text-xs text-slate-600">
-                {activePoint.date}: Pay {activePoint.realWageGrowthPct.toFixed(1)}% vs HPI {activePoint.housePriceGrowthPct.toFixed(1)}%
+                {activePoint.date}: Pay {activePoint.realWageGrowthPct === null ? "unavailable" : `${activePoint.realWageGrowthPct.toFixed(1)}%`} vs HPI {activePoint.housePriceGrowthPct.toFixed(1)}%
               </span>
             )}
           </div>
@@ -138,48 +162,38 @@ export default function HousingAffordabilityVisual({
               )}
 
               {/* Real Wage line */}
-              <polyline
+              <path
                 fill="none"
                 stroke="#1d4ed8"
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                points={validPoints
-                  .map((p, idx) => {
-                    const x = (idx / (validPoints.length - 1)) * 500;
-                    const y = 140 - ((p.realWageGrowthPct - minVal) / (maxVal - minVal)) * 140;
-                    return `${x.toFixed(1)},${y.toFixed(1)}`;
-                  })
-                  .join(" ")}
+                d={linePath((point) => point.realWageGrowthPct)}
               />
 
               {/* HPI line */}
-              <polyline
+              <path
                 fill="none"
                 stroke="#6366f1"
                 strokeWidth="2.5"
                 strokeDasharray="4 2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                points={validPoints
-                  .map((p, idx) => {
-                    const x = (idx / (validPoints.length - 1)) * 500;
-                    const y = 140 - ((p.housePriceGrowthPct - minVal) / (maxVal - minVal)) * 140;
-                    return `${x.toFixed(1)},${y.toFixed(1)}`;
-                  })
-                  .join(" ")}
+                d={linePath((point) => point.housePriceGrowthPct)}
               />
 
               {/* Data points */}
               {validPoints.map((p, idx) => {
                 const x = (idx / (validPoints.length - 1)) * 500;
-                const yWage = 140 - ((p.realWageGrowthPct - minVal) / (maxVal - minVal)) * 140;
+                const yWage = p.realWageGrowthPct === null
+                  ? null
+                  : 140 - ((p.realWageGrowthPct - minVal) / (maxVal - minVal)) * 140;
                 const yHpi = 140 - ((p.housePriceGrowthPct - minVal) / (maxVal - minVal)) * 140;
                 const isHovered = hoverIndex === idx;
 
                 return (
                   <g key={p.date} onMouseEnter={() => setHoverIndex(idx)} onMouseLeave={() => setHoverIndex(null)}>
-                    <circle cx={x} cy={yWage} r={isHovered ? 5 : 3} fill="#1d4ed8" stroke="#ffffff" strokeWidth="1.5" />
+                    {yWage !== null ? <circle cx={x} cy={yWage} r={isHovered ? 5 : 3} fill="#1d4ed8" stroke="#ffffff" strokeWidth="1.5" /> : null}
                     <circle cx={x} cy={yHpi} r={isHovered ? 5 : 3} fill="#6366f1" stroke="#ffffff" strokeWidth="1.5" />
                   </g>
                 );
@@ -209,18 +223,20 @@ export default function HousingAffordabilityVisual({
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
               {validPoints.map((point) => {
-                const diff = point.realWageGrowthPct - point.housePriceGrowthPct;
+                const diff = point.realWageGrowthPct === null
+                  ? null
+                  : point.realWageGrowthPct - point.housePriceGrowthPct;
                 return (
                   <tr key={point.date} className="hover:bg-slate-50">
                     <td className="px-3 py-2 font-medium text-slate-900">{point.date}</td>
                     <td className="px-3 py-2 text-right font-mono font-bold tabular-nums text-blue-900">
-                      {point.realWageGrowthPct.toFixed(1)}%
+                      {point.realWageGrowthPct === null ? "Unavailable" : `${point.realWageGrowthPct.toFixed(1)}%`}
                     </td>
                     <td className="px-3 py-2 text-right font-mono font-bold tabular-nums text-indigo-900">
                       {point.housePriceGrowthPct.toFixed(1)}%
                     </td>
-                    <td className={`px-3 py-2 text-right font-mono font-bold tabular-nums ${diff >= 0 ? "text-emerald-700" : "text-amber-700"}`}>
-                      {diff > 0 ? `+${diff.toFixed(1)}%` : `${diff.toFixed(1)}%`}
+                    <td className={`px-3 py-2 text-right font-mono font-bold tabular-nums ${diff === null ? "text-slate-500" : diff >= 0 ? "text-emerald-700" : "text-amber-700"}`}>
+                      {diff === null ? "Unavailable" : `${diff > 0 ? "+" : ""}${diff.toFixed(1)}%`}
                     </td>
                   </tr>
                 );

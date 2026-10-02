@@ -83,12 +83,10 @@ describe("CrimeStatistics modular evidence page", () => {
     expect(
       screen.getByRole("heading", { name: "Crimes recorded by the police" })
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Criminal court timeliness" })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Criminal court timeliness" })).toBeInTheDocument();
     expect(screen.getByText("9.6 million")).toBeInTheDocument();
-    expect(screen.getByText("48,774")).toBeInTheDocument();
-    expect(screen.getByText("346 days")).toBeInTheDocument();
+    expect(screen.queryByText("346 days")).not.toBeInTheDocument();
+    expect(screen.getByText(/No Ministry of Justice release has been collected and validated/i)).toBeInTheDocument();
     expect(screen.getAllByText(/released 23 July 2026/i)).toHaveLength(2);
     expect(screen.getAllByText(/Report Fraud/i)).toHaveLength(2);
   });

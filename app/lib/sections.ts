@@ -1,3 +1,5 @@
+import { MEASURES } from "./measureDefinitions";
+
 export interface SectionItem {
   id: string;
   label: string;
@@ -54,3 +56,11 @@ export const SECTIONS: CategoryGroup[] = [
     ],
   },
 ];
+
+export const MEASURE_COUNTS_BY_ROUTE = Object.freeze(Object.fromEntries(
+  MEASURES.reduce<Map<string, number>>((counts, measure) => {
+    const route = measure.route.replace(/\/$/, "");
+    counts.set(route, (counts.get(route) ?? 0) + 1);
+    return counts;
+  }, new Map()),
+));

@@ -12,7 +12,7 @@ export type IndicatorSeries = {
   title: string;
   shortTitle: string;
   unit: string;
-  currentValue: number;
+  currentValue: number | null;
   previousValue: number | null;
   annualDelta: number | null;
   observationPeriod: string;
@@ -100,14 +100,18 @@ export default function EconomicPulseGrid({ series }: EconomicPulseGridProps) {
       {/* 4-Card Grid */}
       <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {series.map((item) => {
-          const delta = item.previousValue !== null ? item.currentValue - item.previousValue : null;
+          const delta = item.currentValue !== null && item.previousValue !== null
+            ? item.currentValue - item.previousValue
+            : null;
           const isSelected = activeSeriesId === item.id;
 
           return (
-            <div
+            <button
               key={item.id}
+              type="button"
+              aria-pressed={isSelected}
               onClick={() => setActiveSeriesId(isSelected ? null : item.id)}
-              className={`flex flex-col justify-between rounded-xs border p-4 transition-all cursor-pointer ${
+              className={`flex w-full flex-col justify-between rounded-xs border p-4 text-left transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 ${
                 isSelected
                   ? "border-blue-600 bg-blue-50/40 ring-1 ring-blue-500"
                   : "border-slate-200 bg-slate-50/50 hover:border-slate-300 hover:bg-slate-50"
@@ -129,7 +133,7 @@ export default function EconomicPulseGrid({ series }: EconomicPulseGridProps) {
 
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="font-mono text-3xl font-extrabold tabular-nums text-slate-950">
-                    {item.currentValue.toFixed(1)}%
+                    {item.currentValue === null ? "Unavailable" : `${item.currentValue.toFixed(1)}%`}
                   </span>
                   {delta !== null && (
                     <span
@@ -159,7 +163,7 @@ export default function EconomicPulseGrid({ series }: EconomicPulseGridProps) {
                   {item.publisher}
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

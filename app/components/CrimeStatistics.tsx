@@ -49,10 +49,12 @@ type EvidenceModule = {
   measures: Measure[];
 };
 
+type UnavailableModule = { status: "unavailable"; title: string; reason: string };
+
 type CrimePayload = typeof FALLBACK & {
   crimeSurvey: EvidenceModule;
   policeRecorded: EvidenceModule;
-  justice: EvidenceModule;
+  justice: EvidenceModule | UnavailableModule;
   regional: { status: "unavailable"; title: string; reason: string };
 };
 
@@ -191,12 +193,20 @@ export default function CrimeStatistics() {
         sourceDate={`Published by ONS on ${formatDate(crimeData.headline.releaseDate)} · ${crimeData.headline.period}`}
       />
 
-      <ModuleSection
-        eyebrow="Ministry of Justice"
-        module={crimeData.justice}
-        sourceUrl={crimeData.justice.sourceUrl ?? ""}
-        sourceDate={`Released ${formatDate(crimeData.justice.releaseDate ?? "")} · ${crimeData.justice.period}`}
-      />
+      {crimeData.justice.status === "available" ? (
+        <ModuleSection
+          eyebrow="Ministry of Justice"
+          module={crimeData.justice}
+          sourceUrl={crimeData.justice.sourceUrl ?? ""}
+          sourceDate={`Released ${formatDate(crimeData.justice.releaseDate ?? "")} · ${crimeData.justice.period}`}
+        />
+      ) : (
+        <section aria-labelledby="justice-unavailable-title" role="status" className="border-l-4 border-foreground pl-4">
+          <p className="text-sm font-semibold text-accent">Ministry of Justice</p>
+          <h3 id="justice-unavailable-title" className="mt-1 text-xl font-semibold">{crimeData.justice.title}</h3>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-gray-700">{crimeData.justice.reason}</p>
+        </section>
+      )}
 
       <section aria-labelledby="regional-crime-title" className="border-l-4 border-foreground pl-4">
         <p className="text-sm font-semibold text-accent">Not yet published</p>

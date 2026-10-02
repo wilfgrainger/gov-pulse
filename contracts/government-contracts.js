@@ -42,11 +42,6 @@ function round(value, digits = 2) {
   return Math.round((value + Number.EPSILON) * factor) / factor;
 }
 
-// Deterministic, publicly documented UK postcode-area-to-nation mapping.
-// Source: Royal Mail / GOV.UK postcode area allocations. This is a public,
-// objective lookup from postcode AREA letters only (never from a company
-// name or any other heuristic) and defaults unmapped or missing areas to
-// "Other/Unknown" rather than guessing.
 const UK_NATIONS = Object.freeze({
   SCOTLAND: "Scotland",
   WALES: "Wales",
@@ -55,63 +50,23 @@ const UK_NATIONS = Object.freeze({
   OTHER_UNKNOWN: "Other/Unknown",
 });
 
-// Postcode AREA letters (the leading alphabetic prefix of a UK postcode,
-// e.g. "EH" in "EH1 1AA") that are allocated to Scotland, Wales or Northern
-// Ireland. Any area not listed here, plus every other postcode format in the
-// Open Government postcode allocation list, is England. BT is the sole
-// Northern Ireland area. This set is intentionally the full published list,
-// not a sample.
-const SCOTLAND_POSTCODE_AREAS = Object.freeze([
-  "AB", "DD", "DG", "EH", "FK", "G", "HS", "IV", "KA", "KW", "KY", "ML", "PA",
-  "PH", "TD", "ZE",
-]);
-const WALES_POSTCODE_AREAS = Object.freeze([
-  "CF", "LD", "LL", "NP", "SA", "SY",
-]);
-const NORTHERN_IRELAND_POSTCODE_AREAS = Object.freeze(["BT"]);
+// A postcode area is not a country boundary (SY and TD straddle borders, and
+// JE/GY must not fall through to England). No authoritative address-level
+// lookup is bundled, so postcode-only nation classification is unavailable.
+function ukNationFromPostcode() {
+  return UK_NATIONS.OTHER_UNKNOWN;
+}
 
-// SY and SY-adjacent areas straddle the England/Wales border in Royal Mail's
-// own allocation (e.g. SY postcodes extend into Shropshire, England), as do
-// a few Scotland-bordering areas (e.g. parts of TD extend into England).
-// Royal Mail's postcode area allocation is defined by AREA letters, not by
-// a strict national boundary, so a small number of addresses in a
-// border-straddling area are formally outside the nation their area letters
-// usually indicate. This is a documented limitation of the public mapping
-// itself, not an approximation introduced here; the area-letter mapping
-// below is still the deterministic, objective public assignment used by
-// ONS/Royal Mail area allocation tables.
-const POSTCODE_AREA_TO_NATION = Object.freeze(
-  Object.fromEntries([
-    ...SCOTLAND_POSTCODE_AREAS.map((area) => [area, UK_NATIONS.SCOTLAND]),
-    ...WALES_POSTCODE_AREAS.map((area) => [area, UK_NATIONS.WALES]),
-    ...NORTHERN_IRELAND_POSTCODE_AREAS.map((area) => [area, UK_NATIONS.NORTHERN_IRELAND]),
-  ])
-);
-
-const POSTCODE_AREA_PATTERN = /^([A-Z]{1,2})\d/;
-
-/**
- * Map a UK postcode to its nation using only the publicly documented
- * postcode AREA letters (Royal Mail / ONS allocation). Returns
- * "Other/Unknown" for any postcode that is missing, malformed, or whose
- * area is not in the published Scotland/Wales/Northern Ireland lists —
- * such an area is England, EXCEPT this function never infers England from
- * absence of information: it only returns England when the postcode
- * genuinely parses as a well-formed UK postcode outside the SC/WAL/NI
- * areas. Never derives a nation from a supplier name, address text, or any
- * other non-postcode heuristic.
- */
-function ukNationFromPostcode(postcode) {
-  const normalized = typeof postcode === "string" ? postcode.trim().toUpperCase() : "";
-  if (!normalized) return UK_NATIONS.OTHER_UNKNOWN;
-  // A well-formed UK postcode outward code is 1-2 letters followed by 1-2
-  // digits (optionally one more letter), e.g. "EH1", "SW1A", "BT1". Reject
-  // anything that does not match this shape rather than guessing.
-  const compact = normalized.replace(/\s+/g, "");
-  const match = compact.match(POSTCODE_AREA_PATTERN);
-  if (!match) return UK_NATIONS.OTHER_UNKNOWN;
-  const area = match[1];
-  return POSTCODE_AREA_TO_NATION[area] ?? UK_NATIONS.ENGLAND;
+function ukNationFromCountryName(value) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  const explicitNations = new Map([
+    ["england", UK_NATIONS.ENGLAND],
+    ["scotland", UK_NATIONS.SCOTLAND],
+    ["wales", UK_NATIONS.WALES],
+    ["northern ireland", UK_NATIONS.NORTHERN_IRELAND],
+  ]);
+  return explicitNations.get(normalized) ?? null;
 }
 
 function normalizeSupplierNation(value) {
@@ -486,6 +441,7 @@ export {
   REQUIRED_AWARD_COUNT,
   SOURCE,
   UK_NATIONS,
+  ukNationFromCountryName,
   buildGovernmentContractsPayload,
   buildSummary,
   buildSupplierConcentration,

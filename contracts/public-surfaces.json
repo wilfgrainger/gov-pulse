@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "workerZone": "public-data.org",
+  "workerRoutes": [
+    { "pattern": "public-data.org/data/health.json", "zone_name": "public-data.org", "required": true },
+    { "pattern": "public-data.org/data/international-comparison.json", "zone_name": "public-data.org", "required": true },
+    { "pattern": "public-data.org/data/metrics-snapshot.json", "zone_name": "public-data.org", "required": true },
+    { "pattern": "public-data.org/data/editions.json", "zone_name": "public-data.org", "required": true },
+    { "pattern": "public-data.org/data/edition.json", "zone_name": "public-data.org", "required": true, "queryParams": { "edition": "^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$" } }
+  ],
+  "topics": [
+    { "id": "pm-approval", "status": "withdrawn" },
+    { "id": "election-polls", "status": "active" },
+    { "id": "betting-odds", "status": "active" },
+    { "id": "govt-approval", "status": "withdrawn" },
+    { "id": "gov-trust-trend", "status": "withdrawn" },
+    { "id": "national-debt", "status": "active" },
+    { "id": "gdp", "status": "active" },
+    { "id": "economy", "status": "active" },
+    { "id": "tax", "status": "active" },
+    { "id": "uk-in-context", "status": "active" },
+    { "id": "government-contracts", "status": "active" },
+    { "id": "employment", "status": "active" },
+    { "id": "crime-stats", "status": "active" },
+    { "id": "nhs", "status": "active" },
+    { "id": "migration", "status": "active" },
+    { "id": "real-wages", "status": "active" },
+    { "id": "house-price-index", "status": "active" },
+    { "id": "early-years", "status": "active" },
+    { "id": "uk-regions", "status": "withdrawn" },
+    { "id": "policy-links", "status": "withdrawn" }
+  ],
+  "explorerMeasureIds": [
+    "gdp-threeMonthGrowth",
+    "inflation",
+    "unemployment",
+    "waitingPathwaysEstimate",
+    "debt-ratio",
+    "receipts",
+    "netMigration",
+    "regularPayRealGrowth"
+  ],
+  "privatePathPrefixes": [
+    "/data/collect/",
+    "/data/internal/",
+    "/internal/"
+  ]
+}

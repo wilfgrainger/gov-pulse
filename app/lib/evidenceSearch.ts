@@ -1,3 +1,5 @@
+import { MEASURES } from "./measureDefinitions";
+
 export type EvidenceSearchItem = {
   id: string;
   title: string;
@@ -10,8 +12,8 @@ export type EvidenceSearchItem = {
   priority: number;
 };
 
-export const EVIDENCE_SEARCH_ITEMS: readonly EvidenceSearchItem[] = [
-  { id: 'explore', title: 'Explore core measures', category: 'Data tools', evidenceClass: 'Source-linked statistics', description: 'Search seven core measures, inspect history, compare periods and download CSV.', href: '/explore/', aliases: ['data explorer', 'download', 'CSV', 'compare', 'history', 'all data'], questions: ['Can I download the data?', 'How have the figures changed?'], priority: 0 },
+const FIXED_EVIDENCE_SEARCH_ITEMS: readonly EvidenceSearchItem[] = [
+  { id: 'explore', title: 'Explore core measures', category: 'Data tools', evidenceClass: 'Source-linked statistics', description: 'Search eight core measures, inspect history, compare periods and download CSV.', href: '/explore/', aliases: ['data explorer', 'download', 'CSV', 'compare', 'history', 'all data'], questions: ['Can I download the data?', 'How have the figures changed?'], priority: 0 },
   {
     id: "key-indicators",
     title: "Prices, rates and jobs",
@@ -111,7 +113,24 @@ export const EVIDENCE_SEARCH_ITEMS: readonly EvidenceSearchItem[] = [
     questions: ["Where did this number come from?", "When was the evidence updated?", "Which sections are unavailable?"],
     priority: 9,
   },
-] as const;
+];
+
+const MEASURE_SEARCH_ITEMS: readonly EvidenceSearchItem[] = MEASURES.map((measure, index) => ({
+  id: `measure-${measure.id}`,
+  title: measure.label,
+  category: measure.topic,
+  evidenceClass: measure.section === "nhsStats" ? "NHS England referral-to-treatment statistics" : "Official statistics",
+  description: measure.note,
+  href: measure.route.replace(/\/$/, ""),
+  aliases: [measure.id, measure.unit, measure.geography],
+  questions: [`What is the latest ${measure.label.toLowerCase()} figure?`, `How has ${measure.label.toLowerCase()} changed over time?`],
+  priority: 20 + index,
+}));
+
+export const EVIDENCE_SEARCH_ITEMS: readonly EvidenceSearchItem[] = [
+  ...FIXED_EVIDENCE_SEARCH_ITEMS,
+  ...MEASURE_SEARCH_ITEMS,
+];
 
 export function normalizeEvidenceSearchText(value: string) {
   return value
@@ -162,7 +181,7 @@ export function searchEvidence(query: string, limit = 8) {
 
   const queryTokens = normalizedQuery.split(" ").filter(Boolean);
 
-  return EVIDENCE_SEARCH_ITEMS.map((item) => ({
+  const ranked = EVIDENCE_SEARCH_ITEMS.map((item) => ({
     item,
     score: scoreItem(item, normalizedQuery, queryTokens),
   }))
@@ -172,6 +191,7 @@ export function searchEvidence(query: string, limit = 8) {
       if (left.item.priority !== right.item.priority) return left.item.priority - right.item.priority;
       return left.item.title.localeCompare(right.item.title, "en-GB");
     })
-    .slice(0, Math.max(0, limit))
-    .map((result) => result.item);
+    .filter((result, index, results) => results.findIndex((candidate) => candidate.item.href.replace(/\/$/, "") === result.item.href.replace(/\/$/, "")) === index)
+    .slice(0, Math.max(0, limit));
+  return ranked.map((result) => result.item);
 }

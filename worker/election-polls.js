@@ -152,7 +152,10 @@ function normalizePoll(value, nowMs) {
     sourceUrl,
     methodologyUrl,
     bpcMember: true,
-    uncertainty: requiredText(value.uncertainty, "Uncertainty statement", 600),
+    uncertainty:
+      value.uncertainty === null
+        ? null
+        : requiredText(value.uncertainty, "Uncertainty statement", 600),
   };
 }
 

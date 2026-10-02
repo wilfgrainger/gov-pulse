@@ -27,6 +27,7 @@ import { buildPublicationDiagnostics } from "../contracts/publication-diagnostic
 import { FEED_REGISTRY } from "./feed-registry.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
 import { refreshInternationalComparison } from "./international-comparison-publication.js";
+import { archiveEdition } from "./edition-archive.js";
 
 const PUBLICATION_SECTION_PREFIX = "v12:publication:section:";
 const PUBLICATION_HISTORY_TTL_SECONDS = 14 * 24 * 60 * 60;
@@ -76,8 +77,10 @@ const REQUIRED_SECTION_SET = new Set(REQUIRED_PUBLISHED_SECTION_IDS);
 
 const FREE_TIER_BUDGET = Object.freeze({
   cronInvocationsPerDay: 9,
-  queueJobsPerDayMax: 28,
-  queueOperationsPerDayMax: 84,
+  queueJobsPerDayHealthyTarget: 30,
+  queueOperationsPerDayHealthyTarget: 90,
+  queueJobsPerDayConfiguredRetryUpperBound: 120,
+  queueOperationsPerDayConfiguredRetryUpperBound: 360,
   officialSectionsPerDay: PUBLISHED_SECTIONS.length,
   contractRequestsPerDayMax: CONTRACT_MAX_REQUESTS_PER_RUN,
   kvWritesPerDayTargetMax: 120,
@@ -268,6 +271,20 @@ async function publishFromCaches(env, options = {}) {
 
   const publication = preserveEditionClock(currentCandidate, current);
   const changed = !current || !samePublicationEvidence(publication, current);
+  if (publication.meta.measureCatalog && publication.meta.editionSummary) {
+    try {
+      await archiveEdition(env, publication.meta.measureCatalog, publication.meta.editionSummary);
+      publication.meta.editionArchiveStatus = "ready";
+    } catch (error) {
+      publication.meta.editionArchiveStatus = "unavailable";
+      console.error("Publication edition archive failed", {
+        editionId: publication.meta.measureCatalog.editionId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  } else {
+    publication.meta.editionArchiveStatus = "unavailable";
+  }
   publication.meta.delivery = "published-snapshot";
   publication.meta.publicationDiagnostics = buildPublicationDiagnostics(
     publication,

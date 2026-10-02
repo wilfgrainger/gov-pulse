@@ -85,6 +85,15 @@ export default function NationalDebtCounter() {
     methodology: { measure: "", status: "", caveat: "" },
     source: { bulletinUrl: "", landingUrl: "" },
   });
+  interface TaxHistoryItem {
+    period: string;
+    receiptsBillion?: number | null;
+  }
+  interface TaxPayload {
+    headline?: { receiptsBillion?: number | null; period?: string };
+    history?: TaxHistoryItem[];
+  }
+  const taxData = taxMetrics.data as TaxPayload | null;
   const data = metrics.data;
   const debtValue = Number(data.baseDebt);
   const debtRatio = Number(data.debtToGdp);
@@ -112,22 +121,19 @@ export default function NationalDebtCounter() {
     data.history.length >= 13;
   const period = valid ? formatObservationPeriod(observationDate) : "";
 
+  const taxIsCurrent = taxMetrics.isLive && taxMetrics.cacheState === "fresh";
   const receiptsHistory = useMemo<ReceiptsMonthPoint[]>(() => {
-    interface TaxHistoryItem {
-      period: string;
-      receiptsBillion?: number;
-    }
-    interface TaxPayload {
-      history?: TaxHistoryItem[];
-    }
-    const taxData = taxMetrics.data as TaxPayload | null;
-    const raw = taxData?.history;
+    const raw = taxIsCurrent ? taxData?.history : null;
     if (!Array.isArray(raw)) return [];
-    return raw.map((p: TaxHistoryItem) => ({
-      date: p.period,
-      receiptsMillionGbp: (p.receiptsBillion ?? 0) * 1000,
-    }));
-  }, [taxMetrics]);
+    return raw.flatMap((p: TaxHistoryItem) =>
+      typeof p.period === "string" &&
+      p.period.trim() !== "" &&
+      typeof p.receiptsBillion === "number" &&
+      Number.isFinite(p.receiptsBillion)
+        ? [{ date: p.period, receiptsMillionGbp: p.receiptsBillion * 1000 }]
+        : [],
+    );
+  }, [taxData, taxIsCurrent]);
 
   return (
     <div className="space-y-8">
@@ -177,18 +183,17 @@ export default function NationalDebtCounter() {
 
           {/* Visual 5: Receipts vs Debt Trajectory */}
           {(() => {
-            interface TaxHeadline {
-              receiptsBillion?: number;
-              period?: string;
-            }
-            const taxData = taxMetrics.data as { headline?: TaxHeadline } | null;
             return (
               <ReceiptsDebtVisual
                 receiptsHistory={receiptsHistory}
-                currentReceiptsBillion={taxData?.headline?.receiptsBillion ?? 85.4}
-                currentDebtBillion={debtValue / 1e9}
-                debtToGdpRatio={debtRatio}
-                receiptsPeriod={taxData?.headline?.period || period}
+              currentReceiptsBillion={
+                taxIsCurrent && typeof taxData?.headline?.receiptsBillion === "number" && Number.isFinite(taxData.headline.receiptsBillion)
+                  ? taxData.headline.receiptsBillion
+                  : null
+              }
+              currentDebtBillion={debtValue / 1e9}
+              debtToGdpRatio={debtRatio}
+              receiptsPeriod={taxIsCurrent && taxData?.headline?.period ? taxData.headline.period : "Unavailable"}
                 debtPeriod={period}
               />
             );
@@ -197,6 +202,7 @@ export default function NationalDebtCounter() {
           <FinancialTimeSeriesChart
             title="Public sector net debt: ten-year direction"
             description="End-month ONS debt stock excluding public sector banks. Values are dated observations, not a live counter."
+            citation={`Office for National Statistics · ${data.source.debtUrl} · published ${data.publicationDate} · observation period ${period} · dated public sector net debt stock, excluding public sector banks.`}
             data={data.history}
             series={[{ key: "debtBillion", label: "Debt stock", color: "#14243b" }]}
             valueFormatter={(value) => `£${value.toFixed(1)}bn`}
@@ -206,6 +212,7 @@ export default function NationalDebtCounter() {
           <FinancialTimeSeriesChart
             title="Debt relative to GDP"
             description="The matching ONS debt-to-GDP series places the stock against the size of the economy on the same publication basis."
+            citation={`Office for National Statistics · ${data.source.debtToGdpUrl} · published ${data.publicationDate} · observation period ${period} · matched debt-to-GDP series.`}
             data={data.history}
             series={[{ key: "debtToGdp", label: "Debt-to-GDP", color: "#1f5c8a" }]}
             valueFormatter={(value) => `${value.toFixed(1)}%`}

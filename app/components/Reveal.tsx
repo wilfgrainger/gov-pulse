@@ -41,13 +41,13 @@ export default function Reveal({
   // Server render, no-JS readers get static, visible content.
   // Wait, if it's not mounted, we need it to be visible for SSR without JS.
   // If we render with opacity: 0 and it doesn't run JS, it stays invisible!
-  // Framer Motion handles this by injecting styles or hydrating. 
+  // Framer Motion handles this by injecting styles or hydrating.
   // To avoid this, we can render normal on server, and then JS can apply the transition classes if needed.
-  // Actually, the previous implementation did: 
+  // Actually, the previous implementation did:
   // if (!mounted || prefersReducedMotion) return <Tag>{children}</Tag>
   // This means it rendered VISIBLE initially on server, then on client hydation it switched to framer-motion which set it to opacity 0 instantly then animated.
   // So we can do the exact same logic.
-  
+
   if (!mounted) {
     return <Tag className={className}>{children}</Tag>;
   }
@@ -55,7 +55,7 @@ export default function Reveal({
   // Once mounted, we apply the styles and trigger reflow.
   // Actually, if we return visible on mount, we can't transition from 0 to 1 easily without a second render.
   // Let's use CSS animation instead of transition.
-  
+
   const style = {
     animationName: "draw-in-reveal",
     animationDuration: "500ms",

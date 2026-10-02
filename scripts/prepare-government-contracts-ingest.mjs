@@ -10,6 +10,7 @@ import {
   REQUIRED_AWARD_COUNT,
   buildGovernmentContractsPayload,
   buildSummary,
+  ukNationFromCountryName,
   ukNationFromPostcode,
 } from "../contracts/government-contracts.js";
 
@@ -87,15 +88,15 @@ function supplierNames(award) {
 // OCDS 1.1 moves organization details (including address) out of embedded
 // objects into a top-level `parties` array, cross-referenced by `id` from
 // an OrganizationReference such as `award.suppliers[]`. This builds an
-// id -> postcode lookup from `release.parties` so a supplier's nation can
-// be derived from its own disclosed postal code, never from its name.
-function partyPostcodeById(release) {
+// id -> exact country-name lookup from `release.parties`; postcodes are not
+// precise enough to classify addresses beside a national border.
+function partyCountryById(release) {
   const parties = Array.isArray(release?.parties) ? release.parties : [];
   const byId = new Map();
   for (const party of parties) {
     const id = text(party?.id);
-    const postcode = text(party?.address?.postalCode);
-    if (id) byId.set(id, postcode);
+    const countryName = text(party?.address?.countryName);
+    if (id) byId.set(id, countryName);
   }
   return byId;
 }
@@ -105,7 +106,7 @@ function partyPostcodeById(release) {
 // disclosed postal code. A supplier with no id match, no address, or an
 // unrecognised postcode area is "Other/Unknown" -- never guessed from the
 // supplier's name.
-function supplierNationsFor(award, postcodeById) {
+function supplierNationsFor(award, countryById) {
   const seen = new Set();
   const nations = [];
   for (const supplier of Array.isArray(award?.suppliers) ? award.suppliers : []) {
@@ -113,8 +114,8 @@ function supplierNationsFor(award, postcodeById) {
     if (!name || seen.has(name)) continue;
     seen.add(name);
     const id = text(supplier?.id);
-    const postcode = id ? postcodeById.get(id) : "";
-    nations.push(ukNationFromPostcode(postcode));
+    const countryName = id ? countryById.get(id) : "";
+    nations.push(ukNationFromCountryName(countryName) ?? ukNationFromPostcode(""));
   }
   return nations;
 }
@@ -189,7 +190,7 @@ function extractComparableAwards(release, counters) {
       title,
       buyer,
       suppliers,
-      supplierNations: supplierNationsFor(award, partyPostcodeById(release)),
+    supplierNations: supplierNationsFor(award, partyCountryById(release)),
       awardDate: new Date(awardDate).toISOString(),
       publishedAt: new Date(publishedAt).toISOString(),
       amount,

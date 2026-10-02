@@ -3,6 +3,8 @@ import {
   absoluteUrl,
   publicationEntries,
 } from "@/app/lib/discovery";
+import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
+import type { MetricsSnapshot } from "@/app/lib/metricsSnapshot";
 
 export const dynamic = "force-static";
 export const revalidate = false;
@@ -51,6 +53,19 @@ export function GET() {
     })
     .join("");
 
+  const snapshot = BUILD_METRICS_SNAPSHOT as MetricsSnapshot | null;
+  const summary = snapshot?.meta?.editionSummary;
+  const summaryDate = validDate(summary?.publishedAt);
+  const summaryEntry = summary && summary.changes.length ? [
+    "<item>",
+    `<title>${escapeXml(`Evidence update: ${summary.changes.length} published change${summary.changes.length === 1 ? "" : "s"}`)}</title>`,
+    `<link>${escapeXml(absoluteUrl("/briefing/"))}</link>`,
+    `<guid isPermaLink="false">${escapeXml(summary.id)}</guid>`,
+    `<description>${escapeXml(summary.changes.map((change) => `${change.measureId}, ${change.period ?? "method"}: ${change.previous ?? "not previously available"} → ${change.next ?? "unavailable"} (${change.kind})`).join("; "))}</description>`,
+    summaryDate ? `<pubDate>${escapeXml(summaryDate.toUTCString())}</pubDate>` : "",
+    "</item>",
+  ].filter(Boolean).join("") : "";
+
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
@@ -59,6 +74,7 @@ export function GET() {
     <description>${escapeXml(SITE_DISCOVERY.description)}</description>
     <language>en-gb</language>
     ${lastBuildDate ? `<lastBuildDate>${escapeXml(lastBuildDate.toUTCString())}</lastBuildDate>` : ""}
+    ${summaryEntry}
     ${entries}
   </channel>
 </rss>

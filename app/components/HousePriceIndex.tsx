@@ -158,38 +158,56 @@ export default function HousePriceIndex() {
   const valid =
     metrics.isLive && metrics.cacheState === "fresh" && validPayload(payload);
   const headline = valid ? payload.headline : null;
+  const wagesData = wagesMetrics.data as {
+    headline?: {
+      regularPayRealGrowthPercent?: number;
+      period?: string;
+    };
+    history?: Array<{
+      period: string;
+      regularPayRealGrowthPercent?: number | null;
+    }>;
+  } | null;
+  const wagesAreCurrent =
+    wagesMetrics.isLive && wagesMetrics.cacheState === "fresh";
+  const wageHeadlineValue = wagesData?.headline?.regularPayRealGrowthPercent;
+  const currentRealWageGrowth =
+    wagesAreCurrent &&
+    typeof wageHeadlineValue === "number" &&
+    Number.isFinite(wageHeadlineValue) &&
+    nonEmptyString(wagesData?.headline?.period)
+      ? wageHeadlineValue
+      : null;
+  const wagesPeriod =
+    currentRealWageGrowth !== null && nonEmptyString(wagesData?.headline?.period)
+      ? wagesData.headline.period
+      : "Unavailable";
   const change = headline ? headline.changePercent : 0;
   const direction = change >= 0 ? "rose" : "fell";
   const comparisonDirection = change >= 0 ? "higher" : "lower";
 
   const comparisonPoints = useMemo<TrendComparisonPoint[]>(() => {
     if (!valid || !payload?.history) return [];
-    interface WageItem {
-      period: string;
-      regularPayRealGrowthPercent: number;
-    }
-    interface WagesData {
-      headline?: {
-        regularPayRealGrowthPercent?: number;
-        period?: string;
-      };
-      history?: WageItem[];
-    }
-    const wagesData = wagesMetrics.data as WagesData | null;
     const wageHistory =
-      wagesMetrics.isLive && Array.isArray(wagesData?.history)
+      wagesAreCurrent && Array.isArray(wagesData?.history)
         ? wagesData.history
         : [];
-    const wageByPeriod = new Map<string, number>(
-      wageHistory.map((w: WageItem) => [w.period, w.regularPayRealGrowthPercent])
-    );
+    const wageByPeriod = new Map<string, number>();
+    for (const item of wageHistory) {
+      if (
+        nonEmptyString(item.period) &&
+        typeof item.regularPayRealGrowthPercent === "number" &&
+        Number.isFinite(item.regularPayRealGrowthPercent)
+      ) {
+        wageByPeriod.set(item.period, item.regularPayRealGrowthPercent);
+      }
+    }
     return payload.history.map((h) => ({
       date: h.period,
       housePriceGrowthPct: h.hpiChangePercent,
-      realWageGrowthPct:
-        wageByPeriod.get(h.period) ?? (h.hpiChangePercent > 2 ? 2.4 : 1.9),
+      realWageGrowthPct: wageByPeriod.get(h.period) ?? null,
     }));
-  }, [payload, valid, wagesMetrics]);
+  }, [payload, valid, wagesAreCurrent, wagesData]);
 
   const releaseNote =
     valid && headline
@@ -248,28 +266,18 @@ export default function HousePriceIndex() {
           </section>
 
           {/* Visual 4: Housing Affordability & Real Wages Trend */}
-          {(() => {
-            interface WagesHeadline {
-              regularPayRealGrowthPercent?: number;
-              period?: string;
-            }
-            const wagesData = wagesMetrics.data as { headline?: WagesHeadline } | null;
-            return (
-              <HousingAffordabilityVisual
-                points={comparisonPoints}
-                currentHpiChange={headline.changePercent}
-                currentRealWageGrowth={
-                  wagesData?.headline?.regularPayRealGrowthPercent ?? 2.1
-                }
-                hpiPeriod={headline.period}
-                wagesPeriod={wagesData?.headline?.period || headline.period}
-              />
-            );
-          })()}
+          <HousingAffordabilityVisual
+            points={comparisonPoints}
+            currentHpiChange={headline.changePercent}
+            currentRealWageGrowth={currentRealWageGrowth}
+            hpiPeriod={headline.period}
+            wagesPeriod={wagesPeriod}
+          />
 
           <FinancialTimeSeriesChart
             title="UK House Price Index: annual percentage change"
             description="Monthly annual percentage-change observations from the latest ONS Private rent and house prices, UK bulletin's Figure 1 chart data. The average price level is headline-only and is not part of this history."
+            citation={`Office for National Statistics · Bulletin: ${payload.source.bulletinUrl} · History CSV: ${payload.source.historyUrl} · published ${headline.releaseDate} · observation period ${payload.history[0]?.period ?? headline.period} to ${payload.history.at(-1)?.period ?? headline.period} · ${payload.methodology.revisionNote}`}
             data={payload.history}
             series={[
               { key: "hpiChangePercent", label: "Annual % change", color: "#1f5c8a" },

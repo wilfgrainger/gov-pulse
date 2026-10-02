@@ -4,6 +4,7 @@ import SectionNav from "@/app/components/SectionNav";
 import SiteFooter from "@/app/components/SiteFooter";
 import { SECTIONS } from "@/app/lib/sections";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Explore UK public data | public-data.org",
@@ -32,10 +33,11 @@ export default async function ExplorePage() {
             Explore the numbers
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">
-            Seven core measures across prices, jobs, health, public finances and population.
-            Start with current verified values, then inspect the history, publication date,
-            source and geography. Show unavailable measures to see the gaps.
+            Search verified topic measures across prices, jobs, health, public finances and population.
+            Inspect published history, sources, geography and gaps. The measure library gives
+            catalog records a direct evidence page.
           </p>
+          <Link className="mt-4 inline-flex min-h-11 items-center font-semibold text-accent underline underline-offset-4" href="/measure/">Browse the measure library →</Link>
         </header>
         <DataExplorer initialSnapshot={snapshot} />
       </main>

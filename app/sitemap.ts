@@ -19,6 +19,15 @@ function validDate(value: string | undefined) {
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: absoluteUrl("/explore/"), changeFrequency: "daily", priority: 0.9 },
+    { url: absoluteUrl("/measure/"), changeFrequency: "daily", priority: 0.9 },
+    { url: absoluteUrl("/compare/"), changeFrequency: "daily", priority: 0.8 },
+    { url: absoluteUrl("/briefing/"), changeFrequency: "daily", priority: 0.8 },
+    { url: absoluteUrl("/calendar/"), changeFrequency: "daily", priority: 0.7 },
+    { url: absoluteUrl("/cost-of-living/"), changeFrequency: "daily", priority: 0.7 },
+    { url: absoluteUrl("/money/"), changeFrequency: "daily", priority: 0.7 },
+    { url: absoluteUrl("/editions/"), changeFrequency: "daily", priority: 0.7 },
+    { url: absoluteUrl("/stories/household-budgets/"), changeFrequency: "monthly", priority: 0.6 },
+    { url: absoluteUrl("/stories/public-finances/"), changeFrequency: "monthly", priority: 0.6 },
     {
       url: absoluteUrl("/"),
       changeFrequency: "daily",

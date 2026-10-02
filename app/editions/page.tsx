@@ -1,0 +1,14 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import SectionNav from "@/app/components/SectionNav";
+import SiteFooter from "@/app/components/SiteFooter";
+import { readEditionSummaries } from "@/app/lib/serverEditionArchive";
+import { SECTIONS } from "@/app/lib/sections";
+
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Publication editions and revisions", description: "Browse retained source editions and their dated observations, corrections and method changes." };
+
+export default async function EditionsPage() {
+  const editions = await readEditionSummaries();
+  return <div className="min-h-screen bg-background text-foreground"><a href="#editions" className="sr-only focus:not-sr-only focus:block focus:bg-white focus:p-4">Skip to edition archive</a><SectionNav sections={SECTIONS}/><main id="editions" className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-12"><header className="mb-8 border-b-4 border-foreground bg-surface-warm p-5 md:p-8"><p className="eyebrow">Historical publication archive</p><h1 className="mt-2 text-5xl font-black tracking-[-0.06em] md:text-7xl">Editions and revisions</h1><p className="mt-4 max-w-3xl text-base leading-7 text-gray-700">Each archived catalog is presented as it was known at its publication date. Later checks do not silently overwrite earlier editions.</p></header>{editions?.length ? <ol className="list-none divide-y-2 divide-foreground border-y-2 border-foreground bg-white p-0">{editions.map((edition) => <li key={edition.id} className="grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"><div><p className="font-mono text-xs text-gray-600">{edition.publishedAt.slice(0, 10)} · {edition.sourceEditionIds.length} source editions</p><h2 className="mt-2 text-xl font-black">{edition.changes.length} recorded changes</h2><p className="mt-1 text-sm text-gray-700">{edition.changes.slice(0, 3).map((change) => `${change.measureId}: ${change.kind}`).join(" · ") || "No source change from the preceding archived catalog"}</p></div><Link className="v3-secondary-action" href={`/editions/${encodeURIComponent(edition.id)}`}>Open as-of edition</Link></li>)}</ol> : <p role="status" className="border-l-4 border-accent bg-white p-6 text-sm leading-6">{editions ? "No edition summaries are retained yet. The first verified archive will appear here." : "The public edition archive is temporarily unavailable."}</p>}</main><SiteFooter/></div>;
+}

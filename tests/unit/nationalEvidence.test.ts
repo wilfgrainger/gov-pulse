@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { selectNationalEvidenceEdition } from "../../app/lib/nationalEvidence";
+import { exploreMeasures } from "../../app/lib/dataExplorer";
 import { FEED_REGISTRY_VERSION } from "../../worker/feed-registry";
 
 const NOW = "2026-07-18T18:00:00.000Z";
@@ -142,12 +143,12 @@ describe("national evidence presentation", () => {
     const edition = selectNationalEvidenceEdition(snapshot());
 
     expect(edition.lead?.id).toBe("gdp");
-    expect(edition.lead?.leadHeadline).toBe("UK GDP grew in May 2026 by 0.1%.");
+    expect(edition.lead?.leadHeadline).toBe("UK GDP grew across the latest three months to May 2026 by 0.7%.");
     expect(edition.signals.map((signal) => signal.id)).toEqual([
       "gdp", "inflation", "unemployment", "national-debt", "nhs-waiting-list", "net-migration", "house-price-index", "real-wages",
     ]);
     expect(edition.counts.current).toBe(6);
-    expect(edition.signals.find((signal) => signal.id === "national-debt")?.value).toBe("£2.98tn");
+    expect(edition.signals.find((signal) => signal.id === "national-debt")?.value).toBe("95.1% of GDP");
     expect(edition.signals.find((signal) => signal.id === "nhs-waiting-list")?.value).toBe("7.39m pathways");
     expect(edition.signals.find((signal) => signal.id === "unemployment")?.value).toBe("4.9%");
     expect(edition.signals.find((signal) => signal.id === "nhs-waiting-list")?.geography).toBe("England");
@@ -163,6 +164,66 @@ describe("national evidence presentation", () => {
     expect(edition.signals.find((signal) => signal.id === "unemployment")?.period).toBe("February to April 2026");
   });
 
+  it("uses the catalog value and period consistently in national evidence and the explorer", () => {
+    const payload = snapshot();
+    payload.meta.sources.employmentStats = { status: "error", cacheState: "stale", fetchedAt: NOW };
+    payload.meta.sources.realWages = currentSource();
+    Object.assign(payload, { realWages: {
+      available: true,
+      headline: { regularPayRealGrowthPercent: 1.4, totalPayRealGrowthPercent: 1.2, period: "February to April 2026", releaseDate: "2026-06-18" },
+      history: [{ observedAt: "2026-04-30T00:00:00.000Z", regularPayRealGrowthPercent: 1.4 }],
+    } });
+    const fetchedAt = "2026-07-18T10:00:00.000Z";
+    const common = {
+      evidenceClass: "official-statistics", cadence: "monthly", geography: { code: "GB", label: "Great Britain" },
+      publishedAt: "2026-06-18T00:00:00.000Z", fetchedAt,
+      validUntil: "2026-07-25T00:00:00.000Z", availability: "current", revisionId: "fixture-edition",
+      caveats: ["Fixture evidence."],
+    };
+    const measure = (id: string, label: string, value: number, period: string, observedAt: string, unit: string, basis: string, geography: { code: string; label: string }, sourceId: string) => ({
+      ...common, id, label, value, unit, basis, geography, sourceId,
+      comparisonKey: `${id}-fixture`, sourceUrl: `https://www.ons.gov.uk/${id}`,
+      sourceEditionId: `${id}-edition`,
+      observationPeriod: { start: observedAt.slice(0, 10), end: observedAt.slice(0, 10), label: period },
+      points: [{ period, observedAt: observedAt.slice(0, 10), value, valueStatus: "estimate", revisionId: `${id}-edition` }],
+    });
+    payload.meta.measureCatalog = {
+      schemaVersion: 2,
+      editionId: "catalog-labour-2026-06",
+      generatedAt: NOW,
+      validUntil: "2026-07-25T00:00:00.000Z",
+      measures: {
+        "gdp-threeMonthGrowth": measure("gdp-threeMonthGrowth", "GDP: three-month growth", 0.9, "May 2026", "2026-05-31", "%", "Real GDP growth", { code: "UK", label: "United Kingdom" }, "gdpTracker"),
+        inflation: measure("inflation", "CPI inflation", 3.6, "May 2026", "2026-05-31", "%", "Annual CPI inflation", { code: "UK", label: "United Kingdom" }, "sentimentPulse"),
+        unemployment: measure("unemployment", "Unemployment rate", 5.1, "February to April 2026", "2026-04-30", "%", "ILO unemployment rate", { code: "GB", label: "Great Britain" }, "employmentStats"),
+        "debt-ratio": measure("debt-ratio", "Debt as a share of GDP", 96.2, "May 2026", "2026-05-31", "%", "PSND / GDP", { code: "UK", label: "United Kingdom" }, "nationalDebt"),
+        waitingPathwaysEstimate: measure("waitingPathwaysEstimate", "NHS waiting list", 7_300_000, "May 2026", "2026-05-31", "pathways", "NHS England RTT pathways", { code: "ENG", label: "England" }, "nhsStats"),
+        netMigration: measure("netMigration", "Net migration", 450_000, "YE Dec 2025", "2025-12-31", "people", "Long-term migration balance", { code: "UK", label: "United Kingdom" }, "migrationStats"),
+        regularPayRealGrowth: measure("regularPayRealGrowth", "Real wages: regular pay growth", 1.5, "February to April 2026", "2026-04-30", "%", "ONS CPIH-adjusted regular pay growth", { code: "GB", label: "Great Britain" }, "realWages"),
+      },
+    };
+    const fixedNow = new Date("2026-07-19T00:00:00.000Z");
+    const dashboard = selectNationalEvidenceEdition(payload, fixedNow);
+    const explorerMeasures = exploreMeasures(payload, fixedNow);
+
+    const pairs = [
+      ["gdp", "gdp-threeMonthGrowth", "+0.9%", 0.9], ["inflation", "inflation", "3.6%", 3.6],
+      ["unemployment", "unemployment", "5.1%", 5.1], ["national-debt", "debt-ratio", "96.2% of GDP", 96.2],
+      ["nhs-waiting-list", "waitingPathwaysEstimate", "7.3m pathways", 7_300_000],
+      ["net-migration", "netMigration", "450,000", 450_000], ["real-wages", "regularPayRealGrowth", "+1.5%", 1.5],
+    ] as const;
+    for (const [signalId, measureId, presentationValue, numericValue] of pairs) {
+      const signal = dashboard.signals.find(({ id }) => id === signalId);
+      const measure = explorerMeasures.find(({ id }) => id === measureId);
+      expect(signal?.value).toBe(presentationValue);
+      expect(signal?.period).toBe(measure?.period);
+      expect(signal?.sourceUrl).toBe(measure?.sourceUrl);
+      expect(measure?.value).toBe(numericValue);
+      expect(signal?.state).toBe(signalId === "unemployment" ? "update-due" : "current");
+      expect(measure?.updateDue).toBe(signalId === "unemployment");
+    }
+  });
+
   it("labels retained stale evidence and suppresses unsupported values", () => {
     const payload = snapshot();
     payload.meta.sources.gdpTracker = { status: "stale", cacheState: "stale", fetchedAt: NOW };
@@ -171,7 +232,7 @@ describe("national evidence presentation", () => {
     const edition = selectNationalEvidenceEdition(payload);
 
     expect(edition.signals.find((signal) => signal.id === "gdp")?.state).toBe("update-due");
-    expect(edition.signals.find((signal) => signal.id === "gdp")?.value).toBe("+0.1%");
+    expect(edition.signals.find((signal) => signal.id === "gdp")?.value).toBe("+0.7%");
     expect(edition.signals.find((signal) => signal.id === "national-debt")?.state).toBe("unavailable");
     expect(edition.signals.find((signal) => signal.id === "national-debt")?.value).toBeNull();
   });
@@ -204,6 +265,31 @@ describe("national evidence presentation", () => {
     const migration = edition.signals.find((signal) => signal.id === "net-migration");
     expect(migration?.comparison?.startsWith("Immigration 813,000 · Emigration 642,000")).toBe(true);
     expect(migration?.comparison).toContain("49% lower than YE Dec 2024");
+  });
+
+  it("uses neutral wording for zero comparisons and absolute wording for negative wage changes", () => {
+    const payload = snapshot();
+    Object.assign(payload.nhsStats.headline, { yearChangePercent: 0 });
+    Object.assign(payload.migrationStats.headline, { changePercent: 0 });
+    Object.assign(payload, {
+      realWages: {
+        available: true,
+        headline: {
+          period: "March to May 2026", releaseDate: "2026-07-16",
+          regularPayRealGrowthPercent: -0.6, totalPayRealGrowthPercent: 0,
+        },
+        history: [],
+      },
+    });
+    Object.assign(payload.meta.sources, { realWages: currentSource() });
+
+    const edition = selectNationalEvidenceEdition(payload);
+    expect(edition.signals.find((signal) => signal.id === "nhs-waiting-list")?.leadSummary).toContain("was unchanged");
+    expect(edition.signals.find((signal) => signal.id === "net-migration")?.leadHeadline).toContain("unchanged at");
+    const wages = edition.signals.find((signal) => signal.id === "real-wages");
+    expect(wages?.leadHeadline).toContain("fell 0.6%");
+    expect(wages?.leadSummary).toContain("was unchanged");
+    expect(wages?.leadSummary).not.toContain("grew -");
   });
 
   it("fails closed for an incompatible publication", () => {

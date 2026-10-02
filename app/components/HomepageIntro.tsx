@@ -26,7 +26,7 @@ export default function HomepageIntro() {
         </Reveal>
         <Reveal delay={0.1} className="flex flex-wrap gap-3 lg:justify-end">
           <Link href="/explore/" prefetch={false} className="v3-primary-action">
-            Explore 7 measures <span aria-hidden="true">→</span>
+            Explore the data <span aria-hidden="true">→</span>
           </Link>
           <Link
             href="/sources"
@@ -35,6 +35,7 @@ export default function HomepageIntro() {
           >
             Sources and dates
           </Link>
+          <Link href="/briefing/" prefetch={false} className="v3-secondary-action">Read the latest briefing</Link>
         </Reveal>
       </div>
       <nav aria-label="Start with a question" className="mx-auto mt-10 grid max-w-7xl gap-3 border-t border-black/15 pt-6 text-sm font-semibold sm:grid-cols-2 lg:grid-cols-4">

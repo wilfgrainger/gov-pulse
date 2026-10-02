@@ -7,6 +7,7 @@ import {
   INTERNATIONAL_COMPARISON_KEY,
   readInternationalComparison,
   refreshInternationalComparison,
+  due,
 } from "@/worker/international-comparison-publication";
 import {
   COMPARISON_COUNTRIES,
@@ -14,7 +15,7 @@ import {
   buildComparisonMeasure,
 } from "@/worker/international-comparison";
 
-function fixture(now = "2026-08-18T22:00:00.000Z") {
+function fixture(now = new Date().toISOString(), withLifecycle = true) {
   const source = {
     publisher: "Fixture",
     url: "https://example.test/source",
@@ -35,13 +36,41 @@ function fixture(now = "2026-08-18T22:00:00.000Z") {
       comparisonSetId: "uk-context-13-v2",
       countries: COMPARISON_COUNTRIES.map(({ id }) => id),
     },
-    measures: Object.fromEntries(
-      COMPARISON_MEASURES.map(({ id, definition }) => [
-        id,
-        buildComparisonMeasure({ id, definition, observationYear: 2024, observations }),
-      ])
-    ),
+    measures: Object.fromEntries(COMPARISON_MEASURES.map(({ id, definition }) => {
+      const measure = buildComparisonMeasure({ id, definition, observationYear: 2024, observations });
+      if (withLifecycle) {
+        measure.lifecycle = {
+          sourceEditionId: `${id}-2024-fixture`,
+          validUntil: new Date(Date.parse(now) + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          lastSuccessAt: now,
+          retryAfter: null,
+          status: "historical",
+        };
+      }
+      return [id, measure];
+    })),
   };
+}
+
+function failedHealthCandidate(now: string) {
+  const candidate = fixture(now);
+  const descriptor = COMPARISON_MEASURES.find(({ id }) => id === "healthcareSpending")!;
+  const observations = COMPARISON_COUNTRIES.map(({ id }) => ({
+    country: id,
+    value: null,
+    observationYear: 2024,
+    valueType: "historical" as const,
+    source: null,
+    exclusionReason: "source-unavailable",
+  }));
+  candidate.measures.healthcareSpending = buildComparisonMeasure({
+    id: "healthcareSpending",
+    definition: descriptor.definition,
+    observationYear: 2024,
+    observations,
+  });
+  candidate.meta.sourceFailures = ["world-bank-health-2024"];
+  return candidate;
 }
 
 function envWith(value: unknown) {
@@ -82,6 +111,29 @@ describe("international comparison publication route", () => {
     expect(response.status).toBe(503);
   });
 
+  it("redacts expired and legacy comparison values on read while preserving the denominator", async () => {
+    const now = new Date("2026-08-20T22:00:00.000Z");
+    const expired = fixture("2026-08-19T22:00:00.000Z");
+    expired.measures.healthcareSpending.lifecycle.validUntil = "2026-08-20T21:59:59.000Z";
+    const { env } = envWith(expired);
+
+    const publication = await readInternationalComparison(env, now);
+    const measure = publication?.measures.healthcareSpending;
+    expect(measure?.comparableCountryCount).toBe(0);
+    expect(measure?.countries).toHaveLength(13);
+    expect(measure?.countries.every((observation) => observation.value === null && observation.rank === null)).toBe(true);
+    expect(measure?.countries[0].exclusionReason).toBe("source-validity-expired");
+    expect(measure?.lifecycle.status).toBe("unavailable");
+    expect(publication?.meta.sourceStatus.healthcareSpending).toBe("unavailable");
+  });
+
+  it("retries expired source editions even when the global check window is fresh", () => {
+    const publication = fixture("2026-08-20T21:00:00.000Z");
+    publication.meta.checkedAt = "2026-08-20T21:00:00.000Z";
+    publication.measures.healthcareSpending.lifecycle.validUntil = "2026-08-20T21:30:00.000Z";
+    expect(due(publication, new Date("2026-08-20T21:30:00.000Z"))).toBe(true);
+  });
+
   it("does not refetch annual sources while the last comparison check is inside the due window", async () => {
     const publication = fixture("2026-08-18T20:00:00.000Z");
     const { env } = envWith(publication);
@@ -95,6 +147,109 @@ describe("international comparison publication route", () => {
     expect(result.updated).toBe(false);
     expect(result.reason).toBe("not-due");
     expect(collect).not.toHaveBeenCalled();
-    expect(await readInternationalComparison(env)).toEqual(publication);
+    expect(await readInternationalComparison(env, new Date("2026-08-18T22:00:00.000Z"))).toEqual(publication);
+  });
+
+  it("does not renew source validity when a successful check returns the same source edition", async () => {
+    const previous = fixture("2026-08-19T22:00:00.000Z");
+    const candidate = fixture("2026-08-20T22:00:00.000Z");
+    const { env } = envWith(previous);
+
+    const result = await refreshInternationalComparison(env, {
+      now: new Date("2026-08-20T22:00:00.000Z"),
+      force: true,
+      collect: async () => candidate,
+    });
+
+    for (const { id } of COMPARISON_MEASURES) {
+      expect(result.publication.measures[id].lifecycle.validUntil).toBe(
+        previous.measures[id].lifecycle.validUntil
+      );
+      expect(result.publication.measures[id].lifecycle.lastSuccessAt).toBe(
+        previous.measures[id].lifecycle.lastSuccessAt
+      );
+    }
+    expect(result.publication.meta.checkedAt).toBe("2026-08-20T22:00:00.000Z");
+  });
+
+  it("retains the 13-country healthcare result for a transient source failure and schedules an independent retry", async () => {
+    const now = new Date("2026-08-20T22:00:00.000Z");
+    const existing = fixture("2026-08-19T22:00:00.000Z");
+    const { env } = envWith(existing);
+    const result = await refreshInternationalComparison(env, {
+      now,
+      force: true,
+      collect: async () => failedHealthCandidate(now.toISOString()),
+    });
+
+    expect(result.publication.measures.healthcareSpending.comparableCountryCount).toBe(13);
+    expect(result.publication.meta.sourceStatus.healthcareSpending).toBe("available");
+    expect(result.availableMeasureCount).toBe(7);
+    expect(result.publication.measures.healthcareSpending.lifecycle).toMatchObject({
+      sourceEditionId: "healthcareSpending-2024-fixture",
+      lastSuccessAt: "2026-08-19T22:00:00.000Z",
+      retryAfter: "2026-08-20T22:00:00.000Z",
+    });
+  });
+
+  it("does not retain old values when the source successfully reports missing observations", async () => {
+    const now = new Date("2026-08-20T22:00:00.000Z");
+    const existing = fixture("2026-08-19T22:00:00.000Z");
+    const candidate = failedHealthCandidate(now.toISOString());
+    candidate.meta.sourceFailures = [];
+    const { env } = envWith(existing);
+    const result = await refreshInternationalComparison(env, {
+      now,
+      force: true,
+      collect: async () => candidate,
+    });
+    expect(result.publication.measures.healthcareSpending.comparableCountryCount).toBe(0);
+  });
+
+  it("drops an expired observation after a transient failure instead of using generatedAt as freshness", async () => {
+    const now = new Date("2026-08-20T22:00:00.000Z");
+    const expired = fixture("2026-08-19T22:00:00.000Z");
+    expired.measures.healthcareSpending.lifecycle.validUntil = "2026-08-20T21:59:59.000Z";
+    const { env } = envWith(expired);
+    const result = await refreshInternationalComparison(env, {
+      now,
+      force: true,
+      collect: async () => failedHealthCandidate(now.toISOString()),
+    });
+    expect(result.publication.measures.healthcareSpending.comparableCountryCount).toBe(0);
+  });
+
+  it("does not retain legacy values that have no source-specific validity metadata", async () => {
+    const now = new Date("2026-08-20T22:00:00.000Z");
+    const legacy = fixture(now.toISOString(), false);
+    const { env } = envWith(legacy);
+    const result = await refreshInternationalComparison(env, {
+      now,
+      force: true,
+      collect: async () => failedHealthCandidate(now.toISOString()),
+    });
+    expect(result.publication.measures.healthcareSpending.comparableCountryCount).toBe(0);
+  });
+
+  it("retries an expired measure independently of the global check timestamp", () => {
+    const publication = fixture("2026-08-20T21:00:00.000Z");
+    publication.meta.checkedAt = "2026-08-20T21:00:00.000Z";
+    publication.measures.healthcareSpending.lifecycle.retryAfter = "2026-08-20T21:30:00.000Z";
+    expect(due(publication, new Date("2026-08-20T21:29:59.000Z"))).toBe(false);
+    expect(due(publication, new Date("2026-08-20T21:30:00.000Z"))).toBe(true);
+  });
+
+  it("collects only the measure sources whose independent retry has expired", async () => {
+    const now = new Date("2026-08-20T22:00:00.000Z");
+    const publication = fixture("2026-08-20T21:00:00.000Z");
+    publication.meta.checkedAt = "2026-08-20T21:00:00.000Z";
+    publication.measures.healthcareSpending.lifecycle.retryAfter = "2026-08-20T21:30:00.000Z";
+    const { env } = envWith(publication);
+    const collect = vi.fn(async (_fetch: typeof fetch, _now: Date, options: { sourceIds: string[] }) => {
+      expect(options.sourceIds).toEqual(["world-bank-health-2024"]);
+      return fixture(now.toISOString());
+    });
+    await refreshInternationalComparison(env, { now, collect });
+    expect(collect).toHaveBeenCalledTimes(1);
   });
 });

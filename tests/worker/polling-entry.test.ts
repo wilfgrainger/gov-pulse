@@ -5,6 +5,10 @@ import { parseOddscheckerRows } from "@/worker/live-betting-collector";
 import { latestNhsLinks } from "@/worker/live-nhs-collector";
 import {
   latestYouGovArticleUrl,
+  commissionerFromArticle,
+  headlineMethodFromPrimarySource,
+  parsePublishedDate,
+  parsePartyShares,
   pdfStrings,
   sampleSizeFromPdfText,
 } from "@/worker/live-polling-collector";
@@ -50,7 +54,26 @@ describe("live publisher parsers", () => {
       <a href="/en-gb/articles/55251-voting-intention-26-27-july-2026">New</a>
     `);
     expect(article).toContain("/55251-voting-intention-26-27-july-2026");
-    expect(sampleSizeFromPdfText("Sample Size: 2328 GB Adults")).toBe(2328);
+    expect(sampleSizeFromPdfText("Sample Size: 2,328 GB Adults")).toBe(2328);
+  });
+
+  it("requires an explicitly labelled publication date and commissioner", () => {
+    expect(parsePublishedDate("Published: 27 July 2026; fieldwork was 26 July")).toBe("2026-07-27");
+    expect(() => parsePublishedDate("26 July 2026, voting intention results")).toThrow(/publication date/);
+    expect(commissionerFromArticle("The latest poll for The Times and Sky News shows Reform at 22%."))
+      .toBe("The Times and Sky News");
+    expect(() => commissionerFromArticle("The latest YouGov result was published today."))
+      .toThrow(/did not disclose the commissioner/);
+  });
+
+  it("supports only a primary-source-identified MRP headline method", () => {
+    expect(headlineMethodFromPrimarySource(
+      "Constituency vote intention from YouGov's MRP model",
+      "https://example.test/VotingIntention_MRP_Results.pdf",
+      ""
+    )).toMatch(/MRP model/);
+    expect(() => headlineMethodFromPrimarySource("Voting intention", "https://example.test/results.pdf", ""))
+      .toThrow(/did not identify a supported headline method/);
   });
 
   it("reassembles fragmented PDF TJ text arrays before reading the sample", () => {
@@ -60,6 +83,18 @@ describe("live publisher parsers", () => {
 
     expect(text).toBe("Sample Size: 2328 GB Adults");
     expect(sampleSizeFromPdfText(text)).toBe(2328);
+  });
+
+  it("rejects ambiguous or contradictory poll shares instead of taking the first mention", () => {
+    expect(() => parsePartyShares("Conservative: 20% Labour: 20% Labour: 23% Liberal Democrats: 13% Reform UK: 24% Green: 13% Others: 7%"))
+      .toThrow(/contradictory Labour/);
+    expect(parsePartyShares("Conservative: 20% Labour: 20% Liberal Democrats: 13% Reform UK: 24% Green: 13% Others: 10%"))
+      .toMatchObject({ conservative: 20, labour: 20, reformUK: 24 });
+  });
+
+  it("requires the exact GB-adult sample-size field in YouGov's primary table", () => {
+    expect(() => sampleSizeFromPdfText("Sample Size is discussed below; 2328 GB Adults responded"))
+      .toThrow(/did not expose a sample size/);
   });
 
   it("discovers and parses one complete NHS England RTT release", () => {

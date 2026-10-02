@@ -67,11 +67,40 @@ const payload = {
   },
 };
 describe("data explorer", () => {
-  it("keeps the public explorer to nine core measures and uses the labour publication for unemployment", () => {
+  it("uses canonical catalog values, periods, sources and expiry when delivered", () => {
+    const catalog = {
+      schemaVersion: 2,
+      editionId: "catalog-labour-2026-06",
+      generatedAt: now.toISOString(),
+      validUntil: "2026-10-01T00:00:00.000Z",
+      measures: {
+        unemployment: {
+          id: "unemployment", label: "Unemployment rate", evidenceClass: "official-statistics",
+          comparisonKey: "gb-labour-force-survey-unemployment-rate", cadence: "monthly-three-month-average",
+          unit: "%", basis: "ILO unemployment rate", geography: { code: "GB", label: "Great Britain" },
+          sourceId: "employmentStats", sourceUrl: "https://www.ons.gov.uk/labour-market",
+          sourceEditionId: "uklabourmarket-2026-06",
+          observationPeriod: { start: "2026-04-01", end: "2026-06-30", label: "April to June 2026" },
+          publishedAt: "2026-08-18T00:00:00.000Z", fetchedAt: "2026-09-07T11:00:00.000Z",
+          validUntil: "2026-09-10T00:00:00.000Z", availability: "current", value: 5.1,
+          revisionId: "uklabourmarket-2026-06",
+          points: [{ period: "April to June 2026", observedAt: "2026-06-30", value: 5.1, valueStatus: "estimate", revisionId: "uklabourmarket-2026-06" }],
+          caveats: ["Survey estimate."],
+        },
+      },
+    };
+    const measure = exploreMeasures({ meta: { registryVersion: FEED_REGISTRY_VERSION, sources: {}, measureCatalog: catalog } }, now)
+      .find(({ id }) => id === "unemployment");
+    expect(measure).toMatchObject({ value: 5.1, period: "April to June 2026", sourceUrl: "https://www.ons.gov.uk/labour-market" });
+    expect(exploreMeasures({ meta: { registryVersion: FEED_REGISTRY_VERSION, sources: {}, measureCatalog: catalog } }, new Date("2026-09-10T00:00:00.000Z"))
+      .find(({ id }) => id === "unemployment")?.value).toBeNull();
+  });
+
+  it("keeps the public explorer to eight canonical measures and uses the labour publication for unemployment", () => {
     const measures = exploreMeasures(payload, now);
     expect(measures.map((m) => m.id)).toEqual([
       "gdp-threeMonthGrowth", "inflation", "unemployment", "waitingPathwaysEstimate",
-      "debt-ratio", "receipts", "netMigration", "houseAnnualChange", "regularPayRealGrowth",
+      "debt-ratio", "receipts", "netMigration", "regularPayRealGrowth",
     ]);
     expect(measures.find((m) => m.id === "receipts")?.value).toBe(100);
     expect(measures.find((m) => m.id === "unemployment")).toMatchObject({

@@ -6,8 +6,8 @@
  * a reader can orient a chart against a known event; they carry NO claim that
  * the event caused, explains, or correlates with any change in any measure.
  * Do not add causal language to a label, and do not add an event because it
- * might explain a change in a specific series — that is exactly the inference
- * north_star.md prohibits (never assert interpretation as fact).
+ * might explain a change in a specific series. Event markers describe dates;
+ * they do not establish a relationship with a measure.
  *
  * Keep this list small and genuinely uncontroversial: dates that are matters
  * of public record, not matters of political dispute.

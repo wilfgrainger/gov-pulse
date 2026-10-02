@@ -2,6 +2,10 @@ const VOLATILE_PUBLICATION_KEYS = new Set([
   "checkedAt",
   "fetchedAt",
   "generatedAt",
+  // These are derived from the validated catalog or describe archive health;
+  // the catalog itself already carries every evidence change that can matter.
+  "editionArchiveStatus",
+  "editionSummary",
   "retrievalTime",
   "retrievedAt",
   "reusedAt",

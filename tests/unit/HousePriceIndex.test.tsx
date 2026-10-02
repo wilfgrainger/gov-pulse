@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import HousePriceIndex from "@/app/components/HousePriceIndex";
 
@@ -10,6 +10,12 @@ vi.mock("@/app/lib/useMetrics", () => ({
 
 vi.mock("@/app/components/MetricsStatus", () => ({
   default: () => <div>Metric provenance</div>,
+}));
+
+vi.mock("@/app/components/FinancialTimeSeriesChart", () => ({
+  default: ({ citation }: { citation?: string }) => (
+    <output data-testid="hpi-chart-citation">{citation ?? "missing citation"}</output>
+  ),
 }));
 
 const current = {
@@ -88,6 +94,19 @@ describe("HousePriceIndex evidence integrity", () => {
     expect(note).toHaveTextContent(/Annual house price change fell to 1\.4%, a change of -\d+(\.\d+)?% from the prior comparable period\./);
   });
 
+  it("includes the ONS bulletin, history file, publication date, period, and caveat in chart exports", () => {
+    useMetrics.mockReturnValue(metricResult(current));
+
+    render(<HousePriceIndex />);
+
+    const citation = screen.getByTestId("hpi-chart-citation");
+    expect(citation).toHaveTextContent(current.source.bulletinUrl);
+    expect(citation).toHaveTextContent(current.source.historyUrl);
+    expect(citation).toHaveTextContent(current.headline.releaseDate);
+    expect(citation).toHaveTextContent("Jun 2026 to Jul 2026");
+    expect(citation).toHaveTextContent(current.methodology.revisionNote);
+  });
+
   it("describes a decline without stale rise language", () => {
     useMetrics.mockReturnValue(
       metricResult({
@@ -129,6 +148,26 @@ describe("HousePriceIndex evidence integrity", () => {
     expect(screen.getByRole("status")).toHaveTextContent("House price estimate unavailable");
     expect(screen.queryByText(/The average UK house price rose to £273,000/i)).not.toBeInTheDocument();
     expect(screen.queryByTestId("release-note")).not.toBeInTheDocument();
+  });
+
+  it("does not fill unmatched wage periods or headline values with estimated numbers", () => {
+    useMetrics
+      .mockReturnValueOnce(metricResult(current))
+      .mockReturnValueOnce({ ...metricResult({
+        headline: { regularPayRealGrowthPercent: 2.1, period: "May to July 2026" },
+        history: [{ period: "May to July 2026", regularPayRealGrowthPercent: 2.1 }],
+      }), cacheState: "stale" });
+
+    render(<HousePriceIndex />);
+
+    fireEvent.click(screen.getByRole("button", { name: "View screen-reader table" }));
+    const rows = within(screen.getByRole("table", { name: /historical comparison table/i })).getAllByRole("row");
+    expect(rows).toHaveLength(3);
+    for (const row of rows.slice(1)) {
+      const unavailableCells = within(row).getAllByText("Unavailable");
+      expect(unavailableCells).toHaveLength(2);
+      expect(unavailableCells[1].closest("td")).toHaveClass("text-slate-500");
+    }
   });
 
   it.each([

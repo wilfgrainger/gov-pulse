@@ -75,6 +75,46 @@ describe("latest ONS real wages bulletin connector", () => {
     });
   });
 
+  it("parses signed values, zero growth and Unicode minus without losing their signs", () => {
+    const signedBulletin = bulletinHtml.replace(
+      "was 0.6% for regular pay and 0.9% for total pay",
+      "was −0.6% for regular pay and +0.0% for total pay"
+    );
+    expect(parseRealWagesBulletin(signedBulletin, "september2026").headline).toMatchObject({
+      regularPayRealGrowthPercent: -0.6,
+      totalPayRealGrowthPercent: 0,
+    });
+
+    const signedHistory = historyCsv.replace(
+      '"May to July 2026","0.9","0.6","3.0"',
+      '"May to July 2026","−0.9","+0.0","3.0"'
+    );
+    expect(parseRealWagesHistoryCsv(signedHistory).at(-1)).toMatchObject({
+      totalPayRealGrowthPercent: -0.9,
+      regularPayRealGrowthPercent: 0,
+    });
+  });
+
+  it("reconciles signed bulletin and history observations exactly", async () => {
+    const signedBulletin = bulletinHtml.replace(
+      "was 0.6% for regular pay and 0.9% for total pay",
+      "was −0.6% for regular pay and +0.9% for total pay"
+    );
+    const signedHistory = historyCsv.replace(
+      '"May to July 2026","0.9","0.6","3.0"',
+      '"May to July 2026","+0.9","−0.6","3.0"'
+    );
+    const fetchImpl = vi.fn(async (url: string) => ({
+      ok: true,
+      status: 200,
+      url: BULLETIN_LATEST_URL,
+      text: async () => url.includes("/generator?uri=") ? signedHistory : signedBulletin,
+    })) as unknown as typeof fetch;
+    const result = await buildRealWagesStats(fetchImpl);
+    expect(result.headline.regularPayRealGrowthPercent).toBe(-0.6);
+    expect(result.headline.totalPayRealGrowthPercent).toBe(0.9);
+  });
+
   it("fails closed when the CPIH real-terms sentence is missing", () => {
     const withoutCpih = bulletinHtml.replace(
       /Annual growth in real terms, adjusted for inflation using the Consumer Prices Index including owner occupiers' housing costs \(CPIH\), was 0\.6% for regular pay and 0\.9% for total pay\./,

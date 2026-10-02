@@ -33,6 +33,42 @@ function parsedTime(value) {
   return Number.isFinite(time) && new Date(time).toISOString() === normalized ? time : null;
 }
 
+function cacheLifetime(validUntil, now = new Date()) {
+  const deadline = parsedTime(validUntil);
+  const nowMs = now instanceof Date ? now.getTime() : Number.NaN;
+  if (deadline === null || !Number.isFinite(nowMs)) return 0;
+  return Math.max(0, Math.floor((deadline - nowMs) / 1000));
+}
+
+function sentimentMeasureState(data, nowMs, redactExpired = false) {
+  if (!isRecord(data?.__measureValidity) || !isRecord(data?.series)) return null;
+  const ids = ["inflation", "bankRate", "unemployment"];
+  if (ids.some((id) => !isRecord(data.__measureValidity[id]) || !isRecord(data.series[id]))) {
+    return { valid: false, current: [] };
+  }
+  const current = [];
+  for (const id of ids) {
+    const series = data.series[id];
+    const deadline = parsedTime(data.__measureValidity[id].validUntil);
+    const usable =
+      deadline !== null &&
+      nowMs < deadline &&
+      series.status === "current" &&
+      typeof series.value === "number" &&
+      Number.isFinite(series.value);
+    if (usable) current.push(id);
+    else if (redactExpired) {
+      data.series[id] = {
+        ...series,
+        value: null,
+        annualDelta: null,
+        status: "expired",
+      };
+    }
+  }
+  return { valid: true, current };
+}
+
 function sectionCurrentness(section, data, source, now = new Date()) {
   const nowMs = now.getTime();
   if (!Number.isFinite(nowMs) || !isRecord(data) || !isRecord(source)) {
@@ -44,17 +80,6 @@ function sectionCurrentness(section, data, source, now = new Date()) {
     return { current: false, reason: "missing-policy" };
   }
 
-  if (Object.prototype.hasOwnProperty.call(source, "status") && source.status !== "ok") {
-    return { current: false, reason: "source-not-current" };
-  }
-
-  if (
-    Object.prototype.hasOwnProperty.call(source, "cacheState") &&
-    source.cacheState !== "fresh"
-  ) {
-    return { current: false, reason: "source-cache-not-current" };
-  }
-
   const hasExplicitExpiry = Object.prototype.hasOwnProperty.call(data, "expiresAt");
   const explicitExpiry = parsedTime(data.expiresAt);
   if (hasExplicitExpiry && explicitExpiry === null) {
@@ -62,6 +87,38 @@ function sectionCurrentness(section, data, source, now = new Date()) {
   }
   if (explicitExpiry !== null && nowMs >= explicitExpiry) {
     return { current: false, reason: "explicit-expiry" };
+  }
+
+  const independentMeasures = section === "sentimentPulse"
+    ? sentimentMeasureState(data, nowMs)
+    : null;
+  if (independentMeasures && !independentMeasures.valid) {
+    return { current: false, reason: "invalid-measure-validity" };
+  }
+  const hasCurrentIndependentMeasure = Boolean(independentMeasures?.current.length);
+  const sourceStatus = source.status;
+  if (
+    Object.prototype.hasOwnProperty.call(source, "status") &&
+    sourceStatus !== "ok" &&
+    !(sourceStatus === "stale" && (explicitExpiry !== null || hasCurrentIndependentMeasure))
+  ) {
+    return { current: false, reason: "source-not-current" };
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(source, "cacheState") &&
+    source.cacheState !== "fresh" &&
+    !(["stale", "expired"].includes(source.cacheState) && (explicitExpiry !== null || hasCurrentIndependentMeasure))
+  ) {
+    return { current: false, reason: "source-cache-not-current" };
+  }
+
+  if (section === "sentimentPulse" && independentMeasures) {
+    if (!hasCurrentIndependentMeasure) return { current: false, reason: "all-measures-expired" };
+    const fetchedAt = parsedTime(source.fetchedAt);
+    if (fetchedAt === null) return { current: false, reason: "missing-retrieval-time" };
+    if (fetchedAt > nowMs + MAX_CLOCK_SKEW_MS) return { current: false, reason: "retrieval-in-future" };
+    return { current: true, reason: "current" };
   }
 
   const fetchedAt = parsedTime(source.fetchedAt);
@@ -141,6 +198,13 @@ function sectionValidityDeadline(section, data, source, now = new Date()) {
   const retrievalLimit = retrievalMaxAgeMsForSection(section);
   if (!Number.isFinite(retrievalLimit)) return null;
 
+  if (section === "sentimentPulse") {
+    const state = sentimentMeasureState(data, now.getTime());
+    if (!state?.valid || state.current.length === 0) return null;
+    const deadlines = state.current.map((id) => parsedTime(data.__measureValidity[id].validUntil));
+    return Math.min(...deadlines);
+  }
+
   const explicitExpiry = parsedTime(data.expiresAt);
   const deadlines = explicitExpiry !== null
     ? [explicitExpiry]
@@ -194,6 +258,23 @@ function filterCurrentSnapshot(snapshot, now = new Date()) {
 
   for (const [section, source] of Object.entries(snapshot.meta.sources)) {
     const data = snapshot[section];
+    if (section === "sentimentPulse" && isRecord(data)) {
+      const sourceCurrentness = sectionCurrentness(section, data, source, now);
+      if (!sourceCurrentness.current) {
+        delete filtered[section];
+        delete filtered.meta.sources[section];
+        continue;
+      }
+      const independentData = structuredClone(data);
+      const independentState = sentimentMeasureState(independentData, now.getTime(), true);
+      if (!independentState?.valid || independentState.current.length === 0) {
+        delete filtered[section];
+        delete filtered.meta.sources[section];
+        continue;
+      }
+      filtered[section] = independentData;
+      continue;
+    }
     const result = sectionCurrentness(section, data, source, now);
     if (!result.current) {
       delete filtered[section];
@@ -220,6 +301,7 @@ export {
   ISO_UTC_INSTANT,
   MAX_CLOCK_SKEW_MS,
   RETRIEVAL_MAX_AGE_MS,
+  cacheLifetime,
   currentSectionRecord,
   filterCurrentSnapshot,
   sectionCurrentness,

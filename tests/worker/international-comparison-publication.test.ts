@@ -62,6 +62,13 @@ describe("international comparison publication", () => {
       exclusionReason: "not-covered-by-comparable-donor-series",
     });
     expect(publication.measures.healthcareSpending.countries.find((item) => item.country === "GBR")?.value).toBe(5_860);
+    expect(publication.measures.healthcareSpending.lifecycle).toMatchObject({
+      status: "historical",
+      lastSuccessAt: "2026-08-18T22:00:00.000Z",
+      retryAfter: null,
+    });
+    expect(publication.measures.healthcareSpending.lifecycle.sourceEditionId).toMatch(/^healthcareSpending-2024-/);
+    expect(publication.measures.healthcareSpending.lifecycle.sourceEditionId).not.toBe(publication.meta.generatedAt);
     expect(publication.measures.debtInterest.countries.find((item) => item.country === "GBR")?.value).toBeCloseTo(1_420, 4);
   });
 

@@ -15,6 +15,7 @@
 // mergePublication) consumes this record unchanged, with no awareness that it
 // was written by a script instead of the Worker's own queue consumer.
 import process from "node:process";
+import { isDeepStrictEqual } from "node:util";
 import { pathToFileURL } from "node:url";
 import { collectNhsRttPublication } from "../worker/live-nhs-publication-collector.js";
 import { sectionRecord } from "../worker/live-feed-common.js";
@@ -101,6 +102,24 @@ async function putKvValue(fetchImpl, accountId, apiToken, namespaceId, key, valu
   }
 }
 
+async function verifyKvWrite(fetchImpl, accountId, apiToken, namespaceId, key, record, options = {}) {
+  const attempts = Number.isSafeInteger(options.attempts) && options.attempts > 0
+    ? Math.min(options.attempts, 6)
+    : 4;
+  const delays = Array.isArray(options.delays) ? options.delays : [0, 250, 500, 1000];
+  const sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (attempt > 0) await sleep(delays[attempt] ?? delays.at(-1) ?? 1000);
+    try {
+      const confirmed = await readKvValue(fetchImpl, accountId, apiToken, namespaceId, key);
+      if (isDeepStrictEqual(confirmed, record)) return true;
+    } catch {
+      // KV replication and transient read errors get the same bounded retry.
+    }
+  }
+  throw new Error("Cloudflare KV read-back after write did not exactly match the record after bounded retries");
+}
+
 async function run(options = {}) {
   const fetchImpl = options.fetchImpl ?? fetch;
   const now = options.now ?? new Date();
@@ -113,7 +132,8 @@ async function run(options = {}) {
   // failure in normalizeNhsRttPayload) propagates out of run() unhandled, main()
   // exits non-zero, and nothing is written to KV — the previous value is
   // untouched.
-  const data = await collectNhsRttPublication(fetchImpl, now);
+  const collect = options.collectImpl ?? collectNhsRttPublication;
+  const data = await collect(fetchImpl, now);
   const record = buildKvRecord(data, now);
 
   if (options.dryRun) {
@@ -121,22 +141,18 @@ async function run(options = {}) {
   }
 
   await putKvValue(fetchImpl, accountId, apiToken, namespaceId, KV_KEY, record);
-  // Best-effort read-back verification; a failure here still leaves the
-  // write committed (Cloudflare KV writes are not transactional with this
-  // script), but it turns a silent corruption into a loud CI failure instead
-  // of a quiet bad publish.
-  const confirmed = await readKvValue(
+  // Cloudflare KV is eventually consistent, so verify the full record with a
+  // bounded retry window instead of treating an immediate replica miss as a
+  // permanent write failure.
+  await verifyKvWrite(
     fetchImpl,
     accountId,
     apiToken,
     namespaceId,
-    KV_KEY
+    KV_KEY,
+    record,
+    options.readBackOptions,
   );
-  if (confirmed?.fetchedAt !== record.fetchedAt) {
-    throw new Error(
-      "Cloudflare KV read-back after write did not match the record just written"
-    );
-  }
 
   return { record, written: true };
 }
@@ -160,4 +176,4 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   });
 }
 
-export { KV_KEY, PUBLICATION_SECTION_PREFIX, buildKvRecord, run };
+export { KV_KEY, PUBLICATION_SECTION_PREFIX, buildKvRecord, verifyKvWrite, run };

@@ -75,7 +75,7 @@ export default function PublicationFreshnessIndicator() {
         />
         {copy.message}
       </p>
-      <details className="group ml-1 shrink-0 lg:hidden">
+      <details className="group ml-1 hidden shrink-0 min-[400px]:block lg:hidden">
         <summary
           aria-label={copy.message}
           className={`flex min-h-8 cursor-pointer list-none items-center gap-1.5 border px-2 py-1 text-[0.68rem] font-semibold leading-none ${

@@ -1,6 +1,7 @@
 import { METRICS_SNAPSHOT_PATH, REFRESH_INTERVAL_MS } from "./config";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 import { filterCurrentSnapshot } from "@/worker/publication-currentness";
+import type { MeasureCatalog } from "./measureCatalog";
 
 export interface SnapshotSourceStatus {
   status?: string;
@@ -14,6 +15,13 @@ export interface MetricsSnapshot {
     registryVersion: string;
     generatedAt?: string;
     sources: Record<string, SnapshotSourceStatus>;
+    measureCatalog?: MeasureCatalog;
+    editionSummary?: {
+      id: string;
+      publishedAt: string;
+      sourceEditionIds: string[];
+      changes: { measureId: string; kind: "new-observation" | "revision" | "method-change"; observedAt: string | null; period: string | null; previousSourceEditionId: string | null; nextSourceEditionId: string; previousRevisionId: string | null; nextRevisionId: string; previous: number | null; next: number | null }[];
+    };
     [key: string]: unknown;
   };
   [section: string]: unknown;

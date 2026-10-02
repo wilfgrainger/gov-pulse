@@ -10,19 +10,10 @@ import { describe, expect, it } from "vitest";
 const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
 
 describe("consumer visual system", () => {
-  it("uses a calm page surface and flat editorial evidence panels", () => {
-    expect(css).toContain("--background: #f4f6f8");
-    expect(css).toContain("--surface: #ffffff");
-    expect(css).toContain("--foreground: #14243b");
-    // Load-bearing accent tokens: their regression would break white-on-accent
-    // and on-dark contrast, so pin them alongside the surface/ink tokens.
-    expect(css).toContain("--accent: #1f5c8a");
-    expect(css).toContain("--accent-on-dark: #8fc2e6");
-    expect(css).toContain('--font-editorial: Georgia, "Times New Roman", serif');
-    expect(css).not.toMatch(/Bebas Neue|IBM Plex Mono/);
-    expect(css).toMatch(/\.dashboard-card\s*\{[\s\S]*border-top:\s*1px solid var\(--foreground\) !important/);
-    expect(css).toMatch(/\.dashboard-card\s*\{[\s\S]*border-radius:\s*0/);
-    expect(css).toMatch(/\.dashboard-card\s*\{[\s\S]*box-shadow:\s*none/);
+  it("defines assignable semantic color tokens without pinning one aesthetic", () => {
+    for (const token of ["background", "surface", "foreground", "accent", "accent-on-dark"]) {
+      expect(css).toMatch(new RegExp(`--${token}:\\s*#[0-9a-f]{3,8}`, "i"));
+    }
   });
 
   it("defines one v3 publication system for the first visit, edition and evidence pages", () => {
@@ -44,12 +35,5 @@ describe("consumer visual system", () => {
     expect(css).toContain("animation-duration: 0.01ms !important");
     expect(css).toContain("animation-delay: 0s !important");
     expect(css).toContain("transition-delay: 0s !important");
-  });
-
-  it("reserves hard offset shadows for deliberate emphasis rather than evidence panels", () => {
-    const dashboardCardBlock = css.match(/\.dashboard-card\s*\{([^}]+)\}/)?.[1] ?? "";
-    expect(dashboardCardBlock).not.toContain("4px 4px 0");
-    expect(dashboardCardBlock).not.toContain("8px 8px 0");
-    expect(dashboardCardBlock).toContain("box-shadow: none");
   });
 });

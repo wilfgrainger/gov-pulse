@@ -1,6 +1,7 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import GovernmentContracts from "@/app/components/GovernmentContracts";
+import * as chartExport from "@/app/lib/chartExport";
 import {
   CAVEATS,
   EVIDENCE_POLICY,
@@ -134,12 +135,26 @@ describe("GovernmentContracts nation breakdown and supplier concentration", () =
 
   it("renders the supplier concentration view ranked by disclosed value", () => {
     useMetrics.mockReturnValue(result(currentPayload({ withNations: true })));
+    const exportSpy = vi.spyOn(chartExport, "downloadChartSvg").mockImplementation(() => {});
 
     render(<GovernmentContracts />);
 
     expect(
       screen.getByRole("heading", { name: "Suppliers ranked by total disclosed value" })
     ).toBeInTheDocument();
+    expect(screen.getByText("Showing the first 20 of 100 filtered named suppliers (100 in the full publication)."))
+      .toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /supplier disclosed award values in pounds/i })).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "Exact supplier concentration rows in the chart" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "SVG" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "SVG" }));
+    expect(exportSpy).toHaveBeenCalledOnce();
+    const chartMetadata = exportSpy.mock.calls[0][2]?.chartMetadata;
+    expect(chartMetadata?.title).toBe("Suppliers ranked by disclosed value");
+    expect(chartMetadata?.series[0]).toMatchObject({
+      key: "Supplier 1",
+      label: expect.stringContaining("£500,000,000"),
+    });
     expect(screen.getAllByText("Supplier 1").length).toBeGreaterThan(0);
     expect(
       screen.queryByText(/Supplier nation is currently Other\/Unknown for every ranked supplier/i)

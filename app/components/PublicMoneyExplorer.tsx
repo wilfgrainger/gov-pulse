@@ -1,0 +1,48 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { barWidthPercent } from "@/app/lib/chartModel";
+import { buildDossier, filteredAwardCoverage, serializePublicAwardsCsv, type AwardDossier, type PublicAward } from "@/app/lib/publicMoney";
+
+function pounds(value: number) { return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(value); }
+
+export default function PublicMoneyExplorer({ awards, caveats }: { awards: PublicAward[]; caveats: string[] }) {
+  const [query, setQuery] = useState("");
+  const [buyer, setBuyer] = useState("all");
+  const [nation, setNation] = useState("all");
+  const [selection, setSelection] = useState<{ identity: string; kind: AwardDossier["kind"] } | null>(null);
+  const buyers = [...new Set(awards.map((award) => award.buyer))].sort((a, b) => a.localeCompare(b, "en-GB"));
+  const nations = [...new Set(awards.flatMap((award) => award.supplierNations))].sort((a, b) => a.localeCompare(b, "en-GB"));
+  const term = query.trim().toLocaleLowerCase("en-GB");
+  const visible = awards.filter((award) => (!term || [award.title, award.buyer, ...award.suppliers, award.releaseId].join(" ").toLocaleLowerCase("en-GB").includes(term)) && (buyer === "all" || award.buyer === buyer) && (nation === "all" || award.supplierNations.includes(nation)));
+  const selected = selection ? buildDossier(visible, selection.identity, selection.kind) : null;
+  const setSelected = (dossier: AwardDossier | null) => {
+    setSelection(dossier ? {
+      identity: dossier.kind === "notice" ? dossier.award.key : dossier.label,
+      kind: dossier.kind,
+    } : null);
+  };
+  const coverage = filteredAwardCoverage(awards, visible);
+  const maximum = Math.max(0, ...visible.map((award) => award.amount));
+  function downloadVisibleAwards() {
+    const blob = new Blob([serializePublicAwardsCsv(visible)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "public-money-filtered-awards.csv";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  return <div className="grid gap-8 xl:grid-cols-[minmax(0,1.4fr)_minmax(19rem,0.6fr)]">
+    <section aria-labelledby="public-money-results" className="min-w-0">
+      <div className="border-y-2 border-foreground bg-white p-4 md:p-6"><p className="eyebrow">Find a Tender · disclosed GBP awards</p><h2 id="public-money-results" className="mt-2 text-3xl font-black">Award notices and name-match dossiers</h2><p className="mt-3 text-sm leading-6 text-gray-700">Open a notice or inspect the exact buyer or supplier name across the visible window. Name matches are not proof that notices belong to the same legal entity.</p>
+        <div className="mt-5 grid gap-3 md:grid-cols-3"><label className="grid gap-1 text-xs font-bold">Search notices<input value={query} onChange={(event) => setQuery(event.target.value)} type="search" className="min-h-11 border border-foreground px-3 text-sm font-normal" placeholder="Buyer, supplier or title"/></label><label className="grid gap-1 text-xs font-bold">Buyer<select value={buyer} onChange={(event) => setBuyer(event.target.value)} className="min-h-11 border border-foreground bg-white px-3 text-sm font-normal"><option value="all">All buyers</option>{buyers.map((name) => <option key={name}>{name}</option>)}</select></label><label className="grid gap-1 text-xs font-bold">Supplier nation<select value={nation} onChange={(event) => setNation(event.target.value)} className="min-h-11 border border-foreground bg-white px-3 text-sm font-normal"><option value="all">All known or unknown</option>{nations.map((name) => <option key={name}>{name}</option>)}</select></label></div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><p role="status" className="text-sm font-semibold">Showing {coverage.visibleCount} of {coverage.sourceDenominator} comparable awards in this source window. Filter coverage {new Intl.NumberFormat("en-GB", { style: "percent", maximumFractionDigits: 1 }).format(coverage.shareOfSourceWindow)}.</p><button type="button" onClick={downloadVisibleAwards} disabled={!visible.length} className="min-h-11 border border-foreground bg-white px-4 text-sm font-bold underline decoration-black/30 underline-offset-4 hover:bg-surface-warm disabled:cursor-not-allowed disabled:opacity-50">Download filtered notices CSV</button></div>
+      </div>
+      {visible.length ? <ol className="mt-4 list-none divide-y divide-line border-y border-line-strong bg-white p-0">{visible.map((award) => <li key={award.key} className="p-4 md:p-5"><div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem] sm:items-start"><div><p className="text-xs font-bold uppercase tracking-wider text-gray-600">Notice {award.releaseId} · {award.awardDate.slice(0, 10)}</p><h3 className="mt-2 text-lg font-extrabold leading-6">{award.title}</h3><p className="mt-2 text-sm text-gray-700">Buyer: {award.buyer}</p><p className="mt-1 text-sm text-gray-700">Disclosed suppliers: {award.suppliers.join(", ")}</p></div><div><p className="font-mono text-xl font-black tabular-nums">{pounds(award.amount)}</p><div className="mt-3 h-3 border border-black/25 bg-white" role="img" aria-label={`Disclosed award value ${pounds(award.amount)} on a zero-based scale`}><div className="h-full bg-[#ef5124]" style={{ width: `${barWidthPercent(award.amount, maximum)}%` }}/></div><p className="mt-2 text-xs text-gray-600">Zero-based magnitude</p></div></div><button type="button" onClick={() => setSelected(buildDossier(visible, award.key))} className="mt-4 min-h-11 border border-foreground bg-surface-warm px-4 text-sm font-bold hover:bg-accent-soft">Open notice dossier</button></li>)}</ol> : <p role="status" className="mt-4 border border-line bg-white p-5 text-sm">No award notice matches these filters in the current source window.</p>}
+      <aside className="mt-6 border-l-4 border-accent bg-surface-warm p-5"><h3 className="font-bold">Coverage and interpretation</h3><ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-gray-700">{caveats.map((caveat) => <li key={caveat}>{caveat}</li>)}</ul></aside>
+    </section>
+    <aside aria-labelledby="award-dossier-heading" className="h-fit border-y-2 border-foreground bg-surface-warm p-5 md:p-7"><p className="eyebrow">Publisher name matches · not entity resolution</p><h2 id="award-dossier-heading" className="mt-2 text-2xl font-black">Award dossier</h2>{selected ? <div className="mt-5"><h3 className="text-lg font-bold">{selected.label}</h3><p className="mt-3 text-sm">Disclosed award value in this record set: <strong>{pounds(selected.disclosedTotal)}</strong></p><p className="mt-2 text-xs text-gray-600">{selected.noticeCount} matched {selected.noticeCount === 1 ? "notice" : "notices"} · {selected.filteredDenominator} award records in filtered denominator</p><div className="mt-4 flex flex-wrap gap-2"><button type="button" onClick={() => setSelected(buildDossier(visible, selected.award.key, "notice"))} className={`min-h-10 border px-3 text-xs font-bold ${selected.kind === "notice" ? "border-foreground bg-accent-soft" : "border-line bg-white"}`}>Single notice</button><button type="button" onClick={() => setSelected(buildDossier(visible, selected.award.buyer, "buyer"))} className={`min-h-10 border px-3 text-xs font-bold ${selected.kind === "buyer" ? "border-foreground bg-accent-soft" : "border-line bg-white"}`}>Exact buyer name</button>{selected.award.suppliers.map((supplier) => <button type="button" key={supplier} onClick={() => setSelected(buildDossier(visible, supplier, "supplier"))} className={`min-h-10 border px-3 text-xs font-bold ${selected.kind === "supplier" && selected.label === supplier ? "border-foreground bg-accent-soft" : "border-line bg-white"}`}>Exact supplier name: {supplier}</button>)}</div><dl className="mt-4 space-y-3 text-sm"><div><dt className="font-bold">Buyer disclosed on selected notice</dt><dd>{selected.award.buyer}</dd></div><div><dt className="font-bold">Supplier strings on selected notice</dt><dd>{selected.award.suppliers.join(", ")}</dd></div><div><dt className="font-bold">Matched notice releases</dt><dd>{selected.noticeLinks.map((notice) => notice.releaseId).join(", ")}</dd></div></dl><ul className="mt-4 list-disc space-y-1 pl-5 text-xs leading-5 text-gray-700">{selected.caveats.map((item) => <li key={item}>{item}</li>)}</ul><div className="mt-5 flex flex-wrap gap-4 text-sm font-bold"><a className="underline" href={selected.award.noticeUrl} target="_blank" rel="noreferrer">Selected official notice</a><a className="underline" href={selected.award.procurementUrl} target="_blank" rel="noreferrer">Selected procurement record</a></div>{selected.noticeLinks.length > 1 && <ul className="mt-4 space-y-2 border-t border-line pt-4 text-sm">{selected.noticeLinks.map((notice) => <li key={notice.releaseId}><a className="underline" href={notice.noticeUrl} target="_blank" rel="noreferrer">Notice {notice.releaseId}</a></li>)}</ul>}</div> : <p className="mt-4 text-sm leading-6 text-gray-700">Select an award to inspect its source record, then open an exact buyer or supplier name group across the visible award window.</p>}<p className="mt-6 border-t border-line pt-4 text-xs leading-5 text-gray-600">Fiscal measures such as receipts and debt use different units, periods and bases. Inspect their published records separately; this page does not label procurement awards as paid spending.</p><Link className="mt-3 inline-block text-sm font-bold underline" href="/measure/receipts">Inspect central-government receipts →</Link></aside>
+  </div>;
+}

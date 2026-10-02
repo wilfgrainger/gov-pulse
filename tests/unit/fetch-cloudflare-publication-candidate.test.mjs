@@ -12,6 +12,24 @@ const NOW = new Date("2026-08-02T09:00:00.000Z");
 const FETCHED_AT = "2026-08-02T08:00:00.000Z";
 
 function completeSnapshot() {
+  const sections = Object.fromEntries(
+    REQUIRED_PUBLISHED_SECTION_IDS.map((section) => [
+      section,
+      section === "sentimentPulse"
+        ? {
+            value: section,
+            series: Object.fromEntries(["inflation", "bankRate", "unemployment"].map((id) => [
+              id,
+              { id, status: "current", value: 1 },
+            ])),
+            __measureValidity: Object.fromEntries(["inflation", "bankRate", "unemployment"].map((id) => [
+              id,
+              { validUntil: new Date(NOW.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString() },
+            ])),
+          }
+        : { value: section },
+    ])
+  );
   return {
     meta: {
       registryVersion: FEED_REGISTRY_VERSION,
@@ -29,12 +47,7 @@ function completeSnapshot() {
         ])
       ),
     },
-    ...Object.fromEntries(
-      REQUIRED_PUBLISHED_SECTION_IDS.map((section) => [
-        section,
-        { value: section },
-      ])
-    ),
+    ...sections,
   };
 }
 
@@ -56,6 +69,9 @@ describe("Cloudflare Pages publication candidate", () => {
     const candidate = completeSnapshot();
     candidate.meta.sources.sentimentPulse.fetchedAt =
       "2026-07-31T20:59:59.000Z";
+    for (const measure of Object.values(candidate.sentimentPulse.__measureValidity)) {
+      measure.validUntil = "2026-08-01T00:00:00.000Z";
+    }
 
     expect(() => validateCandidate(candidate, NOW)).toThrow(
       /missing current required evidence: sentimentPulse/i

@@ -124,6 +124,7 @@ export default function TaxRevenue() {
           <FinancialTimeSeriesChart
             title="Central government receipts: ten-year direction"
             description="Monthly ONS current receipts on a consistent cash basis. The seasonal pattern is why the annual comparison uses the same month one year earlier."
+            citation={`Office for National Statistics · ${data.source.bulletinUrl} · published ${data.headline.releaseDate} · observation period ${data.headline.period} · cash receipts; not an estimate of personal tax burden.`}
             data={data.history}
             series={[{ key: "receiptsBillion", label: "Monthly receipts", color: "#14243b" }]}
             valueFormatter={(value) => `£${value.toFixed(1)}bn`}

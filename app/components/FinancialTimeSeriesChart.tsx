@@ -13,8 +13,10 @@ import {
 } from "recharts";
 import ChartExportButtons from "@/app/components/ChartExportButtons";
 import ClientOnlyChart from "@/app/components/ClientOnlyChart";
+import ObservationTable from "@/app/components/charts/ObservationTable";
 import { METRICS_SNAPSHOT_PATH } from "@/app/lib/config";
 import { visibleChartEvents } from "@/app/lib/chartEvents";
+import type { ChartMetadata } from "@/app/lib/chartExport";
 
 export type FinancialChartPoint = {
   observedAt: number;
@@ -30,6 +32,24 @@ export type FinancialChartSeries = {
   dashed?: boolean;
 };
 
+export function addCadenceBreaks(data: FinancialChartPoint[]): FinancialChartPoint[] {
+  if (data.length < 3) return data;
+  const intervals = data.slice(1).map((point, index) => point.observedAt - data[index].observedAt)
+    .filter((interval) => Number.isFinite(interval) && interval > 0)
+    .sort((a, b) => a - b);
+  const typical = intervals[Math.floor(intervals.length / 2)];
+  if (!typical) return data;
+  const result: FinancialChartPoint[] = [];
+  for (const [index, point] of data.entries()) {
+    const previous = data[index - 1];
+    if (previous && point.observedAt - previous.observedAt > typical * 1.7) {
+      result.push({ observedAt: previous.observedAt + 1, period: "Gap in published observations" });
+    }
+    result.push(point);
+  }
+  return result;
+}
+
 type Props = {
   title: string;
   description: string;
@@ -40,6 +60,8 @@ type Props = {
   referenceValue?: number;
   referenceLabel?: string;
   downloadLabel?: string;
+  /** Publisher, source URL, publication date, period and caveat for exported images. */
+  citation?: string;
   heightClass?: string;
   /**
    * Show curated event markers (vertical reference lines) for known UK
@@ -76,18 +98,40 @@ export default function FinancialTimeSeriesChart({
   referenceValue,
   referenceLabel,
   downloadLabel = "Download published data (JSON)",
+  citation,
   heightClass = "h-[300px]",
   showEvents = true,
 }: Props) {
   const first = data.at(0);
   const latest = data.at(-1);
+  const chartValues = data.flatMap((point) => series.flatMap((entry) => {
+    const value = point[entry.key];
+    return typeof value === "number" && Number.isFinite(value) ? [value] : [];
+  }));
+  const domainMin = Math.min(...chartValues, referenceValue ?? Number.POSITIVE_INFINITY);
+  const domainMax = Math.max(...chartValues, referenceValue ?? Number.NEGATIVE_INFINITY);
+  const domainSpan = domainMax - domainMin || Math.max(Math.abs(domainMax) * 0.02, 1);
+  const axisMin = chartValues.length ? domainMin - domainSpan * 0.08 : 0;
+  const axisMax = chartValues.length ? domainMax + domainSpan * 0.08 : 1;
   const range =
     first && latest ? `${first.period} to ${latest.period}` : "Published history unavailable";
+  const chartMetadata: ChartMetadata = {
+    schemaVersion: 1,
+    title,
+    sourceCitation: citation ?? "Source details unavailable in this publication.",
+    observationWindow: {
+      start: first ? { period: first.period, observedAt: Number.isFinite(first.observedAt) ? new Date(first.observedAt).toISOString() : null } : null,
+      end: latest ? { period: latest.period, observedAt: Number.isFinite(latest.observedAt) ? new Date(latest.observedAt).toISOString() : null } : null,
+    },
+    series: series.map(({ key, label }) => ({ key, label })),
+    caveats: [description],
+  };
   const events =
     showEvents && first && latest
       ? visibleChartEvents(first.observedAt, latest.observedAt)
       : [];
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartData = addCadenceBreaks(data);
 
   // Keyboard-navigable scrubber: ArrowLeft/ArrowRight move a "current index"
   // through the published data points, driving a vertical reference line, a
@@ -187,7 +231,7 @@ export default function FinancialTimeSeriesChart({
             minHeight={0}
             initialDimension={{ width: 640, height: 300 }}
           >
-            <LineChart data={data} margin={{ top: 10, right: 14, bottom: 4, left: 4 }}>
+            <LineChart data={chartData} margin={{ top: 10, right: 14, bottom: 4, left: 4 }}>
               <CartesianGrid vertical={false} stroke="#d3dae1" strokeDasharray="2 4" />
               <XAxis
                 dataKey="observedAt"
@@ -207,7 +251,7 @@ export default function FinancialTimeSeriesChart({
                 axisLine={false}
                 tickLine={false}
                 width={62}
-                domain={["auto", "auto"]}
+                domain={[axisMin, axisMax]}
               />
               {referenceValue !== undefined ? (
                 <ReferenceLine
@@ -297,6 +341,9 @@ export default function FinancialTimeSeriesChart({
             .join("; ")}
         </p>
       ) : null}
+      <p className="mt-2 px-1 text-xs leading-5 text-gray-600">
+        Vertical axis: {axisFormatter(axisMin)} to {axisFormatter(axisMax)}; bounds fitted to these observations, not zero-based.
+      </p>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 px-1 text-xs text-gray-600">
         <div className="flex flex-wrap gap-x-5 gap-y-2">
           {series.map((entry) => (
@@ -304,7 +351,9 @@ export default function FinancialTimeSeriesChart({
               <span
                 aria-hidden="true"
                 className="inline-block h-0.5 w-5"
-                style={{ backgroundColor: entry.color }}
+                style={entry.dashed
+                  ? { borderTop: `2px dashed ${entry.color}` }
+                  : { backgroundColor: entry.color }}
               />
               {entry.label}
             </span>
@@ -327,9 +376,24 @@ export default function FinancialTimeSeriesChart({
           >
             {downloadLabel}
           </a>
-          <ChartExportButtons containerRef={chartContainerRef} title={title} />
+          <ChartExportButtons
+            containerRef={chartContainerRef}
+            title={title}
+            chartMetadata={chartMetadata}
+            citation={[
+              citation,
+              `Observation period: ${range}`,
+              description,
+            ].filter(Boolean).join(" · ")}
+          />
         </div>
       </div>
+      <ObservationTable
+        caption={`${title}. ${description} Published observations from ${range}.`}
+        rows={data}
+        series={series}
+        valueFormatter={valueFormatter}
+      />
     </figure>
   );
 }

@@ -1,10 +1,12 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
+import { readPublicSurfaces } from "./lib/public-surfaces.mjs";
 
 const root = process.cwd();
 const workflowDirectory = join(root, ".github", "workflows");
 const deploymentWorkflow = join(workflowDirectory, "deploy.yml");
 const violations = [];
+const surfaces = readPublicSurfaces(root);
 
 function repositoryPath(path) {
   return relative(root, path).replaceAll("\\", "/");
@@ -18,7 +20,7 @@ function requireText(path, pattern, message) {
 for (const cnamePath of ["CNAME", "docs/CNAME", "public/CNAME"]) {
   if (existsSync(join(root, cnamePath))) {
     violations.push(
-      `${cnamePath} must not exist: public-data.org is hosted by Cloudflare Pages, not GitHub Pages.`
+      `${cnamePath} must not exist: public-data.org must not be published through GitHub Pages.`
     );
   }
 }
@@ -28,14 +30,22 @@ if (!existsSync(deploymentWorkflow)) {
 } else {
   requireText(
     deploymentWorkflow,
-    /npx wrangler pages deploy \.\/out/,
-    "The production workflow must deploy the static export with Wrangler Pages."
+    /opennextjs-cloudflare deploy/,
+    "The production workflow must deploy the request-time web Worker with OpenNext."
   );
   requireText(
     deploymentWorkflow,
-    /--project-name public-data-org/,
-    "The production workflow must target the public-data-org Cloudflare Pages project."
+    /npm run worker:deploy/,
+    "The production workflow must deploy the public data Worker."
   );
+  requireText(
+    deploymentWorkflow,
+    /if: github\.event_name == 'workflow_dispatch' && inputs\.refresh_pages_seed/,
+    "Cloudflare Pages may only be refreshed through its explicit manual fallback input."
+  );
+  if (!Array.isArray(surfaces.workerRoutes) || surfaces.workerRoutes.length < 3) {
+    violations.push("The approved public Worker route manifest is missing or incomplete.");
+  }
   requireText(
     deploymentWorkflow,
     /npm run test:release -- "https:\/\/public-data\.org\/"/,
@@ -76,5 +86,5 @@ if (violations.length > 0) {
 }
 
 console.log(
-  "Cloudflare hosting boundary verified: Worker + Pages deployment is configured and GitHub Pages publication is absent."
+  "Cloudflare hosting boundary verified: request-time site and data are deployed as Workers; Pages is a manual fallback and GitHub Pages publication is absent."
 );

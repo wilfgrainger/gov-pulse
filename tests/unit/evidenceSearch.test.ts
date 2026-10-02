@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { normalizeEvidenceSearchText, searchEvidence } from "@/app/lib/evidenceSearch";
+import { EVIDENCE_SEARCH_ITEMS, normalizeEvidenceSearchText, searchEvidence } from "@/app/lib/evidenceSearch";
+import { MEASURES } from "@/app/lib/dataExplorer";
 
 describe("evidenceSearch", () => {
   it("normalises case, punctuation and repeated whitespace", () => {
@@ -9,7 +10,7 @@ describe("evidenceSearch", () => {
   it.each([
     ["inflation", "Prices, rates and jobs", "/section/economy"],
     ["jobs", "Employment", "/section/employment"],
-    ["NHS waiting list", "NHS waiting times", "/section/nhs"],
+    ["NHS waiting list", "NHS waiting list", "/section/nhs"],
     ["what is UK net migration?", "Migration", "/section/migration"],
     ["where did this number come from?", "Sources, dates and methods", "/sources"],
   ])("ranks %s deterministically", (query, expectedTitle, expectedHref) => {
@@ -30,5 +31,16 @@ describe("evidenceSearch", () => {
 
     expect(firstRun).toEqual(secondRun);
     expect(firstRun).toHaveLength(3);
+  });
+
+  it("indexes every canonical explorer measure from its registry definition", () => {
+    const registered = EVIDENCE_SEARCH_ITEMS.filter(({ id }) => id.startsWith("measure-"));
+    expect(registered).toHaveLength(MEASURES.length);
+    expect(registered.map(({ id }) => id.slice("measure-".length)).toSorted())
+      .toEqual(MEASURES.map(({ id }) => id).toSorted());
+    expect(searchEvidence("regularPayRealGrowth")[0]).toMatchObject({
+      title: "Real wages: regular pay growth",
+      href: "/section/real-wages",
+    });
   });
 });

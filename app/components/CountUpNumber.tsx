@@ -35,8 +35,8 @@ export default function CountUpNumber({ value, format, durationMs = 900, classNa
   // the effect — matches the mount-detection pattern already used by
   // app/components/Reveal.tsx.
   useEffect(() => {
-    const prefersReducedMotion = typeof window.matchMedia === "function" 
-      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches 
+    const prefersReducedMotion = typeof window.matchMedia === "function"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
       : false;
     if (prefersReducedMotion || !Number.isFinite(value)) return;
     const frame = window.requestAnimationFrame(() => setAnimated(true));

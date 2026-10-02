@@ -6,6 +6,7 @@ import {
   buildSummary,
   buildSupplierConcentration,
   isCurrentGovernmentContractsPayload,
+  ukNationFromCountryName,
   ukNationFromPostcode,
 } from "../../contracts/government-contracts.js";
 import {
@@ -92,7 +93,10 @@ function rawRelease(index: number) {
         id: supplierId,
         name: award.suppliers[0],
         roles: ["supplier"],
-        address: { postalCode: postcode },
+        address: {
+          postalCode: postcode,
+          countryName: ["Scotland", "Wales", "Northern Ireland", "England"][index % 4],
+        },
       },
     ],
     tender: {
@@ -185,9 +189,8 @@ describe("government contracts contract", () => {
     expect(payload.dataQuality.requestsMade).toBe(28);
     expect(isCurrentGovernmentContractsPayload(payload, NOW)).toBe(true);
 
-    // Every award's supplier nation was resolved from the party postcode
-    // fixture (never left as a blanket Other/Unknown), proving the
-    // release.parties cross-reference by OrganizationReference id works.
+    // Each supplier is classified only from the exact country name on its
+    // cross-referenced OCDS party record.
     const nationsSeen = new Set(
       payload.awards.flatMap((award: { supplierNations: string[] }) => award.supplierNations)
     );
@@ -196,17 +199,19 @@ describe("government contracts contract", () => {
     );
   });
 
-  it("maps UK postcode areas to nations deterministically, one example per nation", () => {
-    expect(ukNationFromPostcode("EH1 1AA")).toBe("Scotland");
-    expect(ukNationFromPostcode("G1 1AA")).toBe("Scotland");
-    expect(ukNationFromPostcode("CF10 1AA")).toBe("Wales");
-    expect(ukNationFromPostcode("SA1 1AA")).toBe("Wales");
-    expect(ukNationFromPostcode("BT1 1AA")).toBe("Northern Ireland");
-    expect(ukNationFromPostcode("SW1A 1AA")).toBe("England");
-    expect(ukNationFromPostcode("M1 1AE")).toBe("England");
+  it("maps only exact publisher country names to UK nations", () => {
+    expect(ukNationFromCountryName("Scotland")).toBe("Scotland");
+    expect(ukNationFromCountryName(" Wales ")).toBe("Wales");
+    expect(ukNationFromCountryName("Northern Ireland")).toBe("Northern Ireland");
+    expect(ukNationFromCountryName("England")).toBe("England");
+    expect(ukNationFromCountryName("United Kingdom")).toBeNull();
+    expect(ukNationFromCountryName("Jersey")).toBeNull();
+    expect(ukNationFromPostcode("SY1 1AA")).toBe("Other/Unknown");
+    expect(ukNationFromPostcode("TD1 1AA")).toBe("Other/Unknown");
+    expect(ukNationFromPostcode("JE1 1AA")).toBe("Other/Unknown");
   });
 
-  it("defaults to Other/Unknown for missing or unrecognisable postcodes, never guessing", () => {
+  it("defaults to Other/Unknown when there is no address-level nation evidence", () => {
     expect(ukNationFromPostcode("")).toBe("Other/Unknown");
     expect(ukNationFromPostcode(null)).toBe("Other/Unknown");
     expect(ukNationFromPostcode(undefined)).toBe("Other/Unknown");

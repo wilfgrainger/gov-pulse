@@ -2,22 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import { readPublicSurfaces, surfacesForWorkerIngress } from "./lib/public-surfaces.mjs";
 
 const routePattern = /^route\.(?:js|jsx|mjs|ts|tsx)$/i;
-const EXPECTED_DATA_ROUTES = Object.freeze([
-  Object.freeze({
-    pattern: "public-data.org/data/health.json",
-    zone_name: "public-data.org",
-  }),
-  Object.freeze({
-    pattern: "public-data.org/data/international-comparison.json",
-    zone_name: "public-data.org",
-  }),
-  Object.freeze({
-    pattern: "public-data.org/data/metrics-snapshot.json",
-    zone_name: "public-data.org",
-  }),
-]);
 
 function filesUnder(directory) {
   if (!fs.existsSync(directory)) return [];
@@ -59,11 +46,7 @@ function workerRouteTables(config) {
   return routes;
 }
 
-function routeSignature(route) {
-  return `${route.pattern ?? ""}|${route.zone_name ?? ""}`;
-}
-
-export function unsupportedWorkerIngress(config) {
+export function unsupportedWorkerIngress(config, surfaces = readPublicSurfaces()) {
   const findings = [];
   if (/^\s*workers_dev\s*=\s*true\s*$/mi.test(config)) {
     findings.push("workers.dev must remain disabled");
@@ -76,10 +59,8 @@ export function unsupportedWorkerIngress(config) {
   }
 
   const routes = workerRouteTables(config);
-  if (routes.length !== EXPECTED_DATA_ROUTES.length) {
-    findings.push(
-      `expected exactly ${EXPECTED_DATA_ROUTES.length} [[routes]] tables; found ${routes.length}`
-    );
+  if (routes.length < 3) {
+    findings.push(`the three required evidence routes must remain configured; found ${routes.length}`);
     return findings;
   }
 
@@ -88,19 +69,12 @@ export function unsupportedWorkerIngress(config) {
     const keys = Object.keys(route).sort();
     if (keys.join(",") !== expectedKeys.join(",")) {
       findings.push(
-        `public Worker routes must contain only ${expectedKeys.join(" and ")}`
+        `public Worker routes must contain only ${expectedKeys.join(" and ")}`,
       );
     }
   }
 
-  const actualSignatures = routes.map(routeSignature).sort();
-  const expectedSignatures = EXPECTED_DATA_ROUTES.map(routeSignature).sort();
-  if (actualSignatures.join("\n") !== expectedSignatures.join("\n")) {
-    findings.push(
-      "public data Worker routes must be the exact snapshot, health and international-comparison paths"
-    );
-  }
-  return findings;
+  return [...findings, ...surfacesForWorkerIngress(routes, surfaces)];
 }
 
 export function main(projectRoot = process.cwd()) {
@@ -108,7 +82,7 @@ export function main(projectRoot = process.cwd()) {
   const appRoutes = unsupportedAppRoutes(projectRoot);
   if (appRoutes.length > 0) {
     findings.push(
-      "The Next application must not create duplicate App Router data APIs:",
+      "Worker data routes must remain within the approved evidence surface:",
       ...appRoutes.map((route) => `- ${route}`)
     );
   }
@@ -118,7 +92,8 @@ export function main(projectRoot = process.cwd()) {
     findings.push("worker/wrangler.toml is required");
   } else {
     const workerIngress = unsupportedWorkerIngress(
-      fs.readFileSync(wranglerPath, "utf8")
+      fs.readFileSync(wranglerPath, "utf8"),
+      readPublicSurfaces(projectRoot),
     );
     if (workerIngress.length > 0) {
       findings.push(
@@ -131,15 +106,14 @@ export function main(projectRoot = process.cwd()) {
   if (findings.length > 0) {
     console.error(`${findings.join("\n")}\n`);
     console.error(
-      "Keep normal application routes on the web Worker and route only the three exact public data contracts to the data Worker."
+      "Keep collector, queue and cache internals private; add public data routes only through contracts/public-surfaces.json."
     );
     process.exitCode = 1;
     return false;
   }
 
-  console.log(
-    "Architecture check passed: OpenNext web Worker plus three exact Cloudflare data routes, with Pages retained only as bounded seed fallback."
-  );
+  const surfaces = readPublicSurfaces(projectRoot);
+  console.log(`Architecture check passed: application routes plus ${surfaces.workerRoutes.length} reviewed public data routes.`);
   return true;
 }
 

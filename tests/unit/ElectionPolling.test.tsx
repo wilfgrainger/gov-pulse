@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ElectionPolling from "@/app/components/ElectionPolling";
 
@@ -46,7 +46,7 @@ const current = {
       sourceUrl: "https://ygo-assets-websites-editorial-emea.yougov.net/documents/VotingIntention_MRP_Results_260706_w.pdf",
       methodologyUrl: "https://yougov.co.uk/about/panel-methodology",
       bpcMember: true,
-      uncertainty: "Published estimates have an approximate 9-in-10 interval of plus or minus four points.",
+      uncertainty: null,
     },
   ],
   aggregation: {
@@ -96,6 +96,8 @@ describe("ElectionPolling evidence integrity", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/2,285 GB adults/i)).toBeInTheDocument();
     expect(screen.getByText(/This is one poll publication, not a polling average/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Polling lab" })).toBeInTheDocument();
+    expect(screen.getByText("Showing 1 of 1 verified publications.")).toBeInTheDocument();
     expect(screen.getByText("What changed?")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "One current publication; no trend is inferred" })
@@ -117,6 +119,28 @@ describe("ElectionPolling evidence integrity", () => {
     expect(screen.queryByText(/public-data\.org polling average/i)).not.toBeInTheDocument();
   });
 
+  it("filters actual pollster publications by fieldwork without combining them", () => {
+    const secondPoll = {
+      ...current.polls[0],
+      id: "ipsos-2026-07-12",
+      pollster: "Ipsos",
+      title: "Ipsos voting intention publication",
+      publicationDate: "2026-07-12",
+      fieldworkStart: "2026-07-11",
+      fieldworkEnd: "2026-07-12",
+      sourceUrl: "https://www.ipsos.com/en-uk/voting-intention",
+      methodologyUrl: "https://www.ipsos.com/en-uk/methodology",
+    };
+    useMetrics.mockReturnValue(result({ ...current, polls: [current.polls[0], secondPoll] }));
+
+    render(<ElectionPolling />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Filter polling by pollster" }), { target: { value: "Ipsos" } });
+
+    expect(screen.getByText("Showing 1 of 2 verified publications.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ipsos reports Reform UK at 24%." })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "YouGov reports Reform UK at 24%." })).not.toBeInTheDocument();
+  });
+
   it("shows the publication disclosure register", () => {
     useMetrics.mockReturnValue(result(current));
 
@@ -128,18 +152,19 @@ describe("ElectionPolling evidence integrity", () => {
     expect(screen.getAllByText(/MRP model/i).length).toBeGreaterThan(0);
   });
 
-  it("renders per-poll uncertainty with a labelled estimated margin of error, never an average", () => {
+  it("does not turn sample size into an uncertainty interval or a polling average", () => {
     useMetrics.mockReturnValue(result(current));
 
     render(<ElectionPolling />);
 
     expect(
-      screen.getByRole("heading", { name: "Individual publications and their margin of error, not an average" })
+      screen.getByRole("heading", { name: "Individual publications and disclosed uncertainty, not an average" })
     ).toBeInTheDocument();
     expect(screen.getByText(/does not compute, show, or imply a/i)).toBeInTheDocument();
-    // Sample size 2285 -> MoE ~2.1pp via the standard 95% CI formula; shown in the accessible data table.
-    expect(screen.getAllByText(/\u00b12\.1pp/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/estimated from each poll's disclosed sample size/i)).toBeInTheDocument();
+    expect(screen.getByText(/not used to calculate an uncertainty interval/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/2,285/).length).toBeGreaterThan(1);
+    expect(screen.queryByText(/\u00b12\.1pp/)).not.toBeInTheDocument();
+    expect(screen.getByText(/No publication-specific numeric interval was verified/)).toBeInTheDocument();
     expect(screen.queryByText(/polling average/i, { selector: "h3, h4" })).not.toBeInTheDocument();
   });
 

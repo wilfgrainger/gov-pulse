@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import {
   filterCurrentSnapshot,
+  cacheLifetime,
   sectionCurrentness,
   snapshotValidityDeadline,
 } from "@/worker/publication-currentness";
@@ -81,6 +82,57 @@ describe("publication currentness", () => {
         new Date("2026-08-03T12:00:00.000Z")
       )
     ).toEqual({ current: true, reason: "current" });
+  });
+
+  it("keeps explicit last-known-good evidence after a failed retrieval marks its cache stale", () => {
+    expect(sectionCurrentness(
+      "gdpTracker",
+      data({ expiresAt: "2026-08-10T00:00:00.000Z" }),
+      source({ status: "stale", cacheState: "stale", fetchedAt: "2026-08-01T10:00:00.000Z" }),
+      new Date("2026-08-03T12:00:00.000Z"),
+    ).current).toBe(true);
+  });
+
+  it("clamps public cache lifetime to the evidence deadline with no stale interval beyond it", () => {
+    const deadline = "2026-08-01T12:00:00.000Z";
+    expect(cacheLifetime(deadline, new Date("2026-08-01T11:59:58.500Z"))).toBe(1);
+    expect(cacheLifetime(deadline, new Date(deadline))).toBe(0);
+    expect(cacheLifetime("invalid", new Date("2026-08-01T11:00:00Z"))).toBe(0);
+  });
+
+  it("expires each economic indicator independently while retaining the other source values", () => {
+    const series = (id: string) => ({
+      id,
+      value: id === "inflation" ? 3.1 : 4.0,
+      status: "current",
+      history: [{ value: 2.0 }],
+    });
+    const snapshot = {
+      meta: {
+        registryVersion: FEED_REGISTRY_VERSION,
+        sources: {
+          sentimentPulse: source({ status: "stale", cacheState: "stale" }),
+        },
+      },
+      sentimentPulse: {
+        available: true,
+        order: ["inflation", "bankRate", "unemployment"],
+        series: {
+          inflation: series("inflation"),
+          bankRate: series("bankRate"),
+          unemployment: series("unemployment"),
+        },
+        __measureValidity: {
+          inflation: { validUntil: "2026-08-10T00:00:00.000Z" },
+          bankRate: { validUntil: "2026-08-01T10:30:00.000Z" },
+          unemployment: { validUntil: "2026-08-10T00:00:00.000Z" },
+        },
+      },
+    };
+    const filtered = filterCurrentSnapshot(snapshot, new Date("2026-08-01T11:00:00.000Z"));
+    expect(filtered?.sentimentPulse.series.inflation.value).toBe(3.1);
+    expect(filtered?.sentimentPulse.series.bankRate).toMatchObject({ value: null, status: "expired" });
+    expect(filtered?.sentimentPulse.series.unemployment.value).toBe(4.0);
   });
 
   it("uses explicit evidence expiry as the snapshot deadline after retrieval health is stale", () => {

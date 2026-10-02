@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart";
+import FinancialTimeSeriesChart, { addCadenceBreaks } from "@/app/components/FinancialTimeSeriesChart";
 
 afterEach(() => {
   cleanup();
@@ -34,6 +34,18 @@ function getLiveRegion() {
 }
 
 describe("FinancialTimeSeriesChart keyboard scrubber", () => {
+  it("inserts a null observation at a long gap so the line does not bridge missing periods", () => {
+    const withGap = addCadenceBreaks([
+      { observedAt: Date.UTC(2024, 0, 1), period: "January", value: 1 },
+      { observedAt: Date.UTC(2024, 1, 1), period: "February", value: 2 },
+      { observedAt: Date.UTC(2024, 7, 1), period: "August", value: 3 },
+      { observedAt: Date.UTC(2024, 8, 1), period: "September", value: 4 },
+    ]);
+    expect(withGap).toHaveLength(5);
+    expect(withGap[2]).toMatchObject({ period: "Gap in published observations" });
+    expect(withGap[2].value).toBeUndefined();
+  });
+
   it("is focusable and exposes keyboard instructions in its accessible name", () => {
     renderChart();
     const chart = screen.getByRole("group", { name: /Example chart/i });
@@ -101,5 +113,16 @@ describe("FinancialTimeSeriesChart keyboard scrubber", () => {
     expect(visibleReadout).not.toBeNull();
     expect(visibleReadout).toHaveTextContent(/January 2024/);
     expect(visibleReadout).toHaveTextContent(/Example measure: 10 units/);
+  });
+
+  it("provides every exact observation in an SSR-rendered table without chart JavaScript", () => {
+    renderChart();
+    fireEvent.click(screen.getByText("Show observation table (3)"));
+    const table = screen.getByRole("table", { name: /Example chart/i });
+    expect(table).toBeInTheDocument();
+    expect(table).toHaveTextContent("January 2024");
+    expect(table).toHaveTextContent("February 2024");
+    expect(table).toHaveTextContent("March 2024");
+    expect(table).toHaveTextContent("30 units");
   });
 });

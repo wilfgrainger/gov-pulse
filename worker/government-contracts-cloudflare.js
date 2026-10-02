@@ -7,6 +7,7 @@ import {
   REQUIRED_AWARD_COUNT,
   buildGovernmentContractsPayload,
   buildSummary,
+  ukNationFromCountryName,
   ukNationFromPostcode,
 } from "../contracts/government-contracts.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
@@ -19,6 +20,8 @@ const MAX_DAYS_PER_RUN = 3;
 const SLICES_PER_DAY = 4;
 const PAGE_LIMIT = 100;
 const MAX_REQUESTS_PER_RUN = MAX_DAYS_PER_RUN * SLICES_PER_DAY;
+const MAX_AWARDS_PER_SHARD = 2_500;
+const MAX_SHARD_BYTES = 4 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 20_000;
 const USER_AGENT = "public-data.org-cloudflare-contracts/1.0";
 
@@ -65,25 +68,24 @@ function supplierNames(award) {
 // OCDS 1.1 moves organization details (including address) out of embedded
 // objects into a top-level `parties` array, cross-referenced by `id` from
 // an OrganizationReference such as `award.suppliers[]`. This builds an
-// id -> postcode lookup from `release.parties` so a supplier's nation can
-// be derived from its own disclosed postal code, never from its name.
-function partyPostcodeById(release) {
+// id -> explicit country-name lookup from `release.parties`. Postcode areas
+// do not reliably follow national borders and cannot resolve England vs
+// Jersey/Guernsey; a country name is used only when OCDS supplies an exact
+// UK nation label.
+function partyCountryById(release) {
   const parties = Array.isArray(release?.parties) ? release.parties : [];
   const byId = new Map();
   for (const party of parties) {
     const id = text(party?.id);
-    const postcode = text(party?.address?.postalCode);
-    if (id) byId.set(id, postcode);
+    const countryName = text(party?.address?.countryName);
+    if (id) byId.set(id, countryName);
   }
   return byId;
 }
 
-// Resolves each award supplier (by OrganizationReference id, deduplicated
-// in the same order as supplierNames) to a UK nation using only its
-// disclosed postal code. A supplier with no id match, no address, or an
-// unrecognised postcode area is "Other/Unknown" -- never guessed from the
-// supplier's name.
-function supplierNationsFor(award, postcodeById) {
+// Resolves each award supplier from an exact nation value on its linked
+// party. Missing, broad-country, and non-UK labels stay Other/Unknown.
+function supplierNationsFor(award, countryById) {
   const seen = new Set();
   const nations = [];
   for (const supplier of Array.isArray(award?.suppliers) ? award.suppliers : []) {
@@ -91,8 +93,8 @@ function supplierNationsFor(award, postcodeById) {
     if (!name || seen.has(name)) continue;
     seen.add(name);
     const id = text(supplier?.id);
-    const postcode = id ? postcodeById.get(id) : "";
-    nations.push(ukNationFromPostcode(postcode));
+    const countryName = id ? countryById.get(id) : "";
+    nations.push(ukNationFromCountryName(countryName) ?? ukNationFromPostcode(""));
   }
   return nations;
 }
@@ -111,6 +113,32 @@ function extractComparableAwards(release, counters) {
   const result = [];
 
   for (const award of awards) {
+    if (text(award?.status).toLowerCase() === "cancelled") {
+      const ocid = text(release?.ocid);
+      const releaseId = text(release?.id);
+      const awardId = text(award?.id);
+      const publishedAt = text(release?.date);
+      if (
+        /^ocds-h6vhtk-[0-9a-f]+$/i.test(ocid) &&
+        /^\d{6}-\d{4}$/.test(releaseId) &&
+        awardId &&
+        Number.isFinite(Date.parse(publishedAt))
+      ) {
+        counters.cancelledAwards += 1;
+        result.push({
+          key: `${ocid}:${awardId}`,
+          ocid,
+          releaseId,
+          awardId,
+          publishedAt: new Date(publishedAt).toISOString(),
+          amount: null,
+          cancelled: true,
+        });
+      } else {
+        counters.excludedMalformed += 1;
+      }
+      continue;
+    }
     const amount = finiteAmount(award?.value?.amount);
     const currency = text(award?.value?.currency).toUpperCase();
     const buyer = text(release?.buyer?.name);
@@ -159,7 +187,7 @@ function extractComparableAwards(release, counters) {
       title,
       buyer,
       suppliers,
-      supplierNations: supplierNationsFor(award, partyPostcodeById(release)),
+      supplierNations: supplierNationsFor(award, partyCountryById(release)),
       awardDate: new Date(awardDate).toISOString(),
       publishedAt: new Date(publishedAt).toISOString(),
       amount,
@@ -174,6 +202,12 @@ function extractComparableAwards(release, counters) {
   }
 
   return result;
+}
+
+function isLaterRevision(candidate, existing) {
+  const dateDifference = Date.parse(candidate.publishedAt) - Date.parse(existing.publishedAt);
+  if (dateDifference !== 0) return dateDifference > 0;
+  return candidate.releaseId.localeCompare(existing.releaseId, "en-GB") > 0;
 }
 
 function initialUrl(slice) {
@@ -227,13 +261,14 @@ function rankDailyAwards(releases, day, collectedAt = new Date()) {
     excludedMissingBuyer: 0,
     excludedMissingSupplier: 0,
     excludedMalformed: 0,
+    cancelledAwards: 0,
     duplicatesRemoved: 0,
   };
   const byKey = new Map();
   for (const release of releases) {
     for (const award of extractComparableAwards(release, counters)) {
       const existing = byKey.get(award.key);
-      if (!existing || Date.parse(award.publishedAt) > Date.parse(existing.publishedAt)) {
+      if (!existing || isLaterRevision(award, existing)) {
         if (existing) counters.duplicatesRemoved += 1;
         byKey.set(award.key, award);
       } else {
@@ -247,10 +282,12 @@ function rankDailyAwards(releases, day, collectedAt = new Date()) {
         right.amount - left.amount ||
         Date.parse(right.awardDate) - Date.parse(left.awardDate) ||
         left.key.localeCompare(right.key, "en-GB")
-    )
-    .slice(0, REQUIRED_AWARD_COUNT);
-  counters.validComparableAwards = byKey.size;
-  return {
+    );
+  if (awards.length > MAX_AWARDS_PER_SHARD) {
+    throw new Error(`Find a Tender day exceeded the ${MAX_AWARDS_PER_SHARD}-award shard limit`);
+  }
+  counters.validComparableAwards = [...byKey.values()].filter((award) => !award.cancelled).length;
+  const shard = {
     schemaVersion: 1,
     day,
     complete: true,
@@ -258,6 +295,10 @@ function rankDailyAwards(releases, day, collectedAt = new Date()) {
     awards,
     dataQuality: counters,
   };
+  if (new TextEncoder().encode(JSON.stringify(shard)).byteLength > MAX_SHARD_BYTES) {
+    throw new Error(`Find a Tender day exceeded the ${MAX_SHARD_BYTES}-byte shard limit`);
+  }
+  return shard;
 }
 
 async function readJson(env, key) {
@@ -291,6 +332,7 @@ function combineQuality(shards, duplicatesRemoved) {
     "excludedMissingBuyer",
     "excludedMissingSupplier",
     "excludedMalformed",
+    "cancelledAwards",
   ];
   const result = Object.fromEntries(fields.map((field) => [field, 0]));
   for (const shard of shards) {
@@ -315,7 +357,7 @@ function buildContractsFromShards(shards, now = new Date()) {
   for (const shard of shards) {
     for (const award of shard.awards ?? []) {
       const existing = byKey.get(award.key);
-      if (!existing || Date.parse(award.publishedAt) > Date.parse(existing.publishedAt)) {
+      if (!existing || isLaterRevision(award, existing)) {
         if (existing) duplicatesRemoved += 1;
         byKey.set(award.key, award);
       } else {
@@ -323,7 +365,7 @@ function buildContractsFromShards(shards, now = new Date()) {
       }
     }
   }
-  const comparable = [...byKey.values()].sort(
+  const comparable = [...byKey.values()].filter((award) => !award.cancelled).sort(
     (left, right) =>
       right.amount - left.amount ||
       Date.parse(right.awardDate) - Date.parse(left.awardDate) ||

@@ -32,7 +32,8 @@ describe("modular official-publication boundary", () => {
     const collector = source(collectorPath);
     expect(justice).toContain("January to March 2026");
     expect(justice).toContain("52 days");
-    expect(collector).toContain("MOJ_COURT_PUBLICATION");
+    expect(collector).not.toContain("MOJ_COURT_PUBLICATION");
+    expect(collector).toContain("not presented as current evidence");
     expect(collector).toContain("modulesValidatedIndependently: true");
   });
 

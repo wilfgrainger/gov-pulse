@@ -1,6 +1,5 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart";
 import MetricsStatus from "@/app/components/MetricsStatus";
@@ -96,40 +95,6 @@ type MissingTrust = {
   code: string;
 };
 
-const CLOCK_INTERVAL_MS = 60_000;
-const clockListeners = new Set<() => void>();
-let clientNowMs = Date.now();
-let clockTimer: ReturnType<typeof setInterval> | null = null;
-
-function publishClockTick() {
-  clientNowMs = Date.now();
-  for (const listener of clockListeners) listener();
-}
-
-function subscribeToClock(listener: () => void) {
-  clockListeners.add(listener);
-  if (clockTimer === null) {
-    clientNowMs = Date.now();
-    clockTimer = setInterval(publishClockTick, CLOCK_INTERVAL_MS);
-  }
-
-  return () => {
-    clockListeners.delete(listener);
-    if (clockListeners.size === 0 && clockTimer !== null) {
-      clearInterval(clockTimer);
-      clockTimer = null;
-    }
-  };
-}
-
-function getClientClockSnapshot() {
-  return clientNowMs;
-}
-
-function getServerClockSnapshot() {
-  return 0;
-}
-
 function parseDateOnlyUtc(value: unknown) {
   const match =
     typeof value === "string" ? value.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
@@ -188,12 +153,11 @@ function validMissingTrust(value: unknown): value is MissingTrust {
   return nonEmptyText(trust.name) && nonEmptyText(trust.code);
 }
 
-function validPayload(value: typeof FALLBACK, nowMs: number) {
+function validPayload(value: typeof FALLBACK) {
   const headline = value?.headline;
   return (
     value?.available === true &&
     Number.isFinite(Date.parse(value.expiresAt)) &&
-    Date.parse(value.expiresAt) >= nowMs &&
     nonEmptyText(headline?.period) &&
     positiveInteger(headline?.observedAt) &&
     !Number.isNaN(parseDateOnlyUtc(headline?.publicationDate).getTime()) &&
@@ -263,12 +227,7 @@ function formatMissingTrusts(trusts: MissingTrust[]) {
 export default function NHSStats() {
   const metrics = useMetrics("nhsStats", FALLBACK);
   const data = metrics.data;
-  const nowMs = useSyncExternalStore(
-    subscribeToClock,
-    getClientClockSnapshot,
-    getServerClockSnapshot
-  );
-  const valid = nowMs > 0 && validPayload(data, nowMs);
+  const valid = metrics.isLive && validPayload(data);
   const specialties = valid ? (data.specialties as Specialty[]) : [];
   const missingTrusts = valid ? (data.missingTrusts as MissingTrust[]) : [];
   const missingTrustLabel =
@@ -439,6 +398,7 @@ export default function NHSStats() {
           <FinancialTimeSeriesChart
             title="RTT waiting list: ten-year direction"
             description="Incomplete consultant-led pathways and, where published, estimated unique patients. Gaps mean NHS England did not publish that measure for the period."
+            citation={`NHS England · ${data.source.timeseriesUrl} · published ${data.headline.publicationDate} · observation period ${data.headline.period} · unique patient counts are estimates; unpublished measures remain gaps.`}
             data={data.history}
             series={[
               { key: "waitingPathwaysEstimate", label: "Waiting pathways", color: "#14243b" },
@@ -451,6 +411,7 @@ export default function NHSStats() {
           <FinancialTimeSeriesChart
             title="18-week performance"
             description="Share of incomplete pathways waiting no more than 18 weeks, compared with the 92% NHS Constitution standard. Pandemic-era service and reporting disruption is visible in 2020."
+            citation={`NHS England · ${data.source.timeseriesUrl} · published ${data.headline.publicationDate} · observation period ${data.headline.period} · 92% NHS Constitution standard; pandemic-era service and reporting disruption affects comparability.`}
             data={data.history}
             series={[{ key: "within18WeeksPercent", label: "Within 18 weeks", color: "#1f5c8a" }]}
             valueFormatter={(value) => `${value.toFixed(1)}%`}
@@ -461,6 +422,7 @@ export default function NHSStats() {
           <FinancialTimeSeriesChart
             title="Typical and upper-end waits"
             description="Median and 92nd-percentile waits in weeks. These show the centre and the long end of the distribution; pandemic-era disruption is visible in 2020."
+            citation={`NHS England · ${data.source.timeseriesUrl} · published ${data.headline.publicationDate} · observation period ${data.headline.period} · median and 92nd percentile are distribution summaries.`}
             data={data.history}
             series={[
               { key: "medianWaitWeeks", label: "Median wait", color: "#14243b" },
@@ -472,6 +434,7 @@ export default function NHSStats() {
           <FinancialTimeSeriesChart
             title="Very long waits"
             description="Published counts above 52, 65, 78 and 104 weeks. A gap is retained where a threshold was not yet reported."
+            citation={`NHS England · ${data.source.timeseriesUrl} · published ${data.headline.publicationDate} · observation period ${data.headline.period} · gaps mean a threshold was not published.`}
             data={data.history}
             series={[
               { key: "over52Weeks", label: "Over 52 weeks", color: "#14243b" },
@@ -486,6 +449,7 @@ export default function NHSStats() {
           <FinancialTimeSeriesChart
             title="RTT pathway activity"
             description="New pathways and completed admitted or non-admitted pathways in each month, including NHS England estimates where supplied."
+            citation={`NHS England · ${data.source.timeseriesUrl} · published ${data.headline.publicationDate} · observation period ${data.headline.period} · includes estimates where NHS England supplied them.`}
             data={data.history}
             series={[
               { key: "newPathways", label: "New pathways", color: "#14243b" },

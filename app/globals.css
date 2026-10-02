@@ -1,21 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4f6f8;
+  --background: #fff8ef;
   --surface: #ffffff;
-  --surface-warm: #f9fbfc;
-  --foreground: #14243b;
-  --muted: #565f6b;
-  --line: #d3dae1;
-  --line-strong: #aab4bf;
-  --accent: #1f5c8a;
-  --accent-soft: #dceaf4;
-  --accent-on-dark: #8fc2e6;
-  --accent-vivid: #0a6fb8;
-  --teal: #0f6b63;
-  --gold: #8a5a12;
-  --blue: #5a4b9c;
-  --font-editorial: Georgia, "Times New Roman", serif;
+  --surface-warm: #fff2df;
+  --foreground: #192139;
+  --muted: #51596a;
+  --line: #ddd2c3;
+  --line-strong: #a99b88;
+  --accent: #a72d24;
+  --accent-soft: #ffe0d4;
+  --accent-on-dark: #ffd18b;
+  --accent-vivid: #ef5124;
+  --teal: #08766c;
+  --gold: #a45700;
+  --blue: #4d43a5;
+  --font-editorial: Arial, Helvetica, sans-serif;
   --font-body: "Inter", "Helvetica Neue", Arial, sans-serif;
 
   /* Evidence-class accent system (PR #118 categories). Each class gets a
@@ -54,7 +54,7 @@ html {
 
 body {
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.28), transparent 24rem),
+    linear-gradient(180deg, rgb(255 255 255 / 0.78), transparent 24rem),
     var(--background);
   color: var(--foreground);
   font-family: var(--font-body);
@@ -173,16 +173,17 @@ table.sr-only {
 
 .page-title {
   font-family: var(--font-editorial);
-  font-size: clamp(3rem, 8vw, 6.2rem);
-  font-weight: 800;
-  letter-spacing: -0.05em;
-  line-height: 0.9;
+  font-size: clamp(2.75rem, 7.5vw, 6.4rem);
+  font-weight: 900;
+  letter-spacing: -0.07em;
+  line-height: 0.92;
+  text-wrap: balance;
 }
 
 .section-title {
   font-family: var(--font-editorial);
   font-size: clamp(2.4rem, 5vw, 4.5rem);
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: -0.045em;
   line-height: 0.96;
 }
@@ -260,9 +261,9 @@ table.sr-only {
 
 .v3-hero {
   background:
-    radial-gradient(circle at 88% 12%, rgb(31 92 138 / 0.13), transparent 22rem),
-    radial-gradient(circle at 4% 88%, rgb(15 107 99 / 0.08), transparent 20rem),
-    var(--surface-warm);
+    radial-gradient(circle at 91% 6%, rgb(239 81 36 / 0.2), transparent 21rem),
+    radial-gradient(circle at 4% 86%, rgb(8 118 108 / 0.13), transparent 20rem),
+    #fff2df;
 }
 
 .v3-hero-grid {
@@ -550,8 +551,79 @@ table.sr-only {
 }
 
 .v3-footer {
-  background: #0e1c2e;
+  background: #192139;
   color: white;
+}
+
+.publication-masthead {
+  border-top: 5px solid var(--accent-vivid);
+  box-shadow: 0 3px 0 #192139;
+}
+
+.publication-masthead [data-publication-panel-toggle]:last-child {
+  background: var(--accent-vivid);
+  border-color: var(--accent-vivid);
+  color: #192139;
+}
+
+.home-hero {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 4px solid var(--foreground);
+  background:
+    linear-gradient(112deg, #fff2df 0 62%, #ffd18b 62% 100%);
+}
+
+.home-hero h1 {
+  max-width: 11ch;
+  font-weight: 900;
+  letter-spacing: -0.065em;
+  line-height: 0.88;
+}
+
+.home-hero h1 span {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: var(--accent-vivid);
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.05em;
+}
+
+.home-hero .v3-primary-action {
+  border-color: var(--accent-vivid);
+  background: var(--accent-vivid);
+  color: #192139;
+}
+
+.home-hero .v3-secondary-action {
+  border-width: 2px;
+}
+
+.v3-page-header {
+  background:
+    linear-gradient(105deg, #fff2df 0 72%, #d7eee8 72% 100%);
+}
+
+.v3-page-header::before {
+  width: 0.6rem;
+  background: var(--accent-vivid);
+}
+
+.signal-card__rail {
+  height: 0.5rem;
+  background: var(--accent-vivid);
+}
+
+.dashboard-card,
+.evidence-article {
+  background-color: #fffdf9;
+}
+
+.chart-shell,
+figure:has(> svg),
+figure:has(.recharts-responsive-container) {
+  --chart-line-primary: #08766c;
+  --chart-line-secondary: #4d43a5;
 }
 
 .v3-footer a {

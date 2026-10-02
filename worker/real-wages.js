@@ -49,7 +49,11 @@ function decodeHtml(value) {
 }
 
 function numeric(value, label) {
-  const parsed = Number.parseFloat(String(value).replace(/,/g, ""));
+  const normalized = String(value).trim().replace(/,/g, "").replace(/\u2212/g, "-");
+  if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized)) {
+    throw new Error(`Unable to parse ${label}`);
+  }
+  const parsed = Number(normalized);
   if (!Number.isFinite(parsed)) {
     throw new Error(`Unable to parse ${label}`);
   }
@@ -236,10 +240,16 @@ function parseRealWagesHistoryCsv(text) {
     const rawPeriod = columns[index.Period];
     if (!rawPeriod || !/^[A-Za-z]+\s+to\s+[A-Za-z]+\s+\d{4}$/.test(rawPeriod)) continue;
     const period = normalizeRollingPeriod(rawPeriod);
-    const totalPayReal = Number.parseFloat(columns[index["Total pay (real)"]]);
-    const regularPayReal = Number.parseFloat(columns[index["Regular pay (real)"]]);
-    const cpih = Number.parseFloat(columns[index.CPIH]);
-    if (![totalPayReal, regularPayReal, cpih].every(Number.isFinite)) continue;
+    let totalPayReal;
+    let regularPayReal;
+    let cpih;
+    try {
+      totalPayReal = numeric(columns[index["Total pay (real)"]], "total pay real growth");
+      regularPayReal = numeric(columns[index["Regular pay (real)"]], "regular pay real growth");
+      cpih = numeric(columns[index.CPIH], "CPIH annual rate");
+    } catch {
+      continue;
+    }
     if (seen.has(period)) {
       throw new Error(`ONS real wages history contains duplicate period '${period}'`);
     }
@@ -273,7 +283,7 @@ function parseRealWagesBulletin(html, edition) {
   );
   const realGrowthMatch = matchRequired(
     text,
-    /annual growth in real terms[\s\S]{0,160}?\(CPIH\),?\s*was\s+([\d.]+)%\s+for regular pay and\s+([\d.]+)%\s+for total pay/i,
+    /annual growth in real terms[\s\S]{0,160}?\(CPIH\),?\s*was\s+([+\-\u2212]?(?:\d+(?:\.\d*)?|\.\d+))%\s+for regular pay and\s+([+\-\u2212]?(?:\d+(?:\.\d*)?|\.\d+))%\s+for total pay/i,
     "CPIH real-terms annual growth"
   );
 

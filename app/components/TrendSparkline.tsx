@@ -37,7 +37,7 @@ export default function TrendSparkline({ label, points, large = false }: Props) 
       <svg
         viewBox="0 0 360 96"
         role="img"
-        aria-label={`${label} from ${date(first)} to ${date(last)}. ${observations.length} published observations. The vertical scale is fitted to these values and does not start at zero. Open the topic for exact values.`}
+        aria-label={`${label} from ${date(first)} to ${date(last)}. ${observations.length} published observations. The fitted vertical scale spans ${min.toPrecision(4)} to ${max.toPrecision(4)} and does not start at zero. Open the topic for exact values.`}
         className={`w-full ${large ? "h-36" : "h-24"}`}
         preserveAspectRatio="none"
       >

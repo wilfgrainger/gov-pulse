@@ -180,6 +180,17 @@ function normalizeOfficialModule(value, expectedIds, label, sourceUrl = null) {
   return result;
 }
 
+function normalizeUnavailableModule(value, label) {
+  if (!value || typeof value !== "object" || Array.isArray(value) || value.status !== "unavailable") {
+    throw new Error(`${label} must be explicitly available or unavailable`);
+  }
+  return {
+    status: "unavailable",
+    title: requiredText(value.title, `${label} title`, 160),
+    reason: requiredText(value.reason, `${label} reason`, 600),
+  };
+}
+
 function normalizeCrimeStatisticsPayload(data, now = new Date()) {
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     throw new Error("Missing crime publication payload");
@@ -233,18 +244,17 @@ function normalizeCrimeStatisticsPayload(data, now = new Date()) {
     throw new Error("Crime evidence policy must prohibit combined totals and regional rankings");
   }
 
-  const justice = normalizeOfficialModule(
-    data.justice,
-    REQUIRED_JUSTICE_IDS,
-    "Justice module",
-    MOJ_PUBLICATION_URL
-  );
-  const justiceReleaseMs = Date.parse(`${justice.releaseDate}T00:00:00Z`);
-  if (
-    justiceReleaseMs > nowMs + FUTURE_TOLERANCE_MS ||
-    nowMs - justiceReleaseMs > JUSTICE_PUBLICATION_MAX_AGE_DAYS * DAY_MS
-  ) {
-    throw new Error("Justice publication is outside its currentness window");
+  const justice = data.justice?.status === "available"
+    ? normalizeOfficialModule(data.justice, REQUIRED_JUSTICE_IDS, "Justice module", MOJ_PUBLICATION_URL)
+    : normalizeUnavailableModule(data.justice, "Justice module");
+  if (justice.status === "available") {
+    const justiceReleaseMs = Date.parse(`${justice.releaseDate}T00:00:00Z`);
+    if (
+      justiceReleaseMs > nowMs + FUTURE_TOLERANCE_MS ||
+      nowMs - justiceReleaseMs > JUSTICE_PUBLICATION_MAX_AGE_DAYS * DAY_MS
+    ) {
+      throw new Error("Justice publication is outside its currentness window");
+    }
   }
 
   return {

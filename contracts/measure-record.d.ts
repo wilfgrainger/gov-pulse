@@ -1,0 +1,42 @@
+export type EvidenceClass = "official-statistics" | "administrative-data" | "polling" | "market-signal";
+export type Availability = "current" | "historical" | "unavailable";
+export type ValueStatus = "observed" | "estimate" | "projection";
+export type MeasurePoint = {
+  period: string;
+  observedAt: string;
+  value: number | null;
+  valueStatus: ValueStatus;
+  revisionId: string;
+};
+export type MeasureRecord = {
+  id: string;
+  label: string;
+  evidenceClass: EvidenceClass;
+  comparisonKey: string;
+  cadence: string;
+  unit: string;
+  basis: string;
+  geography: { code: string; label: string };
+  sourceId: string;
+  sourceUrl: string;
+  sourceEditionId: string;
+  observationPeriod: { start: string; end: string; label: string };
+  publishedAt: string;
+  fetchedAt: string;
+  validUntil: string | null;
+  availability: Availability;
+  value: number | null;
+  revisionId: string;
+  points: MeasurePoint[];
+  caveats: string[];
+};
+export type MeasureCatalog = {
+  schemaVersion: 2;
+  editionId: string;
+  generatedAt: string;
+  validUntil: string | null;
+  measures: Record<string, MeasureRecord>;
+};
+export function validateMeasureRecord(input: unknown): MeasureRecord;
+export function compareEligibility(a: MeasureRecord, b: MeasureRecord): "overlay" | "panels";
+export function selectMeasure(catalog: MeasureCatalog, id: string, now?: Date): MeasureRecord | null;

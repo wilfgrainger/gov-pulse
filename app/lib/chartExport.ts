@@ -10,6 +10,8 @@
  * the exported image always matches what the reader is looking at.
  */
 
+import type { ExportPackage } from "./chartModel";
+
 const XMLNS = "http://www.w3.org/2000/svg";
 const SVG_MIME = "image/svg+xml;charset=utf-8";
 
@@ -32,7 +34,38 @@ type ExportMetadata = {
   title?: string;
   /** Short source-citation line, rendered as a watermark at the image foot. */
   citation?: string;
+  /** Machine-readable source, observation and caveat metadata embedded in SVG. */
+  exportPackage?: ExportPackage;
+  /** Versioned, machine-readable context for chart owners without a catalog package. */
+  chartMetadata?: ChartMetadata;
 };
+
+export type ChartMetadata = {
+  schemaVersion: 1;
+  title: string;
+  sourceCitation: string;
+  observationWindow: {
+    start: { period: string; observedAt: string | null } | null;
+    end: { period: string; observedAt: string | null } | null;
+  };
+  series: { key: string; label: string }[];
+  caveats: string[];
+};
+
+function wrapCitation(citation: string, width: number): string[] {
+  const maximumCharacters = Math.max(28, Math.floor((width - 16) / 6.2));
+  const lines: string[] = [];
+  let current = "";
+  for (const word of citation.split(/\s+/)) {
+    const next = current ? `${current} ${word}` : word;
+    if (current && next.length > maximumCharacters) {
+      lines.push(current);
+      current = word;
+    } else current = next;
+  }
+  if (current) lines.push(current);
+  return lines.length ? lines : [citation];
+}
 
 /**
  * Clones the given <svg>, inlines its own computed size as width/height
@@ -42,7 +75,6 @@ type ExportMetadata = {
  */
 function prepareSvgClone(svg: SVGSVGElement, metadata: ExportMetadata): SVGSVGElement {
   const clone = svg.cloneNode(true) as SVGSVGElement;
-  clone.setAttribute("xmlns", XMLNS);
 
   const rect = svg.getBoundingClientRect();
   const viewBox = svg.viewBox?.baseVal;
@@ -74,8 +106,24 @@ function prepareSvgClone(svg: SVGSVGElement, metadata: ExportMetadata): SVGSVGEl
     }
   }
 
+  if (metadata.exportPackage) {
+    const embedded = clone.ownerDocument.createElementNS(XMLNS, "metadata");
+    embedded.setAttribute("id", "public-data-export-package");
+    embedded.textContent = JSON.stringify(metadata.exportPackage);
+    clone.appendChild(embedded);
+  }
+
+  if (metadata.chartMetadata) {
+    const embedded = clone.ownerDocument.createElementNS(XMLNS, "metadata");
+    embedded.setAttribute("id", "public-data-chart-metadata");
+    embedded.setAttribute("type", "application/json");
+    embedded.textContent = JSON.stringify(metadata.chartMetadata);
+    clone.appendChild(embedded);
+  }
+
   if (metadata.citation) {
-    const footerHeight = 18;
+    const lines = wrapCitation(metadata.citation, width);
+    const footerHeight = Math.max(18, lines.length * 14 + 4);
     clone.setAttribute("height", String(height + footerHeight));
     if (clone.getAttribute("viewBox")) {
       const [x, y, w, h] = clone.getAttribute("viewBox")!.split(/\s+/).map(Number);
@@ -84,11 +132,17 @@ function prepareSvgClone(svg: SVGSVGElement, metadata: ExportMetadata): SVGSVGEl
     background.setAttribute("height", "100%");
     const text = clone.ownerDocument.createElementNS(XMLNS, "text");
     text.setAttribute("x", "8");
-    text.setAttribute("y", String(height + footerHeight - 5));
+    text.setAttribute("y", String(height + 9));
     text.setAttribute("font-size", "10");
     text.setAttribute("font-family", "ui-monospace, monospace");
     text.setAttribute("fill", "#6b7280");
-    text.textContent = metadata.citation;
+    lines.forEach((line, index) => {
+      const span = clone.ownerDocument.createElementNS(XMLNS, "tspan");
+      span.setAttribute("x", "8");
+      span.setAttribute("dy", index === 0 ? "0" : "14");
+      span.textContent = line;
+      text.appendChild(span);
+    });
     clone.appendChild(text);
   }
 

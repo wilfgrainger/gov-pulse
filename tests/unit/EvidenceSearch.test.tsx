@@ -11,7 +11,7 @@ describe("EvidenceSearch", () => {
     const input = screen.getByRole("searchbox", { name: /search UK public evidence/i });
     fireEvent.change(input, { target: { value: "NHS waiting list" } });
 
-    const result = screen.getByRole("link", { name: /NHS waiting times/i });
+    const result = screen.getByRole("link", { name: /NHS waiting list/i });
     expect(result).toHaveAttribute("href", "/section/nhs");
     expect(screen.getByText("1 result")).toBeInTheDocument();
     expect(screen.getByText(/NHS England referral-to-treatment statistics/i)).toBeInTheDocument();
@@ -50,7 +50,10 @@ describe("EvidenceSearch", () => {
     fireEvent.change(screen.getByRole("searchbox", { name: /search UK public evidence/i }), {
       target: { value: "GDP" },
     });
-    fireEvent.click(screen.getByRole("link", { name: /GDP.*Open evidence/i }));
+    const result = screen.getAllByRole("link", { name: /GDP.*Open evidence/i })
+      .find((link) => link.getAttribute("href") === "/section/gdp");
+    expect(result).toBeTruthy();
+    fireEvent.click(result!);
 
     expect(onNavigate).toHaveBeenCalledOnce();
   });
