@@ -1,6 +1,6 @@
 # Public-data.org reinvention: design brief
 
-> **Historical design brief.** Round two is the current product and execution reference: [plan](../plans/2026-10-02-publication-reinvention-round-2.md). Preserve useful evidence requirements; earlier feature caps and deployment wording do not limit current execution.
+> **Historical design brief.** Round two is the current product and execution reference: [plan](../plans/2026-10-02-publication-reinvention-round-2.md). Its Cloudflare-Free-only constraint was withdrawn on 2 October 2026. Preserve useful evidence requirements; earlier feature caps and deployment wording do not limit current execution.
 
 Status: approved for local implementation by the user on 2 October 2026.
 

@@ -4,9 +4,9 @@
 
 **Goal:** Turn all ten first-round capabilities into a distinctive, useful, populated public-evidence publication, while removing process and delivery work that does not protect readers or improve the product.
 
-**Execution:** Work through the checkboxes in dependency order. Use the existing stack and test tools. No mandatory agent teams, persona reviews, separate specification per feature, repeated approval of already authorised work, artificial file/line limits, or commit after every checkbox. Group changes into independently reviewable, working increments. Change the plan when evidence invalidates an assumption; record the substantive decision beside its task.
+**Execution:** Complete the user's whole requested outcome in priority order. Cave Pony applies to response-token economy only. No file, line, route, feature, architecture, or validation ceiling may shrink the product. Do not run a full PR gate or request another approval for every checkbox; use focused checks during work and the required quality gate at meaningful integration points. Keep each step reviewable and update the plan when live evidence changes an assumption.
 
-**Scope:** The user's ten priorities below govern product order. Foundational repairs support those priorities; they do not require every upstream source to recover before design work proceeds. This plan replaces the previous execution sequence. Work is being delivered in reviewable increments; the checkboxes record demonstrated completion, not intention. It does not override source truth, security, accessibility, hosting requirements, or higher-priority instructions.
+**Scope:** The user's ten priorities below govern product order. Foundational repairs support those priorities; they do not require every upstream source to recover before design work proceeds. The prior Cloudflare-Free-only requirement is removed: keep Cloudflare as the current implementation while comparing any platform needed to deliver the full product. Do not incur paid spend without the user's approval of the cost. Source truth, privacy, security, accessibility, and compatibility remain product protections, not scope ceilings. Checkboxes record demonstrated completion, not intention.
 
 ## 1. The product we are building
 
@@ -34,7 +34,7 @@ These are diagnostic observations from the planning inspection, not a permanent 
 | Finding | Evidence in the inspected implementation or public journey | Consequence and owner |
 | --- | --- | --- |
 | The shared ticker presents constants as live evidence. | `BritishDatelineTicker.tsx` contains fixed GDP, inflation, rates, NHS and contract numbers beneath “LIVE UK EVIDENCE”; contract awards are described as spending. | Immediate public-claim repair in Task 3. Remove unsupported numbers until validated replacements exist. |
-| The catalog is much less populated than the section snapshot. | Eight definitions exist; a live snapshot exposed only `netMigration` and `regularPayRealGrowth` in its catalog while more national sections were present. | Task 3 fixes source metadata/field mapping, not just the library UI. |
+| The catalog was much less populated than the section snapshot. | An earlier live snapshot exposed only two measures; a later refresh added rent measures. | Task 3 re-fetches the current publication, reconciles every eligible record against source fields and explains each omission. Never treat an earlier count as current proof. |
 | Catalog omission is silent. | `worker/measure-catalog.js` returns null for missing edition identity, date, URL, history or reconciliation. Several collector shapes do not satisfy those assumptions. | Preserve validation; normalise the actual source contracts and report why an entry is unavailable. |
 | A valid listed archive edition cannot be opened publicly. | `/data/editions.json` returned an ID; `/data/edition.json?edition=<that ID>` returned HTTP 404 with HTML. | Task 4 diagnoses deployed routing and storage separately; a working index is insufficient proof. |
 | The comparison overlay has a single-date positioning bug. | Its x-scale multiplies the single-date fallback `340` by `680`; a one-point SVG path also lacks a visible point marker. | Task 5 proves one-point charts and replaces duplicated faulty scale logic. |
@@ -44,7 +44,7 @@ These are diagnostic observations from the planning inspection, not a permanent 
 | Markdown prose still gates code. | `check-source-repair-backlog.mjs` requires an issue, PR, exact SHA, Actions URL and date for a “RESOLVED” section. | Task 0 removes the prose gate and keeps behavioral evidence tests. |
 | Development can regenerate agent instructions. | The installed Next version supports `agentRules`; this project does not disable generated rules. | Task 0 sets the supported opt-out and proves a dev start does not rewrite `AGENTS.md`. |
 | Moving NHS retrieval to GitHub is not a proven fix. | A trusted-ingest run received an upstream access-challenge page instead of the annual RTT page. | Task 2 verifies permitted official retrieval and rejects challenge HTML. Do not treat this as an ordinary missing-anchor parser bug. |
-| Existing features retain substantive gaps. | Calendar covers few source families; rent is a placeholder; public-money identity is name-based; polling breadth/history need proof. | Dedicated feature tasks below, with real data acceptance. |
+| Existing features retain substantive gaps. | Calendar covers few source families; current catalog now has private-rent level and change measures but the full lens still needs verification; public-money identity is name-based; polling breadth/history need proof. | Dedicated feature tasks below, with real data acceptance. |
 
 A ready national health response does not prove every optional source or product tool is complete. NHS is currently optional in the live implementation; assess its actual importer path rather than inferring failure from a missing national queue terminal. Do not silently redefine required sources to make health green.
 
@@ -56,13 +56,14 @@ A ready national health response does not prove every optional source or product
 - Separate statistics, administrative records, polling and market signals. Never invent a combined crime total, national score, polling forecast or accusation about spending.
 - Semantic HTML, keyboard operation, visible focus, legible contrast, text alternatives and reduced motion. Colourful design is compatible with these requirements.
 - Bounded untrusted parsing, allow-listed publishers, timeouts, secret protection, generic public errors, private operational routes, safe publication and recovery.
-- Cloudflare Free hosting/runtime, measured request/CPU/KV/Queue/storage budgets and explicit permission for any paid replacement. Verify current provider/account limits during implementation.
+- No provider or free-tier ceiling. Measure the current workload and compare suitable platforms, reliability and full operating cost. Obtain the user's approval before committing paid spend.
 - Deterministic dependency locks, meaningful lint/tests/builds, source ownership and public-contract checks. Keep data failures distinct from broken code releases.
 - Preserve user files and require task authority for external actions. A plan is not a deployment.
 
 ### Change because they encode old implementation or process
 
 - “Calm/restrained” must not prohibit bold editorial design. Preserve chart honesty and accessibility, not one historical palette or layout.
+- Platform and hosting documents describe the current deployment; they do not prohibit another architecture that better serves the product. Keep one canonical production route and preserve the public/private trust boundary.
 - Fixed route counts, blanket bans on application APIs, unchanged frameworks and no-migration preferences become descriptions of the current system. Change architecture when a specific task needs it; retain explicit public/private ownership.
 - Replace multiple vision/backlog/execution authorities with a short root guide, current architecture/contracts, and this implementation sequence. Historical research remains evidence, not an instruction override.
 - Remove prose-format checks, mandatory persona/subagent sequences and repeated approval rituals from active project guidance. Review actual behavior and risk.
@@ -71,39 +72,40 @@ A ready national health response does not prove every optional source or product
 
 ### Already removed: do not spend round two removing them again
 
-The former `north_star.md`, `roadmap.md`, `tasks.md` and change-complexity gates are absent from the inspected tracked tree. Their old limits must not be reintroduced under new names. No nested repository `AGENTS.md` was found; the ancestor Codex guide inspected was empty. Host-installed skills remain outside this repository's ownership; changing repo Markdown cannot override system/developer policies or uninstall those skills.
+The former `north_star.md`, `roadmap.md`, `tasks.md` and change-complexity gates are absent from the inspected tracked tree. Their old limits must not be reintroduced under new names. The repository Cave Pony skill and `AGENTS.md` now explicitly preserve full scope; Cave Pony controls response length only. No nested repository `AGENTS.md` was found.
 
 ### GitHub settings are a separate audit surface
 
-Inspection found no environment approval rules on `cloudflare-internal-worker`, so there is no demonstrated environment approval delay to remove. The active `main-protect` ruleset had empty ref inclusion/exclusion lists; the effective branch-rules API returned no rules for main. Do not infer effective enforcement from the ruleset name. Task 1 will confirm targeting and required checks before changing settings. Retain protection against deletion/force-push and require the useful aggregate quality result on main when applicable; do not add mandatory human or bot reviews merely for process. Existing Copilot review configuration is advisory unless it actually blocks merging.
+Task 1 verifies the live `main` ruleset, required checks, workflow permissions and environment approvals through GitHub before relying on them. Retain protections that prevent accidental destructive updates and require meaningful release validation; do not add mandatory human review rituals without a specific need.
 
 ## 4. Delivery sequence and dependencies
 
 | Increment | Tasks | Result that can be reviewed and released |
 | --- | --- | --- |
-| A. Remove friction and misleading claims | 0–3 | Current steering, lean release path, source diagnostics and honest, populated catalog/ticker. |
-| B. Make the publication convincing | 4–6 | Working archive foundation, dependable charts and the full visual system across representative pages. |
-| C. Deliver priorities 2–5 | 7–10 | Atlas, comparison studio, briefing/stories/RSS, calendar/watchlists. |
-| D. Deliver priorities 6–8 | 11–13 | Rent and cost-of-living evidence, multi-pollster lab, meaningful public-money dossiers. |
-| E. Deliver priorities 9–10 and finish | 14–16 | Country exploration, public provenance/revisions and verified production journeys. |
+| A. Unlock scope and deliver priority 1 | 0–6 | Remove stale steering/host assumptions, speed useful feedback, repair false claims and data delivery, then carry the visual system through real pages and reliable charts. |
+| B. Deliver priorities 2–3 | 7–8 | Full supported measure atlas and a reliable, shareable comparison studio. |
+| C. Deliver priorities 4–6 | 9–11 | Dated briefings/stories/RSS, release calendar/watchlist and a complete cost-of-living lens with verified rent series. |
+| D. Deliver priorities 7–10 and finish | 12–16 | Multi-pollster lab, public-money dossiers, country comparisons, source/revision/archive ledger, and production proof for all ten outcomes. |
 
-Task 0 and Task 1 can complete independently of publisher availability. Tasks 3 and 5 are prerequisites for populated design acceptance, but Task 6 visual development can begin before all sources recover. Task 4 feeds Tasks 9 and 15. Source recovery in Task 2 continues only where a concrete next diagnostic exists; blocked NHS access must not freeze other capabilities. The increments are review boundaries, not mandatory one-PR-per-row rules.
+Task 0 and Task 1 can complete independently of publisher availability. Visual work starts immediately and does not wait for source recovery; Tasks 3 and 5 supply truthful populated states. Task 4 feeds Tasks 9 and 15. Source recovery in Task 2 continues only where a concrete next diagnostic exists; blocked NHS access must not freeze other capabilities. The four increments are coherent review/release points, not one-PR-per-feature rules.
 
 ## 5. Executable tasks
 
 ### Task 0 — Remove conflicting steering and prose gates
 
-**Files:** `AGENTS.md`, `README.md`, `next.config.ts`, `.github/pull_request_template.md`, `.github/workflows/pr-validation.yml`, `scripts/check-source-repair-backlog.mjs`, `scripts/lib/pr-description-policy.mjs`, and the Markdown inventory in section 7.
+**Files:** `AGENTS.md`, `.agents/skills/cave-pony/SKILL.md`, `README.md`, `next.config.ts`, `.github/pull_request_template.md`, `.github/workflows/pr-validation.yml`, `scripts/check-source-repair-backlog.mjs`, `scripts/lib/pr-description-policy.mjs`, `scripts/check-hosting-boundary.mjs`, `docs/architecture/decisions/0002-publication-reinvention.md`, `docs/operations/deployment-ci-frugality.md`, `docs/operations/free-resource-budget.md`, and the Markdown inventory in section 7.
 
 - [x] Make `AGENTS.md` a concise active guide: mission, source/claim rules, architecture ownership, practical validation and the user's authorised scope. Link this plan as the execution reference; remove contradictory current-authority references.
 - [x] Mark old specifications, audits and plans as historical where needed; retain source evidence and useful decisions. Remove obsolete workflow/persona requirements and duplicate current-status instructions. Avoid rewriting research solely for cosmetic consistency.
 - [x] Remove the source-backlog prose check from CI and delete its script if no callers remain. Remove unused PR-body parser helpers only after checking imports. A short substantive PR explanation remains useful; prescribed headings/path punctuation and exact-SHA prose do not become gates.
 - [x] Set the installed Next configuration's supported `agentRules: false` option. Start and stop the dev server once and verify the root guide is unchanged; its SHA-256 remained `7925016A…5E5ABA`.
+- [x] Make repository Cave Pony response-token-only and state in `AGENTS.md` that simplicity cannot reduce requested scope, ambition, architecture choices, or useful verification.
+- [x] Remove Cloudflare-Free-only and GitHub-Pages-prohibited instructions from active prose. Treat Cloudflare as the current host, not a permanent choice. Remove the redundant provider-ban script; public release checks retain canonical-domain/revision verification, with runtime checks owned by the selected deployment. Mark prior Free-only vision documents superseded.
 - [x] Update the release/runbook documents alongside Task 1 so docs describe the resulting executable pipeline. Do not create a second governance framework.
 
-**Proof:** Inspect the diff; run text policy on changed files and the tests covering any changed policy helpers. Search for references to deleted scripts. Confirm a normal developer command no longer rewrites agent guidance. No product test suite is needed for historical labels alone.
+**Proof:** `node scripts/check-text-policy.mjs --changed`, `git diff --check`, `npx vitest run tests/unit/publicationProgramme.test.ts`, and a repository search for removed gate references. Confirm a normal developer command no longer rewrites agent guidance.
 
-**Done when:** No active repository Markdown imposes an aesthetic veto, arbitrary complexity cap, mandatory multi-agent ritual, stale execution order or duplicate approval requirement on the authorised work.
+**Done when:** No active repository Markdown, generated agent rules, vision file, or executable host/code gate limits authorized product scope or locks the platform by default. Evidence, privacy, security, accessibility and spend approval remain explicit protections.
 
 ### Task 1 — Make CI and deployment fast, trustworthy and independent of source recovery
 
@@ -117,11 +119,13 @@ Task 0 and Task 1 can complete independently of publisher availability. Tasks 3 
 - [x] Separate recovery outcome from code-release outcome so an upstream failure remains visible without skipping reader smoke checks. Cover complete, degraded, unavailable-with-valid-contract, malformed response, wrong revision and missing route cases. Define precisely which unavailable responses are supported; do not turn every error green.
 - [x] Avoid repeating full release lint/tests only when validation can be tied to the actual release tree, relevant base and workflow. Preserve fallback validation for direct main pushes or missing proof. Compile OpenNext once per deployment; a PR Next build is not itself the deployable Worker artifact.
 - [x] Verify effective main branch targeting, required check and workflow permissions: `main` is protected by PR + `quality`, deletion and force-push prevention remain, no approval count is required, and workflows use read-only repository permissions.
-- [ ] Compare runner minutes and critical-path duration using equivalent before/after runs.
+- [x] Compare runner minutes and critical-path duration using equivalent before/after runs: aggregate job runtime fell from 235s to 122s (48.1% less); wall time stayed 135s. The latest full-quality job took 114s, with 51s in unit/Worker tests, 16s in build, and 13s in lint.
+- [ ] Reduce remaining feedback delay without reducing proof: after one dependency install and `build:prepare`, overlap lint, unit/Worker tests and the single app build if the runner remains stable; preserve every exit code and log. Keep the change only if equivalent PR runs show a shorter critical path and no duplicated install/build.
+- [ ] Evaluate Cloudflare and suitable alternatives early against request-time rendering, source access, ingestion, durable history, reliability, operational work and current official pricing. Recommend a platform from measured reader needs; show any paid option's concrete cost before asking the user to approve spend.
 
 **Proof:** Extend `tests/unit/deploy-degraded-release.test.ts`, `tests/unit/release-smoke.test.ts` and the bootstrap tests for actual behavior, not exact YAML prose. Add classifier tests beside the existing script tests. Run targeted tests, lint and the affected build path. Demonstrate one docs PR, one code PR and one valid degraded release without forced collection; verify no secrets or collector routes become public.
 
-**Done when:** Routine code delivery has one PR build, one deployment compilation, no prose gate, no mandatory seven-minute source-refresh wait and no skipped reader verification hidden behind a recovery failure.
+**Done when:** Code feedback has no scope/size heuristic, prose gate, redundant build, provider veto or forced source-refresh wait. The complete quality result remains fast and evidence-based; the selected production host and reader routes are verified once per meaningful release.
 
 ### Task 2 — Establish source diagnostics and recover the actual failing paths
 
@@ -129,6 +133,7 @@ Task 0 and Task 1 can complete independently of publisher availability. Tasks 3 
 
 - [ ] Trace each active source from retrieval through parser, contract, finalisation, current publication and public page. Report source-specific rejection categories privately; public availability copy should be useful without exposing operations.
 - [ ] Reproduce current polling and NHS failures with bounded retrieval. Treat access-challenge HTML as an upstream access failure, not empty statistical data or a legitimate annual page.
+- [ ] Reproduce the explicit-recovery race: a refresh job reported failure, then a ready 19-record publication was observed. Trace cache headers, prepared-artifact visibility, health/readiness polling and the deadline before changing retry or timeout values.
 - [ ] For NHS, verify permitted direct official download/discovery endpoints and reconcile the press notice, workbook headline, missing trusts and historical series. Use an approved retrieval method if required; do not bypass access controls or invent data. If blocked, record the actual external dependency and continue independent tasks.
 - [ ] For polling, repair the existing publisher's newest-edition discovery and result-table reconciliation before adding more publishers in Task 12.
 - [ ] Verify that a successfully ingested optional source reaches the prepared artifact and reader after finalisation; retry and replay remain bounded and idempotent. Required/optional classification changes need an explicit product rationale, not a desire for green status.
@@ -190,7 +195,7 @@ Task 0 and Task 1 can complete independently of publisher availability. Tasks 3 
 - [ ] Build the visual direction directly in representative working pages: front page, polling topic, one measure and comparison studio. Use actual validated data or clearly test-only fixtures while an upstream dependency is blocked.
 - [ ] Establish an editorial type hierarchy, colour tokens, chart palette, spacing and consistent buttons/filters. Use strong topic colour and compact evidence annotations; keep detailed methods available at the claim without repeating a large generic standards box everywhere.
 - [ ] Recompose the front page around a leading evidence story/chart, a concise dated briefing, a varied topic grid and useful paths into the tools. Put charts or meaningful results in the first useful viewport rather than a giant title and download banner.
-- [ ] Give each template an appropriate structure: editorial story, measure detail, exploration tool and source/history page. Replace generic repeated panel stacks; avoid a second design framework or component library unless the installed tools demonstrably cannot serve the result.
+- [ ] Give each template an appropriate structure: editorial story, measure detail, exploration tool and source/history page. Replace generic repeated panel stacks. Choose frameworks and architecture for the result; the current stack gets no permanent preference.
 - [ ] Make primary navigation understandable and mobile topic/tool discovery obvious. Preserve deep links, accessible search, active-route indication and keyboard menu behavior.
 - [ ] Apply the chosen visual system to all active routes as their feature tasks land. Check empty/degraded states as deliberately as populated ones, without letting unavailable evidence dominate unrelated content.
 
@@ -247,7 +252,7 @@ Task 0 and Task 1 can complete independently of publisher availability. Tasks 3 
 - [ ] Discover publisher-announced release dates for active source families beyond inflation, unemployment and crime. Store provenance and confirmation time separately from the latest measurement's validity.
 - [ ] Keep a verified future release visible even if the current measurement is unavailable. Distinguish confirmed, postponed, cancelled and unknown dates; never infer a promised release solely from cadence.
 - [ ] Add useful upcoming/recent views and source/topic filters. Connect each event to its measure, methodology and source announcement.
-- [ ] Finish local watchlist controls, persistence, import/export and changed-since-last-visit indicators. Keep notifications within the product unless a separate delivery service is explicitly requested; no account or tracking infrastructure is necessary.
+- [ ] Finish watchlist controls, persistence, import/export and changed-since-last-visit indicators. Assess in-product, browser and external notifications against reader value, privacy, reliability and cost; do not rule out a useful delivery channel in advance. Any paid spend needs an approved estimate.
 - [ ] Export valid ICS with stable identifiers, escaping, all-day semantics and correct UK daylight-saving handling. Rescheduling updates an event rather than creating duplicate calendar entries.
 
 **Proof:** `releaseCalendar` and `watchlist` tests covering independent schedule evidence, rescheduling, missing storage, corrupt import, expiry and DST; import a produced ICS into a calendar-compatible parser and check dates.
@@ -258,9 +263,9 @@ Task 0 and Task 1 can complete independently of publisher availability. Tasks 3 
 
 **Files:** `app/components/CostOfLivingLens.tsx`, `app/cost-of-living/page.tsx`, `worker/feed-registry.js`, Task 3's measure definitions, source-ownership contract; proposed source-specific rent collector/normaliser beside the existing ONS collectors.
 
-- [ ] Identify the current official private-rent publication and machine-readable time series. Verify licensing, discovery, geography, price/index/growth definitions, publication clock and methodological breaks before selecting series.
+- [ ] Reconcile the ONS private-rent measures (`privateRentAnnualChange`, `privateRentAverage`) in the live catalog to their publication, licensing, geography, price/growth definitions, publication clock and methodological breaks. Ensure any currently missing measure is repaired; do not treat catalog presence as proof the cost-of-living reader journey is complete.
 - [ ] Register source ownership and implement bounded retrieval, strict normalization, history/headline reconciliation and currentness. Capture real publisher fixtures and failed/changed-shape fixtures; do not promote a placeholder to a source.
-- [ ] Add verified rents to the canonical catalog and source pages. Keep levels, indices and annual growth as separate measures, with geography-specific availability.
+- [ ] Verify rent definitions and geography in the canonical catalog and source pages. Keep levels, indices and annual growth as separate measures, with geography-specific availability; repair missing or incorrect records without duplicating valid records.
 - [ ] Recompose the lens into understandable prices, earnings, renting, buying and interest-rate sections. Explain who each measure describes; avoid implying that a national CPI rate is a household's own inflation or that Bank Rate equals their mortgage rate.
 - [ ] Offer carefully labeled comparisons using compatible bases. Any rebasing or derived change must declare its formula, base period and unavailable conditions; do not sum unlike units into a household burden score.
 
@@ -334,7 +339,7 @@ Task 0 and Task 1 can complete independently of publisher availability. Tasks 3 
 - [ ] Use deterministic test-only fixtures for populated, sparse, degraded and unavailable states. Inject the same contract into server and client tests; never ship invented fixture values as production fallback data.
 - [ ] Walk all ten acceptance journeys in section 1. Check desktop/mobile, keyboard, reduced motion, no-JavaScript/initial HTML, client revalidation, URL sharing and actual downloads. Verify that freshness changes do not leave a stale headline beside an updated chart.
 - [ ] Run affected tests during each task; run the full required lint/test/build checks for the release candidate. Build OpenNext when deployment behavior changes and the static seed when its path changes. Browser and exhaustive diagnostics remain explicit release/change checks, not compulsory work on every Markdown edit.
-- [ ] Measure actual Cloudflare bundle/runtime/CPU/subrequest/KV/Queue/storage use and source cadence against current Free allowances. Bound archives and polling history from these measurements. Reduce waste or adapt storage before hitting a hard limit; do not silently upgrade to paid services.
+- [ ] Measure the current deployment's bundle/runtime/CPU/subrequest/KV/Queue/storage use and source cadence. Compare suitable hosting/runtime options on reader performance, reliability, operational burden, and current published pricing. Cloudflare remains the default only if it best meets the evidence; do not commit paid spend until the user approves a concrete cost.
 - [ ] Review backwards compatibility of old URLs, browser-local saved state, archived schemas and prepared artifacts. Use additive readers/migrations where needed; deploy compatible code/data changes in an order that preserves live reads.
 - [ ] Release through the lean workflow, verify exact deployed revision and the affected public journeys, and prove collection recovery separately. Preserve a recoverable prior Worker/artifact; rehearse rollback in a safe environment without overwriting good live evidence.
 - [ ] Report each capability as locally verified, production verified, or blocked by a named source/dependency. Resolve or update related existing issues based on proof; derive PR/deployment state live rather than adding a permanent status snapshot to Markdown.
@@ -367,12 +372,12 @@ Five failure classes receive explicit ownership: sparse chart geometry (Task 5),
 
 ## 7. Complete tracked Markdown steering inventory and disposition
 
-The planning inspection found 41 tracked Markdown files; this execution plan becomes the 42nd. This list distinguishes active guidance from historical evidence; it does not make every old audit an active requirement. Re-scan at execution for newly added files and instruction overrides. The repository had one tracked `AGENTS.md`; no nested agent guide was found outside excluded dependency/build directories.
+The repository has 42 tracked Markdown files, including this plan. This list distinguishes active guidance from historical evidence; it does not make every old audit an active requirement. Re-scan at execution for newly added files and instruction overrides. The repository has one tracked `AGENTS.md`; no nested agent guide was found outside excluded dependency/build directories.
 
 | File | Relevant influence | Round-two disposition |
 | --- | --- | --- |
 | `docs/superpowers/plans/2026-10-02-publication-reinvention-round-2.md` | Current step order, acceptance evidence and verified progress. | Active execution reference for round two; retire as current guidance when this work is complete. It sets no arbitrary scope ceiling. |
-| `.agents/skills/cave-pony/SKILL.md` | Minimal correct implementation and concise communication; explicitly permits requested detailed reports. | Keep. Do not misread brevity as permission to omit features or proof. |
+| `.agents/skills/cave-pony/SKILL.md` | Previously imposed build-footprint minimization as well as concise communication. | Updated: response-token economy only. It cannot limit implementation scope, design, architecture, or meaningful verification. |
 | `.github/ISSUE_TEMPLATE/bug_report.md` | Bug-report structure. | Keep useful reproduction fields; no mandatory workflow from template prose. |
 | `.github/ISSUE_TEMPLATE/feature_request.md` | Feature-request structure. | Keep concise; user priorities govern this work. |
 | `.github/pull_request_template.md` | Exact-SHA/Actions and formatting prescriptions beyond the actual body check. | Simplify to problem, change, validation and material limitations. |
@@ -383,7 +388,7 @@ The planning inspection found 41 tracked Markdown files; this execution plan bec
 | `design-plans/improve-ui-report.md` | Older UI/palette recommendations. | Historical research; reuse supported findings only. |
 | `design-plans/ux-and-data-feeds-deep-dive-2026-08-01.md` | Dated UX/source audit. | Historical input, not current availability proof or execution order. |
 | `docs/architecture/decisions/0001-cloudflare-first-data-plane.md` | Superseded early routes/publication design. | Preserve decision history and clear supersession; obsolete route counts are not guards. |
-| `docs/architecture/decisions/0002-publication-reinvention.md` | Current publication contracts, route manifest, archive defaults. | Keep/update substantive decisions; numerical defaults remain revisable. |
+| `docs/architecture/decisions/0002-publication-reinvention.md` | Current publication contracts, route manifest, archive defaults, and a previous Free-only requirement. | Keep/update evidence and contracts; remove the provider lock and mark the old platform decision superseded. |
 | `docs/architecture/source-contract-schema.md` | Evidence schema and normalization rules. | Keep aligned with executable contracts; extend for real new source grains. |
 | `docs/architecture/trusted-government-lens.md` | Provenance, evidence classes and older product framing. | Keep evidence distinctions; remove obsolete presentation limits as active rules. |
 | `docs/cloudflare-worker-backend.md` | Runtime/hosting operational guidance. | Reconcile with actual Workers, importer ownership and recovery path. |
@@ -404,7 +409,7 @@ The planning inspection found 41 tracked Markdown files; this execution plan bec
 | `docs/metric-integrity-audit-2026-07-11.md` | Dated measure integrity findings. | Historical evidence; avoid treating all old findings as still open or automatically solved. |
 | `docs/navigation-market-research.md` | Navigation research/recommendations. | Useful design input, not fixed menu/route constraints. |
 | `docs/operations/deployment-ci-frugality.md` | Runner/resource guidance and current duplicated work. | Update with Task 1's simpler workflow and measured results; no new arbitrary caps. |
-| `docs/operations/free-resource-budget.md` | Free-plan capacity assumptions. | Keep Free requirement; verify provider/account limits and actual workload; distinguish targets from hard limits. |
+| `docs/operations/free-resource-budget.md` | Cloudflare workload model written under a Free-only assumption. | Keep measured workload as a baseline; remove Free-only language and compare provider limits/costs against real needs. |
 | `docs/source-repair-backlog.md` | Source priorities plus prose evidence requirements. | Remove CI dependency; consolidate active priority ownership here; preserve useful source facts. |
 | `docs/superpowers/plans/2026-09-09-data-reliability-repair.md` | Historical execution sequence/rituals. | Superseded execution; retain technical history only. |
 | `docs/superpowers/plans/2026-10-01-publication-reinvention.md` | Round-one tasks and mandatory skill/review sequencing. | Superseded by this sequence when executed; no inherited ceremony or completion claims. |
@@ -414,10 +419,19 @@ The planning inspection found 41 tracked Markdown files; this execution plan bec
 | `docs/superpowers/specs/2026-10-01-publication-reinvention-review.md` | Round-one review and decisions. | Historical rationale; not proof of current production completion. |
 | `docs/test-suite-audit-cave-pony-2026.md` | Test deletion/retention advice, partly stale. | Reconcile contradictory references to deleted prose tests; retain behavioral coverage guidance. |
 
-Also inspect executable steering outside Markdown: the three workflows above; `scripts/check-static-architecture.mjs`, `scripts/check-hosting-boundary.mjs`, `scripts/check-source-ownership.mjs`, text/lockfile/PR/lane checks; `contracts/public-surfaces.json`, `contracts/measure-coverage.json`, `docs/architecture/source-ownership.json`; Next/OpenNext/Wrangler configs; lockfiles; GitHub branch rules and environment settings. Keep the safety/contract checks and remove assumptions that encode obsolete implementation limits.
+Also inspect executable steering outside Markdown: the workflows; `scripts/check-static-architecture.mjs`, `scripts/check-source-ownership.mjs`, text/lockfile/PR/lane checks; `contracts/public-surfaces.json`, `contracts/measure-coverage.json`, `docs/architecture/source-ownership.json`; Next/OpenNext/Wrangler configs; lockfiles; GitHub branch rules and environment settings. Remove feature-size and provider vetoes. Keep source, privacy, security, accessibility, single-canonical-host and public-contract checks.
 
 ## 8. Execution handoff
 
-Start with Task 0 and Task 1, then Task 3's misleading ticker/catalog defects. Diagnose Task 2's source failures alongside the relevant feature work; implement archive/chart foundations and the visual redesign next. Continue the ten product outcomes in their stated priority order, using the dependencies above.
+Execute in this order:
+
+1. Finish Task 0: remove scope/build-budget language from repository guidance; mark old vision and Free-only decisions historical; delete the hard-coded provider ban. Keep canonical-domain release smoke and checks for whichever runtime is selected.
+2. Finish Task 1: retain the single required quality result, profile its actual critical path, and overlap independent lint/tests/build work only when a measured run proves faster without dropping checks. Run focused tests during implementation and full CI only at coherent integration/release points, not per checkbox.
+3. Complete Tasks 2–3: fetch the live catalog, repair source mappings and the ticker, explain every omitted measure, and diagnose the public-data bootstrap failure. Recheck source status when implementing; do not block visual/product work on a missing publisher.
+4. Deliver priority 1 through Tasks 5–6: finish the in-progress homepage work, establish the visual system on home/polling/measure/comparison pages, then carry it across every active route with populated, sparse, degraded and unavailable states.
+5. Complete Task 4's archive foundation, then priorities 2–3 (Tasks 7–8), priorities 4–6 (Tasks 9–11), and priorities 7–10 (Tasks 12–15). Keep source adapters independent so a blocked publisher does not stall other features.
+6. Run Task 16 against all ten acceptance journeys, finalize the platform choice from Task 1's evidence and approved costs, merge through the required quality gate, deploy, and verify exact-head live journeys and source recovery separately.
+
+Commit coherent local increments. Avoid CI runs, PRs, or repetitive process per checklist item. Do not claim a feature complete until its acceptance evidence is observed on the deployed reader journey.
 
 At each increment report: what readers can now do, proof actually obtained, remaining source dependencies and the next task. Do not add recurring status documents, additional approval gates or a new standing agent programme. The final result must be demonstrably useful with populated evidence and honestly incomplete wherever an external source remains unverified.

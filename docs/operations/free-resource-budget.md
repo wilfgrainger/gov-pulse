@@ -1,4 +1,4 @@
-# Free-runtime workload budget (model refreshed 2 October 2026)
+# Current Cloudflare workload baseline (model refreshed 2 October 2026)
 
 > This is a workload estimate. The 20% headroom figure below is a planning
 > target, not a product, code-size or blanket release gate; reassess it against
@@ -33,10 +33,11 @@ manual recovery traffic are excluded and must be budgeted separately. The
 derived schedule is tested so a new active feed or retry allowance cannot
 silently leave the inventory unchanged.
 
-Cloudflare Free readiness remains unverified. This workload model is not proof
-that quotas, CPU, KV, Queue, storage, build or egress limits have 20% headroom.
-Verify current limits and the deployed account before the production feasibility
-gate; see the source-feasibility ledger for the last access result.
+This model describes the current Cloudflare deployment only. It is not a
+Cloudflare-Free requirement or proof that quotas, CPU, KV, Queue, storage, build
+or egress limits have 20% headroom. Verify current platform limits and account
+usage when comparing hosting choices; see the source-feasibility ledger for the
+last access result.
 
 The retained workbook limits are project input caps, not Cloudflare plan
 quotas: 8 MiB expanded per retained ZIP entry, 24 MiB total retained expanded

@@ -75,31 +75,31 @@ function LeadStory({ signal }: { signal: SignalPresentation | null }) {
   }
 
   return (
-    <article className="v3-lead-story editorial-lift grid overflow-hidden border-y-2 border-foreground lg:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
-      <div className="flex flex-col bg-[#14243b] p-7 text-white md:p-10 lg:p-12">
+    <article className="v3-lead-story editorial-lift grid overflow-hidden border-y-2 border-foreground min-[60rem]:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
+      <div className="flex flex-col bg-[#14243b] p-5 text-white md:p-7">
         <div className="flex flex-wrap items-center gap-3">
           <p className="eyebrow eyebrow-on-dark">The latest release to know</p>
           <span className="british-538-badge border border-white bg-white text-foreground">
             {STATE_LABELS[signal.state]}
           </span>
         </div>
-        <h3 className="font-display mt-8 max-w-4xl text-4xl leading-[1.05] md:text-5xl lg:text-6xl">
+        <h3 className="font-display mt-4 max-w-4xl text-3xl leading-[1.03] md:text-4xl">
           {signal.leadHeadline}
         </h3>
         {signal.leadSummary ? (
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-200 md:text-xl md:leading-9">
+          <p className="mt-4 max-w-2xl text-base leading-6 text-slate-200 md:text-lg md:leading-7">
             {signal.leadSummary}
           </p>
         ) : null}
-        <Link href={signal.href} prefetch={false} className="mt-8 inline-flex min-h-12 w-fit items-center gap-6 border-b-2 border-[#8fc2e6] py-2 text-base font-semibold text-white hover:text-[#8fc2e6] lg:mt-auto">
+        <Link href={signal.href} prefetch={false} className="mt-5 inline-flex min-h-11 w-fit items-center gap-6 border-b-2 border-[#8fc2e6] py-2 text-base font-semibold text-white hover:text-[#8fc2e6] min-[60rem]:mt-auto">
           Understand this figure <span aria-hidden="true">↗</span>
         </Link>
       </div>
 
-      <div className="flex flex-col bg-[#dceaf4] p-7 md:p-10 lg:p-12">
+      <div className="flex flex-col bg-[#dceaf4] p-5 md:p-7">
         <p className="eyebrow !text-[#0f6b63]">{signal.kicker} · {signal.geography}</p>
-        <p className="headline-figure mt-4 text-7xl tracking-[-0.06em] md:text-8xl">{signal.value}</p>
-        <p className="mt-3 text-sm font-semibold">{signal.period} · published {signal.publishedAt}</p>
+        <p className="headline-figure mt-3 text-5xl tracking-[-0.06em] md:text-6xl">{signal.value}</p>
+        <p className="mt-2 text-sm font-semibold">{signal.period} · published {signal.publishedAt}</p>
         <div className="text-[#0f6b63]"><TrendSparkline label={signal.title} points={signal.history} large /></div>
         <p className="mt-5 border-t border-black/15 pt-5 text-base leading-7">{signal.comparison}</p>
         {signal.caveat ? (
@@ -121,7 +121,7 @@ function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?:
         prefetch={false}
         data-testid="signal-card"
         data-evidence-state={signal.state}
-        className="editorial-lift group flex h-full min-h-80 flex-col border-t-4 border-t-[#0f6b63] bg-white p-5 transition-colors hover:border-foreground hover:bg-[#eef6fb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black md:p-6 british-538-border"
+        className="editorial-lift group flex h-full min-h-64 flex-col border-t-4 border-t-[#0f6b63] bg-white p-5 transition-colors hover:border-foreground hover:bg-[#eef6fb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black md:p-6 british-538-border"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -179,16 +179,16 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
 
   return (
     <section id="national-signals" tabIndex={-1} aria-labelledby="national-evidence-title" className="scroll-mt-24 focus:outline-none">
-      <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
-        <div className="mb-8 grid gap-5 border-b border-black/20 pb-6 md:grid-cols-[1fr_auto] md:items-end">
+      <div className="mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-5">
+        <div className="mb-5 grid gap-3 border-b border-black/20 pb-4 md:grid-cols-[1fr_auto] md:items-end">
           <div>
             <p className="eyebrow">The public data edition</p>
-            <h2 id="national-evidence-title" className="section-title mt-2">Latest figures</h2>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-gray-600 md:text-base">
-              A clear reading of the latest verified releases. Every figure has its own period, geography and original source.
+            <h2 id="national-evidence-title" className="font-display mt-1 text-3xl leading-none tracking-[-0.04em] md:text-4xl">Latest figures</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-5 text-gray-600">
+              Each release keeps its own period, geography and original source.
             </p>
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="font-mono text-xs text-gray-700 md:pb-1 md:text-sm">
             {edition.counts.current} current · {edition.counts["update-due"]} update due · {edition.counts.unavailable} unavailable
           </p>
         </div>
@@ -197,7 +197,7 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
           <LeadStory signal={edition.lead} />
         </Reveal>
 
-        <section aria-labelledby="at-a-glance-title" className="mt-12 md:mt-16">
+        <section aria-labelledby="at-a-glance-title" className="mt-9 md:mt-12">
           <div className="border-b border-black/20 pb-5">
             <p className="eyebrow">National signals</p>
             <h3 id="at-a-glance-title" className="font-display mt-2 text-3xl leading-tight md:text-5xl">The country at a glance</h3>

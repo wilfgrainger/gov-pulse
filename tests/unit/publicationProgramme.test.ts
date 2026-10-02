@@ -1,20 +1,26 @@
-import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
-import { unsupportedWorkerIngress } from "../../scripts/check-static-architecture.mjs";
+import { copyFileSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it, vi } from "vitest";
+import { main as checkStaticArchitecture, unsupportedWorkerIngress } from "../../scripts/check-static-architecture.mjs";
 import { publicRouteAllowed } from "../../scripts/lib/public-surfaces.mjs";
 import { SECTION_CONTENT } from "../../app/lib/sectionContent";
 import { MEASURES } from "../../app/lib/dataExplorer";
 import { MEASURE_IDS } from "../../worker/measure-catalog.js";
 import { MEASURE_COUNTS_BY_ROUTE } from "../../app/lib/sections";
 
-const wrangler = readFileSync("worker/wrangler.toml", "utf8");
+const wranglerPath = "worker/wrangler.toml";
+const wrangler = existsSync(wranglerPath) ? readFileSync(wranglerPath, "utf8") : null;
 
 describe("approved public evidence surfaces", () => {
   it("authorizes the exact edition archive routes and leaves retired endpoints closed", () => {
-    expect(unsupportedWorkerIngress(wrangler)).toEqual([]);
     expect(publicRouteAllowed("/data/editions.json")).toBe(true);
     expect(publicRouteAllowed("/data/edition.json?edition=catalog-1.2-a")).toBe(true);
     expect(publicRouteAllowed("/data/measure-catalog.json")).toBe(false);
+  });
+
+  it.skipIf(wrangler === null)("checks Cloudflare ingress when Cloudflare is the selected runtime", () => {
+    expect(unsupportedWorkerIngress(wrangler!)).toEqual([]);
   });
 
   it("does not turn an approved data route into public collector access", () => {
@@ -25,7 +31,7 @@ describe("approved public evidence surfaces", () => {
       "",
     ].join("\n");
 
-    expect(unsupportedWorkerIngress(`${wrangler}\n${collectorRoute}`)).not.toEqual([]);
+    expect(unsupportedWorkerIngress(`${wrangler ?? ""}\n${collectorRoute}`)).not.toEqual([]);
     expect(publicRouteAllowed("/data/collect/latest")).toBe(false);
     expect(publicRouteAllowed("/internal/queue")).toBe(false);
   });
@@ -40,6 +46,23 @@ describe("approved public evidence surfaces", () => {
       workerRoutes: [{ pattern: "public-data.org/data/health.json", zone_name: "public-data.org", required: true }],
     };
     expect(unsupportedWorkerIngress(oneRoute, oneSurface)).toEqual([]);
+  });
+
+  it("does not require a Cloudflare config when another runtime owns production", () => {
+    const projectRoot = mkdtempSync(join(tmpdir(), "public-data-host-"));
+    mkdirSync(join(projectRoot, "contracts"));
+    copyFileSync(
+      "contracts/public-surfaces.json",
+      join(projectRoot, "contracts", "public-surfaces.json"),
+    );
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    try {
+      expect(checkStaticArchitecture(projectRoot)).toBe(true);
+    } finally {
+      log.mockRestore();
+      rmSync(projectRoot, { recursive: true, force: true });
+    }
   });
 
   it("only reads an edition selected by one validated query value", () => {

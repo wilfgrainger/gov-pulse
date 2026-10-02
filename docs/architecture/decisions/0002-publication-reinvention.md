@@ -14,11 +14,12 @@ user has now explicitly authorized.
 
 Use reviewed route and measure-coverage manifests as shared inventories, then
 build the publication from explicit source records with visible currentness,
-units, dates and caveats. Preserve the Cloudflare Free-only requirement and
-keep internal collection operations private. Prior style prohibitions are
-superseded: the site may adopt a vibrant FiveThirtyEight-inspired editorial
-identity while preserving keyboard access, reduced motion, and legible
-contrast.
+units, dates and caveats. Cloudflare is the current implementation, not a
+platform or plan requirement; future hosting choices follow measured product
+needs and reviewed cost. Keep internal collection operations private. Prior
+style prohibitions are superseded: the site may adopt a vibrant
+FiveThirtyEight-inspired editorial identity while preserving keyboard access,
+reduced motion, and legible contrast.
 
 Procurement revisions are resolved across the complete bounded date window
 before selecting the top 100. Postcode-area letters alone do not establish a
