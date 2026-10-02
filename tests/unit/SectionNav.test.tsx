@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import SectionNav from "@/app/components/SectionNav";
 
@@ -70,6 +70,18 @@ describe("SectionNav", () => {
     expect(toggleButton).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByRole("link", { name: "Employment" })).not.toBeInTheDocument();
     expect(toggleButton).toHaveFocus();
+  });
+
+  it("keeps secondary tools together in the topics panel", () => {
+    render(<SectionNav sections={sections} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Topics" }));
+
+    const tools = screen.getByRole("navigation", { name: "More tools" });
+    expect(within(tools).getByRole("link", { name: "Release calendar" })).toHaveAttribute("href", "/calendar");
+    expect(within(tools).getByRole("link", { name: "Cost of living" })).toHaveAttribute("href", "/cost-of-living");
+    expect(within(tools).getByRole("link", { name: "Public money" })).toHaveAttribute("href", "/money");
+    expect(within(tools).getByRole("link", { name: "Editions" })).toHaveAttribute("href", "/editions");
   });
 
   it("opens search and closes it after navigation", () => {

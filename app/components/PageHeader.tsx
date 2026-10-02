@@ -17,10 +17,10 @@ export default function PageHeader({
   children,
 }: PageHeaderProps) {
   return (
-    <header className="page-header v3-page-header px-4 py-10 md:px-6 md:py-16">
-      <div className="relative mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
+    <header className="page-header v3-page-header px-4 py-8 md:px-6 md:py-10">
+      <div className="relative mx-auto grid max-w-7xl gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
         <div>
-          <nav aria-label="Breadcrumb" className="mb-7 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+          <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
             <Link
               href="/"
               prefetch={false}
@@ -32,8 +32,8 @@ export default function PageHeader({
             <span>{current}</span>
           </nav>
           <p className="eyebrow mb-4">{eyebrow}</p>
-          <h1 className="page-title max-w-5xl">{title}</h1>
-          <p className="mt-6 max-w-3xl text-base leading-7 text-[#565f6b] md:text-xl md:leading-9">
+          <h1 className="page-title section-title max-w-5xl">{title}</h1>
+          <p className="mt-4 max-w-3xl text-base leading-7 text-[#565f6b] md:text-lg md:leading-8">
             {subtitle}
           </p>
         </div>
