@@ -12,6 +12,12 @@ import { buildReleaseNote } from "@/app/lib/releaseNote";
 import { useMetrics } from "@/app/lib/useMetrics";
 
 type HousePriceHeadline = {
+  privateRentPeriod: string;
+  privateRentObservedAt: number;
+  avgMonthlyPrivateRentGbp: number;
+  privateRentAnnualChangePercent: number;
+  previousPrivateRentPeriod: string;
+  previousPrivateRentAnnualChangePercent: number;
   period: string;
   observedAt: number;
   releaseDate: string;
@@ -24,7 +30,8 @@ type HousePriceHeadline = {
 type HousePriceHistory = {
   period: string;
   observedAt: number;
-  hpiChangePercent: number;
+  privateRentAnnualChangePercent: number;
+  hpiChangePercent: number | null;
 };
 
 type HousePricePayload = {
@@ -34,6 +41,7 @@ type HousePricePayload = {
     measure: string;
     status: string;
     revisionNote: string;
+    privateRentRevisionNote: string;
   };
   source: {
     edition: string;
@@ -44,6 +52,12 @@ type HousePricePayload = {
 
 const FALLBACK: HousePricePayload = {
   headline: {
+    privateRentPeriod: "",
+    privateRentObservedAt: 0,
+    avgMonthlyPrivateRentGbp: 0,
+    privateRentAnnualChangePercent: 0,
+    previousPrivateRentPeriod: "",
+    previousPrivateRentAnnualChangePercent: 0,
     period: "",
     observedAt: 0,
     releaseDate: "",
@@ -57,6 +71,7 @@ const FALLBACK: HousePricePayload = {
     measure: "",
     status: "",
     revisionNote: "",
+    privateRentRevisionNote: "",
   },
   source: {
     edition: "",
@@ -107,6 +122,17 @@ function validHeadline(value: unknown): value is HousePriceHeadline {
     : new Date(Number.NaN);
 
   return (
+    nonEmptyString(candidate.privateRentPeriod) &&
+    typeof candidate.privateRentObservedAt === "number" &&
+    Number.isFinite(candidate.privateRentObservedAt) &&
+    typeof candidate.avgMonthlyPrivateRentGbp === "number" &&
+    Number.isFinite(candidate.avgMonthlyPrivateRentGbp) &&
+    candidate.avgMonthlyPrivateRentGbp > 0 &&
+    typeof candidate.privateRentAnnualChangePercent === "number" &&
+    Number.isFinite(candidate.privateRentAnnualChangePercent) &&
+    nonEmptyString(candidate.previousPrivateRentPeriod) &&
+    typeof candidate.previousPrivateRentAnnualChangePercent === "number" &&
+    Number.isFinite(candidate.previousPrivateRentAnnualChangePercent) &&
     nonEmptyString(candidate.period) &&
     nonEmptyString(candidate.previousPeriod) &&
     typeof candidate.observedAt === "number" &&
@@ -125,21 +151,31 @@ function validHeadline(value: unknown): value is HousePriceHeadline {
 function validPayload(value: unknown): value is HousePricePayload {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const candidate = value as Partial<HousePricePayload>;
+  if (!validHeadline(candidate.headline) || !Array.isArray(candidate.history)) return false;
+  const history = candidate.history;
+  const validHistory = history.every(
+    (point) =>
+      nonEmptyString(point?.period) &&
+      typeof point?.observedAt === "number" &&
+      Number.isFinite(point.observedAt) &&
+      typeof point?.privateRentAnnualChangePercent === "number" &&
+      Number.isFinite(point.privateRentAnnualChangePercent) &&
+      (point?.hpiChangePercent === null || (typeof point?.hpiChangePercent === "number" && Number.isFinite(point.hpiChangePercent)))
+  );
+  const latestHpi = [...history].reverse().find((point) => typeof point.hpiChangePercent === "number");
+  const latestRent = [...history].reverse().find((point) => typeof point.privateRentAnnualChangePercent === "number");
   return (
-    validHeadline(candidate.headline) &&
-    Array.isArray(candidate.history) &&
-    candidate.history.length >= 2 &&
-    candidate.history.every(
-      (point) =>
-        nonEmptyString(point?.period) &&
-        typeof point?.observedAt === "number" &&
-        Number.isFinite(point.observedAt) &&
-        typeof point?.hpiChangePercent === "number" &&
-        Number.isFinite(point.hpiChangePercent)
-    ) &&
+    validHistory && history.length >= 2 &&
+    history.filter((point) => typeof point.hpiChangePercent === "number").length >= 2 &&
+    history.filter((point) => typeof point.privateRentAnnualChangePercent === "number").length >= 2 &&
+    latestHpi?.period === candidate.headline.period &&
+    latestHpi.hpiChangePercent === candidate.headline.changePercent &&
+    latestRent?.period === candidate.headline.privateRentPeriod &&
+    latestRent.privateRentAnnualChangePercent === candidate.headline.privateRentAnnualChangePercent &&
     nonEmptyString(candidate.methodology?.measure) &&
     nonEmptyString(candidate.methodology?.status) &&
     nonEmptyString(candidate.methodology?.revisionNote) &&
+    nonEmptyString(candidate.methodology?.privateRentRevisionNote) &&
     nonEmptyString(candidate.source?.edition) &&
     candidate.source?.bulletinUrl?.startsWith("https://www.ons.gov.uk/") === true &&
     candidate.source?.historyUrl?.startsWith("https://www.ons.gov.uk/") === true
@@ -150,7 +186,7 @@ export default function HousePriceIndex() {
   const metrics = useMetrics("housePriceIndex", FALLBACK);
   const wagesMetrics = useMetrics("realWages", {
     headline: { period: "", observedAt: 0, releaseDate: "", regularPayRealGrowthPercent: 0, totalPayRealGrowthPercent: 0, deflator: "CPIH" },
-    history: [],
+            history: [],
     methodology: { measure: "", status: "", revisionNote: "" },
     source: { edition: "", bulletinUrl: "", historyUrl: "" },
   });
@@ -202,9 +238,9 @@ export default function HousePriceIndex() {
         wageByPeriod.set(item.period, item.regularPayRealGrowthPercent);
       }
     }
-    return payload.history.map((h) => ({
+    return payload.history.filter((h) => h.hpiChangePercent !== null).map((h) => ({
       date: h.period,
-      housePriceGrowthPct: h.hpiChangePercent,
+      housePriceGrowthPct: h.hpiChangePercent!,
       realWageGrowthPct: wageByPeriod.get(h.period) ?? null,
     }));
   }, [payload, valid, wagesAreCurrent, wagesData]);
@@ -216,10 +252,10 @@ export default function HousePriceIndex() {
           latestValueDisplay: formatPercent(headline.changePercent),
           latestPeriod: headline.period,
           releaseDate: headline.releaseDate,
-          history: payload.history.map((point) => ({
+          history: payload.history.flatMap((point) => point.hpiChangePercent === null ? [] : [{
             observedAt: point.observedAt,
             value: point.hpiChangePercent,
-          })),
+          }]),
         })
       : null;
 
@@ -265,6 +301,19 @@ export default function HousePriceIndex() {
             </dl>
           </section>
 
+          <section aria-labelledby="private-rent-headline-title" className="border-y border-black/20 bg-[#fff2df] p-5 md:p-7">
+            <p className="text-sm font-semibold uppercase tracking-wide text-accent">Separate housing measure · ONS PIPR</p>
+            <h4 id="private-rent-headline-title" className="mt-2 text-2xl font-bold">Average UK monthly private rent</h4>
+            <div className="mt-4 flex flex-wrap items-baseline gap-x-8 gap-y-2">
+              <p className="text-4xl font-black tabular-nums">{formatCurrency(headline.avgMonthlyPrivateRentGbp)}<span className="ml-2 text-base font-semibold">per month</span></p>
+              <p className="text-xl font-bold tabular-nums">{formatPercent(headline.privateRentAnnualChangePercent)} annual change</p>
+            </div>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-700">
+              In the 12 months to {headline.privateRentPeriod}; previous annual change was {formatPercent(headline.previousPrivateRentAnnualChangePercent)} to {headline.previousPrivateRentPeriod}. This is an aggregate measure, not a household-specific rent or affordability estimate.
+            </p>
+            <p className="mt-2 max-w-3xl text-xs leading-5 text-gray-600">{payload.methodology.privateRentRevisionNote}</p>
+          </section>
+
           {/* Visual 4: Housing Affordability & Real Wages Trend */}
           <HousingAffordabilityVisual
             points={comparisonPoints}
@@ -277,11 +326,21 @@ export default function HousePriceIndex() {
           <FinancialTimeSeriesChart
             title="UK House Price Index: annual percentage change"
             description="Monthly annual percentage-change observations from the latest ONS Private rent and house prices, UK bulletin's Figure 1 chart data. The average price level is headline-only and is not part of this history."
-            citation={`Office for National Statistics · Bulletin: ${payload.source.bulletinUrl} · History CSV: ${payload.source.historyUrl} · published ${headline.releaseDate} · observation period ${payload.history[0]?.period ?? headline.period} to ${payload.history.at(-1)?.period ?? headline.period} · ${payload.methodology.revisionNote}`}
-            data={payload.history}
+            citation={`Office for National Statistics · Bulletin: ${payload.source.bulletinUrl} · History CSV: ${payload.source.historyUrl} · published ${headline.releaseDate} · observation period ${payload.history[0]?.period ?? headline.period} to ${payload.history.filter((point) => point.hpiChangePercent !== null).at(-1)?.period ?? headline.period} · ${payload.methodology.revisionNote}`}
+            data={payload.history.filter((point) => point.hpiChangePercent !== null)}
             series={[
               { key: "hpiChangePercent", label: "Annual % change", color: "#1f5c8a" },
             ]}
+            valueFormatter={formatPercent}
+            referenceValue={0}
+          />
+
+          <FinancialTimeSeriesChart
+            title="UK private rents: annual percentage change"
+            description="Monthly annual change in the ONS Price Index of Private Rents (PIPR). Rent and house-price changes remain separate published series."
+            citation={`Office for National Statistics · Bulletin: ${payload.source.bulletinUrl} · History CSV: ${payload.source.historyUrl} · published ${headline.releaseDate} · observation period ${payload.history[0]?.period ?? headline.privateRentPeriod} to ${headline.privateRentPeriod} · ${payload.methodology.privateRentRevisionNote}`}
+            data={payload.history}
+            series={[{ key: "privateRentAnnualChangePercent", label: "Annual % change", color: "#e34b35" }]}
             valueFormatter={formatPercent}
             referenceValue={0}
           />

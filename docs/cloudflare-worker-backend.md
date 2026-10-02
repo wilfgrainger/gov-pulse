@@ -1,8 +1,8 @@
 # Cloudflare data Worker (runtime data plane)
 
-> Corrected 2026-09-29 to match shipped code. Prior revisions described this
-> Worker as an internal, route-less, four-hour-cron component deployed manually.
-> That is no longer true: the data Worker owns five exact public `/data/*` routes,
+> Current runtime description. Prior revisions described this Worker as an
+> internal, route-less component. The data Worker presently owns five exact
+> public `/data/*` routes,
 > runs a daily plus three-hourly cron, and deploys automatically from `main`.
 > Ground truth lives in `worker/wrangler.toml`, `worker/public-data-entry.js`
 > and `.github/workflows/deploy.yml`; this document only describes them.
@@ -17,7 +17,7 @@ routes as same-origin public contracts.
 
 ## Public HTTP boundary
 
-The Worker exposes exactly five public routes, attached in `worker/wrangler.toml` and enumerated in `contracts/public-surfaces.json`:
+The Worker currently exposes five public routes, attached in `worker/wrangler.toml` and enumerated in `contracts/public-surfaces.json`:
 
 - `/data/metrics-snapshot.json`
 - `/data/health.json`
@@ -25,9 +25,9 @@ The Worker exposes exactly five public routes, attached in `worker/wrangler.toml
 - `/data/editions.json`
 - `/data/edition.json?edition=<validated-edition-id>`
 
-Every other path returns 404. `workers_dev = false` and `preview_urls = false`
-still prevent `workers.dev` and preview hostnames, so the only public ingress is
-the five zoned routes above. The edition routes are read-only, bounded, and
+Every unlisted path returns 404. Add a reader capability by updating the public contract and its tests with the route; five is the current inventory, not a permanent product limit. `workers_dev = false` and `preview_urls = false`
+still prevent `workers.dev` and preview hostnames, so current public ingress is
+the listed zoned routes. The edition routes are read-only, bounded, and
 serve only retained historical evidence. No collector, refresh or diagnostic
 route is public. Do not add a wildcard `/data/*`, a browser-to-collector call,
 or an exposed cache key or secret without an explicit recorded architecture
@@ -85,3 +85,4 @@ after exact-head route/health checks and the affected public journey.
 - Do not add a public Worker route, browser Worker URL, second data service,
   tracking, personal-data collection or a paid Cloudflare product without an
   explicit architecture decision.
+# Current runtime description. The public route list is contract-managed and may grow with reviewed product needs; it is not a feature-count ceiling.

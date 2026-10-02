@@ -18,7 +18,7 @@ export default function PageHeader({
 }: PageHeaderProps) {
   return (
     <header className="page-header v3-page-header px-4 py-8 md:px-6 md:py-10">
-      <div className="relative mx-auto grid max-w-7xl gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
+      <div className="relative mx-auto grid max-w-7xl gap-5 min-[54rem]:grid-cols-[minmax(0,1fr)_18rem] min-[54rem]:items-end md:gap-8">
         <div>
           <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
             <Link

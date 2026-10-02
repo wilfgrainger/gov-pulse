@@ -23,6 +23,17 @@ const catalog = {
 } as unknown as MeasureCatalog;
 
 describe("comparison workspace", () => {
+  it("starts with a compatible pair on a clean visit and preserves an explicit empty selection", () => {
+    expect(parseWorkspace("", catalog).measureIds).toEqual(["fifth", "first"]);
+    expect(parseWorkspace("", catalog).mode).toBe("overlay");
+    expect(parseWorkspace("?measure=", catalog).measureIds).toEqual([]);
+    expect(parseWorkspace("?start=2024-01-01&end=2024-02-01&mode=panels", catalog).measureIds).toEqual([]);
+  });
+
+  it("uses the catalog's observation window when no measures are selected", () => {
+    expect(parseWorkspace("?measure=", catalog).window).toEqual({ start: "2024-01-01", end: "2024-02-01" });
+  });
+
   it("restores measure identities, dates and overlay mode from its URL", () => {
     const workspace = parseWorkspace("?measure=first,second&start=2024-01-01&end=2024-02-01&mode=overlay", catalog);
     expect(workspace).toEqual({ version: 1, measureIds: ["first", "second"], window: { start: "2024-01-01", end: "2024-02-01" }, mode: "overlay" });
@@ -35,7 +46,12 @@ describe("comparison workspace", () => {
 
   it.each([
     "?measure=first,first", "?measure=first,unknown", "?measure=first,second,third,fourth,fifth", "?measure=first&start=2024-01-01", "?measure=first&start=2024-03-01&end=2024-02-01",
+    "?measure=first&measure=second", "?start=2024-01-01&start=2024-02-01&end=2024-02-01",
   ])("rejects malformed, duplicate, unknown, fifth, or invalid workspace state: %s", (search) => {
     expect(() => parseWorkspace(search, catalog)).toThrow();
+  });
+
+  it("rejects oversized shared state before parsing it", () => {
+    expect(() => parseWorkspace(`?${"x".repeat(2049)}`, catalog)).toThrow(/too large/i);
   });
 });

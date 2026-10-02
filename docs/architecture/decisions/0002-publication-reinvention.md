@@ -27,7 +27,8 @@ UK nation; use an exact publisher-provided nation name or retain
 
 The exact data Worker public surface includes two read-only edition archive
 contracts, `/data/editions.json` and `/data/edition.json?edition=...`. The list
-is capped at 60 retained releases; lookup accepts one validated edition id and
+currently retains up to 60 releases, subject to evidence and measured storage
+capacity; that default does not cap the product's historical depth. Lookup accepts one validated edition id and
 returns its immutable historical catalog with an explicit as-of date. Both
 routes must be present in `contracts/public-surfaces.json` and the Worker's
 exact route table. Wildcard data ingress remains prohibited.

@@ -1,0 +1,49 @@
+name: Manual Lighthouse audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lighthouse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout selected revision
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Prepare generated data and assets
+        run: npm run build:prepare
+        env:
+          NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
+
+      - name: Build application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
+
+      - name: Run Lighthouse against a local production build
+        run: npx --yes @lhci/cli@0.15.1 autorun --config=lighthouserc.cjs
+
+      - name: Upload Lighthouse report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: .lighthouseci
+          retention-days: 14

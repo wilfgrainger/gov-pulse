@@ -37,6 +37,7 @@ const nextConfig: NextConfig = {
   // Server mode is used for the request-time Cloudflare Worker. The bounded
   // Pages seed still uses a deterministic static export.
   ...deliveryMode,
+  agentRules: false,
   basePath,
   assetPrefix: basePath,
   trailingSlash: true,

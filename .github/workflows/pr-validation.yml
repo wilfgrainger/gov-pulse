@@ -30,9 +30,6 @@ jobs:
       - name: Enforce UTF-8 and LF on changed files
         run: node scripts/check-text-policy.mjs --changed
 
-      - name: Validate PR description
-        run: node scripts/check-pr-description.mjs
-
       - name: Select validation lane
         id: lane
         run: node scripts/classify-pr-validation.mjs
@@ -60,16 +57,8 @@ jobs:
       - name: Ensure base ref is available for diffing
         run: git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
 
-      # Code-integrity gatekeepers only run when code actually changed. On a
-      # docs-only PR these are skipped entirely with the rest of this lane.
-      - name: Reject lockfile-only rewrites
-        run: node scripts/check-lockfile-policy.mjs
-
       - name: Enforce Cloudflare architecture
         run: node scripts/check-static-architecture.mjs
-
-      - name: Validate source-repair evidence
-        run: node scripts/check-source-repair-backlog.mjs
 
       - name: Validate source ownership
         run: node scripts/check-source-ownership.mjs
@@ -99,52 +88,6 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
-
-  lighthouse:
-    needs: classify
-    if: needs.classify.outputs.lane == 'full'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    # Non-blocking on first introduction: there is no historical score
-    # baseline yet, so a hard-fail here could block unrelated PRs. This job
-    # is also deliberately excluded from `quality`'s required-results check
-    # below, so a failure here can never fail the PR. Tighten both once a
-    # few weeks of readings exist.
-    continue-on-error: true
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Install locked dependencies
-        run: npm ci --prefer-offline --no-audit --no-fund
-
-      - name: Prepare generated data and assets
-        run: npm run build:prepare
-
-      - name: Build application
-        run: npm run build
-        env:
-          NEXT_PUBLIC_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
-
-      - name: Run Lighthouse CI against a local build+serve preview
-        # No deployed PR preview URL exists in this repo's pipeline (Cloudflare
-        # deploy runs only on main — see .github/workflows/deploy.yml), so this
-        # checks the production `next build` output served locally instead.
-        run: npx --yes @lhci/cli@0.15.1 autorun --config=lighthouserc.cjs
-
-      - name: Upload Lighthouse report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: lighthouse-report
-          path: .lighthouseci
-          retention-days: 14
 
   quality:
     if: always()

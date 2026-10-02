@@ -15,7 +15,11 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   const catalog = snapshot?.meta.measureCatalog as MeasureCatalog | undefined;
   const params = await searchParams;
   const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) if (typeof value === "string") query.set(key, value);
+  for (const [key, value] of Object.entries(params)) {
+    for (const entry of Array.isArray(value) ? value : typeof value === "string" ? [value] : []) {
+      query.append(key, entry);
+    }
+  }
   let initial = null;
   let problem: string | null = null;
   if (catalog) {

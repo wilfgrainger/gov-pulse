@@ -1,5 +1,9 @@
 # Hardening Ledger (Aggressive 10-Agent Pass)
 
+> Historical audit from 18 March 2026. Its agent count, follow-up list, Pages
+> rollout assumptions and deployment status are not active requirements. Use
+> current source and the [round-two plan](superpowers/plans/2026-10-02-publication-reinvention-round-2.md).
+
 Date: 2026-03-18
 
 ## Critical findings

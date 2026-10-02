@@ -94,6 +94,11 @@ describe("ElectionPolling evidence integrity", () => {
     expect(
       screen.getByRole("heading", { name: "YouGov reports Reform UK at 24%." })
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "YouGov reports Reform UK at 24%." })
+        .compareDocumentPosition(screen.getByRole("heading", { name: "Polling lab" })) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
     expect(screen.getByText(/2,285 GB adults/i)).toBeInTheDocument();
     expect(screen.getByText(/This is one poll publication, not a polling average/i)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Polling lab" })).toBeInTheDocument();
@@ -117,6 +122,32 @@ describe("ElectionPolling evidence integrity", () => {
       current.polls[0].methodologyUrl
     );
     expect(screen.queryByText(/public-data\.org polling average/i)).not.toBeInTheDocument();
+  });
+
+  it("does not draw a time chart from a single poll publication", () => {
+    useMetrics.mockReturnValue(result(current));
+
+    render(<ElectionPolling />);
+
+    expect(screen.queryByRole("img", { name: /Scatter plot of individual poll publications/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/A timeline needs more than one verified poll publication/i)).toBeInTheDocument();
+  });
+
+  it("shows one fieldwork range when multiple publications share the same dates", () => {
+    const samePeriodPoll = {
+      ...current.polls[0],
+      id: "ipsos-2026-07-05-06",
+      pollster: "Ipsos",
+      title: "Ipsos voting intention publication",
+    };
+    useMetrics.mockReturnValue(result({ ...current, polls: [current.polls[0], samePeriodPoll] }));
+
+    render(<ElectionPolling />);
+
+    expect(screen.getByRole("img", { name: /Scatter plot of individual poll publications/i })).toHaveAttribute(
+      "aria-label",
+      expect.stringContaining("Period shown: 5 Jul 2026–6 Jul 2026. No average")
+    );
   });
 
   it("filters actual pollster publications by fieldwork without combining them", () => {
@@ -161,7 +192,7 @@ describe("ElectionPolling evidence integrity", () => {
       screen.getByRole("heading", { name: "Individual publications and disclosed uncertainty, not an average" })
     ).toBeInTheDocument();
     expect(screen.getByText(/does not compute, show, or imply a/i)).toBeInTheDocument();
-    expect(screen.getByText(/not used to calculate an uncertainty interval/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sample size alone is not used to estimate one/i)).toBeInTheDocument();
     expect(screen.getAllByText(/2,285/).length).toBeGreaterThan(1);
     expect(screen.queryByText(/\u00b12\.1pp/)).not.toBeInTheDocument();
     expect(screen.getByText(/No publication-specific numeric interval was verified/)).toBeInTheDocument();

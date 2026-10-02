@@ -1,5 +1,7 @@
 # Deep-dive review: UI, customer experience and data feeds
 
+> Historical review, dated 1 August 2026. Findings are leads to verify, not current status or design constraints; use the [round-two plan](../docs/superpowers/plans/2026-10-02-publication-reinvention-round-2.md) for current priorities.
+
 *Date: 1 August 2026 · Scope: `public-data.org` (gov-metrics)*
 
 ## Method
@@ -385,3 +387,4 @@ The populated chart surfaces were reviewed as code, not pixels, because no
 snapshot exists locally. A pass over the charts against a real snapshot —
 particularly the axis, tooltip and provisional-data treatment in
 `FinancialTimeSeriesChart` and `NHSStats` — is still worth doing.
+# Historical UX and source audit. Recheck source availability and use the round-two plan for current priorities.

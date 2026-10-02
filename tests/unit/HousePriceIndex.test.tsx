@@ -13,13 +13,19 @@ vi.mock("@/app/components/MetricsStatus", () => ({
 }));
 
 vi.mock("@/app/components/FinancialTimeSeriesChart", () => ({
-  default: ({ citation }: { citation?: string }) => (
-    <output data-testid="hpi-chart-citation">{citation ?? "missing citation"}</output>
+  default: ({ citation, title }: { citation?: string; title: string }) => (
+    <output data-testid={title.includes("House Price") ? "hpi-chart-citation" : "rent-chart-citation"}>{citation ?? "missing citation"}</output>
   ),
 }));
 
 const current = {
   headline: {
+    privateRentPeriod: "Aug 2026",
+    privateRentObservedAt: Date.UTC(2026, 7, 31),
+    avgMonthlyPrivateRentGbp: 1_400,
+    privateRentAnnualChangePercent: 3.8,
+    previousPrivateRentPeriod: "Jul 2026",
+    previousPrivateRentAnnualChangePercent: 3.7,
     period: "Jul 2026",
     observedAt: Date.UTC(2026, 6, 31),
     releaseDate: "2026-09-16",
@@ -29,13 +35,15 @@ const current = {
     previousChangePercent: 1.5,
   },
   history: [
-    { period: "Jun 2026", observedAt: Date.UTC(2026, 5, 30), hpiChangePercent: 1.5 },
-    { period: "Jul 2026", observedAt: Date.UTC(2026, 6, 31), hpiChangePercent: 1.4 },
+    { period: "Jun 2026", observedAt: Date.UTC(2026, 5, 30), privateRentAnnualChangePercent: 3.3, hpiChangePercent: 1.5 },
+    { period: "Jul 2026", observedAt: Date.UTC(2026, 6, 31), privateRentAnnualChangePercent: 3.7, hpiChangePercent: 1.4 },
+    { period: "Aug 2026", observedAt: Date.UTC(2026, 7, 31), privateRentAnnualChangePercent: 3.8, hpiChangePercent: null },
   ],
   methodology: {
     measure: "UK House Price Index (HPI), average house price annual percentage change",
     status: "Official statistics",
     revisionNote: "UK HPI first estimates are provisional and subject to revision as later transaction data is incorporated.",
+    privateRentRevisionNote: "ONS private-rent estimates are provisional and subject to revision.",
   },
   source: {
     edition: "september2026",
@@ -75,6 +83,8 @@ describe("HousePriceIndex evidence integrity", () => {
     expect(screen.getByText((_, element) => element?.tagName === "P" && /1\.5% recorded in the 12 months to Jun 2026/i.test(element.textContent ?? ""))).toBeInTheDocument();
     expect(screen.getAllByText(/Published 16 September 2026/i).length).toBeGreaterThan(1);
     expect(screen.getByText("Average price and annual change")).toBeInTheDocument();
+    expect(screen.getByText("Average UK monthly private rent")).toBeInTheDocument();
+    expect(screen.getByText("£1,400")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Why it matters" })).toBeInTheDocument();
     expect(screen.getByText("Explain this number")).toBeInTheDocument();
     expect(screen.getByText("Important caveat")).toBeInTheDocument();
@@ -105,6 +115,7 @@ describe("HousePriceIndex evidence integrity", () => {
     expect(citation).toHaveTextContent(current.headline.releaseDate);
     expect(citation).toHaveTextContent("Jun 2026 to Jul 2026");
     expect(citation).toHaveTextContent(current.methodology.revisionNote);
+    expect(screen.getByTestId("rent-chart-citation")).toHaveTextContent(current.methodology.privateRentRevisionNote);
   });
 
   it("describes a decline without stale rise language", () => {
@@ -121,6 +132,7 @@ describe("HousePriceIndex evidence integrity", () => {
           previousPeriod: "Jul 2026",
           previousChangePercent: 1.4,
         },
+        history: current.history.map((point) => point.period === "Aug 2026" ? { ...point, hpiChangePercent: -0.5 } : point),
       })
     );
 

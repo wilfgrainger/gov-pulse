@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DataExplorer from "@/app/components/DataExplorer";
+import { MEASURES } from "@/app/lib/measureDefinitions";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 
 const NOW = new Date("2026-09-25T12:00:00Z");
@@ -89,13 +90,13 @@ describe("public data explorer", () => {
     expect(measures.getAllByRole("button")).toHaveLength(2);
     expect(measures.getByRole("button", { name: /Central government receipts/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: "Show unavailable measures" }));
-    expect(measures.getAllByRole("button")).toHaveLength(8);
+    expect(measures.getAllByRole("button")).toHaveLength(MEASURES.length);
     expect(measures.getByRole("button", { name: /NHS waiting list/i })).toHaveTextContent("Unavailable");
   });
 
   it("explains gaps when no core measure has a verified value", () => {
     render(<DataExplorer initialSnapshot={null} />);
-    expect(within(screen.getByRole("list", { name: "Measures" })).getAllByRole("button")).toHaveLength(8);
+    expect(within(screen.getByRole("list", { name: "Measures" })).getAllByRole("button")).toHaveLength(MEASURES.length);
     expect(screen.getByText(/No core measure has a current verified value/i)).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Show unavailable measures" })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: "Show unavailable measures" })).toBeDisabled();

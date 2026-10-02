@@ -20,6 +20,27 @@ const STATE_LABELS: Record<EvidenceState, string> = {
   unavailable: "Unavailable",
 };
 
+export function AwardNoticeContext() {
+  return (
+    <section aria-labelledby="award-notice-context-title" className="mt-12 border-y-2 border-foreground bg-surface-warm md:mt-16">
+      <div className="grid gap-6 p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:p-8">
+        <div>
+          <p className="eyebrow">Public money · procurement records</p>
+          <h3 id="award-notice-context-title" className="font-display mt-2 max-w-3xl text-3xl leading-tight md:text-4xl">
+            Contract awards show commitments, not cash paid.
+          </h3>
+          <p className="mt-4 max-w-3xl text-sm leading-6 text-gray-700 md:text-base">
+            Published notice values can cover several years, include framework ceilings or multiple lots, and change later. Check the original notice before comparing an award with public expenditure.
+          </p>
+        </div>
+        <Link href="/money/" prefetch={false} className="v3-primary-action shrink-0">
+          Explore public-money records <span aria-hidden="true">→</span>
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 function StateBadge({ state }: { state: EvidenceState }) {
   const tone =
     state === "current"
@@ -188,55 +209,7 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
           </ul>
         </section>
 
-        {/* British 538 Data Spotlight: Government Spending & Contracts */}
-        <section aria-labelledby="spending-spotlight-title" className="mt-12 md:mt-16">
-          <div className="border border-[#14243b] bg-white p-6 shadow-[3px_3px_0_#14243b] md:p-8 lg:p-10">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-black/15 pb-5">
-              <div>
-                <p className="font-mono text-xs font-bold uppercase tracking-wider text-[#1f5c8a]">
-                  Public Procurement & Spending · Find a Tender Service
-                </p>
-                <h3 id="spending-spotlight-title" className="font-display mt-2 text-2xl font-bold md:text-3xl">
-                  UK Government Contracts: Where Public Money Goes
-                </h3>
-              </div>
-              <Link
-                href="/section/government-contracts"
-                prefetch={false}
-                className="inline-flex min-h-10 items-center gap-2 bg-[#14243b] px-4 py-2 font-mono text-xs font-bold text-white transition-colors hover:bg-[#1f5c8a]"
-              >
-                <span>Explore Spending Pipeline</span>
-                <span aria-hidden="true">→</span>
-              </Link>
-            </div>
-
-            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="border-l-4 border-[#1f5c8a] bg-[#f4f6f8] p-4">
-                <p className="font-mono text-xs font-semibold uppercase text-gray-500">Total Tracked Value</p>
-                <p className="headline-figure mt-1 text-3xl font-extrabold text-[#14243b] md:text-4xl">£13.15B</p>
-                <p className="mt-2 text-xs text-gray-600">Across 100 active notices & frameworks</p>
-              </div>
-
-              <div className="border-l-4 border-[#0f6b63] bg-[#f4f6f8] p-4">
-                <p className="font-mono text-xs font-semibold uppercase text-gray-500">Peak Spend Month</p>
-                <p className="headline-figure mt-1 text-3xl font-extrabold text-[#0f6b63] md:text-4xl">£2.66B</p>
-                <p className="mt-2 text-xs text-gray-600">March 2026 fiscal year-end allocation</p>
-              </div>
-
-              <div className="border-l-4 border-[#8a5a12] bg-[#f4f6f8] p-4">
-                <p className="font-mono text-xs font-semibold uppercase text-gray-500">Top 5 Concentration</p>
-                <p className="headline-figure mt-1 text-3xl font-extrabold text-[#8a5a12] md:text-4xl">30.8%</p>
-                <p className="mt-2 text-xs text-gray-600">£4.05B held by top 5 major suppliers</p>
-              </div>
-
-              <div className="border-l-4 border-[#5a4b9c] bg-[#f4f6f8] p-4">
-                <p className="font-mono text-xs font-semibold uppercase text-gray-500">Monthly Mean Spend</p>
-                <p className="headline-figure mt-1 text-3xl font-extrabold text-[#5a4b9c] md:text-4xl">£1.46B</p>
-                <p className="mt-2 text-xs text-gray-600">Average monthly award commitment</p>
-              </div>
-            </div>
-          </div>
-        </section>
+        <AwardNoticeContext />
 
         <section id="more-evidence" aria-labelledby="more-evidence-title" className="mt-12 border-y border-black/20 py-8 md:mt-16">
           <div className="grid gap-6 lg:grid-cols-[17rem_1fr]">

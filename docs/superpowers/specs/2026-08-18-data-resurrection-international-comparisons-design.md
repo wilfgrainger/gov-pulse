@@ -1,5 +1,7 @@
 # Data Resurrection and International Comparisons Design
 
+> Historical design. Current comparison scope and execution are in the [round-two plan](../plans/2026-10-02-publication-reinvention-round-2.md). Preserve source-comparability rules; the old country and measure counts are not product caps.
+
 Status: Approved
 Date: 18 August 2026
 Repository: `wilfgrainger/gov-pulse`

@@ -29,7 +29,10 @@ function Overlay({ measures, window }: { measures: MeasureRecord[]; window: Date
         {[0, .25, .5, .75, 1].map((step) => <g key={step}><line x1="60" x2="740" y1={40 + step * 240} y2={40 + step * 240} stroke="#d8d0c5" strokeDasharray="3 4"/><text x="52" y={44 + step * 240} textAnchor="end" fontSize="11" fill="#51596a">{format(max - step * span, measures[0]?.unit ?? "")}</text></g>)}
         {visible.map(({ measure, points }, index) => {
           const series = segmentPoints(points, measure.cadence);
-          return series.map((segment, segmentIndex) => <path key={`${measure.id}-${segmentIndex}`} d={segment.map((point, pointIndex) => `${pointIndex ? "L" : "M"} ${x(point.observedAt)} ${y(point.value!)}`).join(" ")} fill="none" stroke={COLORS[index]} strokeWidth="3"/>);
+          return series.map((segment, segmentIndex) => <g key={`${measure.id}-${segmentIndex}`}>
+            <path d={segment.map((point, pointIndex) => `${pointIndex ? "L" : "M"} ${x(point.observedAt)} ${y(point.value!)}`).join(" ")} fill="none" stroke={COLORS[index]} strokeWidth="3"/>
+            {segment.length === 1 ? <circle cx={x(segment[0].observedAt)} cy={y(segment[0].value!)} r="5" fill={COLORS[index]} stroke="white" strokeWidth="2"/> : null}
+          </g>);
         })}
         <text x="60" y="316" fontSize="11" fill="#51596a">{dates[0] ?? window.start}</text><text x="740" y="316" textAnchor="end" fontSize="11" fill="#51596a">{dates.at(-1) ?? window.end}</text>
       </svg>

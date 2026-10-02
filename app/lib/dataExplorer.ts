@@ -16,7 +16,8 @@ function record(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-function at(value: unknown, path: string): unknown {
+function at(value: unknown, path: string | null): unknown {
+  if (!path) return undefined;
   return path
     .split(".")
     .reduce<unknown>(
@@ -107,7 +108,10 @@ export function exploreMeasures(raw: unknown, now = new Date()): Measure[] {
   }
   return MEASURES.map((definition) => {
     const data = snapshot?.[definition.section];
-    const rawValue = at(data, definition.valuePath);
+    const sourceHistory = at(data, definition.historyPath);
+    const rawValue = definition.valueFromLatestHistory && Array.isArray(sourceHistory)
+      ? at(sourceHistory.at(-1), definition.historyValue)
+      : at(data, definition.valuePath);
     const period = readablePeriod(text(at(data, definition.periodPath)));
     const publishedAt = text(at(data, definition.publicationPath));
     const sourceUrl = snapshot ? sourceLink(data, definition, snapshot) : null;

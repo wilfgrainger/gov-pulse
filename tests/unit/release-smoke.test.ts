@@ -3,6 +3,18 @@ import { expect, it, vi } from "vitest";
 import { releaseSmoke } from "@/scripts/release-smoke.mjs";
 const revision = "a".repeat(40);
 const html = `<meta name="public-data-revision" content="${revision}">`;
+it("accepts a complete publication after the reader routes report the expected revision", async () => {
+  const log = { info: vi.fn(), warn: vi.fn() };
+  await releaseSmoke({
+    url: "https://public-data.org/",
+    revision,
+    log,
+    fetchImpl: async (url: URL) =>
+      new Response(url.pathname.endsWith("health.json") ? '{"ready":true}' : html),
+  });
+  expect(log.info).toHaveBeenCalledWith("Release revision verified on 2 reader routes.");
+  expect(log.warn).not.toHaveBeenCalled();
+});
 it("accepts deployed code when evidence is explicitly degraded", async () => {
   const log = { info: vi.fn(), warn: vi.fn() };
   await releaseSmoke({
@@ -15,6 +27,17 @@ it("accepts deployed code when evidence is explicitly degraded", async () => {
       ),
   });
   expect(log.warn).toHaveBeenCalledOnce();
+});
+it.each(['{}', '{"ready":"false"}'])("rejects a malformed health contract: %s", async (body) => {
+  await expect(
+    releaseSmoke({
+      url: "https://public-data.org/",
+      revision,
+      attempts: 1,
+      fetchImpl: async (url: URL) =>
+        new Response(url.pathname.endsWith("health.json") ? body : html),
+    }),
+  ).rejects.toThrow("invalid contract");
 });
 it("rejects a wrong revision with a bounded retry count", async () => {
   const fetchImpl = vi.fn(async () => new Response("old revision"));

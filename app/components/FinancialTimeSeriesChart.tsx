@@ -17,6 +17,7 @@ import ObservationTable from "@/app/components/charts/ObservationTable";
 import { METRICS_SNAPSHOT_PATH } from "@/app/lib/config";
 import { visibleChartEvents } from "@/app/lib/chartEvents";
 import type { ChartMetadata } from "@/app/lib/chartExport";
+import { timeAxisDomain, timeAxisTicks } from "@/app/lib/chartModel";
 
 export type FinancialChartPoint = {
   observedAt: number;
@@ -75,7 +76,8 @@ type Props = {
 
 function formatAxisDate(value: number) {
   return new Intl.DateTimeFormat("en-GB", {
-    year: "numeric",
+    month: "short",
+    year: "2-digit",
     timeZone: "UTC",
   }).format(new Date(value));
 }
@@ -130,6 +132,10 @@ export default function FinancialTimeSeriesChart({
     showEvents && first && latest
       ? visibleChartEvents(first.observedAt, latest.observedAt)
       : [];
+  const observedDates = data.map((point) => point.observedAt);
+  const axisDomain = timeAxisDomain(observedDates);
+  const axisTicks = timeAxisTicks(observedDates);
+  const axisTickCount = new Set(observedDates.filter(Number.isFinite)).size === 1 ? 3 : 6;
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartData = addCadenceBreaks(data);
 
@@ -237,12 +243,14 @@ export default function FinancialTimeSeriesChart({
                 dataKey="observedAt"
                 type="number"
                 scale="time"
-                domain={["dataMin", "dataMax"]}
+                domain={axisDomain}
+                ticks={axisTicks}
+                padding={axisTicks ? { left: 64, right: 64 } : undefined}
                 tickFormatter={formatAxisDate}
                 tick={{ fontSize: 11, fontFamily: "ui-monospace, monospace", fill: "#586170" }}
                 axisLine={{ stroke: "#111827", strokeWidth: 1 }}
                 tickLine={false}
-                tickCount={6}
+                tickCount={axisTickCount}
                 minTickGap={44}
               />
               <YAxis

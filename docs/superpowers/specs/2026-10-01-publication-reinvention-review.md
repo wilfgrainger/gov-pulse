@@ -1,5 +1,7 @@
 # Public-data.org: website, evidence and architecture review
 
+> **Historical review.** Its route counts, dated state and task assumptions are not current constraints. Round-two scope and execution are in [the current plan](../plans/2026-10-02-publication-reinvention-round-2.md).
+
 Review date: 1 October 2026. Source revision: `ac110e2873bbb2b861aceda307ad6256db5202c2`.
 
 ## Scope and evidence

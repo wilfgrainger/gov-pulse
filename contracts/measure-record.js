@@ -95,7 +95,8 @@ function validateMeasureRecord(input) {
       throw new Error("Measure observations must be strictly chronological");
     }
   }
-  if (availability === "current" && points.length && points.at(-1).value !== normalizedValue) {
+  const latestNumericObservation = [...points].reverse().find((point) => point.value !== null);
+  if (availability === "current" && points.length && latestNumericObservation?.value !== normalizedValue) {
     throw new Error("Current value must match the latest observation");
   }
   const caveats = Array.isArray(value.caveats)
