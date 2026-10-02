@@ -1,0 +1,929 @@
+{
+  "contractVersion": 1,
+  "section": "realWages",
+  "generatedAt": "2026-10-01T15:25:40.068Z",
+  "geography": "United Kingdom",
+  "licence": {
+    "name": "Open Government Licence v3.0, except where otherwise stated",
+    "url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+    "attribution": "Contains public sector information licensed under the Open Government Licence v3.0, except where the named source states otherwise."
+  },
+  "source": {
+    "status": "ok",
+    "cacheState": "fresh",
+    "fetchedAt": "2026-10-01T15:26:56.880Z",
+    "source": "Average weekly earnings in Great Britain bulletin",
+    "provenance": {
+      "registryVersion": "2026-08-02.1",
+      "section": "realWages",
+      "title": "Real-terms growth in average weekly earnings",
+      "evidenceClass": "official-data",
+      "geography": "Great Britain",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "monthly",
+      "operationalStatus": "active",
+      "publicationRequirement": "required",
+      "upstreams": [
+        {
+          "publisher": "Office for National Statistics",
+          "label": "Average weekly earnings in Great Britain bulletin",
+          "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/averageweeklyearningsingreatbritain/latest",
+          "sourceClass": "official-primary",
+          "caveat": "The Worker discovers the current edition from the rolling bulletin alias and extracts ONS's own published real-terms (CPIH-adjusted) growth figure rather than deriving it from nominal pay and inflation separately."
+        }
+      ]
+    }
+  },
+  "data": {
+    "headline": {
+      "period": "May to Jul 2026",
+      "observedAt": 1785456000000,
+      "releaseDate": "2026-09-15",
+      "regularPayRealGrowthPercent": 0.6,
+      "totalPayRealGrowthPercent": 0.9,
+      "deflator": "CPIH"
+    },
+    "methodology": {
+      "measure": "Average weekly earnings growth, adjusted for inflation using the Consumer Prices Index including owner occupiers' housing costs (CPIH)",
+      "status": "Accredited official statistics",
+      "revisionNote": "Average weekly earnings are published on a provisional basis and are subject to revision as later source data and seasonal-adjustment reviews are incorporated."
+    },
+    "source": {
+      "edition": "september2026",
+      "bulletinUrl": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/averageweeklyearningsingreatbritain/september2026",
+      "historyUrl": "https://www.ons.gov.uk/generator?uri=/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/averageweeklyearningsingreatbritain/september2026/06d22b85&format=csv"
+    },
+    "history": [
+      {
+        "period": "Jun to Aug 2016",
+        "observedAt": 1472601600000,
+        "totalPayRealGrowthPercent": 1.6,
+        "regularPayRealGrowthPercent": 1.4,
+        "cpihAnnualRatePercent": 0.9
+      },
+      {
+        "period": "Jul to Sep 2016",
+        "observedAt": 1475193600000,
+        "totalPayRealGrowthPercent": 1.4,
+        "regularPayRealGrowthPercent": 1.3,
+        "cpihAnnualRatePercent": 1.1
+      },
+      {
+        "period": "Aug to Oct 2016",
+        "observedAt": 1477872000000,
+        "totalPayRealGrowthPercent": 1.3,
+        "regularPayRealGrowthPercent": 1.3,
+        "cpihAnnualRatePercent": 1.2
+      },
+      {
+        "period": "Sep to Nov 2016",
+        "observedAt": 1480464000000,
+        "totalPayRealGrowthPercent": 1.3,
+        "regularPayRealGrowthPercent": 1.3,
+        "cpihAnnualRatePercent": 1.4
+      },
+      {
+        "period": "Oct to Dec 2016",
+        "observedAt": 1483142400000,
+        "totalPayRealGrowthPercent": 0.9,
+        "regularPayRealGrowthPercent": 1,
+        "cpihAnnualRatePercent": 1.5
+      },
+      {
+        "period": "Nov to Jan 2017",
+        "observedAt": 1485820800000,
+        "totalPayRealGrowthPercent": 0.4,
+        "regularPayRealGrowthPercent": 0.6,
+        "cpihAnnualRatePercent": 1.7
+      },
+      {
+        "period": "Dec to Feb 2017",
+        "observedAt": 1488240000000,
+        "totalPayRealGrowthPercent": 0.1,
+        "regularPayRealGrowthPercent": 0,
+        "cpihAnnualRatePercent": 2
+      },
+      {
+        "period": "Jan to Mar 2017",
+        "observedAt": 1490918400000,
+        "totalPayRealGrowthPercent": 0.1,
+        "regularPayRealGrowthPercent": -0.3,
+        "cpihAnnualRatePercent": 2.2
+      },
+      {
+        "period": "Feb to Apr 2017",
+        "observedAt": 1493510400000,
+        "totalPayRealGrowthPercent": -0.2,
+        "regularPayRealGrowthPercent": -0.6,
+        "cpihAnnualRatePercent": 2.4
+      },
+      {
+        "period": "Mar to May 2017",
+        "observedAt": 1496188800000,
+        "totalPayRealGrowthPercent": -0.5,
+        "regularPayRealGrowthPercent": -0.5,
+        "cpihAnnualRatePercent": 2.5
+      },
+      {
+        "period": "Apr to Jun 2017",
+        "observedAt": 1498780800000,
+        "totalPayRealGrowthPercent": -0.4,
+        "regularPayRealGrowthPercent": -0.5,
+        "cpihAnnualRatePercent": 2.6
+      },
+      {
+        "period": "May to Jul 2017",
+        "observedAt": 1501459200000,
+        "totalPayRealGrowthPercent": -0.3,
+        "regularPayRealGrowthPercent": -0.4,
+        "cpihAnnualRatePercent": 2.6
+      },
+      {
+        "period": "Jun to Aug 2017",
+        "observedAt": 1504137600000,
+        "totalPayRealGrowthPercent": -0.3,
+        "regularPayRealGrowthPercent": -0.4,
+        "cpihAnnualRatePercent": 2.6
+      },
+      {
+        "period": "Jul to Sep 2017",
+        "observedAt": 1506729600000,
+        "totalPayRealGrowthPercent": -0.4,
+        "regularPayRealGrowthPercent": -0.4,
+        "cpihAnnualRatePercent": 2.7
+      },
+      {
+        "period": "Aug to Oct 2017",
+        "observedAt": 1509408000000,
+        "totalPayRealGrowthPercent": -0.2,
+        "regularPayRealGrowthPercent": -0.4,
+        "cpihAnnualRatePercent": 2.8
+      },
+      {
+        "period": "Sep to Nov 2017",
+        "observedAt": 1512000000000,
+        "totalPayRealGrowthPercent": -0.3,
+        "regularPayRealGrowthPercent": -0.4,
+        "cpihAnnualRatePercent": 2.8
+      },
+      {
+        "period": "Oct to Dec 2017",
+        "observedAt": 1514678400000,
+        "totalPayRealGrowthPercent": -0.2,
+        "regularPayRealGrowthPercent": -0.3,
+        "cpihAnnualRatePercent": 2.8
+      },
+      {
+        "period": "Nov to Jan 2018",
+        "observedAt": 1517356800000,
+        "totalPayRealGrowthPercent": -0.2,
+        "regularPayRealGrowthPercent": -0.2,
+        "cpihAnnualRatePercent": 2.7
+      },
+      {
+        "period": "Dec to Feb 2018",
+        "observedAt": 1519776000000,
+        "totalPayRealGrowthPercent": 0,
+        "regularPayRealGrowthPercent": 0.1,
+        "cpihAnnualRatePercent": 2.6
+      },
+      {
+        "period": "Jan to Mar 2018",
+        "observedAt": 1522454400000,
+        "totalPayRealGrowthPercent": 0.1,
+        "regularPayRealGrowthPercent": 0.3,
+        "cpihAnnualRatePercent": 2.5
+      },
+      {
+        "period": "Feb to Apr 2018",
+        "observedAt": 1525046400000,
+        "totalPayRealGrowthPercent": 0.3,
+        "regularPayRealGrowthPercent": 0.5,
+        "cpihAnnualRatePercent": 2.3
+      },
+      {
+        "period": "Mar to May 2018",
+        "observedAt": 1527724800000,
+        "totalPayRealGrowthPercent": 0.4,
+        "regularPayRealGrowthPercent": 0.4,
+        "cpihAnnualRatePercent": 2.3
+      },
+      {
+        "period": "Apr to Jun 2018",
+        "observedAt": 1530316800000,
+        "totalPayRealGrowthPercent": 0.3,
+        "regularPayRealGrowthPercent": 0.4,
+        "cpihAnnualRatePercent": 2.3
+      },
+      {
+        "period": "May to Jul 2018",
+        "observedAt": 1532995200000,
+        "totalPayRealGrowthPercent": 0.4,
+        "regularPayRealGrowthPercent": 0.5,
+        "cpihAnnualRatePercent": 2.3
+      },
+      {
+        "period": "Jun to Aug 2018",
+        "observedAt": 1535673600000,
+        "totalPayRealGrowthPercent": 0.6,
+        "regularPayRealGrowthPercent": 0.7,
+        "cpihAnnualRatePercent": 2.3
+      },
+      {
+        "period": "Jul to Sep 2018",
+        "observedAt": 1538265600000,
+        "totalPayRealGrowthPercent": 0.8,
+        "regularPayRealGrowthPercent": 0.9,
+        "cpihAnnualRatePercent": 2.3
+      },
+      {
+        "period": "Aug to Oct 2018",
+        "observedAt": 1540944000000,
+        "totalPayRealGrowthPercent": 1.1,
+        "regularPayRealGrowthPercent": 1,
+        "cpihAnnualRatePercent": 2.3
+      },
+      {
+        "period": "Sep to Nov 2018",
+        "observedAt": 1543536000000,
+        "totalPayRealGrowthPercent": 1.2,
+        "regularPayRealGrowthPercent": 1.1,
+        "cpihAnnualRatePercent": 2.2
+      },
+      {
+        "period": "Oct to Dec 2018",
+        "observedAt": 1546214400000,
+        "totalPayRealGrowthPercent": 1.3,
+        "regularPayRealGrowthPercent": 1.3,
+        "cpihAnnualRatePercent": 2.1
+      },
+      {
+        "period": "Nov to Jan 2019",
+        "observedAt": 1548892800000,
+        "totalPayRealGrowthPercent": 1.2,
+        "regularPayRealGrowthPercent": 1.5,
+        "cpihAnnualRatePercent": 2
+      },
+      {
+        "period": "Dec to Feb 2019",
+        "observedAt": 1551312000000,
+        "totalPayRealGrowthPercent": 1.3,
+        "regularPayRealGrowthPercent": 1.5,
+        "cpihAnnualRatePercent": 1.9
+      },
+      {
+        "period": "Jan to Mar 2019",
+        "observedAt": 1553990400000,
+        "totalPayRealGrowthPercent": 1.3,
+        "regularPayRealGrowthPercent": 1.5,
+        "cpihAnnualRatePercent": 1.8
+      },
+      {
+        "period": "Feb to Apr 2019",
+        "observedAt": 1556582400000,
+        "totalPayRealGrowthPercent": 1.4,
+        "regularPayRealGrowthPercent": 1.5,
+        "cpihAnnualRatePercent": 1.9
+      },
+      {
+        "period": "Mar to May 2019",
+        "observedAt": 1559260800000,
+        "totalPayRealGrowthPercent": 1.7,
+        "regularPayRealGrowthPercent": 1.7,
+        "cpihAnnualRatePercent": 1.9
+      },
+      {
+        "period": "Apr to Jun 2019",
+        "observedAt": 1561852800000,
+        "totalPayRealGrowthPercent": 2.1,
+        "regularPayRealGrowthPercent": 2,
+        "cpihAnnualRatePercent": 1.9
+      },
+      {
+        "period": "May to Jul 2019",
+        "observedAt": 1564531200000,
+        "totalPayRealGrowthPercent": 2.1,
+        "regularPayRealGrowthPercent": 1.9,
+        "cpihAnnualRatePercent": 1.9
+      },
+      {
+        "period": "Jun to Aug 2019",
+        "observedAt": 1567209600000,
+        "totalPayRealGrowthPercent": 1.9,
+        "regularPayRealGrowthPercent": 1.9,
+        "cpihAnnualRatePercent": 1.9
+      },
+      {
+        "period": "Jul to Sep 2019",
+        "observedAt": 1569801600000,
+        "totalPayRealGrowthPercent": 2,
+        "regularPayRealGrowthPercent": 1.8,
+        "cpihAnnualRatePercent": 1.8
+      },
+      {
+        "period": "Aug to Oct 2019",
+        "observedAt": 1572480000000,
+        "totalPayRealGrowthPercent": 1.6,
+        "regularPayRealGrowthPercent": 1.8,
+        "cpihAnnualRatePercent": 1.6
+      },
+      {
+        "period": "Sep to Nov 2019",
+        "observedAt": 1575072000000,
+        "totalPayRealGrowthPercent": 1.6,
+        "regularPayRealGrowthPercent": 1.7,
+        "cpihAnnualRatePercent": 1.6
+      },
+      {
+        "period": "Oct to Dec 2019",
+        "observedAt": 1577750400000,
+        "totalPayRealGrowthPercent": 1.2,
+        "regularPayRealGrowthPercent": 1.7,
+        "cpihAnnualRatePercent": 1.5
+      },
+      {
+        "period": "Nov to Jan 2020",
+        "observedAt": 1580428800000,
+        "totalPayRealGrowthPercent": 1.3,
+        "regularPayRealGrowthPercent": 1.5,
+        "cpihAnnualRatePercent": 1.6
+      },
+      {
+        "period": "Dec to Feb 2020",
+        "observedAt": 1582934400000,
+        "totalPayRealGrowthPercent": 0.9,
+        "regularPayRealGrowthPercent": 1.3,
+        "cpihAnnualRatePercent": 1.6
+      },
+      {
+        "period": "Jan to Mar 2020",
+        "observedAt": 1585612800000,
+        "totalPayRealGrowthPercent": 0.5,
+        "regularPayRealGrowthPercent": 1,
+        "cpihAnnualRatePercent": 1.7
+      },
+      {
+        "period": "Feb to Apr 2020",
+        "observedAt": 1588204800000,
+        "totalPayRealGrowthPercent": -0.4,
+        "regularPayRealGrowthPercent": 0.4,
+        "cpihAnnualRatePercent": 1.4
+      },
+      {
+        "period": "Mar to May 2020",
+        "observedAt": 1590883200000,
+        "totalPayRealGrowthPercent": -1.2,
+        "regularPayRealGrowthPercent": -0.3,
+        "cpihAnnualRatePercent": 1
+      },
+      {
+        "period": "Apr to Jun 2020",
+        "observedAt": 1593475200000,
+        "totalPayRealGrowthPercent": -1.8,
+        "regularPayRealGrowthPercent": -0.9,
+        "cpihAnnualRatePercent": 0.8
+      },
+      {
+        "period": "May to Jul 2020",
+        "observedAt": 1596153600000,
+        "totalPayRealGrowthPercent": -1.7,
+        "regularPayRealGrowthPercent": -0.6,
+        "cpihAnnualRatePercent": 0.9
+      },
+      {
+        "period": "Jun to Aug 2020",
+        "observedAt": 1598832000000,
+        "totalPayRealGrowthPercent": -0.6,
+        "regularPayRealGrowthPercent": 0.2,
+        "cpihAnnualRatePercent": 0.8
+      },
+      {
+        "period": "Jul to Sep 2020",
+        "observedAt": 1601424000000,
+        "totalPayRealGrowthPercent": 0.7,
+        "regularPayRealGrowthPercent": 1.2,
+        "cpihAnnualRatePercent": 0.8
+      },
+      {
+        "period": "Aug to Oct 2020",
+        "observedAt": 1604102400000,
+        "totalPayRealGrowthPercent": 2.1,
+        "regularPayRealGrowthPercent": 2.1,
+        "cpihAnnualRatePercent": 0.7
+      },
+      {
+        "period": "Sep to Nov 2020",
+        "observedAt": 1606694400000,
+        "totalPayRealGrowthPercent": 3,
+        "regularPayRealGrowthPercent": 2.8,
+        "cpihAnnualRatePercent": 0.7
+      },
+      {
+        "period": "Oct to Dec 2020",
+        "observedAt": 1609372800000,
+        "totalPayRealGrowthPercent": 3.8,
+        "regularPayRealGrowthPercent": 3.2,
+        "cpihAnnualRatePercent": 0.8
+      },
+      {
+        "period": "Nov to Jan 2021",
+        "observedAt": 1612051200000,
+        "totalPayRealGrowthPercent": 3.9,
+        "regularPayRealGrowthPercent": 3.5,
+        "cpihAnnualRatePercent": 0.8
+      },
+      {
+        "period": "Dec to Feb 2021",
+        "observedAt": 1614470400000,
+        "totalPayRealGrowthPercent": 3.6,
+        "regularPayRealGrowthPercent": 3.5,
+        "cpihAnnualRatePercent": 0.8
+      },
+      {
+        "period": "Jan to Mar 2021",
+        "observedAt": 1617148800000,
+        "totalPayRealGrowthPercent": 3.2,
+        "regularPayRealGrowthPercent": 3.6,
+        "cpihAnnualRatePercent": 0.9
+      },
+      {
+        "period": "Feb to Apr 2021",
+        "observedAt": 1619740800000,
+        "totalPayRealGrowthPercent": 4.5,
+        "regularPayRealGrowthPercent": 4.4,
+        "cpihAnnualRatePercent": 1.1
+      },
+      {
+        "period": "Mar to May 2021",
+        "observedAt": 1622419200000,
+        "totalPayRealGrowthPercent": 5.8,
+        "regularPayRealGrowthPercent": 4.9,
+        "cpihAnnualRatePercent": 1.6
+      },
+      {
+        "period": "Apr to Jun 2021",
+        "observedAt": 1625011200000,
+        "totalPayRealGrowthPercent": 6.8,
+        "regularPayRealGrowthPercent": 5.2,
+        "cpihAnnualRatePercent": 2
+      },
+      {
+        "period": "May to Jul 2021",
+        "observedAt": 1627689600000,
+        "totalPayRealGrowthPercent": 6.2,
+        "regularPayRealGrowthPercent": 4.6,
+        "cpihAnnualRatePercent": 2.2
+      },
+      {
+        "period": "Jun to Aug 2021",
+        "observedAt": 1630368000000,
+        "totalPayRealGrowthPercent": 4.7,
+        "regularPayRealGrowthPercent": 3.5,
+        "cpihAnnualRatePercent": 2.5
+      },
+      {
+        "period": "Jul to Sep 2021",
+        "observedAt": 1632960000000,
+        "totalPayRealGrowthPercent": 3.1,
+        "regularPayRealGrowthPercent": 2.3,
+        "cpihAnnualRatePercent": 2.7
+      },
+      {
+        "period": "Aug to Oct 2021",
+        "observedAt": 1635638400000,
+        "totalPayRealGrowthPercent": 1.7,
+        "regularPayRealGrowthPercent": 1.1,
+        "cpihAnnualRatePercent": 3.2
+      },
+      {
+        "period": "Sep to Nov 2021",
+        "observedAt": 1638230400000,
+        "totalPayRealGrowthPercent": 0.6,
+        "regularPayRealGrowthPercent": 0.2,
+        "cpihAnnualRatePercent": 3.8
+      },
+      {
+        "period": "Oct to Dec 2021",
+        "observedAt": 1640908800000,
+        "totalPayRealGrowthPercent": 0.5,
+        "regularPayRealGrowthPercent": -0.5,
+        "cpihAnnualRatePercent": 4.4
+      },
+      {
+        "period": "Nov to Jan 2022",
+        "observedAt": 1643587200000,
+        "totalPayRealGrowthPercent": 0.4,
+        "regularPayRealGrowthPercent": -0.7,
+        "cpihAnnualRatePercent": 4.8
+      },
+      {
+        "period": "Dec to Feb 2022",
+        "observedAt": 1646006400000,
+        "totalPayRealGrowthPercent": 1,
+        "regularPayRealGrowthPercent": -0.7,
+        "cpihAnnualRatePercent": 5.1
+      },
+      {
+        "period": "Jan to Mar 2022",
+        "observedAt": 1648684800000,
+        "totalPayRealGrowthPercent": 1.7,
+        "regularPayRealGrowthPercent": -0.9,
+        "cpihAnnualRatePercent": 5.5
+      },
+      {
+        "period": "Feb to Apr 2022",
+        "observedAt": 1651276800000,
+        "totalPayRealGrowthPercent": 0.6,
+        "regularPayRealGrowthPercent": -1.8,
+        "cpihAnnualRatePercent": 6.5
+      },
+      {
+        "period": "Mar to May 2022",
+        "observedAt": 1653955200000,
+        "totalPayRealGrowthPercent": -0.8,
+        "regularPayRealGrowthPercent": -2.4,
+        "cpihAnnualRatePercent": 7.3
+      },
+      {
+        "period": "Apr to Jun 2022",
+        "observedAt": 1656547200000,
+        "totalPayRealGrowthPercent": -2.5,
+        "regularPayRealGrowthPercent": -2.8,
+        "cpihAnnualRatePercent": 8
+      },
+      {
+        "period": "May to Jul 2022",
+        "observedAt": 1659225600000,
+        "totalPayRealGrowthPercent": -2.5,
+        "regularPayRealGrowthPercent": -2.7,
+        "cpihAnnualRatePercent": 8.3
+      },
+      {
+        "period": "Jun to Aug 2022",
+        "observedAt": 1661904000000,
+        "totalPayRealGrowthPercent": -2.3,
+        "regularPayRealGrowthPercent": -2.7,
+        "cpihAnnualRatePercent": 8.5
+      },
+      {
+        "period": "Jul to Sep 2022",
+        "observedAt": 1664496000000,
+        "totalPayRealGrowthPercent": -2.6,
+        "regularPayRealGrowthPercent": -2.7,
+        "cpihAnnualRatePercent": 8.7
+      },
+      {
+        "period": "Aug to Oct 2022",
+        "observedAt": 1667174400000,
+        "totalPayRealGrowthPercent": -2.6,
+        "regularPayRealGrowthPercent": -2.6,
+        "cpihAnnualRatePercent": 9
+      },
+      {
+        "period": "Sep to Nov 2022",
+        "observedAt": 1669766400000,
+        "totalPayRealGrowthPercent": -2.5,
+        "regularPayRealGrowthPercent": -2.5,
+        "cpihAnnualRatePercent": 9.2
+      },
+      {
+        "period": "Oct to Dec 2022",
+        "observedAt": 1672444800000,
+        "totalPayRealGrowthPercent": -2.9,
+        "regularPayRealGrowthPercent": -2.5,
+        "cpihAnnualRatePercent": 9.4
+      },
+      {
+        "period": "Nov to Jan 2023",
+        "observedAt": 1675123200000,
+        "totalPayRealGrowthPercent": -2.7,
+        "regularPayRealGrowthPercent": -2.3,
+        "cpihAnnualRatePercent": 9.1
+      },
+      {
+        "period": "Dec to Feb 2023",
+        "observedAt": 1677542400000,
+        "totalPayRealGrowthPercent": -2.7,
+        "regularPayRealGrowthPercent": -2.2,
+        "cpihAnnualRatePercent": 9.1
+      },
+      {
+        "period": "Jan to Mar 2023",
+        "observedAt": 1680220800000,
+        "totalPayRealGrowthPercent": -2.5,
+        "regularPayRealGrowthPercent": -1.9,
+        "cpihAnnualRatePercent": 9
+      },
+      {
+        "period": "Feb to Apr 2023",
+        "observedAt": 1682812800000,
+        "totalPayRealGrowthPercent": -1.8,
+        "regularPayRealGrowthPercent": -1.2,
+        "cpihAnnualRatePercent": 8.6
+      },
+      {
+        "period": "Mar to May 2023",
+        "observedAt": 1685491200000,
+        "totalPayRealGrowthPercent": -1.1,
+        "regularPayRealGrowthPercent": -0.6,
+        "cpihAnnualRatePercent": 8.2
+      },
+      {
+        "period": "Apr to Jun 2023",
+        "observedAt": 1688083200000,
+        "totalPayRealGrowthPercent": 0.5,
+        "regularPayRealGrowthPercent": 0.1,
+        "cpihAnnualRatePercent": 7.7
+      },
+      {
+        "period": "May to Jul 2023",
+        "observedAt": 1690761600000,
+        "totalPayRealGrowthPercent": 1.2,
+        "regularPayRealGrowthPercent": 0.6,
+        "cpihAnnualRatePercent": 7.2
+      },
+      {
+        "period": "Jun to Aug 2023",
+        "observedAt": 1693440000000,
+        "totalPayRealGrowthPercent": 1.4,
+        "regularPayRealGrowthPercent": 1.1,
+        "cpihAnnualRatePercent": 6.7
+      },
+      {
+        "period": "Jul to Sep 2023",
+        "observedAt": 1696032000000,
+        "totalPayRealGrowthPercent": 1.4,
+        "regularPayRealGrowthPercent": 1.3,
+        "cpihAnnualRatePercent": 6.3
+      },
+      {
+        "period": "Aug to Oct 2023",
+        "observedAt": 1698710400000,
+        "totalPayRealGrowthPercent": 1.3,
+        "regularPayRealGrowthPercent": 1.3,
+        "cpihAnnualRatePercent": 5.8
+      },
+      {
+        "period": "Sep to Nov 2023",
+        "observedAt": 1701302400000,
+        "totalPayRealGrowthPercent": 1.5,
+        "regularPayRealGrowthPercent": 1.5,
+        "cpihAnnualRatePercent": 5.1
+      },
+      {
+        "period": "Oct to Dec 2023",
+        "observedAt": 1703980800000,
+        "totalPayRealGrowthPercent": 1.5,
+        "regularPayRealGrowthPercent": 1.7,
+        "cpihAnnualRatePercent": 4.4
+      },
+      {
+        "period": "Nov to Jan 2024",
+        "observedAt": 1706659200000,
+        "totalPayRealGrowthPercent": 1.6,
+        "regularPayRealGrowthPercent": 1.8,
+        "cpihAnnualRatePercent": 4.2
+      },
+      {
+        "period": "Dec to Feb 2024",
+        "observedAt": 1709164800000,
+        "totalPayRealGrowthPercent": 1.8,
+        "regularPayRealGrowthPercent": 1.8,
+        "cpihAnnualRatePercent": 4.1
+      },
+      {
+        "period": "Jan to Mar 2024",
+        "observedAt": 1711843200000,
+        "totalPayRealGrowthPercent": 1.8,
+        "regularPayRealGrowthPercent": 1.9,
+        "cpihAnnualRatePercent": 3.9
+      },
+      {
+        "period": "Feb to Apr 2024",
+        "observedAt": 1714435200000,
+        "totalPayRealGrowthPercent": 2.1,
+        "regularPayRealGrowthPercent": 2.2,
+        "cpihAnnualRatePercent": 3.5
+      },
+      {
+        "period": "Mar to May 2024",
+        "observedAt": 1717113600000,
+        "totalPayRealGrowthPercent": 2.3,
+        "regularPayRealGrowthPercent": 2.5,
+        "cpihAnnualRatePercent": 3.2
+      },
+      {
+        "period": "Apr to Jun 2024",
+        "observedAt": 1719705600000,
+        "totalPayRealGrowthPercent": 1.8,
+        "regularPayRealGrowthPercent": 2.6,
+        "cpihAnnualRatePercent": 2.9
+      },
+      {
+        "period": "May to Jul 2024",
+        "observedAt": 1722384000000,
+        "totalPayRealGrowthPercent": 1.4,
+        "regularPayRealGrowthPercent": 2.4,
+        "cpihAnnualRatePercent": 2.9
+      },
+      {
+        "period": "Jun to Aug 2024",
+        "observedAt": 1725062400000,
+        "totalPayRealGrowthPercent": 1.1,
+        "regularPayRealGrowthPercent": 2.2,
+        "cpihAnnualRatePercent": 3
+      },
+      {
+        "period": "Jul to Sep 2024",
+        "observedAt": 1727654400000,
+        "totalPayRealGrowthPercent": 1.7,
+        "regularPayRealGrowthPercent": 2.1,
+        "cpihAnnualRatePercent": 2.9
+      },
+      {
+        "period": "Aug to Oct 2024",
+        "observedAt": 1730332800000,
+        "totalPayRealGrowthPercent": 2.3,
+        "regularPayRealGrowthPercent": 2.4,
+        "cpihAnnualRatePercent": 3
+      },
+      {
+        "period": "Sep to Nov 2024",
+        "observedAt": 1732924800000,
+        "totalPayRealGrowthPercent": 2.3,
+        "regularPayRealGrowthPercent": 2.4,
+        "cpihAnnualRatePercent": 3.1
+      },
+      {
+        "period": "Oct to Dec 2024",
+        "observedAt": 1735603200000,
+        "totalPayRealGrowthPercent": 2.5,
+        "regularPayRealGrowthPercent": 2.4,
+        "cpihAnnualRatePercent": 3.4
+      },
+      {
+        "period": "Nov to Jan 2025",
+        "observedAt": 1738281600000,
+        "totalPayRealGrowthPercent": 2,
+        "regularPayRealGrowthPercent": 2.1,
+        "cpihAnnualRatePercent": 3.6
+      },
+      {
+        "period": "Dec to Feb 2025",
+        "observedAt": 1740700800000,
+        "totalPayRealGrowthPercent": 2.1,
+        "regularPayRealGrowthPercent": 2.1,
+        "cpihAnnualRatePercent": 3.7
+      },
+      {
+        "period": "Jan to Mar 2025",
+        "observedAt": 1743379200000,
+        "totalPayRealGrowthPercent": 1.8,
+        "regularPayRealGrowthPercent": 1.8,
+        "cpihAnnualRatePercent": 3.7
+      },
+      {
+        "period": "Feb to Apr 2025",
+        "observedAt": 1745971200000,
+        "totalPayRealGrowthPercent": 1.4,
+        "regularPayRealGrowthPercent": 1.5,
+        "cpihAnnualRatePercent": 3.7
+      },
+      {
+        "period": "Mar to May 2025",
+        "observedAt": 1748649600000,
+        "totalPayRealGrowthPercent": 0.8,
+        "regularPayRealGrowthPercent": 1.1,
+        "cpihAnnualRatePercent": 3.8
+      },
+      {
+        "period": "Apr to Jun 2025",
+        "observedAt": 1751241600000,
+        "totalPayRealGrowthPercent": 0.4,
+        "regularPayRealGrowthPercent": 0.9,
+        "cpihAnnualRatePercent": 4.1
+      },
+      {
+        "period": "May to Jul 2025",
+        "observedAt": 1753920000000,
+        "totalPayRealGrowthPercent": 0.6,
+        "regularPayRealGrowthPercent": 0.7,
+        "cpihAnnualRatePercent": 4.1
+      },
+      {
+        "period": "Jun to Aug 2025",
+        "observedAt": 1756598400000,
+        "totalPayRealGrowthPercent": 0.9,
+        "regularPayRealGrowthPercent": 0.6,
+        "cpihAnnualRatePercent": 4.1
+      },
+      {
+        "period": "Jul to Sep 2025",
+        "observedAt": 1759190400000,
+        "totalPayRealGrowthPercent": 0.8,
+        "regularPayRealGrowthPercent": 0.5,
+        "cpihAnnualRatePercent": 4.1
+      },
+      {
+        "period": "Aug to Oct 2025",
+        "observedAt": 1761868800000,
+        "totalPayRealGrowthPercent": 0.8,
+        "regularPayRealGrowthPercent": 0.6,
+        "cpihAnnualRatePercent": 4
+      },
+      {
+        "period": "Sep to Nov 2025",
+        "observedAt": 1764460800000,
+        "totalPayRealGrowthPercent": 0.7,
+        "regularPayRealGrowthPercent": 0.6,
+        "cpihAnnualRatePercent": 3.8
+      },
+      {
+        "period": "Oct to Dec 2025",
+        "observedAt": 1767139200000,
+        "totalPayRealGrowthPercent": 0.5,
+        "regularPayRealGrowthPercent": 0.5,
+        "cpihAnnualRatePercent": 3.6
+      },
+      {
+        "period": "Nov to Jan 2026",
+        "observedAt": 1769817600000,
+        "totalPayRealGrowthPercent": 0.8,
+        "regularPayRealGrowthPercent": 0.4,
+        "cpihAnnualRatePercent": 3.4
+      },
+      {
+        "period": "Dec to Feb 2026",
+        "observedAt": 1772236800000,
+        "totalPayRealGrowthPercent": 0.6,
+        "regularPayRealGrowthPercent": 0.2,
+        "cpihAnnualRatePercent": 3.3
+      },
+      {
+        "period": "Jan to Mar 2026",
+        "observedAt": 1774915200000,
+        "totalPayRealGrowthPercent": 1.1,
+        "regularPayRealGrowthPercent": 0.1,
+        "cpihAnnualRatePercent": 3.3
+      },
+      {
+        "period": "Feb to Apr 2026",
+        "observedAt": 1777507200000,
+        "totalPayRealGrowthPercent": 1.2,
+        "regularPayRealGrowthPercent": 0.1,
+        "cpihAnnualRatePercent": 3.2
+      },
+      {
+        "period": "Mar to May 2026",
+        "observedAt": 1780185600000,
+        "totalPayRealGrowthPercent": 1.2,
+        "regularPayRealGrowthPercent": 0.3,
+        "cpihAnnualRatePercent": 3.1
+      },
+      {
+        "period": "Apr to Jun 2026",
+        "observedAt": 1782777600000,
+        "totalPayRealGrowthPercent": 1.2,
+        "regularPayRealGrowthPercent": 0.6,
+        "cpihAnnualRatePercent": 2.9
+      },
+      {
+        "period": "May to Jul 2026",
+        "observedAt": 1785456000000,
+        "totalPayRealGrowthPercent": 0.9,
+        "regularPayRealGrowthPercent": 0.6,
+        "cpihAnnualRatePercent": 3
+      }
+    ],
+    "expiresAt": "2026-10-25T00:00:00.000Z",
+    "__observation": {
+      "status": "current",
+      "period": "May to Jul 2026",
+      "observedAt": "2026-07-31T00:00:00.000Z",
+      "checkedAt": "2026-10-01T15:27:12.905Z",
+      "maxAgeDays": 40
+    },
+    "__provenance": {
+      "registryVersion": "2026-08-02.1",
+      "section": "realWages",
+      "title": "Real-terms growth in average weekly earnings",
+      "evidenceClass": "official-data",
+      "geography": "Great Britain",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "monthly",
+      "operationalStatus": "active",
+      "publicationRequirement": "required",
+      "upstreams": [
+        {
+          "publisher": "Office for National Statistics",
+          "label": "Average weekly earnings in Great Britain bulletin",
+          "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/averageweeklyearningsingreatbritain/latest",
+          "sourceClass": "official-primary",
+          "caveat": "The Worker discovers the current edition from the rolling bulletin alias and extracts ONS's own published real-terms (CPIH-adjusted) growth figure rather than deriving it from nominal pay and inflation separately."
+        }
+      ]
+    }
+  }
+}

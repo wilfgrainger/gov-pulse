@@ -43,7 +43,7 @@ function bootstrapMessage() {
 describe("Cloudflare publication bootstrap", () => {
   it("schedules only required national sections", () => {
     const jobs = refreshJobs("bootstrap-run", "bootstrap");
-    expect(jobs).toHaveLength(8);
+    expect(jobs).toHaveLength(9);
     expect(jobs.map((job) => job.section)).toEqual([
       "gdpTracker",
       "sentimentPulse",
@@ -51,6 +51,7 @@ describe("Cloudflare publication bootstrap", () => {
       "taxRevenue",
       "nationalDebt",
       "migrationStats",
+      "housePriceIndex",
       "realWages",
       "electionPolling",
     ]);
@@ -69,7 +70,7 @@ describe("Cloudflare publication bootstrap", () => {
     expect(first.ack).toHaveBeenCalledOnce();
     expect(first.retry).not.toHaveBeenCalled();
     expect(sendBatch).toHaveBeenCalledOnce();
-    expect(sendBatch.mock.calls[0][0]).toHaveLength(8);
+    expect(sendBatch.mock.calls[0][0]).toHaveLength(9);
     expect(send).toHaveBeenCalledWith(
       {
         type: "finalise-run",
@@ -88,7 +89,7 @@ describe("Cloudflare publication bootstrap", () => {
     };
     expect(run.scope).toBe("bootstrap");
     expect(run.dispatchedAt).toBeTruthy();
-    expect(run.expectedJobIds).toHaveLength(8);
+    expect(run.expectedJobIds).toHaveLength(9);
     expect(run.expectedJobIds).not.toContain("refresh-international-comparison");
 
     const duplicate = bootstrapMessage();

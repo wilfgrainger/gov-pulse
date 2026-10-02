@@ -223,7 +223,7 @@ describe("SentimentPulse series-level evidence", () => {
     expect(screen.getByRole("heading", { name: /Inflation is Unavailable/i })).toBeInTheDocument();
     expect(screen.getByText("Latest value expired; history remains available.")).toBeInTheDocument();
     expect(screen.getByText("3.75%")).toBeInTheDocument();
-    expect(screen.getByText("4.9%")).toBeInTheDocument();
+    expect(screen.getAllByText("4.9%").length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "CPI inflation: published history" })).toBeInTheDocument();
   });
 

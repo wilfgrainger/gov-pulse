@@ -40,7 +40,7 @@ Task 6: source-parser and editorial correctness pass. Task 5 is complete; Task 2
 
 - International comparison rows now carry a source-edition fingerprint, successful check, `validUntil`, status and per-measure retry time; observation year remains separate and historical editions are labeled as historical.
 - Source failures are tracked independently. A still-valid previous measure is retained; genuine successful missingness is published as missing; expired or metadata-free legacy values are dropped. A due healthcare retry requests only its dependent source and does not overwrite other measures.
-- Reused the existing direct daily international-comparison scheduler and added per-measure source selection for retries; no Queue message was added. The workload stays at 29 healthy deliveries / 87 project operations, with 116 / 348 configured retry upper bound.
+- Reused the existing direct daily international-comparison scheduler and added per-measure source selection for retries; no Queue message was added. After adding the house-price section, the schedule model reports 30 healthy deliveries / 90 project operations, with 120 / 360 configured retry upper bound.
 - Updated the comparison UI to show source-specific validity instead of implying `generatedAt` is observation currentness.
 - Verification: `npm test` passed 601 tests / 115 files; `npm run lint`, architecture/source/hosting checks, budget audit and `npm run build` passed.
 
@@ -57,7 +57,7 @@ Task 4 final verification after daily retry scheduling: `npm test` passed 601 te
 - NHS evidence renders in request-time server HTML and hydrates against the same publication clock; the browser rechecks actual time after hydration. Trusted NHS ingestion verifies the exact accepted KV record with bounded retries for eventual consistency.
 - Updated snapshot fixtures to carry valid per-measure metadata, including bootstrap/degraded publication cases.
 - Verification: `npm test` passed 616 tests / 115 files; focused currentness, cache, NHS, comparison and ingest suites passed; `npm run lint`, hosting/architecture/source ownership guards, Free budget audit and `git diff --check` passed. `npm run build:prepare && npm run build` passed. A direct repository-wide `npx tsc --noEmit` remains unsuitable because it includes existing unrelated test/e2e typing errors; the production Next build type check passed.
-- Cloudflare Free quotas/account settings remain unverified due the previously recorded network restriction; the workload derivation currently reports 29 scheduled deliveries/day and 87 project operations/day, with maximum configured retry deliveries 87. This is not billing or headroom evidence.
+- Cloudflare Free quotas/account settings remain unverified due the previously recorded network restriction; the workload derivation currently reports 30 scheduled deliveries/day and 90 project operations/day, with maximum configured retry deliveries 90. This is not billing or headroom evidence.
 
 ## Current next step
 

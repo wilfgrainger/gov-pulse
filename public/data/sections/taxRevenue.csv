@@ -1,0 +1,406 @@
+path,value
+$.contractVersion,1
+$.data.__observation.checkedAt,2026-10-01T15:26:32.675Z
+$.data.__observation.maxAgeDays,70
+$.data.__observation.observedAt,2026-08-31T00:00:00.000Z
+$.data.__observation.period,August 2026
+$.data.__observation.status,current
+$.data.available,true
+$.data.expiresAt,2026-12-01T00:00:00.000Z
+$.data.headline.observedAt,1788134400000
+$.data.headline.period,August 2026
+$.data.headline.receiptsBillion,89.8
+$.data.headline.releaseDate,2026-09-22
+$.data.headline.yearChangeBillion,3.3
+$.data.history[0].observedAt,1475193600000
+$.data.history[0].period,September 2016
+$.data.history[0].receiptsBillion,53.7
+$.data.history[1].observedAt,1477872000000
+$.data.history[1].period,October 2016
+$.data.history[1].receiptsBillion,56.8
+$.data.history[2].observedAt,1480464000000
+$.data.history[2].period,November 2016
+$.data.history[2].receiptsBillion,52.8
+$.data.history[3].observedAt,1483142400000
+$.data.history[3].period,December 2016
+$.data.history[3].receiptsBillion,55.7
+$.data.history[4].observedAt,1485820800000
+$.data.history[4].period,January 2017
+$.data.history[4].receiptsBillion,75.2
+$.data.history[5].observedAt,1488240000000
+$.data.history[5].period,February 2017
+$.data.history[5].receiptsBillion,61.9
+$.data.history[6].observedAt,1490918400000
+$.data.history[6].period,March 2017
+$.data.history[6].receiptsBillion,60.7
+$.data.history[7].observedAt,1493510400000
+$.data.history[7].period,April 2017
+$.data.history[7].receiptsBillion,59.4
+$.data.history[8].observedAt,1496188800000
+$.data.history[8].period,May 2017
+$.data.history[8].receiptsBillion,54.2
+$.data.history[9].observedAt,1498780800000
+$.data.history[9].period,June 2017
+$.data.history[9].receiptsBillion,56.2
+$.data.history[10].observedAt,1501459200000
+$.data.history[10].period,July 2017
+$.data.history[10].receiptsBillion,63.5
+$.data.history[11].observedAt,1504137600000
+$.data.history[11].period,August 2017
+$.data.history[11].receiptsBillion,55.8
+$.data.history[12].observedAt,1506729600000
+$.data.history[12].period,September 2017
+$.data.history[12].receiptsBillion,55.9
+$.data.history[13].observedAt,1509408000000
+$.data.history[13].period,October 2017
+$.data.history[13].receiptsBillion,60.5
+$.data.history[14].observedAt,1512000000000
+$.data.history[14].period,November 2017
+$.data.history[14].receiptsBillion,55.8
+$.data.history[15].observedAt,1514678400000
+$.data.history[15].period,December 2017
+$.data.history[15].receiptsBillion,58.5
+$.data.history[16].observedAt,1517356800000
+$.data.history[16].period,January 2018
+$.data.history[16].receiptsBillion,72.8
+$.data.history[17].observedAt,1519776000000
+$.data.history[17].period,February 2018
+$.data.history[17].receiptsBillion,62.3
+$.data.history[18].observedAt,1522454400000
+$.data.history[18].period,March 2018
+$.data.history[18].receiptsBillion,62.6
+$.data.history[19].observedAt,1525046400000
+$.data.history[19].period,April 2018
+$.data.history[19].receiptsBillion,61.5
+$.data.history[20].observedAt,1527724800000
+$.data.history[20].period,May 2018
+$.data.history[20].receiptsBillion,56.2
+$.data.history[21].observedAt,1530316800000
+$.data.history[21].period,June 2018
+$.data.history[21].receiptsBillion,58.8
+$.data.history[22].observedAt,1532995200000
+$.data.history[22].period,July 2018
+$.data.history[22].receiptsBillion,68.9
+$.data.history[23].observedAt,1535673600000
+$.data.history[23].period,August 2018
+$.data.history[23].receiptsBillion,57.8
+$.data.history[24].observedAt,1538265600000
+$.data.history[24].period,September 2018
+$.data.history[24].receiptsBillion,57.7
+$.data.history[25].observedAt,1540944000000
+$.data.history[25].period,October 2018
+$.data.history[25].receiptsBillion,61.8
+$.data.history[26].observedAt,1543536000000
+$.data.history[26].period,November 2018
+$.data.history[26].receiptsBillion,57.5
+$.data.history[27].observedAt,1546214400000
+$.data.history[27].period,December 2018
+$.data.history[27].receiptsBillion,60.3
+$.data.history[28].observedAt,1548892800000
+$.data.history[28].period,January 2019
+$.data.history[28].receiptsBillion,79.2
+$.data.history[29].observedAt,1551312000000
+$.data.history[29].period,February 2019
+$.data.history[29].receiptsBillion,63.8
+$.data.history[30].observedAt,1553990400000
+$.data.history[30].period,March 2019
+$.data.history[30].receiptsBillion,67.5
+$.data.history[31].observedAt,1556582400000
+$.data.history[31].period,April 2019
+$.data.history[31].receiptsBillion,62.4
+$.data.history[32].observedAt,1559260800000
+$.data.history[32].period,May 2019
+$.data.history[32].receiptsBillion,58.2
+$.data.history[33].observedAt,1561852800000
+$.data.history[33].period,June 2019
+$.data.history[33].receiptsBillion,59.9
+$.data.history[34].observedAt,1564531200000
+$.data.history[34].period,July 2019
+$.data.history[34].receiptsBillion,68.4
+$.data.history[35].observedAt,1567209600000
+$.data.history[35].period,August 2019
+$.data.history[35].receiptsBillion,59.9
+$.data.history[36].observedAt,1569801600000
+$.data.history[36].period,September 2019
+$.data.history[36].receiptsBillion,60.3
+$.data.history[37].observedAt,1572480000000
+$.data.history[37].period,October 2019
+$.data.history[37].receiptsBillion,61.1
+$.data.history[38].observedAt,1575072000000
+$.data.history[38].period,November 2019
+$.data.history[38].receiptsBillion,57.7
+$.data.history[39].observedAt,1577750400000
+$.data.history[39].period,December 2019
+$.data.history[39].receiptsBillion,61
+$.data.history[40].observedAt,1580428800000
+$.data.history[40].period,January 2020
+$.data.history[40].receiptsBillion,80.2
+$.data.history[41].observedAt,1582934400000
+$.data.history[41].period,February 2020
+$.data.history[41].receiptsBillion,63.9
+$.data.history[42].observedAt,1585612800000
+$.data.history[42].period,March 2020
+$.data.history[42].receiptsBillion,65.5
+$.data.history[43].observedAt,1588204800000
+$.data.history[43].period,April 2020
+$.data.history[43].receiptsBillion,52.8
+$.data.history[44].observedAt,1590883200000
+$.data.history[44].period,May 2020
+$.data.history[44].receiptsBillion,49.3
+$.data.history[45].observedAt,1593475200000
+$.data.history[45].period,June 2020
+$.data.history[45].receiptsBillion,52.1
+$.data.history[46].observedAt,1596153600000
+$.data.history[46].period,July 2020
+$.data.history[46].receiptsBillion,60.6
+$.data.history[47].observedAt,1598832000000
+$.data.history[47].period,August 2020
+$.data.history[47].receiptsBillion,56.9
+$.data.history[48].observedAt,1601424000000
+$.data.history[48].period,September 2020
+$.data.history[48].receiptsBillion,56.3
+$.data.history[49].observedAt,1604102400000
+$.data.history[49].period,October 2020
+$.data.history[49].receiptsBillion,62.3
+$.data.history[50].observedAt,1606694400000
+$.data.history[50].period,November 2020
+$.data.history[50].receiptsBillion,58.9
+$.data.history[51].observedAt,1609372800000
+$.data.history[51].period,December 2020
+$.data.history[51].receiptsBillion,62.2
+$.data.history[52].observedAt,1612051200000
+$.data.history[52].period,January 2021
+$.data.history[52].receiptsBillion,83.2
+$.data.history[53].observedAt,1614470400000
+$.data.history[53].period,February 2021
+$.data.history[53].receiptsBillion,65.3
+$.data.history[54].observedAt,1617148800000
+$.data.history[54].period,March 2021
+$.data.history[54].receiptsBillion,66.9
+$.data.history[55].observedAt,1619740800000
+$.data.history[55].period,April 2021
+$.data.history[55].receiptsBillion,60.4
+$.data.history[56].observedAt,1622419200000
+$.data.history[56].period,May 2021
+$.data.history[56].receiptsBillion,61.3
+$.data.history[57].observedAt,1625011200000
+$.data.history[57].period,June 2021
+$.data.history[57].receiptsBillion,62.3
+$.data.history[58].observedAt,1627689600000
+$.data.history[58].period,July 2021
+$.data.history[58].receiptsBillion,73
+$.data.history[59].observedAt,1630368000000
+$.data.history[59].period,August 2021
+$.data.history[59].receiptsBillion,64.5
+$.data.history[60].observedAt,1632960000000
+$.data.history[60].period,September 2021
+$.data.history[60].receiptsBillion,65.1
+$.data.history[61].observedAt,1635638400000
+$.data.history[61].period,October 2021
+$.data.history[61].receiptsBillion,71.7
+$.data.history[62].observedAt,1638230400000
+$.data.history[62].period,November 2021
+$.data.history[62].receiptsBillion,66.8
+$.data.history[63].observedAt,1640908800000
+$.data.history[63].period,December 2021
+$.data.history[63].receiptsBillion,71.5
+$.data.history[64].observedAt,1643587200000
+$.data.history[64].period,January 2022
+$.data.history[64].receiptsBillion,95.3
+$.data.history[65].observedAt,1646006400000
+$.data.history[65].period,February 2022
+$.data.history[65].receiptsBillion,73.3
+$.data.history[66].observedAt,1648684800000
+$.data.history[66].period,March 2022
+$.data.history[66].receiptsBillion,79.3
+$.data.history[67].observedAt,1651276800000
+$.data.history[67].period,April 2022
+$.data.history[67].receiptsBillion,72.9
+$.data.history[68].observedAt,1653955200000
+$.data.history[68].period,May 2022
+$.data.history[68].receiptsBillion,70.1
+$.data.history[69].observedAt,1656547200000
+$.data.history[69].period,June 2022
+$.data.history[69].receiptsBillion,72.2
+$.data.history[70].observedAt,1659225600000
+$.data.history[70].period,July 2022
+$.data.history[70].receiptsBillion,82.2
+$.data.history[71].observedAt,1661904000000
+$.data.history[71].period,August 2022
+$.data.history[71].receiptsBillion,74
+$.data.history[72].observedAt,1664496000000
+$.data.history[72].period,September 2022
+$.data.history[72].receiptsBillion,74.7
+$.data.history[73].observedAt,1667174400000
+$.data.history[73].period,October 2022
+$.data.history[73].receiptsBillion,74.9
+$.data.history[74].observedAt,1669766400000
+$.data.history[74].period,November 2022
+$.data.history[74].receiptsBillion,74.5
+$.data.history[75].observedAt,1672444800000
+$.data.history[75].period,December 2022
+$.data.history[75].receiptsBillion,77.2
+$.data.history[76].observedAt,1675123200000
+$.data.history[76].period,January 2023
+$.data.history[76].receiptsBillion,107.6
+$.data.history[77].observedAt,1677542400000
+$.data.history[77].period,February 2023
+$.data.history[77].receiptsBillion,79.3
+$.data.history[78].observedAt,1680220800000
+$.data.history[78].period,March 2023
+$.data.history[78].receiptsBillion,85.1
+$.data.history[79].observedAt,1682812800000
+$.data.history[79].period,April 2023
+$.data.history[79].receiptsBillion,75.5
+$.data.history[80].observedAt,1685491200000
+$.data.history[80].period,May 2023
+$.data.history[80].receiptsBillion,75.9
+$.data.history[81].observedAt,1688083200000
+$.data.history[81].period,June 2023
+$.data.history[81].receiptsBillion,78.6
+$.data.history[82].observedAt,1690761600000
+$.data.history[82].period,July 2023
+$.data.history[82].receiptsBillion,89
+$.data.history[83].observedAt,1693440000000
+$.data.history[83].period,August 2023
+$.data.history[83].receiptsBillion,77.3
+$.data.history[84].observedAt,1696032000000
+$.data.history[84].period,September 2023
+$.data.history[84].receiptsBillion,77.3
+$.data.history[85].observedAt,1698710400000
+$.data.history[85].period,October 2023
+$.data.history[85].receiptsBillion,78.4
+$.data.history[86].observedAt,1701302400000
+$.data.history[86].period,November 2023
+$.data.history[86].receiptsBillion,78.5
+$.data.history[87].observedAt,1703980800000
+$.data.history[87].period,December 2023
+$.data.history[87].receiptsBillion,83.2
+$.data.history[88].observedAt,1706659200000
+$.data.history[88].period,January 2024
+$.data.history[88].receiptsBillion,109.2
+$.data.history[89].observedAt,1709164800000
+$.data.history[89].period,February 2024
+$.data.history[89].receiptsBillion,83.9
+$.data.history[90].observedAt,1711843200000
+$.data.history[90].period,March 2024
+$.data.history[90].receiptsBillion,90.6
+$.data.history[91].observedAt,1714435200000
+$.data.history[91].period,April 2024
+$.data.history[91].receiptsBillion,78
+$.data.history[92].observedAt,1717113600000
+$.data.history[92].period,May 2024
+$.data.history[92].receiptsBillion,77.4
+$.data.history[93].observedAt,1719705600000
+$.data.history[93].period,June 2024
+$.data.history[93].receiptsBillion,81.3
+$.data.history[94].observedAt,1722384000000
+$.data.history[94].period,July 2024
+$.data.history[94].receiptsBillion,91.5
+$.data.history[95].observedAt,1725062400000
+$.data.history[95].period,August 2024
+$.data.history[95].receiptsBillion,80.2
+$.data.history[96].observedAt,1727654400000
+$.data.history[96].period,September 2024
+$.data.history[96].receiptsBillion,79.6
+$.data.history[97].observedAt,1730332800000
+$.data.history[97].period,October 2024
+$.data.history[97].receiptsBillion,80.7
+$.data.history[98].observedAt,1732924800000
+$.data.history[98].period,November 2024
+$.data.history[98].receiptsBillion,81
+$.data.history[99].observedAt,1735603200000
+$.data.history[99].period,December 2024
+$.data.history[99].receiptsBillion,86.5
+$.data.history[100].observedAt,1738281600000
+$.data.history[100].period,January 2025
+$.data.history[100].receiptsBillion,117.4
+$.data.history[101].observedAt,1740700800000
+$.data.history[101].period,February 2025
+$.data.history[101].receiptsBillion,87.3
+$.data.history[102].observedAt,1743379200000
+$.data.history[102].period,March 2025
+$.data.history[102].receiptsBillion,96.9
+$.data.history[103].observedAt,1745971200000
+$.data.history[103].period,April 2025
+$.data.history[103].receiptsBillion,83.2
+$.data.history[104].observedAt,1748649600000
+$.data.history[104].period,May 2025
+$.data.history[104].receiptsBillion,82.1
+$.data.history[105].observedAt,1751241600000
+$.data.history[105].period,June 2025
+$.data.history[105].receiptsBillion,85.4
+$.data.history[106].observedAt,1753920000000
+$.data.history[106].period,July 2025
+$.data.history[106].receiptsBillion,99.9
+$.data.history[107].observedAt,1756598400000
+$.data.history[107].period,August 2025
+$.data.history[107].receiptsBillion,86.5
+$.data.history[108].observedAt,1759190400000
+$.data.history[108].period,September 2025
+$.data.history[108].receiptsBillion,85.6
+$.data.history[109].observedAt,1761868800000
+$.data.history[109].period,October 2025
+$.data.history[109].receiptsBillion,86.9
+$.data.history[110].observedAt,1764460800000
+$.data.history[110].period,November 2025
+$.data.history[110].receiptsBillion,87.6
+$.data.history[111].observedAt,1767139200000
+$.data.history[111].period,December 2025
+$.data.history[111].receiptsBillion,93.1
+$.data.history[112].observedAt,1769817600000
+$.data.history[112].period,January 2026
+$.data.history[112].receiptsBillion,134.1
+$.data.history[113].observedAt,1772236800000
+$.data.history[113].period,February 2026
+$.data.history[113].receiptsBillion,96.4
+$.data.history[114].observedAt,1774915200000
+$.data.history[114].period,March 2026
+$.data.history[114].receiptsBillion,102.6
+$.data.history[115].observedAt,1777507200000
+$.data.history[115].period,April 2026
+$.data.history[115].receiptsBillion,85.4
+$.data.history[116].observedAt,1780185600000
+$.data.history[116].period,May 2026
+$.data.history[116].receiptsBillion,87.6
+$.data.history[117].observedAt,1782777600000
+$.data.history[117].period,June 2026
+$.data.history[117].receiptsBillion,93.3
+$.data.history[118].observedAt,1785456000000
+$.data.history[118].period,July 2026
+$.data.history[118].receiptsBillion,104.6
+$.data.history[119].observedAt,1788134400000
+$.data.history[119].period,August 2026
+$.data.history[119].receiptsBillion,89.8
+$.data.methodology.caveat,"This ONS public-sector-finance measure is not the same as a tax forecast, tax-burden ratio or category-by-category HMRC receipts table."
+$.data.methodology.measure,Total current central government receipts
+$.data.methodology.status,Official statistics
+$.data.series.receipts,ANBV
+$.data.series.url,https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/anbv/pusf
+$.data.source.bulletinUrl,https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/bulletins/publicsectorfinances/august2026
+$.data.source.landingUrl,https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/bulletins/publicsectorfinances/latest
+$.generatedAt,2026-10-01T15:25:40.068Z
+$.geography,United Kingdom
+$.licence.attribution,"Contains public sector information licensed under the Open Government Licence v3.0, except where the named source states otherwise."
+$.licence.name,"Open Government Licence v3.0, except where otherwise stated"
+$.licence.url,https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/
+$.section,taxRevenue
+$.source.cacheState,fresh
+$.source.fetchedAt,2026-10-01T15:26:32.675Z
+$.source.provenance.evidenceClass,official-data
+$.source.provenance.geography,United Kingdom
+$.source.provenance.operationalStatus,active
+$.source.provenance.publicationCadence,monthly
+$.source.provenance.publicationRequirement,required
+$.source.provenance.refreshCadence,daily
+$.source.provenance.registryVersion,2026-08-02.1
+$.source.provenance.retrieval,scheduled-publication-check
+$.source.provenance.section,taxRevenue
+$.source.provenance.title,Central government receipts
+$.source.provenance.upstreams[0].caveat,The Worker extracts one monthly central-government-receipts measure from the latest bulletin and does not mix forecasts or tax-burden estimates.
+$.source.provenance.upstreams[0].label,"Public sector finances, UK bulletin"
+$.source.provenance.upstreams[0].publisher,Office for National Statistics
+$.source.provenance.upstreams[0].sourceClass,official-primary
+$.source.provenance.upstreams[0].url,https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/bulletins/publicsectorfinances/latest
+$.source.source,ONS Public sector finances bulletin and ANBV receipts series
+$.source.status,ok

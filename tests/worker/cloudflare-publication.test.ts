@@ -27,6 +27,7 @@ const REQUIRED = [
   "nationalDebt",
   "taxRevenue",
   "migrationStats",
+  "housePriceIndex",
   "realWages",
   "electionPolling",
   "nhsStats",
@@ -138,11 +139,11 @@ describe("Cloudflare Free data publication", () => {
   it("reports the healthy schedule and configured retry workload transparently", () => {
     expect(FREE_TIER_BUDGET).toMatchObject({
       cronInvocationsPerDay: 9,
-      queueJobsPerDayHealthyTarget: 29,
-      queueOperationsPerDayHealthyTarget: 87,
-      queueJobsPerDayConfiguredRetryUpperBound: 116,
-      queueOperationsPerDayConfiguredRetryUpperBound: 348,
-      officialSectionsPerDay: 11,
+      queueJobsPerDayHealthyTarget: 30,
+      queueOperationsPerDayHealthyTarget: 90,
+      queueJobsPerDayConfiguredRetryUpperBound: 120,
+      queueOperationsPerDayConfiguredRetryUpperBound: 360,
+      officialSectionsPerDay: 12,
       contractRequestsPerDayMax: 36,
       kvWritesPerDayTargetMax: 120,
       kvReadsPerDayTargetMax: 300,
@@ -156,8 +157,8 @@ describe("Cloudflare Free data publication", () => {
 
   it("schedules every public section and contracts daily", () => {
     const jobs = jobsForDay();
-    expect(jobs).toHaveLength(12);
-    expect(jobs.filter((job) => job.type === "refresh-section")).toHaveLength(8);
+    expect(jobs).toHaveLength(13);
+    expect(jobs.filter((job) => job.type === "refresh-section")).toHaveLength(9);
     expect(
       jobs.filter((job) => job.type === "refresh-external-section")
     ).toHaveLength(3);

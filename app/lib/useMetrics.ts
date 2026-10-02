@@ -241,8 +241,7 @@ export function useMetrics<T>(section: string, fallback: T): MetricsResult<T> {
   const initialSnapshot = useInitialMetricsSnapshot();
   const latestSnapshotRef = useRef<unknown>(initialSnapshot);
   const sourceMeta = DATA_SOURCES[section];
-  const shouldFetchLive =
-    sourceMeta?.automation === "automated" && process.env.NODE_ENV === "production";
+  const shouldFetchLive = sourceMeta?.automation === "automated";
   const [initialSnapshotResult] = useState<MetricsResult<T> | null>(() =>
     metricsResultFromSnapshot(
       initialSnapshot,

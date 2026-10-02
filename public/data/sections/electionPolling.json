@@ -1,0 +1,97 @@
+{
+  "contractVersion": 1,
+  "section": "electionPolling",
+  "generatedAt": "2026-10-01T15:25:40.068Z",
+  "geography": "United Kingdom (check each poll's sample)",
+  "licence": {
+    "name": "No reuse licence asserted by public-data.org",
+    "url": "https://yougov.co.uk/about/terms-combined",
+    "attribution": "YouGov primary publication; reuse is subject to YouGov's terms."
+  },
+  "source": {
+    "status": "ok",
+    "cacheState": "fresh",
+    "fetchedAt": "2026-10-01T15:27:13.950Z",
+    "source": "YouGov primary voting-intention article and result tables",
+    "provenance": {
+      "registryVersion": "2026-08-02.1",
+      "section": "electionPolling",
+      "title": "Primary voting-intention poll publications",
+      "evidenceClass": "public-opinion",
+      "geography": "Great Britain",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "as published",
+      "operationalStatus": "active",
+      "publicationRequirement": "required",
+      "upstreams": [
+        {
+          "publisher": "YouGov",
+          "label": "YouGov Westminster voting-intention primary tables",
+          "url": "https://yougov.com/en-gb/articles",
+          "sourceClass": "primary-pollster-publication",
+          "caveat": "The private Worker discovers the latest named voting-intention article and retains the direct primary result-table URL. Each payload expires after 14 days."
+        },
+        {
+          "publisher": "British Polling Council",
+          "label": "British Polling Council disclosure rules",
+          "url": "https://www.britishpollingcouncil.org/objects-and-rules/",
+          "sourceClass": "methodology-standard"
+        }
+      ]
+    }
+  },
+  "data": {
+    "available": true,
+    "latestPublicationDate": "2026-09-28",
+    "expiresAt": "2026-10-12T00:00:00.000Z",
+    "polls": [
+      {
+        "id": "yougov-2026-09-28",
+        "pollster": "YouGov",
+        "commissioner": "The Times and Sky News",
+        "title": "Voting intention, 27-28 September 2026: Ref 25%, Lab 24%, Con 19%, LD 12%, Grn 11%",
+        "questionText": "Now, thinking specifically about your own constituency, if there were a general election held tomorrow and these were the parties standing, which party would you vote for?",
+        "publicationDate": "2026-09-28",
+        "fieldworkStart": "2026-09-27",
+        "fieldworkEnd": "2026-09-28",
+        "sampleSize": 2310,
+        "geography": "Great Britain",
+        "population": "GB adults",
+        "mode": "Online panel",
+        "headlineMethod": "Headline voting intention from constituency vote projected by YouGov's MRP model",
+        "parties": {
+          "conservative": 19,
+          "labour": 24,
+          "liberalDemocrats": 12,
+          "reformUK": 25,
+          "green": 11,
+          "snp": 2,
+          "plaidCymru": 1,
+          "restoreBritain": 3,
+          "other": 2
+        },
+        "sourceUrl": "https://ygo-assets-websites-editorial-emea.yougov.net/documents/VotingIntention_MRP_260928_w.pdf",
+        "methodologyUrl": "https://yougov.com/en-gb/articles/54278-how-yougov-conducts-voting-intention-polling",
+        "bpcMember": true,
+        "uncertainty": "YouGov states a 9 in 10 chance that true party support lies within four points of the estimate and a 2 in 3 chance that it lies within two points."
+      }
+    ],
+    "aggregation": {
+      "method": "none",
+      "explanation": "public-data.org shows each verified primary poll publication separately and does not calculate an average."
+    },
+    "evidencePolicy": {
+      "sourceClass": "primary-pollster-publication",
+      "bpcDisclosureRequired": true,
+      "secondaryAggregatorsUsedAsData": false
+    },
+    "__observation": {
+      "status": "current",
+      "period": "2026-09-27/2026-09-28",
+      "observedAt": "2026-09-28T00:00:00.000Z",
+      "checkedAt": "2026-10-01T15:27:13.950Z",
+      "maxAgeDays": 14
+    }
+  }
+}

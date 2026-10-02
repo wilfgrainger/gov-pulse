@@ -25,6 +25,7 @@
     { "id": "nhs", "status": "active" },
     { "id": "migration", "status": "active" },
     { "id": "real-wages", "status": "active" },
+    { "id": "house-price-index", "status": "active" },
     { "id": "early-years", "status": "active" },
     { "id": "uk-regions", "status": "withdrawn" },
     { "id": "policy-links", "status": "withdrawn" }

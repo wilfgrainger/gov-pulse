@@ -16,6 +16,7 @@ type SignalId =
   | "national-debt"
   | "nhs-waiting-list"
   | "net-migration"
+  | "house-price-index"
   | "real-wages";
 
 export type SignalHistoryPoint = { observedAt: number; value: number };
@@ -103,6 +104,15 @@ const SIGNAL_META: Record<
     kicker: "Population",
     href: "/section/migration",
     evidenceClass: DATA_SOURCES.migrationStats.evidenceClass,
+    geography: "United Kingdom",
+  },
+  "house-price-index": {
+    id: "house-price-index",
+    anchorId: "house-price-index",
+    title: "Average UK house price",
+    kicker: "Housing",
+    href: "/section/house-price-index",
+    evidenceClass: DATA_SOURCES.housePriceIndex.evidenceClass,
     geography: "United Kingdom",
   },
   "real-wages": {
@@ -302,7 +312,7 @@ function applySourceState(
   signal: SignalPresentation,
   source: SnapshotSourceStatus | undefined
 ): SignalPresentation {
-  const catalogId = ({
+  const catalogIds: Partial<Record<SignalId, string>> = {
     gdp: "gdp-threeMonthGrowth",
     inflation: "inflation",
     unemployment: "unemployment",
@@ -310,9 +320,14 @@ function applySourceState(
     "nhs-waiting-list": "waitingPathwaysEstimate",
     "net-migration": "netMigration",
     "real-wages": "regularPayRealGrowth",
-  } as const)[signal.id];
-  const catalogState = record(record(source)?.catalogMeasureStates)?.[catalogId];
-  const sourceUrl = record(record(source)?.catalogMeasureSources)?.[catalogId];
+  };
+  const catalogId = catalogIds[signal.id];
+  const catalogState = catalogId
+    ? record(record(source)?.catalogMeasureStates)?.[catalogId]
+    : undefined;
+  const sourceUrl = catalogId
+    ? record(record(source)?.catalogMeasureSources)?.[catalogId]
+    : undefined;
   if (catalogState === "historical" || catalogState === "unavailable") return unavailable(signal.id);
   if (catalogState === "current") {
     const currentness = source?.status === "ok" && source.cacheState === "fresh" ? "current" : "update-due";
@@ -502,6 +517,38 @@ function selectMigration(snapshot: MetricsSnapshot): SignalPresentation {
   );
 }
 
+function selectHousePriceIndex(snapshot: MetricsSnapshot): SignalPresentation {
+  const data = record(snapshot.housePriceIndex);
+  const headline = record(data?.headline);
+  const avgPriceGbp = finite(headline?.avgPriceGbp);
+  const change = finite(headline?.changePercent);
+  const previousChange = finite(headline?.previousChangePercent);
+  const period = text(headline?.period);
+  const previousPeriod = text(headline?.previousPeriod);
+  const publishedAt = formatDate(headline?.releaseDate);
+  if (avgPriceGbp === null || avgPriceGbp <= 0 || change === null || !period || !publishedAt) {
+    return unavailable("house-price-index");
+  }
+  const direction = change === 0 ? "was unchanged" : change > 0 ? "rose" : "fell";
+  const comparison = previousChange === null || !previousPeriod
+    ? "Previous-period comparison unavailable"
+    : `${formatPercent(previousChange)} in the 12 months to ${previousPeriod}`;
+  return applySourceState(
+    {
+      ...unavailable("house-price-index"),
+      value: `£${formatPeople(avgPriceGbp)}`,
+      comparison,
+      period,
+      publishedAt,
+      history: historyPoints(data?.history, "hpiChangePercent"),
+      leadHeadline: `The average UK house price ${direction} to £${formatPeople(avgPriceGbp)} in the 12 months to ${period}.`,
+      leadSummary: `Annual house price inflation is ${formatPercent(change)}${previousChange === null ? "." : `, compared with ${comparison}.`}`,
+      caveat: "The average price level is headline-only and is not tracked as a time series; only the annual %-change is.",
+    },
+    snapshot.meta.sources.housePriceIndex
+  );
+}
+
 function selectRealWages(snapshot: MetricsSnapshot): SignalPresentation {
   const data = record(snapshot.realWages);
   const headline = record(data?.headline);
@@ -549,6 +596,7 @@ export function selectNationalEvidenceEdition(snapshot: unknown, now = new Date(
     selectDebt(currentSnapshot),
     selectNhs(currentSnapshot),
     selectMigration(currentSnapshot),
+    selectHousePriceIndex(currentSnapshot),
     selectRealWages(currentSnapshot),
   ].map((signal) => {
     const section = signal.id === "unemployment" ? "employmentStats"

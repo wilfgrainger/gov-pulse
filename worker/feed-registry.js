@@ -167,6 +167,27 @@ export const FEED_REGISTRY = Object.freeze({
       },
     ],
   },
+  housePriceIndex: {
+    section: "housePriceIndex",
+    title: "UK House Price Index",
+    evidenceClass: "official-data",
+    geography: "United Kingdom",
+    retrieval: "scheduled-publication-check",
+    refreshCadence: "daily",
+    publicationCadence: "monthly",
+    operationalStatus: "active",
+    retrievalMaxAgeMs: 45 * DAY_MS,
+    publicationRequirement: "required",
+    upstreams: [
+      {
+        publisher: "Office for National Statistics",
+        label: "Private rent and house prices, UK bulletin",
+        url: "https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/privaterentandhousepricesuk/latest",
+        sourceClass: "official-primary",
+        caveat: "The Worker discovers the latest bulletin edition from the /latest alias (ONS serves this bulletin directly, without an HTTP redirect) and reads the UK House Price Index (HPI) percentage-change figure only; the average price level is headline-only and is not carried into the %-change history, which lags HPI's own publication by one to two months.",
+      },
+    ],
+  },
   realWages: {
     section: "realWages",
     title: "Real-terms growth in average weekly earnings",

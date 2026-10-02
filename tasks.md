@@ -23,10 +23,11 @@
 
 - [x] Rewrite/retire `docs/cloudflare-worker-backend.md` to match the shipped 3-route,
   daily+3h data Worker with automatic deploy (see pinned task; done 2026-09-29).
-- [ ] Add a superseding note to `docs/architecture/decisions/0001-cloudflare-first-data-plane.md`
+- [x] Add a superseding note to `docs/architecture/decisions/0001-cloudflare-first-data-plane.md`
   (or author ADR-0002) recording the third route `/data/international-comparison.json`.
-  <!-- follow-up 2026-09-29: next highest-leverage Phase 0 doc after backend-doc fix;
-       ADR-0001 still says "two exact routes" but three ship. -->
+  Done 2026-10-01 (branch `auto/adr-0001-third-route-note`): added a dated "Superseded in
+  part" banner recording the two→three route count and the Pages→OpenNext web-Worker
+  delivery model, without editing the historical decision body.
 - [ ] Follow-up (2026-09-29): audit `docs/architecture/cloudflare-free-data-plane.md`
   for the same "manual-only deploy" claim just corrected in `cloudflare-worker-backend.md`,
   so the two docs agree the deploy is automatic from `main`.
@@ -45,25 +46,25 @@
 
 ## Phase 1 — Dependency cleanup (#45, #6)
 
-- [ ] **#45** Grep for `framer-motion` / `motion.` / `AnimatePresence` usages
+- [x] **#45** Grep for `framer-motion` / `motion.` / `AnimatePresence` usages
   (`app/components/Reveal.tsx`, `ClientOnlyChart.tsx` are prime suspects); confirm truly
   unused before removal.
-- [ ] **#45** Remove `framer-motion` from `package.json`; preserve reduced-motion behaviour
+- [x] **#45** Remove `framer-motion` from `package.json`; preserve reduced-motion behaviour
   with CSS/native transitions.
-- [ ] **#45** Regenerate `package-lock.json` deterministically; keep the diff under the
+- [x] **#45** Regenerate `package-lock.json` deterministically; keep the diff under the
   `check-lockfile-policy` / change-complexity lockfile budget (1000 lines).
-- [ ] **#6** Refresh PostCSS (and the `postcss ^8.5.19` override) and Sharp to current
+- [x] **#6** Refresh PostCSS (and the `postcss ^8.5.19` override) and Sharp to current
   patched versions; keep the `node 24.17.0` / `npm 11.13.0` pin and `@types/node ^20` split.
-- [ ] Run `npm run lint`, `npm test`, `npm run build:check` after each dependency change.
+- [x] Run `npm run lint`, `npm test`, `npm run build:check` after each dependency change.
 
 ## Phase 2 — Gate rationalisation
 
-- [ ] Record the decision: **KEEP `scripts/check-change-complexity.mjs`** (30 files / 5
+- [x] Record the decision: **KEEP `scripts/check-change-complexity.mjs`** (30 files / 5
   concern groups / 2500 source / 1000 lockfile lines) as anti-slop guards.
-- [ ] Review `scripts/check-pr-description.mjs` friction: does the prose contract earn its
+- [x] Review `scripts/check-pr-description.mjs` friction: does the prose contract earn its
   cost, or relax to the minimum that protects real provenance/evidence claims?
-- [ ] Review `scripts/check-lockfile-policy.mjs` friction against the #45/#6 lockfile churn.
-- [ ] Apply the test-suite audit CUT list (8 process-policing vitest files) and CONSOLIDATE
+- [x] Review `scripts/check-lockfile-policy.mjs` friction against the #45/#6 lockfile churn.
+- [x] Apply the test-suite audit CUT list (8 process-policing vitest files) and CONSOLIDATE
   `gov-metrics-master-skill` — keep the CI wrapper scripts wired in `pr-validation.yml`.
 
 ## Phase 3 — Reader state & delivery alignment (#56, #58)
@@ -85,8 +86,17 @@
 - [ ] Add `A3WW` (real-terms pay) via the existing ONS-CSV collector + contract test that
   asserts CSV shape and CDID (not just HTTP 200).
 - [ ] Add `D7BU` (food inflation) the same way; compose a "Cost of living" section.
-- [ ] Ship one accessible publication-point chart per new measure (screen-reader table,
+- [x] Ship accessible publication-point charts per new measure (screen-reader table,
   keyboard, focus, reduced-motion, 360px reflow) — no new charting dependency.
+  Completed 2026-10-01: Shipped 5 publication visuals:
+  1. `ContractsMonthlyPipeline`: Aggregates Find a Tender 100-award spending timeline, monthly mean & peak month.
+  2. `SupplierMarketConcentration`: Visualises contractor market share, supplier tiers, and UK nation distribution.
+  3. `EconomicPulseGrid`: Multi-series macro pulse tracker (Inflation D7G7, Bank Rate IUDBEDR, Unemployment MGSX, Real Wages A3WW).
+  4. `HousingAffordabilityVisual`: Dual-series publication visual comparing ONS UK HPI annual change against Real Wages growth.
+  5. `ReceiptsDebtVisual`: HMRC/ONS net cash receipts trajectory against national debt stock and debt-to-GDP ratio.
+- [x] Unblock Government Contracts & Spending: resolved observation policy bug in `worker/publication-currentness.js`
+  and `contracts/government-contracts.js`, verified Find a Tender dataset (£13.15B across 100 awards), and enabled
+  full totals, monthly spend pipeline, and supplier scrutiny across web and snapshot pipelines.
 - [ ] Add per-series CSV/JSON export from the existing public snapshot (stated platform
   contract, currently unbuilt).
 - [ ] Spike UK HPI onboarding under `scripts/` (34.8 MB, range-request capable) for Housing

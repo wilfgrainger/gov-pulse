@@ -4,6 +4,8 @@ import { useMemo, useRef, useState } from "react";
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import ChartExportButtons from "@/app/components/ChartExportButtons";
 import MetricsStatus from "@/app/components/MetricsStatus";
+import ContractsMonthlyPipeline from "@/app/components/visuals/ContractsMonthlyPipeline";
+import SupplierMarketConcentration from "@/app/components/visuals/SupplierMarketConcentration";
 import { useMetrics } from "@/app/lib/useMetrics";
 import { barWidthPercent } from "@/app/lib/chartModel";
 import { buildSupplierConcentrationMetadata } from "@/app/lib/governmentContractsChart";
@@ -294,6 +296,12 @@ export default function GovernmentContracts() {
         />
       </section>
 
+      {/* Visual 1: Monthly Procurement Pipeline */}
+      <ContractsMonthlyPipeline
+        awards={data.awards}
+        totalValue={data.summary.disclosedValueTotal}
+      />
+
       <section id="uk-doge" aria-labelledby="uk-doge-title" className="border border-black bg-[#14243b] p-6 text-white md:p-8">
         <p className="text-sm font-semibold text-red-300">UK DOGE · independent scrutiny</p>
         <h3 id="uk-doge-title" className="mt-2 text-3xl font-semibold tracking-[-0.03em] md:text-4xl">
@@ -320,6 +328,13 @@ export default function GovernmentContracts() {
           </div>
         </dl>
       </section>
+
+      {/* Visual 2: Supplier Market Concentration & Allocation */}
+      <SupplierMarketConcentration
+        suppliers={data.supplierConcentration}
+        totalDisclosedValue={data.summary.disclosedValueTotal}
+        top10Share={data.summary.top10Share}
+      />
 
       <section aria-labelledby="supplier-concentration-title">
         <div className="border-b border-black/20 pb-5">

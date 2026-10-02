@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
 
 type Props = {
   /** The exact numeric value to count up to. */
@@ -27,7 +26,6 @@ type Props = {
  * reveal of a value that's already been computed.
  */
 export default function CountUpNumber({ value, format, durationMs = 900, className }: Props) {
-  const prefersReducedMotion = useReducedMotion();
   const [animated, setAnimated] = useState(false);
   const frameRef = useRef<number | null>(null);
   const displayRef = useRef<HTMLSpanElement>(null);
@@ -37,10 +35,13 @@ export default function CountUpNumber({ value, format, durationMs = 900, classNa
   // the effect — matches the mount-detection pattern already used by
   // app/components/Reveal.tsx.
   useEffect(() => {
+    const prefersReducedMotion = typeof window.matchMedia === "function"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false;
     if (prefersReducedMotion || !Number.isFinite(value)) return;
     const frame = window.requestAnimationFrame(() => setAnimated(true));
     return () => window.cancelAnimationFrame(frame);
-  }, [prefersReducedMotion, value]);
+  }, [value]);
 
   useEffect(() => {
     if (!animated || !displayRef.current) return;

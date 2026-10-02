@@ -29,7 +29,7 @@ function StateBadge({ state }: { state: EvidenceState }) {
         : "border-black/20 bg-[#eef1f4] text-gray-600";
 
   return (
-    <span className={`inline-flex min-h-7 items-center border px-2.5 py-1 text-sm font-semibold uppercase tracking-[0.08em] ${tone}`}>
+    <span className={`british-538-badge ${tone}`}>
       {STATE_LABELS[state]}
     </span>
   );
@@ -58,7 +58,7 @@ function LeadStory({ signal }: { signal: SignalPresentation | null }) {
       <div className="flex flex-col bg-[#14243b] p-7 text-white md:p-10 lg:p-12">
         <div className="flex flex-wrap items-center gap-3">
           <p className="eyebrow eyebrow-on-dark">The latest release to know</p>
-          <span className="inline-flex min-h-7 items-center border border-white bg-white px-2.5 py-1 text-sm font-semibold uppercase tracking-[0.08em] text-foreground">
+          <span className="british-538-badge border border-white bg-white text-foreground">
             {STATE_LABELS[signal.state]}
           </span>
         </div>
@@ -100,7 +100,7 @@ function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?:
         prefetch={false}
         data-testid="signal-card"
         data-evidence-state={signal.state}
-        className="editorial-lift group flex h-full min-h-80 flex-col border border-black/20 border-t-4 border-t-[#0f6b63] bg-white p-5 transition-colors hover:border-foreground hover:bg-[#eef6fb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black md:p-6"
+        className="editorial-lift group flex h-full min-h-80 flex-col border-t-4 border-t-[#0f6b63] bg-white p-5 transition-colors hover:border-foreground hover:bg-[#eef6fb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black md:p-6 british-538-border"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -188,6 +188,56 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
           </ul>
         </section>
 
+        {/* British 538 Data Spotlight: Government Spending & Contracts */}
+        <section aria-labelledby="spending-spotlight-title" className="mt-12 md:mt-16">
+          <div className="border border-[#14243b] bg-white p-6 shadow-[3px_3px_0_#14243b] md:p-8 lg:p-10">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-black/15 pb-5">
+              <div>
+                <p className="font-mono text-xs font-bold uppercase tracking-wider text-[#1f5c8a]">
+                  Public Procurement & Spending · Find a Tender Service
+                </p>
+                <h3 id="spending-spotlight-title" className="font-display mt-2 text-2xl font-bold md:text-3xl">
+                  UK Government Contracts: Where Public Money Goes
+                </h3>
+              </div>
+              <Link
+                href="/section/government-contracts"
+                prefetch={false}
+                className="inline-flex min-h-10 items-center gap-2 bg-[#14243b] px-4 py-2 font-mono text-xs font-bold text-white transition-colors hover:bg-[#1f5c8a]"
+              >
+                <span>Explore Spending Pipeline</span>
+                <span aria-hidden="true">→</span>
+              </Link>
+            </div>
+
+            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="border-l-4 border-[#1f5c8a] bg-[#f4f6f8] p-4">
+                <p className="font-mono text-xs font-semibold uppercase text-gray-500">Total Tracked Value</p>
+                <p className="headline-figure mt-1 text-3xl font-extrabold text-[#14243b] md:text-4xl">£13.15B</p>
+                <p className="mt-2 text-xs text-gray-600">Across 100 active notices & frameworks</p>
+              </div>
+
+              <div className="border-l-4 border-[#0f6b63] bg-[#f4f6f8] p-4">
+                <p className="font-mono text-xs font-semibold uppercase text-gray-500">Peak Spend Month</p>
+                <p className="headline-figure mt-1 text-3xl font-extrabold text-[#0f6b63] md:text-4xl">£2.66B</p>
+                <p className="mt-2 text-xs text-gray-600">March 2026 fiscal year-end allocation</p>
+              </div>
+
+              <div className="border-l-4 border-[#8a5a12] bg-[#f4f6f8] p-4">
+                <p className="font-mono text-xs font-semibold uppercase text-gray-500">Top 5 Concentration</p>
+                <p className="headline-figure mt-1 text-3xl font-extrabold text-[#8a5a12] md:text-4xl">30.8%</p>
+                <p className="mt-2 text-xs text-gray-600">£4.05B held by top 5 major suppliers</p>
+              </div>
+
+              <div className="border-l-4 border-[#5a4b9c] bg-[#f4f6f8] p-4">
+                <p className="font-mono text-xs font-semibold uppercase text-gray-500">Monthly Mean Spend</p>
+                <p className="headline-figure mt-1 text-3xl font-extrabold text-[#5a4b9c] md:text-4xl">£1.46B</p>
+                <p className="mt-2 text-xs text-gray-600">Average monthly award commitment</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section id="more-evidence" aria-labelledby="more-evidence-title" className="mt-12 border-y border-black/20 py-8 md:mt-16">
           <div className="grid gap-6 lg:grid-cols-[17rem_1fr]">
             <div>
@@ -197,7 +247,7 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
             <ul className="grid gap-3 sm:grid-cols-2">
               {DIRECT_EVIDENCE_LINKS.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href} prefetch={false} className="editorial-lift group flex min-h-28 items-start justify-between gap-4 border border-black/20 bg-white p-5 transition-colors hover:border-foreground hover:bg-[#f9fbfc] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black">
+                  <Link href={item.href} prefetch={false} className="editorial-lift group flex min-h-28 items-start justify-between gap-4 bg-white p-5 transition-colors hover:bg-[#f9fbfc] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black british-538-border">
 
                     <span>
                       <span className="text-lg font-semibold">{item.label}</span>

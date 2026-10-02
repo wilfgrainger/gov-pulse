@@ -96,7 +96,7 @@ describe("data explorer", () => {
       .find(({ id }) => id === "unemployment")?.value).toBeNull();
   });
 
-  it("keeps the public explorer to eight core measures and uses the labour publication for unemployment", () => {
+  it("keeps the public explorer to eight canonical measures and uses the labour publication for unemployment", () => {
     const measures = exploreMeasures(payload, now);
     expect(measures.map((m) => m.id)).toEqual([
       "gdp-threeMonthGrowth", "inflation", "unemployment", "waitingPathwaysEstimate",

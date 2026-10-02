@@ -41,6 +41,7 @@ import {
   buildNationalDebt,
 } from "./national-debt.js";
 import { buildMigrationStats } from "./migration.js";
+import { buildHousePriceIndex } from "./house-price-index.js";
 import { buildRealWagesStats } from "./real-wages.js";
 import {
   buildCrimeStatistics,
@@ -174,6 +175,7 @@ const GENERIC_SECTIONS = Object.freeze([
   "employmentStats",
   "nationalDebt",
   "migrationStats",
+  "housePriceIndex",
   "realWages",
   "crimeStatistics",
 ]);
@@ -206,6 +208,7 @@ const observationDescriptors = Object.fromEntries(
 observationDescriptors.gdpTracker.build = buildGdpTracker;
 observationDescriptors.employmentStats.build = buildEmploymentStats;
 observationDescriptors.migrationStats.build = buildMigrationStats;
+observationDescriptors.housePriceIndex.build = buildHousePriceIndex;
 observationDescriptors.realWages.build = buildRealWagesStats;
 observationDescriptors.nationalDebt.build = buildNationalDebt;
 observationDescriptors.sentimentPulse.build = () => buildCurrentEconomicIndicators(fetch);
@@ -264,9 +267,7 @@ async function buildGenericObservationSection(section, backend, now) {
   // contract and returns data already carrying __observation (+ expiresAt).
   const data = await observationDescriptors[section].build();
   return sectionRecord(section, { ...data, __provenance: provenanceFor(section) }, backend, now);
-}
-
-async function buildSentimentPulse(now) {
+}async function buildSentimentPulse(now) {
   // Reproduce worker/series-entry.js verbatim: build + currentness gate, then
   // decorate with the section's own three-series observation and provenance
   // (dataWithEvidence). NOT the shared observation contract, whose sentimentPulse
@@ -318,6 +319,8 @@ const SECTION_BUILDERS = Object.freeze({
     buildGenericObservationSection("migrationStats", "verified-data-service", now),
   realWages: (now = new Date()) =>
     buildGenericObservationSection("realWages", "verified-data-service", now),
+  housePriceIndex: (now = new Date()) =>
+    buildGenericObservationSection("housePriceIndex", "verified-data-service", now),
   sentimentPulse: (now = new Date()) => buildSentimentPulse(now),
   nationalDebt: (now = new Date()) => buildNationalDebtSection(now),
   crimeStatistics: (now = new Date()) => buildCrimeStatisticsSection(now),
