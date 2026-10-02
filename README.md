@@ -18,7 +18,11 @@ A merge to `main` validates and builds the application, deploys both Workers and
 
 The [data explorer](https://public-data.org/explore/) provides search, topic filters, published history, comparisons and CSV export for its supported measures. It shows only evidence that remains within its source-owned validity window.
 
-The repository-level GitHub Pages setting must remain disabled. A `public/CNAME` file and GitHub Pages deployment actions are prohibited because they can compete with the Cloudflare Pages production route. `npm run hosting:check` enforces this boundary in every test pass.
+Cloudflare is the current production host, not a permanent product constraint.
+Any hosting change must preserve one canonical `public-data.org` deployment and
+move the application, data contracts, release checks and fallback together.
+Release smoke checks verify the public domain and deployed revision; runtime-
+specific checks cover the runtime actually selected for deployment.
 
 See the [current Worker contract](./docs/cloudflare-worker-backend.md), [accepted publication decision](./docs/architecture/decisions/0002-publication-reinvention.md), and [deployment and recovery guide](./docs/operations/deployment-ci-frugality.md).
 
@@ -59,7 +63,6 @@ The project intentionally retains Node 20 type definitions while running on Node
 
 ```bash
 npm run toolchain:check
-npm run hosting:check
 npm run lint
 npm run test
 npm run build:check

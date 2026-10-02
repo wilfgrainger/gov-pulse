@@ -1,6 +1,6 @@
 # Public-data.org: website, evidence and architecture review
 
-> **Historical review.** Its route counts, dated state and task assumptions are not current constraints. Round-two scope and execution are in [the current plan](../plans/2026-10-02-publication-reinvention-round-2.md).
+> **Historical review.** Its route counts, dated state, task assumptions and Cloudflare-Free-only requirement are not current constraints. Round-two scope and execution are in [the current plan](../plans/2026-10-02-publication-reinvention-round-2.md).
 
 Review date: 1 October 2026. Source revision: `ac110e2873bbb2b861aceda307ad6256db5202c2`.
 
@@ -87,7 +87,7 @@ The user's redesign authorization supersedes old aesthetic and architectural pre
 | `tests/unit/visualSystem.test.ts` | Pins old hex colours, Georgia, radius/shadows and banned font names | Test approved tokens, contrast/focus and reduced motion; remove aesthetic vetoes. |
 | `scripts/check-static-architecture.mjs` | Exactly three routes and blanket App Router API ban | Approved public-contract manifest; keep collector/secret exposure prohibited. |
 | `scripts/lib/change-complexity.mjs` | Arbitrary file, concern, source-line and lockfile-size limits blocked cohesive work | Remove the blocking gate and duplicate helper. PR validation still reports changed files; architecture, lockfile integrity, source ownership, lint, tests and builds remain enforced. |
-| `scripts/check-hosting-boundary.mjs` | Literal Pages deployment syntax | Validate real production/recovery hosting boundaries. |
+| Former `scripts/check-hosting-boundary.mjs` | Its provider bans duplicated deployment assumptions in prose and CI. | Removed in round two; exact-head public release smoke checks retain canonical-domain verification without locking the provider. |
 
 Do not delete evidence audits or withdrawal reasons to escape a constraint. Add supersession notes where appropriate. `framer-motion` is currently used by `Reveal`; an old roadmap claim that it is unused must not drive blind removal.
 

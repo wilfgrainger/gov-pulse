@@ -43,18 +43,21 @@ publication writes bounded, run-scoped and idempotent; a failed job never
 becomes successful just because retries end. Preserve older evidence only
 within its original validity window.
 
-Host and deployed runtime must remain on Cloudflare Free unless the user
-explicitly changes that requirement. Measure actual limits and workload; do not
-invent quota ceilings. Protect credentials in repository/environment secrets.
-Do not add tracking, personal-data collection or a paid service without an
-explicit need and authorization.
+Cloudflare is the current host, not a permanent platform ceiling. Choose the
+runtime that best serves the product and evidence workload; measure real limits
+and compare alternatives when needed. Do not commit paid spend without the
+user's approval of the cost. Protect credentials in repository/environment
+secrets. Do not add tracking or personal-data collection without an explicit
+need and authorization.
 
 ## Working and delivery
 
-Prefer the smallest change that fully serves the current feature. This is a
-design preference, not a cap on product scope, routes, files, lines, measures or
-architecture. No agent persona, team, recurring review ceremony or fixed commit
-cadence is required. Use extra process only when the task needs it.
+Deliver the complete user-requested outcome. Keep implementation clear and
+maintainable, but do not use simplicity, token economy or process as a reason to
+shrink design ambition, defer features, or limit architecture, routes, files,
+measures or validation. This repository's Cave Pony guidance controls response
+length only. No agent persona, team, recurring review ceremony or fixed commit
+cadence is required.
 
 Run checks that meaningfully cover changed behavior and the affected production
 build mode. The required code gate is the quality aggregate in

@@ -75,19 +75,41 @@ jobs:
       - name: Verify toolchain
         run: npm run toolchain:check
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Unit and Worker tests
-        run: npm run test
-
       - name: Prepare generated data and assets
         run: npm run build:prepare
 
-      - name: Build application
-        run: npm run build
+      - name: Lint, test and build in parallel
+        shell: bash
         env:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set +e
+          log_dir="$(mktemp -d)"
+
+          npm run lint >"$log_dir/lint.log" 2>&1 &
+          lint_pid=$!
+          npm run test >"$log_dir/test.log" 2>&1 &
+          test_pid=$!
+          npm run build >"$log_dir/build.log" 2>&1 &
+          build_pid=$!
+
+          wait "$lint_pid"
+          lint_status=$?
+          wait "$test_pid"
+          test_status=$?
+          wait "$build_pid"
+          build_status=$?
+
+          for check in lint test build; do
+            echo "::group::$check output"
+            cat "$log_dir/$check.log"
+            echo "::endgroup::"
+          done
+
+          if [ "$lint_status" -ne 0 ] || [ "$test_status" -ne 0 ] || [ "$build_status" -ne 0 ]; then
+            echo "One or more quality checks failed (lint=$lint_status, test=$test_status, build=$build_status)."
+            exit 1
+          fi
 
   quality:
     if: always()

@@ -45,9 +45,8 @@ export function unsupportedWorkerIngress(config, surfaces = readPublicSurfaces()
 export function main(projectRoot = process.cwd()) {
   const findings = [];
   const wranglerPath = path.join(projectRoot, "worker", "wrangler.toml");
-  if (!fs.existsSync(wranglerPath)) {
-    findings.push("worker/wrangler.toml is required");
-  } else {
+  const hasCloudflareRuntime = fs.existsSync(wranglerPath);
+  if (hasCloudflareRuntime) {
     const workerIngress = unsupportedWorkerIngress(
       fs.readFileSync(wranglerPath, "utf8"),
       readPublicSurfaces(projectRoot),
@@ -70,7 +69,10 @@ export function main(projectRoot = process.cwd()) {
   }
 
   const surfaces = readPublicSurfaces(projectRoot);
-  console.log(`Architecture check passed: ${surfaces.workerRoutes.length} reviewed public data Worker routes.`);
+  const runtimeNote = hasCloudflareRuntime
+    ? `Cloudflare ingress checked across ${surfaces.workerRoutes.length} reviewed public routes.`
+    : "No Cloudflare config found; provider-neutral public route contracts remain checked.";
+  console.log(`Architecture check passed: ${runtimeNote}`);
   return true;
 }
 

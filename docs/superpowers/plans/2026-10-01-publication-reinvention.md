@@ -1,6 +1,6 @@
 # Public-data.org Reinvention Implementation Plan
 
-> **Historical plan — superseded for execution by [round two](2026-10-02-publication-reinvention-round-2.md).** This document records earlier design and implementation decisions; its mandatory sub-skills, task order and completion statements are not current instructions.
+> **Historical plan — superseded for execution by [round two](2026-10-02-publication-reinvention-round-2.md).** This document records earlier design and implementation decisions; its Cloudflare-Free-only assumption, mandatory sub-skills, task order and completion statements are not current instructions.
 
 **Goal:** Repair every existing evidence/chart journey and deliver exactly ten capabilities in a vibrant UK public-data publication.
 
@@ -14,7 +14,7 @@
 
 ## Global Constraints
 
-- Hard constraint: deployed hosting/runtime uses Cloudflare Free only.
+- Historical assumption: deployed hosting/runtime uses Cloudflare Free only. Round two removed this platform ceiling.
 - Missing inputs must remain honestly unavailable.
 - Previously verified historical editions may be read as history, with explicit as-of dates, without being promoted to current headlines.
 - No auto-upgrade or paid billing fallback.

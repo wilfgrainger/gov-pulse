@@ -18,6 +18,12 @@ Machine-readable and executable files do not qualify for the Markdown-only
 lane. Lockfile-only changes run the same locked install, tests and build as
 other code changes.
 
+Equivalent runs reduced aggregate runner time from 235 seconds to 122 seconds
+(48.1%); end-to-end PR time remained 135 seconds. The latest measured quality
+job took 114 seconds: unit/Worker tests 51 seconds, app build 16 seconds, lint
+13 seconds. Task 1 of the active round-two plan profiles overlapping these
+independent checks without dropping coverage or repeating installs/builds.
+
 ## Production release
 
 The `quality` PR result is required by the `main` branch ruleset. A merged PR
@@ -35,17 +41,24 @@ rebuild/deploy the secondary Cloudflare Pages seed. Recovery failure remains
 visible on its own job and cannot skip or invalidate the completed code release
 checks. Runtime data collection and KV publication continue independently.
 
-## Free resource accounting
+## Runtime and cost accounting
 
-Cloudflare plan limits change and must be confirmed from current official
-documentation and account settings before claiming Free-tier readiness. Derive
-Worker requests, CPU, Queue messages/retries, KV reads/writes/storage, artifact
-size and egress from actual schedules and traffic. Existing Worker budget
-constants are subject to review; do not treat them as quota evidence.
+Cloudflare is the current platform, not a Free-only requirement. Derive requests,
+CPU, Queue messages/retries, KV reads/writes/storage, artifact size and egress
+from actual schedules and traffic. Compare viable platforms using current
+official limits, account configuration, reliability, operating burden and full
+cost. Existing Worker budget constants are subject to review; do not treat them
+as quota evidence. Get user approval before incurring paid spend.
 
 The NHS importer recently received an upstream access challenge from its
 GitHub runner. Treat retrieval as unverified until an allowed primary-source
 path successfully publishes reconciled data. Do not bypass access controls or
 add a paid executor.
 
-GitHub Pages must remain disabled. Public hosting/runtime is Cloudflare Free.
+The current deploy workflow targets Cloudflare Workers, with Pages as an
+explicit fallback. Another platform is allowed when the product case supports a
+coordinated migration and one canonical public route. Do not run competing
+production deployments for the same public identity. The current host checker
+still asserts Cloudflare-specific deployment steps; the round-two plan replaces
+that assertion with the selected-host contract before enabling a different
+target.

@@ -22,4 +22,11 @@ describe("HomepageIntro", () => {
     expect(screen.getByRole("link", { name: "Sources and dates" })).toHaveAttribute("href", "/sources");
     expect(screen.queryByRole("navigation", { name: "Start with a question" })).not.toBeInTheDocument();
   });
+
+  it("gives the front page direct paths into the Measure library and Compare", () => {
+    render(<HomepageIntro />);
+
+    expect(screen.getByRole("link", { name: "Measure library" })).toHaveAttribute("href", "/measure");
+    expect(screen.getByRole("link", { name: "Compare" })).toHaveAttribute("href", "/compare");
+  });
 });
