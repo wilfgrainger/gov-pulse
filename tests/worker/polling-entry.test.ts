@@ -55,12 +55,21 @@ describe("live publisher parsers", () => {
     `);
     expect(article).toContain("/55251-voting-intention-26-27-july-2026");
     expect(sampleSizeFromPdfText("Sample Size: 2,328 GB Adults")).toBe(2328);
+    expect(sampleSizeFromPdfText("Sample size: 2310 adults in GB")).toBe(2310);
   });
 
   it("requires an explicitly labelled publication date and commissioner", () => {
     expect(parsePublishedDate("Published: 27 July 2026; fieldwork was 26 July")).toBe("2026-07-27");
+    expect(parsePublishedDate(
+      '<span data-test="published-at" class="published-at">29 September 2026</span>'
+    )).toBe("2026-09-29");
+    expect(parsePublishedDate(
+      '<span data-test="published-at" class="published-at">29 September 2026</span><p>Published: 28 September 2026</p>'
+    )).toBe("2026-09-29");
     expect(() => parsePublishedDate("26 July 2026, voting intention results")).toThrow(/publication date/);
     expect(commissionerFromArticle("The latest poll for The Times and Sky News shows Reform at 22%."))
+      .toBe("The Times and Sky News");
+    expect(commissionerFromArticle("The latest poll for The Times and Sky News continues to show a close race."))
       .toBe("The Times and Sky News");
     expect(() => commissionerFromArticle("The latest YouGov result was published today."))
       .toThrow(/did not disclose the commissioner/);

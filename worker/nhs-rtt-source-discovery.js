@@ -67,6 +67,12 @@ function annualRank(url) {
   return match ? Number(match[1]) * 100 + Number(match[2]) : Number.NEGATIVE_INFINITY;
 }
 
+function isAwsWafChallenge(html) {
+  const source = String(html ?? "");
+  return /\bwindow\.awsWafCookieDomainList\s*=/i.test(source) &&
+    /\bwindow\.gokuProps\s*=/i.test(source);
+}
+
 function releaseRank(link) {
   const textMatch = link.label.match(
     /\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s*(20\d{2}|\d{2})\b/i
@@ -88,6 +94,9 @@ function releaseRank(link) {
 }
 
 function discoverNhsRttDataPage(html, landingUrl = NHS_RTT_LANDING_PAGE) {
+  if (isAwsWafChallenge(html)) {
+    throw new Error("NHS RTT landing page was blocked by the upstream AWS WAF access challenge");
+  }
   const links = anchors(html).filter(
     (link) =>
       link.attributes.href &&
