@@ -235,7 +235,7 @@ export default function HousingAffordabilityVisual({
                     <td className="px-3 py-2 text-right font-mono font-bold tabular-nums text-indigo-900">
                       {point.housePriceGrowthPct.toFixed(1)}%
                     </td>
-                    <td className={`px-3 py-2 text-right font-mono font-bold tabular-nums ${diff >= 0 ? "text-emerald-700" : "text-amber-700"}`}>
+                    <td className={`px-3 py-2 text-right font-mono font-bold tabular-nums ${diff === null ? "text-slate-500" : diff >= 0 ? "text-emerald-700" : "text-amber-700"}`}>
                       {diff === null ? "Unavailable" : `${diff > 0 ? "+" : ""}${diff.toFixed(1)}%`}
                     </td>
                   </tr>

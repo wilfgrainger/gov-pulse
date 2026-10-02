@@ -164,7 +164,9 @@ describe("HousePriceIndex evidence integrity", () => {
     const rows = within(screen.getByRole("table", { name: /historical comparison table/i })).getAllByRole("row");
     expect(rows).toHaveLength(3);
     for (const row of rows.slice(1)) {
-      expect(within(row).getAllByText("Unavailable")).toHaveLength(2);
+      const unavailableCells = within(row).getAllByText("Unavailable");
+      expect(unavailableCells).toHaveLength(2);
+      expect(unavailableCells[1].closest("td")).toHaveClass("text-slate-500");
     }
   });
 
