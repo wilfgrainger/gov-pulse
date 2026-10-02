@@ -12,6 +12,12 @@ vi.mock("@/app/components/MetricsStatus", () => ({
   default: () => <div>Metric provenance</div>,
 }));
 
+vi.mock("@/app/components/FinancialTimeSeriesChart", () => ({
+  default: ({ citation }: { citation?: string }) => (
+    <output data-testid="hpi-chart-citation">{citation ?? "missing citation"}</output>
+  ),
+}));
+
 const current = {
   headline: {
     period: "Jul 2026",
@@ -86,6 +92,19 @@ describe("HousePriceIndex evidence integrity", () => {
     const note = screen.getByTestId("release-note");
     expect(note).toHaveTextContent("Release note");
     expect(note).toHaveTextContent(/Annual house price change fell to 1\.4%, a change of -\d+(\.\d+)?% from the prior comparable period\./);
+  });
+
+  it("includes the ONS bulletin, history file, publication date, period, and caveat in chart exports", () => {
+    useMetrics.mockReturnValue(metricResult(current));
+
+    render(<HousePriceIndex />);
+
+    const citation = screen.getByTestId("hpi-chart-citation");
+    expect(citation).toHaveTextContent(current.source.bulletinUrl);
+    expect(citation).toHaveTextContent(current.source.historyUrl);
+    expect(citation).toHaveTextContent(current.headline.releaseDate);
+    expect(citation).toHaveTextContent("Jun 2026 to Jul 2026");
+    expect(citation).toHaveTextContent(current.methodology.revisionNote);
   });
 
   it("describes a decline without stale rise language", () => {

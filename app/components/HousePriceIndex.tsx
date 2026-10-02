@@ -277,6 +277,7 @@ export default function HousePriceIndex() {
           <FinancialTimeSeriesChart
             title="UK House Price Index: annual percentage change"
             description="Monthly annual percentage-change observations from the latest ONS Private rent and house prices, UK bulletin's Figure 1 chart data. The average price level is headline-only and is not part of this history."
+            citation={`Office for National Statistics · Bulletin: ${payload.source.bulletinUrl} · History CSV: ${payload.source.historyUrl} · published ${headline.releaseDate} · observation period ${payload.history[0]?.period ?? headline.period} to ${payload.history.at(-1)?.period ?? headline.period} · ${payload.methodology.revisionNote}`}
             data={payload.history}
             series={[
               { key: "hpiChangePercent", label: "Annual % change", color: "#1f5c8a" },
