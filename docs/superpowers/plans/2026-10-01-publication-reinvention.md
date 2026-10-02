@@ -201,7 +201,7 @@ unbounded decoded result and reject it afterwards.
 - [x] `expect(compareEligibility(debtRatio, unemployment)).toBe('panels')` despite both units being `%`; compatible same-definition records permit overlay.
 - [x] Old snapshot/new consumer and new additive snapshot/old consumer remain compatible; malformed, future, expired, key-mismatched and method-incompatible records fail closed or remain separate.
 - [x] Implemented source/edition/period/geography/validity normalization and registry-generated measure search/counts; polling and procurement remain source-specific.
-- [x] Catalog/currentness/components/Worker tests, full suite, lint, architecture/source/hosting/budget guards and production build passed; reviewed and committed as `COMMIT`.
+- [x] Catalog/currentness/components/Worker tests, full suite, lint, architecture/source/hosting/budget guards and production build passed; reviewed and committed as `0707803`.
 
 ## Task 8: Repair and standardize every existing evidence figure
 
