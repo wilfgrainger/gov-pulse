@@ -12,12 +12,14 @@ import {
   verifySectionHtml,
   verifySnapshotJson,
   verifyDownload,
+  verifyDownloadMatchesSnapshot,
   verifySitemapXml,
   verifySourcesHtml,
 } from "../../scripts/verify-production.mjs";
 import { REQUIRED_PUBLISHED_SECTION_IDS } from "../../worker/feed-registry.js";
 
 const revision = "abc123";
+const currentGeneratedAt = "2026-08-19T09:00:00.000Z";
 const validHtml = `<!doctype html><html><head><title>public-data.org — UK Public Evidence</title><meta name="public-data-revision" content="${revision}"><link rel="canonical" href="https://public-data.org/"></head><body><script type="application/ld+json">{"@type":"WebSite"}</script><h1>public-data.org</h1><a href = "https://www.ons.gov.uk">ONS</a></body></html>`;
 const validSourcesHtml = `<!doctype html><html><head><link rel="canonical" href="https://public-data.org/sources/"></head><body><main data-production-route="sources"><section data-production-marker="current-publications"></section><section data-production-marker="evidence-gaps"></section></main></body></html>`;
 const validGdpHtml = `<!doctype html><html><head><title>UK GDP growth | public-data.org</title><link rel="canonical" href="https://public-data.org/section/gdp/"><link rel="alternate" type="application/rss+xml" href="https://public-data.org/feed.xml"></head><body><script type="application/ld+json">{"@type":"Dataset"}</script><p>Latest ONS monthly estimate</p><h1>UK GDP grew in May 2026 by 0.1%.</h1><p>Published 16 July 2026. Monthly GDP is an early estimate and can be revised.</p></body></html>`;
@@ -63,6 +65,7 @@ function publicationSnapshot({ missing = [], now = new Date() } = {}) {
   return {
     meta: {
       registryVersion: "2026-08-02.1",
+      generatedAt: currentGeneratedAt,
       sources,
       publicationState: missingRequiredSections.length ? "degraded" : "ready",
       missingRequiredSections,
@@ -126,8 +129,8 @@ function validSectionHtml(path) {
 
 function validDownload(section, extension) {
   return extension === "json"
-    ? JSON.stringify({ section })
-    : `section,period\n${section},2026`;
+    ? JSON.stringify({ section, generatedAt: currentGeneratedAt })
+    : `path,value\n$.generatedAt,${currentGeneratedAt}\n$.section,${section}\n`;
 }
 
 function okResponse(text) {
@@ -196,6 +199,25 @@ describe("production deployment verifier", () => {
     expect(verifySectionHtml(validSectionHtml("section/uk-in-context/"), "section/uk-in-context/")).toEqual([]);
     expect(verifyDownload(validDownload("gdpTracker", "json"), "gdpTracker", "json")).toEqual([]);
     expect(verifyDownload(validDownload("gdpTracker", "csv"), "gdpTracker", "csv")).toEqual([]);
+  });
+
+  it("rejects section downloads from a different publication edition", () => {
+    const staleGeneratedAt = "2026-08-18T09:00:00.000Z";
+    const staleJson = JSON.stringify({ section: "gdpTracker", generatedAt: staleGeneratedAt });
+    const staleCsv = `path,value\n$.generatedAt,${staleGeneratedAt}\n$.section,gdpTracker\n`;
+
+    expect(verifyDownloadMatchesSnapshot(staleJson, "gdpTracker", "json", currentGeneratedAt)).toContain(
+      "gdpTracker.json download does not match the current snapshot edition",
+    );
+    expect(verifyDownloadMatchesSnapshot(staleCsv, "gdpTracker", "csv", currentGeneratedAt)).toContain(
+      "gdpTracker.csv download does not match the current snapshot edition",
+    );
+    expect(
+      verifyDownloadMatchesSnapshot(validDownload("gdpTracker", "json"), "gdpTracker", "json", currentGeneratedAt),
+    ).toEqual([]);
+    expect(
+      verifyDownloadMatchesSnapshot(validDownload("gdpTracker", "csv"), "gdpTracker", "csv", currentGeneratedAt),
+    ).toEqual([]);
   });
 
   it("rejects private measure-catalog diagnostics in a public snapshot", () => {

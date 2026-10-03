@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { filterCurrentSnapshot } from "../worker/publication-currentness.js";
 import { sectionDistribution, sectionCsv, csvCell } from "../app/lib/sectionDownloads.ts";
@@ -7,20 +7,30 @@ import { sectionDistribution, sectionCsv, csvCell } from "../app/lib/sectionDown
 export { sectionDistribution, csvCell };
 
 const DEFAULT_SNAPSHOT = "public/data/metrics-snapshot.json";
-const DEFAULT_OUTPUT = "public/data/sections";
+export const DEFAULT_SECTION_DOWNLOAD_OUTPUT = "out/data/sections";
+
+function assertSafeOutputDirectory(outputDirectory) {
+  const output = resolve(outputDirectory);
+  const publicSections = resolve("public/data/sections");
+  if (output === publicSections || output.startsWith(`${publicSections}${sep}`)) {
+    throw new Error("Section downloads cannot be generated under public/data/sections because that path shadows request-time downloads");
+  }
+  return output;
+}
 
 export async function generateSectionDownloads({
   snapshotPath = DEFAULT_SNAPSHOT,
-  outputDirectory = DEFAULT_OUTPUT,
+  outputDirectory = DEFAULT_SECTION_DOWNLOAD_OUTPUT,
   now = new Date(),
   optionalMissing = false,
 } = {}) {
+  const output = assertSafeOutputDirectory(outputDirectory);
   let raw;
   try {
     raw = await readFile(resolve(snapshotPath), "utf8");
   } catch (error) {
     if (optionalMissing && error && typeof error === "object" && error.code === "ENOENT") {
-      return { outputDirectory: resolve(outputDirectory), sections: [], skipped: true };
+      return { outputDirectory: output, sections: [], skipped: true };
     }
     throw error;
   }
@@ -29,7 +39,6 @@ export async function generateSectionDownloads({
   const current = filterCurrentSnapshot(candidate, now);
   if (!current) throw new Error("Cannot generate downloads without current source-owned evidence");
 
-  const output = resolve(outputDirectory);
   await mkdir(output, { recursive: true });
   const sections = Object.keys(current.meta.sources).sort((left, right) =>
     left.localeCompare(right, "en-GB")
