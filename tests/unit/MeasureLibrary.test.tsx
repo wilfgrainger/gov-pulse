@@ -4,21 +4,11 @@ import MeasureLibrary, { type MeasureLibraryItem } from "@/app/components/Measur
 import { MEASURES } from "@/app/lib/measureDefinitions";
 import type { MeasureRecord } from "@/app/lib/measureCatalog";
 
-const navigation = vi.hoisted(() => ({
-  params: new URLSearchParams(),
-  replace: vi.fn(),
-}));
-
-vi.mock("next/navigation", () => ({
-  usePathname: () => "/measure",
-  useRouter: () => ({ replace: navigation.replace }),
-  useSearchParams: () => navigation.params,
-}));
+vi.mock("next/navigation", () => ({ usePathname: () => "/measure" }));
 
 afterEach(cleanup);
 beforeEach(() => {
-  navigation.params = new URLSearchParams();
-  navigation.replace.mockReset();
+  window.history.replaceState({}, "", "/measure");
 });
 
 const definition = MEASURES.find((measure) => measure.id === "unemployment")!;
@@ -61,12 +51,81 @@ describe("measure library", () => {
     fireEvent.change(screen.getByRole("combobox", { name: "topic" }), { target: { value: "Jobs" } });
     expect(screen.getByRole("link", { name: /Unemployment rate/i })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Central government receipts/i })).not.toBeInTheDocument();
-    expect(navigation.replace).toHaveBeenCalledWith("/measure?topic=Jobs", { scroll: false });
+    expect(window.location.search).toBe("?topic=Jobs");
 
     fireEvent.change(screen.getByRole("searchbox", { name: /Search measures/i }), { target: { value: "Statistics" } });
     expect(screen.getByRole("link", { name: /Unemployment rate/i })).toBeInTheDocument();
     fireEvent.change(screen.getByRole("searchbox", { name: /Search measures/i }), { target: { value: "not a publisher" } });
     expect(screen.getAllByRole("status").at(-1)).toHaveTextContent(/No measure matches/i);
+  });
+
+  it("shares topic, publisher, geography, frequency, unit and availability filters", () => {
+    const finance: MeasureLibraryItem = {
+      ...MEASURES.find((measure) => measure.id === "receipts")!,
+      publisher: "HM Treasury",
+      availability: "historical",
+      observationPeriod: "2026 financial year",
+      record: null,
+      availabilityReason: "The retained publication is historical.",
+    };
+    render(<MeasureLibrary measures={[item, finance]} />);
+
+    const filters = [
+      ["topic", "topic", finance.topic],
+      ["publisher", "publisher", finance.publisher],
+      ["geography", "geography", finance.geography],
+      ["Frequency", "cadence", finance.cadence],
+      ["unit", "unit", finance.unit],
+      ["availability", "availability", finance.availability],
+    ] as const;
+
+    for (const [label, , value] of filters) {
+      fireEvent.change(screen.getByRole("combobox", { name: label }), { target: { value } });
+      expect(screen.getByRole("link", { name: /Central government receipts/i })).toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /Unemployment rate/i })).not.toBeInTheDocument();
+    }
+
+    expect(window.location.search).toBe(
+      `?topic=Public+finances&publisher=HM+Treasury&geography=United+Kingdom&cadence=monthly&unit=%C2%A3bn&availability=historical`,
+    );
+  });
+
+  it("renders shared measure filters from the server-provided query", () => {
+    const finance: MeasureLibraryItem = {
+      ...MEASURES.find((measure) => measure.id === "receipts")!,
+      publisher: "HM Treasury",
+      availability: "historical",
+      observationPeriod: null,
+      record: null,
+      availabilityReason: "The retained publication is historical.",
+    };
+    const initialSearch = "publisher=HM+Treasury&availability=historical";
+    window.history.replaceState({}, "", `/measure?${initialSearch}`);
+    render(<MeasureLibrary measures={[item, finance]} initialSearch={initialSearch} />);
+
+    expect(screen.getByRole("link", { name: /Central government receipts/i })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Unemployment rate/i })).not.toBeInTheDocument();
+  });
+
+  it("restores shared filters after browser back or forward navigation", () => {
+    const finance: MeasureLibraryItem = {
+      ...MEASURES.find((measure) => measure.id === "receipts")!,
+      publisher: "HM Treasury",
+      availability: "historical",
+      observationPeriod: null,
+      record: null,
+      availabilityReason: "The retained publication is historical.",
+    };
+    const initialSearch = "publisher=HM+Treasury";
+    window.history.replaceState({}, "", `/measure?${initialSearch}`);
+    render(<MeasureLibrary measures={[item, finance]} initialSearch={initialSearch} />);
+    expect(screen.queryByRole("link", { name: /Unemployment rate/i })).not.toBeInTheDocument();
+
+    window.history.pushState({}, "", "/measure?topic=Jobs");
+    fireEvent.popState(window);
+
+    expect(screen.getByRole("link", { name: /Unemployment rate/i })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Central government receipts/i })).not.toBeInTheDocument();
   });
 
   it("keeps unavailable definitions discoverable without publishing a value", () => {

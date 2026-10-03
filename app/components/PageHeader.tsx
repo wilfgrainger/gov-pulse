@@ -1,12 +1,12 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 type PageHeaderProps = {
   eyebrow: string;
   title: string;
   subtitle: string;
   current: string;
-  children?: ReactNode;
+  context?: ReactNode;
 };
 
 export default function PageHeader({
@@ -14,11 +14,11 @@ export default function PageHeader({
   title,
   subtitle,
   current,
-  children,
+  context,
 }: PageHeaderProps) {
   return (
     <header className="page-header v3-page-header px-4 py-8 md:px-6 md:py-10">
-      <div className="relative mx-auto grid max-w-7xl gap-5 min-[54rem]:grid-cols-[minmax(0,1fr)_18rem] min-[54rem]:items-end md:gap-8">
+      <div className={`relative mx-auto max-w-7xl ${context ? "grid gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(16rem,0.55fr)] lg:items-center lg:gap-10" : ""}`}>
         <div>
           <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
             <Link
@@ -37,24 +37,7 @@ export default function PageHeader({
             {subtitle}
           </p>
         </div>
-
-        <div className="v3-page-header-rail">
-          {children ?? (
-            <div>
-              <p className="eyebrow">Evidence standard</p>
-              <p className="mt-3 text-sm leading-6 text-gray-700">
-                Read the value with its observation period, publication date, definition and primary source. Missing evidence is left unavailable rather than estimated.
-              </p>
-              <Link
-                href="/sources"
-                prefetch={false}
-                className="mt-5 inline-flex text-sm font-semibold underline decoration-black/25 underline-offset-4 hover:text-accent"
-              >
-                Check sources and methods →
-              </Link>
-            </div>
-          )}
-        </div>
+        {context ? <div className="border-t border-black/20 pt-4 lg:border-l lg:border-t-0 lg:py-2 lg:pl-6">{context}</div> : null}
       </div>
     </header>
   );

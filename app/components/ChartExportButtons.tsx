@@ -7,9 +7,10 @@ import {
   downloadChartPng,
   downloadChartSvg,
   findChartSvg,
+  serializeChartMetadataCsv,
 } from "@/app/lib/chartExport";
 import type { ChartMetadata } from "@/app/lib/chartExport";
-import { exportPackageCitation, type ExportPackage } from "@/app/lib/chartModel";
+import { exportPackageCitation, serializeMeasureExportCsv, serializeMeasureExportJson, type ExportPackage } from "@/app/lib/chartModel";
 
 type Props = {
   /** Ref to the chart's container element (holds the rendered <svg>). */
@@ -42,8 +43,8 @@ function getClientPngSupport() {
 export default function ChartExportButtons({ containerRef, title, exportPackage, citation, chartMetadata, className }: Props) {
   const [error, setError] = useState<string | null>(null);
   const pngSupported = useSyncExternalStore(subscribeToPngSupport, getClientPngSupport, getServerPngSupport);
-  const exportTitle = exportPackage?.title ?? title ?? "Evidence chart";
-  const exportCitation = exportPackage ? exportPackageCitation(exportPackage) : citation;
+  const exportTitle = exportPackage?.title ?? chartMetadata?.title ?? title ?? "Evidence chart";
+  const exportCitation = exportPackage ? exportPackageCitation(exportPackage) : citation ?? chartMetadata?.sourceCitation;
 
   function withSvg(action: (svg: SVGSVGElement) => void) {
     const svg = findChartSvg(containerRef.current ?? null);
@@ -53,6 +54,23 @@ export default function ChartExportButtons({ containerRef, title, exportPackage,
     }
     setError(null);
     action(svg);
+  }
+
+  function downloadData(extension: "csv" | "json") {
+    const packageTitle = exportPackage?.title ?? chartMetadata?.title;
+    if (!packageTitle) return;
+    const content = exportPackage
+      ? extension === "csv" ? serializeMeasureExportCsv(exportPackage) : serializeMeasureExportJson(exportPackage)
+      : extension === "csv" && chartMetadata
+        ? serializeChartMetadataCsv(chartMetadata)
+        : JSON.stringify(chartMetadata, null, 2);
+    const mime = extension === "csv" ? "text/csv;charset=utf-8" : "application/json;charset=utf-8";
+    const url = URL.createObjectURL(new Blob([content], { type: mime }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = chartExportFilename(packageTitle, extension);
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   function handleSvgDownload() {
@@ -69,6 +87,13 @@ export default function ChartExportButtons({ containerRef, title, exportPackage,
 
   return (
     <div className={className}>
+      {exportPackage || chartMetadata ? (
+        <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+          <span className="font-semibold text-gray-600">Download selected observations:</span>
+          <button type="button" onClick={() => downloadData("csv")} className="min-h-11 font-semibold underline decoration-black/30 underline-offset-4 hover:decoration-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14243b]">CSV</button>
+          <button type="button" onClick={() => downloadData("json")} className="min-h-11 font-semibold underline decoration-black/30 underline-offset-4 hover:decoration-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14243b]">JSON</button>
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <span className="text-xs font-semibold text-gray-600">Download chart as image:</span>
         <button

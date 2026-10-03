@@ -139,20 +139,34 @@ export default function NationalDebtCounter() {
     <div className="space-y-8">
       {valid ? (
         <>
-          <section aria-labelledby="national-debt-value" className="border-y border-foreground bg-black p-6 text-white">
-            <p className="mb-2 text-sm text-gray-300">UK public sector net debt excluding public sector banks</p>
-            <h3
-              id="national-debt-value"
-              className="text-3xl font-bold tracking-tight text-white md:text-5xl"
-            >
-              {formatDebt(debtValue)}
-            </h3>
-            <p className="mt-3 text-sm text-gray-300">
-              ONS monthly observation for {period}. Equivalent to {debtRatio.toFixed(1)}% of GDP in the matching release.
-            </p>
-            <p className="mt-2 text-sm text-gray-400">
-              Published {formatPublicationDate(data.publicationDate)}. This is a dated stock, not a real-time counter.
-            </p>
+          <section aria-labelledby="national-debt-value" className="debt-lead grid min-w-0 gap-5 border-y-2 border-foreground bg-[#e8f2ef] p-4 sm:p-6 min-[64rem]:grid-cols-[minmax(15rem,0.72fr)_minmax(0,1.28fr)]">
+            <div className="order-2 min-w-0 py-1 min-[64rem]:order-1">
+              <p className="eyebrow !text-[#08766c]">Latest ONS observation · UK</p>
+              <h3 id="national-debt-value" className="headline-figure mt-3 text-[clamp(2.4rem,9vw,4.8rem)] text-[#14243b]">
+                £{(debtValue / 1_000_000_000_000).toFixed(2)}tn
+              </h3>
+              <p className="mt-3 text-sm font-semibold leading-6 text-[#14243b]">
+                Exact published value: {formatDebt(debtValue)}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-gray-700">
+                {period} · {debtRatio.toFixed(1)}% of GDP · published {formatPublicationDate(data.publicationDate)}.
+              </p>
+              <p className="mt-3 border-l-2 border-[#ef5124] pl-3 text-xs leading-5 text-gray-700">
+                A dated debt stock, not a live counter or an estimate between releases.
+              </p>
+            </div>
+            <div className="order-1 min-w-0 min-[64rem]:order-2">
+            <FinancialTimeSeriesChart
+              title="Public sector net debt: ten-year direction"
+              description="End-month ONS debt stock excluding public sector banks. Values are dated observations, not a live counter."
+              citation={`Office for National Statistics · ${data.source.debtUrl} · published ${data.publicationDate} · observation period ${period} · dated public sector net debt stock, excluding public sector banks.`}
+              data={data.history}
+              series={[{ key: "debtBillion", label: "Debt stock", color: "#08766c" }]}
+              valueFormatter={(value) => `£${value.toFixed(1)}bn`}
+              axisFormatter={(value) => `£${Math.round(value)}bn`}
+              heightClass="h-[155px] sm:h-[280px]"
+            />
+            </div>
           </section>
 
           <section aria-labelledby="national-debt-change-title">
@@ -198,16 +212,6 @@ export default function NationalDebtCounter() {
               />
             );
           })()}
-
-          <FinancialTimeSeriesChart
-            title="Public sector net debt: ten-year direction"
-            description="End-month ONS debt stock excluding public sector banks. Values are dated observations, not a live counter."
-            citation={`Office for National Statistics · ${data.source.debtUrl} · published ${data.publicationDate} · observation period ${period} · dated public sector net debt stock, excluding public sector banks.`}
-            data={data.history}
-            series={[{ key: "debtBillion", label: "Debt stock", color: "#14243b" }]}
-            valueFormatter={(value) => `£${value.toFixed(1)}bn`}
-            axisFormatter={(value) => `£${Math.round(value)}bn`}
-          />
 
           <FinancialTimeSeriesChart
             title="Debt relative to GDP"

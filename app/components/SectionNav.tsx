@@ -107,8 +107,8 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
         </Link>
         <Link href="/explore/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/explore' ? 'page' : undefined} className={`hidden min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 min-[400px]:inline-flex ${focusClasses}`}>Explore data</Link>
         <Link href="/measure/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/measure' ? 'page' : undefined} className={`hidden min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 xl:inline-flex ${focusClasses}`}>Measure library</Link>
-        <Link href="/compare/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/compare' ? 'page' : undefined} className={`hidden min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 2xl:inline-flex ${focusClasses}`}>Compare</Link>
-        <Link href="/briefing/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/briefing' ? 'page' : undefined} className={`hidden min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 2xl:inline-flex ${focusClasses}`}>Briefing</Link>
+        <Link href="/compare/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/compare' ? 'page' : undefined} className={`hidden min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 xl:inline-flex ${focusClasses}`}>Compare</Link>
+        <Link href="/briefing/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/briefing' ? 'page' : undefined} className={`hidden min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 xl:inline-flex ${focusClasses}`}>Briefing</Link>
 
         <PublicationFreshnessIndicator />
 
@@ -126,7 +126,7 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
             type="button"
             data-publication-panel-toggle
             onClick={toggleSearch}
-            className={`inline-flex min-h-11 items-center border border-[#14243b] px-3 py-2 text-sm font-semibold text-[#14243b] transition-colors hover:bg-[#eef1f4] sm:px-4 ${focusClasses}`}
+            className={`inline-flex min-h-11 items-center border border-[#14243b] px-3 py-2 text-sm font-semibold text-[#14243b] transition-colors hover:bg-[#eef1f4] max-[359px]:px-2 sm:px-4 ${focusClasses}`}
             aria-label="Search evidence"
             aria-expanded={searchOpen}
             aria-controls="global-evidence-search-panel"
@@ -138,7 +138,7 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
             type="button"
             data-publication-panel-toggle
             onClick={toggleMenu}
-            className={`inline-flex min-h-11 items-center gap-2 bg-[#14243b] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1f5c8a] sm:px-4 ${focusClasses}`}
+            className={`inline-flex min-h-11 items-center gap-2 bg-[#14243b] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1f5c8a] max-[359px]:px-2 sm:px-4 ${focusClasses}`}
             aria-expanded={menuOpen}
             aria-controls="all-topic-navigation"
           >

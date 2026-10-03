@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "Comparison studio", description: "Co
 export default async function ComparePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const snapshot = await readServerMetricsSnapshot();
   const catalog = snapshot?.meta.measureCatalog as MeasureCatalog | undefined;
-  const params = await searchParams;
+  const params = process.env.STATIC_EXPORT === "true" ? {} : await searchParams;
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     for (const entry of Array.isArray(value) ? value : typeof value === "string" ? [value] : []) {
@@ -22,20 +22,21 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   }
   let initial = null;
   let problem: string | null = null;
-  if (catalog) {
+  if (catalog && process.env.STATIC_EXPORT !== "true") {
     try { initial = parseWorkspace(query.toString(), catalog); }
     catch (error) { problem = error instanceof Error ? error.message : "Invalid comparison workspace."; }
   }
   return <div className="min-h-screen bg-background text-foreground">
     <a href="#comparison-studio" className="sr-only focus:not-sr-only focus:block focus:bg-white focus:p-4">Skip to comparison studio</a>
     <SectionNav sections={SECTIONS} />
-    <main id="comparison-studio" className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-12">
-      <header className="mb-8 border-b-4 border-foreground bg-surface-warm p-5 md:p-8">
+    <main id="comparison-studio" className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
+      <header className="v3-page-header mb-7 border-b-2 border-foreground p-5 md:p-8">
         <p className="eyebrow">Independent comparisons</p>
-        <h1 className="mt-2 text-5xl font-black tracking-[-0.06em] md:text-7xl">Comparison studio</h1>
-        <p className="mt-4 max-w-3xl text-base leading-7 text-gray-700">Select up to four measures. Different definitions stay in separate panels. Overlays are available only when unit, basis, geography, evidence class, cadence and comparison family match.</p>
+        <h1 className="page-title comparison-page-title mt-2">Compare public measures.</h1>
+        <p className="mt-4 max-w-3xl text-base leading-7 text-gray-700">Start with the available evidence. Different definitions stay in separate panels; shared axes are used only where the source definitions and observation bases match.</p>
+        <a href="#comparison-controls" className="v3-secondary-action mt-4">Adjust this comparison <span aria-hidden="true">↓</span></a>
       </header>
-      {catalog ? <ComparisonStudio measures={availableMeasures(catalog)} initial={initial} initialError={problem} /> : <p role="status" className="border-l-4 border-accent bg-white p-6">No validated measure catalog is available for comparison.</p>}
+      {catalog ? <ComparisonStudio catalog={catalog} measures={availableMeasures(catalog)} initial={initial} initialError={problem} /> : <p role="status" className="border-l-4 border-accent bg-white p-6">No validated measure catalog is available for comparison.</p>}
     </main>
     <SiteFooter />
   </div>;

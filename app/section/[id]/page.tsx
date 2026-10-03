@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import PageHeader from "../../components/PageHeader";
 import Reveal from "../../components/Reveal";
 import SectionNav from "../../components/SectionNav";
@@ -99,6 +100,14 @@ export default async function SectionPage({
           title={section.title}
           subtitle={section.subtitle}
           current={section.category}
+          context={id === "election-polls" ? (
+            <aside aria-label="Polling evidence guide" className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-x-4 gap-y-3">
+              <p className="row-span-2 text-5xl font-black leading-none tracking-[-0.07em] text-accent">14</p>
+              <p className="eyebrow self-end">Day publication window</p>
+              <p className="text-sm leading-6 text-gray-700">The source issue date controls freshness; fieldwork dates stay separate.</p>
+              <Link href="/sources/" className="col-span-2 min-h-11 inline-flex items-center font-semibold underline underline-offset-4 hover:text-accent">Publisher links and methods <span aria-hidden="true" className="ml-2">→</span></Link>
+            </aside>
+          ) : undefined}
         />
         <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
           <Reveal as="article" className="evidence-article v3-evidence-article p-5 md:p-8 lg:p-12">
