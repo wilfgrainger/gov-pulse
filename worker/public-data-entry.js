@@ -19,7 +19,10 @@ import {
 } from "./international-comparison-publication.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
 import { listEditionSummaries, readEdition } from "./edition-archive.js";
-import { normalizeContractReleaseHistory } from "../contracts/government-contracts.js";
+import {
+  FIND_A_TENDER_USER_AGENT,
+  normalizeContractReleaseHistory,
+} from "../contracts/government-contracts.js";
 
 const SNAPSHOT_PATH = "/data/metrics-snapshot.json";
 const HEALTH_PATH = "/data/health.json";
@@ -341,27 +344,42 @@ async function contractHistoryResponse(request, url) {
   }
 
   const upstreamUrl = `${FIND_A_TENDER_RECORD_PACKAGE_BASE}${values[0]}`;
+  let stage = "upstream_fetch";
+  let upstreamStatus = null;
   try {
     const response = await fetch(upstreamUrl, {
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        "User-Agent": FIND_A_TENDER_USER_AGENT,
+      },
       redirect: "error",
       signal: AbortSignal.timeout(8000),
     });
+    upstreamStatus = response.status;
     if (response.status === 404) {
       return json({ error: "No public release history is available for this procurement record" }, { status: 404, head: request.method === "HEAD" });
     }
+    stage = "upstream_response";
     if (!response.ok) throw new Error("Find a Tender record package is unavailable");
     assertSameHttpsHost(response, upstreamUrl, "Find a Tender record package");
+    stage = "response_parse";
     const packageValue = await readResponseJson(response, {
       limit: CONTRACT_HISTORY_MAX_BYTES,
       label: "Find a Tender record package",
     });
+    stage = "response_validation";
     const history = normalizeContractReleaseHistory(packageValue, values[0]);
     return json(history, {
       head: request.method === "HEAD",
       cacheControl: `public, max-age=${CONTRACT_HISTORY_CACHE_SECONDS}, s-maxage=${CONTRACT_HISTORY_CACHE_SECONDS}`,
     });
-  } catch {
+  } catch (error) {
+    console.warn("contract_history_unavailable", {
+      ocid: values[0],
+      stage,
+      upstreamStatus,
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
     return json({ error: "Release history is temporarily unavailable" }, { status: 503, head: request.method === "HEAD" });
   }
 }
