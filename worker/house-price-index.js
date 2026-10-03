@@ -1,4 +1,5 @@
 import { fetchOfficialText } from "./official-source-fetch.js";
+import { parseOnsNextReleaseDate } from "./ons-release-date.js";
 
 const BULLETIN_BASE_URL =
   "https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/privaterentandhousepricesuk";
@@ -254,6 +255,7 @@ function parseHpiHistoryCsv(text) {
 
 function parseHpiBulletin(html, edition) {
   const text = decodeHtml(html);
+  const nextReleaseDate = parseOnsNextReleaseDate(text);
   const releaseDate = matchRequired(
     text,
     /Release date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})/i,
@@ -312,6 +314,7 @@ function parseHpiBulletin(html, edition) {
       period,
       observedAt: monthlyPeriodEnd(period),
       releaseDate: isoDate(releaseDate, "house price index release date"),
+      ...(nextReleaseDate ? { nextReleaseDate } : {}),
       avgPriceGbp,
       changePercent,
       previousPeriod,

@@ -43,7 +43,7 @@ function bootstrapMessage() {
 describe("Cloudflare publication bootstrap", () => {
   it("schedules only required national sections", () => {
     const jobs = refreshJobs("bootstrap-run", "bootstrap");
-    expect(jobs).toHaveLength(9);
+    expect(jobs).toHaveLength(10);
     expect(jobs.map((job) => job.section)).toEqual([
       "gdpTracker",
       "sentimentPulse",
@@ -54,11 +54,12 @@ describe("Cloudflare publication bootstrap", () => {
       "housePriceIndex",
       "realWages",
       "electionPolling",
+      "nhsStats",
     ]);
     expect(jobs.some((job) => job.type === "refresh-contracts")).toBe(false);
     expect(jobs.some((job) => job.section === "bettingOdds")).toBe(false);
     expect(jobs.some((job) => job.section === "crimeStatistics")).toBe(false);
-    expect(jobs.some((job) => job.section === "nhsStats")).toBe(false);
+    expect(jobs.some((job) => job.section === "nhsStats")).toBe(true);
     expect(jobs.some((job) => job.type === "refresh-international-comparison")).toBe(false);
   });
 
@@ -70,7 +71,7 @@ describe("Cloudflare publication bootstrap", () => {
     expect(first.ack).toHaveBeenCalledOnce();
     expect(first.retry).not.toHaveBeenCalled();
     expect(sendBatch).toHaveBeenCalledOnce();
-    expect(sendBatch.mock.calls[0][0]).toHaveLength(9);
+    expect(sendBatch.mock.calls[0][0]).toHaveLength(10);
     expect(send).toHaveBeenCalledWith(
       {
         type: "finalise-run",
@@ -89,7 +90,7 @@ describe("Cloudflare publication bootstrap", () => {
     };
     expect(run.scope).toBe("bootstrap");
     expect(run.dispatchedAt).toBeTruthy();
-    expect(run.expectedJobIds).toHaveLength(9);
+    expect(run.expectedJobIds).toHaveLength(10);
     expect(run.expectedJobIds).not.toContain("refresh-international-comparison");
 
     const duplicate = bootstrapMessage();

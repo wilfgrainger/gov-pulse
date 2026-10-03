@@ -42,6 +42,11 @@ YE Dec 24,,,,331000,950000,619000
 YE Dec 25,,,,171000,813000,642000`;
 
 describe("latest ONS migration bulletin connector", () => {
+  it("retains a publisher-announced next release date", () => {
+    const announced = bulletinHtml.replace("Release date: 21 May 2026", "Release date: 21 May 2026</p><p>Next release: 26 November 2026");
+    expect(parseMigrationBulletin(announced, "yearendingdecember2025").headline.nextReleaseDate).toBe("2026-11-26");
+  });
+
   it("discovers the latest dataset edition instead of pinning an old period", () => {
     expect(discoverLatestEdition(datasetHtml)).toBe("yearendingdecember2025");
   });

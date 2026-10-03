@@ -32,7 +32,11 @@ currently retains up to 60 releases, subject to evidence and measured storage
 capacity; that default does not cap the product's historical depth. Lookup accepts one validated edition id and
 returns its immutable historical catalog with an explicit as-of date. Both
 routes must be present in `contracts/public-surfaces.json` and the Worker's
-exact route table. Wildcard data ingress remains prohibited.
+exact route table. Exact-route mapping protects the private collection boundary;
+it does not cap the number of reader-facing routes or services. Concrete reader
+routes may be added when needed, with their own contract, validation, tests and
+deployment updates. Wildcard routing that exposes collector, queue, KV or
+diagnostic internals remains unsafe.
 
 ## Consequences
 

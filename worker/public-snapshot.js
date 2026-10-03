@@ -28,8 +28,15 @@ function sanitizePublishedValue(value) {
 function publicSnapshot(value) {
   const snapshot = sanitizePublishedValue(value);
   if (snapshot?.meta && typeof snapshot.meta === "object") {
+    delete snapshot.meta.publicationDiagnostics;
+    delete snapshot.meta.measureCatalogDiagnostics;
     delete snapshot.meta.publicationMode;
     delete snapshot.meta.freeTierBudget;
+    if (snapshot.meta.sources && typeof snapshot.meta.sources === "object") {
+      for (const source of Object.values(snapshot.meta.sources)) {
+        if (source && typeof source === "object") delete source.error;
+      }
+    }
   }
   return snapshot;
 }

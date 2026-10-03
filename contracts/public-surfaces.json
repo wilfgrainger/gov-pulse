@@ -6,7 +6,8 @@
     { "pattern": "public-data.org/data/international-comparison.json", "zone_name": "public-data.org", "required": true },
     { "pattern": "public-data.org/data/metrics-snapshot.json", "zone_name": "public-data.org", "required": true },
     { "pattern": "public-data.org/data/editions.json", "zone_name": "public-data.org", "required": true },
-    { "pattern": "public-data.org/data/edition.json*", "zone_name": "public-data.org", "required": true, "queryParams": { "edition": "^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$" } }
+    { "pattern": "public-data.org/data/edition.json*", "zone_name": "public-data.org", "required": true, "queryParams": { "edition": "^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$" } },
+    { "pattern": "public-data.org/data/contracts/history.json*", "zone_name": "public-data.org", "required": true, "queryParams": { "ocid": "^ocds-h6vhtk-[0-9a-f]+$" } }
   ],
   "topics": [
     { "id": "pm-approval", "status": "withdrawn" },
@@ -30,28 +31,7 @@
     { "id": "uk-regions", "status": "withdrawn" },
     { "id": "policy-links", "status": "withdrawn" }
   ],
-  "explorerMeasureIds": [
-    "gdp-monthlyGrowth",
-    "gdp-threeMonthGrowth",
-    "gdp-annualGrowth",
-    "inflation",
-    "unemployment",
-    "employmentRate",
-    "inactivityRate",
-    "vacancies",
-    "waitingPathwaysEstimate",
-    "debt-ratio",
-    "debt-stock",
-    "receipts",
-    "netMigration",
-    "immigration",
-    "emigration",
-    "regularPayRealGrowth",
-    "totalPayRealGrowth",
-    "housePriceChange",
-    "privateRentAnnualChange",
-    "privateRentAverage"
-  ],
+  "measureDefinitions": "contracts/measure-definitions.json",
   "privatePathPrefixes": [
     "/data/collect/",
     "/data/internal/",

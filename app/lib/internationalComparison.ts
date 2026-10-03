@@ -34,6 +34,12 @@ export interface ComparisonSource {
   url: string;
   series: string;
   publicationDate?: string;
+  additionalSources?: Array<{
+    publisher: string;
+    url: string;
+    series: string;
+    publicationDate?: string;
+  }>;
 }
 
 export interface ComparisonObservation {
@@ -64,6 +70,7 @@ export interface ComparisonMeasure {
     status: "current" | "historical" | "unavailable";
   };
   countries: ComparisonObservation[];
+  countryHistory?: ComparisonObservation[];
 }
 
 export interface InternationalComparisonPublication {
@@ -83,6 +90,25 @@ const VALUE_TYPES = new Set<ComparisonValueType>(["historical", "estimate", "pro
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isComparisonSource(value: unknown): value is ComparisonSource {
+  if (!isRecord(value) || typeof value.publisher !== "string" || !value.publisher.trim() ||
+    typeof value.series !== "string" || !value.series.trim() || typeof value.url !== "string") return false;
+  try {
+    if (new URL(value.url).protocol !== "https:") return false;
+  } catch {
+    return false;
+  }
+  if (value.publicationDate !== undefined && (typeof value.publicationDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value.publicationDate))) return false;
+  if (value.additionalSources !== undefined) {
+    if (!Array.isArray(value.additionalSources) || value.additionalSources.length > 4) return false;
+    if (value.additionalSources.some((source) => !isRecord(source) || source.additionalSources !== undefined ||
+      typeof source.publisher !== "string" || !source.publisher.trim() || typeof source.series !== "string" || !source.series.trim() ||
+      typeof source.url !== "string" || !/^https:\/\//.test(source.url) ||
+      (source.publicationDate !== undefined && (typeof source.publicationDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(source.publicationDate))))) return false;
+  }
+  return true;
 }
 
 export function isInternationalComparisonPublication(
@@ -106,6 +132,7 @@ export function isInternationalComparisonPublication(
       if (!VALUE_TYPES.has(observation.valueType as ComparisonValueType)) return false;
       if (observation.value !== null && !Number.isFinite(observation.value)) return false;
       if (observation.rank !== null && !Number.isInteger(observation.rank)) return false;
+      if (observation.source !== null && observation.source !== undefined && !isComparisonSource(observation.source)) return false;
     }
     if (measure.lifecycle !== undefined) {
       if (!isRecord(measure.lifecycle)) return false;
@@ -115,6 +142,28 @@ export function isInternationalComparisonPublication(
         if (date !== null && (typeof date !== "string" || !Number.isFinite(Date.parse(date)))) return false;
       }
       if (measure.lifecycle.sourceEditionId !== null && typeof measure.lifecycle.sourceEditionId !== "string") return false;
+    }
+    if (measure.countryHistory !== undefined) {
+      if (!Array.isArray(measure.countryHistory) || measure.countryHistory.length > 2600) return false;
+      const seen = new Set<string>();
+      const groups = new Map<number, ComparisonObservation[]>();
+      for (const observation of measure.countryHistory) {
+        if (!isRecord(observation) || !COUNTRY_IDS.includes(observation.country as ComparisonCountryId) ||
+          !Number.isInteger(observation.observationYear) || !VALUE_TYPES.has(observation.valueType as ComparisonValueType) ||
+          (observation.value !== null && !Number.isFinite(observation.value)) ||
+          (observation.rank !== null && !Number.isInteger(observation.rank)) ||
+          (observation.source !== null && observation.source !== undefined && !isComparisonSource(observation.source))) return false;
+        const year = Number(observation.observationYear);
+        const key = `${year}:${String(observation.country)}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        const values = groups.get(year) ?? [];
+        values.push(observation as unknown as ComparisonObservation);
+        groups.set(year, values);
+      }
+      for (const history of groups.values()) {
+        if (JSON.stringify(history.map(({ country }) => country).toSorted()) !== JSON.stringify([...COUNTRY_IDS].toSorted())) return false;
+      }
     }
   }
   return true;

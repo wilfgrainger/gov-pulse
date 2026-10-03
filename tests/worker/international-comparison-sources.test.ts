@@ -11,8 +11,10 @@ import {
   parseImfSeries,
   parseOecdCsvSeries,
   parseSipriCurrentUsdCells,
+  parseSipriCurrentUsdHistoryCells,
   parseSipriTop40Text,
   parseWorldBankSeries,
+  parseWorldBankSeriesHistory,
 } from "@/worker/international-comparison-sources";
 
 describe("international comparison source transforms", () => {
@@ -54,6 +56,19 @@ describe("international comparison source transforms", () => {
     const series = parseWorldBankSeries(payload, 2024);
     expect(series.get("GBR")).toBe(5860.25);
     expect(series.get("CHN")).toBeNull();
+  });
+
+  it("parses source-published World Bank observations by year for a common-year comparison", () => {
+    const payload = [{ page: 1 }, [
+      { countryiso3code: "GBR", date: "2015", value: 65_000_000 },
+      { countryiso3code: "GBR", date: "2025", value: 69_000_000 },
+      { countryiso3code: "USA", date: "2015", value: null },
+    ]];
+    const series = parseWorldBankSeriesHistory(payload, 2015, 2025);
+    expect(series.get(2015)?.get("GBR")).toBe(65_000_000);
+    expect(series.get(2025)?.get("GBR")).toBe(69_000_000);
+    expect(series.get(2015)?.get("USA")).toBeNull();
+    expect(series.get(2024)).toBeUndefined();
   });
 
   it("parses OECD SDMX REF_AREA values and unit multipliers", () => {
@@ -120,6 +135,19 @@ describe("international comparison source transforms", () => {
     expect(series.get("USA")).toBe(954_000_000_000);
     expect(series.get("CHN")).toBe(336_000_000_000);
     expect(series.get("IRL")).toBe(9_000_000_000);
+  });
+
+  it("retains bounded SIPRI current-dollar columns as separate year-specific maps", () => {
+    const cells = new Map([
+      ["D6", "2015"], ["E6", "2024"], ["F6", "2025"],
+      ["B10", "United Kingdom"], ["D10", "55000"], ["E10", "81800"], ["F10", "89000"],
+      ["B11", "United States"], ["D11", "596000"], ["E11", "997000"], ["F11", "954000"],
+    ]);
+    const series = parseSipriCurrentUsdHistoryCells(cells, 2015, 2025);
+    expect(series.get(2015)?.get("GBR")).toBe(55_000_000_000);
+    expect(series.get(2024)?.get("USA")).toBe(997_000_000_000);
+    expect(series.get(2025)?.get("GBR")).toBe(89_000_000_000);
+    expect(series.has(2016)).toBe(false);
   });
 
   it("derives per-resident amounts only from compatible same-year inputs", () => {

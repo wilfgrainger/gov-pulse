@@ -7,7 +7,7 @@ import {
   sectionCurrentness,
   snapshotValidityDeadline,
 } from "@/worker/publication-currentness";
-import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
+import { FEED_REGISTRY_VERSION, provenanceFor } from "@/worker/feed-registry";
 
 function source(overrides: Record<string, unknown> = {}) {
   return {
@@ -32,6 +32,24 @@ function data(overrides: Record<string, unknown> = {}) {
 }
 
 describe("publication currentness", () => {
+  it("keeps the optional release schedule current on its own 36-hour retrieval clock", () => {
+    const schedule = {
+      events: [],
+      __observation: { status: "current", observedAt: "2026-08-01T10:00:00.000Z", maxAgeHours: 36 },
+    };
+    const releaseSource = source({
+      fetchedAt: "2026-08-01T10:00:00.000Z",
+      provenance: provenanceFor("releaseCalendar"),
+    });
+    expect(sectionCurrentness("releaseCalendar", schedule, releaseSource, new Date("2026-08-02T21:59:59.000Z")).current).toBe(true);
+    expect(sectionCurrentness("releaseCalendar", schedule, releaseSource, new Date("2026-08-02T22:00:00.000Z")).reason).toBe("retrieval-expired");
+
+    const nhsSchedule = { events: [], __observation: schedule.__observation };
+    const nhsScheduleSource = source({ fetchedAt: "2026-08-01T10:00:00.000Z", provenance: provenanceFor("nhsReleaseCalendar") });
+    expect(sectionCurrentness("nhsReleaseCalendar", nhsSchedule, nhsScheduleSource, new Date("2026-08-02T21:59:59.000Z")).current).toBe(true);
+    expect(sectionCurrentness("nhsReleaseCalendar", nhsSchedule, nhsScheduleSource, new Date("2026-08-02T22:00:00.000Z")).reason).toBe("retrieval-expired");
+  });
+
   it("accepts a coherent current source-owned section", () => {
     expect(
       sectionCurrentness(

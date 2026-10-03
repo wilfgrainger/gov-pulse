@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   buildPublicationDiagnostics,
@@ -13,17 +13,34 @@ const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 function parseArgs(argv) {
   const options = {
     snapshot: "public/data/metrics-snapshot.json",
+    output: "tmp/publication-diagnostics.json",
   };
   for (let index = 0; index < argv.length; index += 1) {
     if (argv[index] === "--snapshot") options.snapshot = argv[++index];
+    else if (argv[index] === "--output") options.output = argv[++index];
     else throw new Error(`Unknown publication diagnostics option '${argv[index]}'`);
   }
-  if (!options.snapshot) throw new Error("A publication snapshot path is required");
+  if (!options.snapshot || !options.output) {
+    throw new Error("Publication snapshot and diagnostics output paths are required");
+  }
   return options;
+}
+
+function isWithin(parent, target) {
+  const path = relative(parent, target);
+  return path === "" || (!path.startsWith(`..${sep}`) && path !== "..");
 }
 
 export async function generatePublicationDiagnostics(options) {
   const snapshotPath = resolve(projectRoot, options.snapshot);
+  const outputPath = resolve(projectRoot, options.output);
+  if (
+    snapshotPath === outputPath ||
+    isWithin(resolve(projectRoot, "public"), outputPath) ||
+    isWithin(resolve(projectRoot, "app/generated"), outputPath)
+  ) {
+    throw new Error("Publication diagnostics must be written to a private sidecar path");
+  }
   const snapshot = JSON.parse(await readFile(snapshotPath, "utf8"));
   if (
     !snapshot?.meta?.sources ||
@@ -39,11 +56,16 @@ export async function generatePublicationDiagnostics(options) {
     hasRequiredHistoryShape
   );
   validatePublicationDiagnostics(diagnostics);
-  snapshot.meta.publicationDiagnostics = diagnostics;
+  const sidecar = {
+    generatedAt: typeof snapshot.meta.generatedAt === "string"
+      ? snapshot.meta.generatedAt
+      : null,
+    diagnostics,
+  };
 
-  await mkdir(dirname(snapshotPath), { recursive: true });
-  await writeFile(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`, "utf8");
-  return { snapshotPath, diagnostics };
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, `${JSON.stringify(sidecar, null, 2)}\n`, "utf8");
+  return { snapshotPath, outputPath, diagnostics };
 }
 
 async function main() {
@@ -51,7 +73,7 @@ async function main() {
     parseArgs(process.argv.slice(2))
   );
   process.stdout.write(
-    `Wrote ${Object.keys(result.diagnostics).length} publication diagnostics into ${result.snapshotPath}\n`
+    `Wrote ${Object.keys(result.diagnostics).length} publication diagnostics to private sidecar ${result.outputPath}\n`
   );
 }
 

@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import publicWorker, { isCompleteSnapshot } from "@/worker/public-data-entry";
 import { publishFromCaches } from "@/worker/queued-publication-entry";
-import { PUBLICATION_CURRENT_KEY } from "@/worker/publication-entry";
+import { mergePublication, PUBLICATION_CURRENT_KEY } from "@/worker/publication-entry";
 import {
   FEED_REGISTRY_VERSION,
   REQUIRED_PUBLISHED_SECTION_IDS,
@@ -56,6 +56,23 @@ afterEach(() => {
 });
 
 describe("degraded public publication", () => {
+  it("keeps measure-catalog exclusions private while retaining their reason for operators", () => {
+    const now = new Date("2026-08-07T12:00:00.000Z");
+    const publication = mergePublication(degradedSnapshot(now), [], null, now);
+    const reason = publication.meta.measureCatalogDiagnostics.find(
+      (item: { measureId: string }) => item.measureId === "unemployment",
+    );
+
+    expect(reason).toMatchObject({
+      measureId: "unemployment",
+      reason: "source-section-missing",
+      category: "source-missing",
+      availability: "unavailable",
+    });
+    const artifact = buildPublicSnapshotArtifact(publication, now);
+    expect(JSON.parse(artifact.body).meta).not.toHaveProperty("measureCatalogDiagnostics");
+  });
+
   it("accepts an explicitly degraded snapshot only when the missing manifest matches", () => {
     const valid = degradedSnapshot();
     expect(isCompleteSnapshot(valid)).toBe(true);
@@ -105,6 +122,50 @@ describe("degraded public publication", () => {
     });
   });
 
+  it("redacts diagnostics from a legacy prepared artifact before serving it", async () => {
+    const now = new Date("2026-08-07T12:00:00.000Z");
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    const legacy = degradedSnapshot(now);
+    legacy.meta.publicationDiagnostics = {
+      nhsStats: {
+        section: "nhsStats",
+        code: "upstream_fetch_failure",
+        summary: "The official source could not be collected.",
+        status: "error",
+        cacheState: "missing",
+        fetchedAt: null,
+      },
+    };
+    legacy.meta.sources.gdpTracker.error = "private source response detail";
+    const env = {
+      METRICS_CACHE: {
+        get: vi.fn(async () => null),
+        getWithMetadata: vi.fn(async (key: string) =>
+          key === PUBLIC_SNAPSHOT_KEY
+            ? {
+                value: JSON.stringify(legacy),
+                metadata: {
+                  registryVersion: FEED_REGISTRY_VERSION,
+                  validUntil: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
+                  generatedAt: now.toISOString(),
+                },
+              }
+            : { value: null, metadata: null }
+        ),
+      },
+    };
+
+    const response = await publicWorker.fetch(
+      new Request("https://public-data.org/data/metrics-snapshot.json"),
+      env,
+    );
+    const snapshot = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(snapshot.meta).not.toHaveProperty("publicationDiagnostics");
+    expect(snapshot.meta.sources.gdpTracker).not.toHaveProperty("error");
+  });
   it("publishes fresh successful fragments even when another required feed has expired", async () => {
     const now = new Date("2026-08-07T12:00:00.000Z");
     const current = degradedSnapshot(now);

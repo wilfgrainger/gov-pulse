@@ -9,9 +9,8 @@ import {
 } from "./publication-entry.js";
 import {
   CURRENT_RECORD_KEY as CONTRACT_CURRENT_RECORD_KEY,
-  MAX_REQUESTS_PER_RUN as CONTRACT_MAX_REQUESTS_PER_RUN,
   refreshGovernmentContracts,
-} from "./government-contracts-bootstrap.js";
+} from "./government-contracts-cloudflare.js";
 import { REQUIRED_PUBLISHED_SECTION_IDS } from "./feed-registry.js";
 import { collectExternalSection } from "./live-feed-collectors.js";
 import {
@@ -49,7 +48,6 @@ const BOOTSTRAP_DEADLINE_SECONDS = 4 * 60;
 // enqueue an immediate finaliser once every required job has finished.
 const BOOTSTRAP_FINALISE_DELAY_SECONDS = BOOTSTRAP_DEADLINE_SECONDS;
 const BOOTSTRAP_FINALISE_RETRY_SECONDS = 60;
-const CONTRACT_REQUEST_GAP_MS = 10_500;
 const DAILY_CRON = "17 3 * * *";
 const BETTING_CRON = "47 */3 * * *";
 
@@ -68,24 +66,14 @@ const EXTERNAL_SECTIONS = Object.freeze([
   "electionPolling",
   "nhsStats",
   "bettingOdds",
+  "releaseCalendar",
+  "nhsReleaseCalendar",
 ]);
 const PUBLISHED_SECTIONS = Object.freeze([
   ...GENERIC_SECTIONS,
   ...EXTERNAL_SECTIONS,
 ]);
 const REQUIRED_SECTION_SET = new Set(REQUIRED_PUBLISHED_SECTION_IDS);
-
-const FREE_TIER_BUDGET = Object.freeze({
-  cronInvocationsPerDay: 9,
-  queueJobsPerDayHealthyTarget: 30,
-  queueOperationsPerDayHealthyTarget: 90,
-  queueJobsPerDayConfiguredRetryUpperBound: 120,
-  queueOperationsPerDayConfiguredRetryUpperBound: 360,
-  officialSectionsPerDay: PUBLISHED_SECTIONS.length,
-  contractRequestsPerDayMax: CONTRACT_MAX_REQUESTS_PER_RUN,
-  kvWritesPerDayTargetMax: 120,
-  kvReadsPerDayTargetMax: 300,
-});
 
 function isRecord(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -191,16 +179,6 @@ async function fetchSeedSnapshot(env, fetchImpl = fetch) {
   }
 }
 
-function createPacedFetch(fetchImpl = fetch, gapMs = CONTRACT_REQUEST_GAP_MS) {
-  let previousStartedAt = 0;
-  return async (input, init) => {
-    const waitMs = Math.max(0, previousStartedAt + gapMs - Date.now());
-    if (waitMs > 0) await new Promise((resolve) => setTimeout(resolve, waitMs));
-    previousStartedAt = Date.now();
-    return fetchImpl(input, init);
-  };
-}
-
 async function storeSectionFragment(section, env, ctx) {
   if (!GENERIC_SECTIONS.includes(section)) {
     throw new Error(`Section '${section}' is outside the generic publication set`);
@@ -263,8 +241,6 @@ async function publishFromCaches(env, options = {}) {
   }
 
   const missingRequired = missingRequiredSections(currentCandidate).sort();
-  currentCandidate.meta.publicationMode = "queue-free-tier";
-  currentCandidate.meta.freeTierBudget = FREE_TIER_BUDGET;
   currentCandidate.meta.publicationState =
     missingRequired.length > 0 ? "degraded" : "ready";
   currentCandidate.meta.missingRequiredSections = missingRequired;
@@ -315,7 +291,6 @@ async function publishFromCaches(env, options = {}) {
     generatedAt: publication.meta.generatedAt,
     includedSections: Object.keys(publication.meta.sources).sort(),
     ...(missingRequired.length > 0 ? { missingRequired } : {}),
-    budget: FREE_TIER_BUDGET,
   };
   await kvPut(env, PUBLICATION_STATUS_KEY, status);
   return { publication, status, changed };
@@ -342,7 +317,7 @@ async function processQueueJob(job, env, ctx, options = {}) {
   }
   if (job?.type === "refresh-contracts") {
     const result = await refreshGovernmentContracts(env, {
-      fetchImpl: createPacedFetch(options.fetchImpl ?? fetch),
+      fetchImpl: options.fetchImpl ?? fetch,
       now: options.now,
     });
     return {
@@ -627,7 +602,11 @@ const queuedPublicationWorker = {
           job,
           error: errorMessage,
         });
-        message.retry({ delaySeconds: FINALISE_RETRY_SECONDS });
+        const retryAfterSeconds =
+          error && typeof error === "object" && Number.isSafeInteger(error.retryAfterSeconds)
+            ? error.retryAfterSeconds
+            : FINALISE_RETRY_SECONDS;
+        message.retry({ delaySeconds: retryAfterSeconds });
       }
     }
   },
@@ -638,17 +617,14 @@ export {
   BOOTSTRAP_DEADLINE_SECONDS,
   BOOTSTRAP_FINALISE_DELAY_SECONDS,
   BOOTSTRAP_FINALISE_RETRY_SECONDS,
-  CONTRACT_REQUEST_GAP_MS,
   DAILY_CRON,
   EXTERNAL_SECTIONS,
   FINALISE_DELAY_SECONDS,
-  FREE_TIER_BUDGET,
   GENERIC_SECTIONS,
   PUBLISHED_SECTIONS,
   PUBLICATION_SECTION_PREFIX,
   RUN_PREFIX,
   bootstrapRunId,
-  createPacedFetch,
   createRun,
   enqueuePublicationRun,
   finaliseRun,

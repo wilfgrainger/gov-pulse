@@ -41,6 +41,7 @@ export const SECTION_CONTENT = {
     title: "Betting markets",
     subtitle: "Three named Oddschecker markets with raw reciprocal prices.",
     component: BettingOdds,
+    dataSection: "bettingOdds",
   },
   "govt-approval": {
     category: "Politics",
@@ -107,7 +108,7 @@ export const SECTION_CONTENT = {
     category: "Public money",
     tag: "Official procurement notices",
     title: "Government contracts",
-    subtitle: "The 100 largest comparable Find a Tender award disclosures, with independent scrutiny.",
+    subtitle: "The largest comparable Find a Tender award disclosures, with independent scrutiny.",
     component: GovernmentContracts,
   },
   employment: {

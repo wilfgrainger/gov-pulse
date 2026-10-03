@@ -5,6 +5,7 @@ import { parseOddscheckerRows } from "@/worker/live-betting-collector";
 import { latestNhsLinks } from "@/worker/live-nhs-collector";
 import {
   latestYouGovArticleUrl,
+  findPdfUrl,
   commissionerFromArticle,
   headlineMethodFromPrimarySource,
   parsePublishedDate,
@@ -56,6 +57,31 @@ describe("live publisher parsers", () => {
     expect(article).toContain("/55251-voting-intention-26-27-july-2026");
     expect(sampleSizeFromPdfText("Sample Size: 2,328 GB Adults")).toBe(2328);
     expect(sampleSizeFromPdfText("Sample size: 2310 adults in GB")).toBe(2310);
+  });
+
+  it("ignores article links on hosts outside YouGov's approved publisher domain", () => {
+    const article = latestYouGovArticleUrl(`
+      <a href="https://attacker.example/en-gb/articles/99999-voting-intention-26-27-july-2026">Hostile</a>
+      <a href="/en-gb/articles/55251-voting-intention-26-27-july-2026">Official</a>
+    `);
+    expect(new URL(article).hostname).toBe("yougov.com");
+    expect(() => latestYouGovArticleUrl(
+      '<a href="https://attacker.example/en-gb/articles/99999-voting-intention-26-27-july-2026">Hostile</a>',
+    )).toThrow(/YouGov article index/);
+  });
+
+  it("accepts only the official YouGov result-table PDF host", () => {
+    const official = "https://ygo-assets-websites-editorial-emea.yougov.net/documents/VotingIntention_MRP_Results.pdf";
+    expect(findPdfUrl(`<a href="${official}">Primary results</a>`, "https://yougov.com/en-gb/articles/55251-voting-intention"))
+      .toBe(official);
+    expect(() => findPdfUrl(
+      '<a href="https://attacker.example/VotingIntention_MRP_Results.pdf">Results</a>',
+      "https://yougov.com/en-gb/articles/55251-voting-intention",
+    )).toThrow(/YouGov article did not link primary result tables/);
+    expect(() => findPdfUrl(
+      '<a href="http://ygo-assets-websites-editorial-emea.yougov.net/VotingIntention_MRP_Results.pdf">Results</a>',
+      "https://yougov.com/en-gb/articles/55251-voting-intention",
+    )).toThrow(/YouGov article did not link primary result tables/);
   });
 
   it("requires an explicitly labelled publication date and commissioner", () => {

@@ -3,6 +3,7 @@ import {
   canRasterizeToPng,
   chartExportFilename,
   findChartSvg,
+  serializeChartMetadataCsv,
   serializeChartSvg,
 } from "@/app/lib/chartExport";
 import type { ExportPackage } from "@/app/lib/chartModel";
@@ -120,7 +121,7 @@ describe("serializeChartSvg", () => {
 
   it("embeds legacy financial chart citation, plotted window, series and caveat as structured SVG metadata", () => {
     const chartMetadata = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       title: "GDP growth",
       sourceCitation: "ONS · https://www.ons.gov.uk/gdp · published 2026-09-01",
       observationWindow: {
@@ -128,6 +129,7 @@ describe("serializeChartSvg", () => {
         end: { period: "September 2026", observedAt: "2026-09-01T00:00:00.000Z" },
       },
       series: [{ key: "growth", label: "Three-month growth" }],
+      observations: [{ period: "September 2026", observedAt: "2026-09-01T00:00:00.000Z", values: { growth: 0.4 } }],
       caveats: ["Early estimate; subject to revision."],
     };
     const markup = serializeChartSvg(makeChartSvg(), { chartMetadata });
@@ -136,6 +138,7 @@ describe("serializeChartSvg", () => {
     expect(markup).toContain("https://www.ons.gov.uk/gdp");
     expect(markup).toContain("September 2026");
     expect(markup).toContain("Three-month growth");
+    expect(markup).toContain('"growth":0.4');
     expect(markup).toContain("subject to revision");
   });
 
@@ -143,6 +146,29 @@ describe("serializeChartSvg", () => {
     const svg = makeChartSvg();
     serializeChartSvg(svg, { title: "Should not appear on the live DOM node" });
     expect(svg.querySelector("title")).toBeNull();
+  });
+});
+
+describe("serializeChartMetadataCsv", () => {
+  it("exports plotted values, explicit missingness, citations and chart details", () => {
+    const csv = serializeChartMetadataCsv({
+      schemaVersion: 2,
+      title: "Net change",
+      sourceCitation: "Publisher · https://example.org/source",
+      observationWindow: { start: { period: "2025", observedAt: "2025-12-31" }, end: { period: "2026", observedAt: "2026-12-31" } },
+      series: [{ key: "amount", label: "Published amount" }],
+      observations: [
+        { period: "2025", observedAt: "2025-12-31", values: { amount: -5 }, details: { revision: "rev-2" } },
+        { period: "2026", observedAt: "2026-12-31", values: { amount: null } },
+      ],
+      caveats: ["Estimate subject to revision."],
+    });
+
+    expect(csv).toContain("\"-5\",\"published\"");
+    expect(csv).toContain("\"\",\"not available\"");
+    expect(csv).toContain("Publisher · https://example.org/source");
+    expect(csv).toContain("{\"\"revision\"\":\"\"rev-2\"\"}");
+    expect(csv).toContain("Estimate subject to revision.");
   });
 });
 
@@ -160,6 +186,11 @@ describe("chartExportFilename", () => {
   it("produces different extensions for svg vs png", () => {
     expect(chartExportFilename("Example", "svg").endsWith(".svg")).toBe(true);
     expect(chartExportFilename("Example", "png").endsWith(".png")).toBe(true);
+  });
+
+  it("supports machine-readable data export filenames", () => {
+    expect(chartExportFilename("Unemployment rate", "csv")).toBe("public-data-unemployment-rate.csv");
+    expect(chartExportFilename("Unemployment rate", "json")).toBe("public-data-unemployment-rate.json");
   });
 });
 

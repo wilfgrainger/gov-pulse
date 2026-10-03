@@ -1,4 +1,4 @@
-export type EvidenceClass = "official-statistics" | "administrative-data" | "polling" | "market-signal";
+export type EvidenceClass = "official-statistics" | "official-policy" | "administrative-data" | "polling" | "market-signal";
 export type Availability = "current" | "historical" | "unavailable";
 export type ValueStatus = "observed" | "estimate" | "projection";
 export type MeasurePoint = {
@@ -16,6 +16,8 @@ export type MeasureRecord = {
   cadence: string;
   unit: string;
   basis: string;
+  note?: string;
+  publisher?: string;
   geography: { code: string; label: string };
   sourceId: string;
   sourceUrl: string;

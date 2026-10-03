@@ -95,6 +95,23 @@ function parseWorldBankSeries(payload, year) {
   return result;
 }
 
+function parseWorldBankSeriesHistory(payload, startYear, endYear) {
+  if (!Array.isArray(payload) || !Array.isArray(payload[1]) ||
+    !Number.isInteger(startYear) || !Number.isInteger(endYear) || startYear > endYear || endYear - startYear > 100) {
+    throw new Error("World Bank API historical result or year range was invalid");
+  }
+  const result = new Map();
+  for (const row of payload[1]) {
+    const country = String(row?.countryiso3code ?? "").toUpperCase();
+    const year = Number(row?.date);
+    if (!COMPARISON_IDS.includes(country) || !Number.isInteger(year) || year < startYear || year > endYear) continue;
+    const yearValues = result.get(year) ?? new Map();
+    yearValues.set(country, finiteNumber(row?.value));
+    result.set(year, yearValues);
+  }
+  return result;
+}
+
 function csvColumns(line) {
   const columns = [];
   let current = "";
@@ -211,6 +228,43 @@ function parseSipriCurrentUsdCells(cells, year) {
   return best;
 }
 
+function parseSipriCurrentUsdHistoryCells(cells, startYear, endYear) {
+  if (!(cells instanceof Map) || !Number.isInteger(startYear) || !Number.isInteger(endYear) ||
+    startYear < 1949 || startYear > endYear || endYear > 2025 || endYear - startYear > 100) {
+    throw new Error("SIPRI workbook historical year range is invalid");
+  }
+  const columnsByYear = new Map();
+  for (const [reference, rawYear] of cells.entries()) {
+    const parts = cellParts(reference);
+    const year = Number(String(rawYear).trim());
+    if (!parts || Number(parts.row) > 10 || !Number.isInteger(year) || year < startYear || year > endYear) continue;
+    const columns = columnsByYear.get(year) ?? [];
+    columns.push(parts.column);
+    columnsByYear.set(year, columns);
+  }
+
+  const result = new Map();
+  for (const [year, columns] of columnsByYear) {
+    let best = new Map();
+    for (const column of [...new Set(columns)]) {
+      const candidate = new Map();
+      for (const [reference, label] of cells.entries()) {
+        const parts = cellParts(reference);
+        if (!parts) continue;
+        const country = sipriCountryId(label);
+        if (!country) continue;
+        const millions = finiteNumber(cells.get(`${column}${parts.row}`));
+        if (millions === null || millions <= 0) continue;
+        candidate.set(country, millions * 1_000_000);
+      }
+      if (candidate.size > best.size) best = candidate;
+    }
+    if (best.size) result.set(year, best);
+  }
+  if (result.size === 0) throw new Error("SIPRI workbook did not expose a current-US-dollar historical series");
+  return result;
+}
+
 function calculatePerResidentFromPercentGdp(percentGdp, gdpPerResident) {
   const percent = finiteNumber(percentGdp);
   const gdp = finiteNumber(gdpPerResident);
@@ -252,6 +306,11 @@ async function fetchWorldBankSeries(indicator, year, fetchImpl = fetch) {
   return parseWorldBankSeries(await fetchJson(url, fetchImpl), year);
 }
 
+async function fetchWorldBankSeriesHistory(indicator, startYear, endYear, fetchImpl = fetch) {
+  const url = `${WORLD_BANK_API}/country/${WORLD_BANK_COUNTRIES}/indicator/${indicator}?date=${startYear}:${endYear}&format=json&per_page=500`;
+  return parseWorldBankSeriesHistory(await fetchJson(url, fetchImpl), startYear, endYear);
+}
+
 async function fetchOecdSeries(url, year, fetchImpl = fetch) {
   return parseOecdCsvSeries(await fetchText(url, fetchImpl), year);
 }
@@ -270,6 +329,20 @@ async function fetchSipri2025Series(fetchImpl = fetch) {
   return parseSipriCurrentUsdCells(cells, 2025);
 }
 
+async function fetchSipriCurrentUsdHistory(fetchImpl = fetch, startYear = 2015, endYear = 2025) {
+  const response = await fetchResponse(
+    SIPRI_MILEX_2025_WORKBOOK_URL,
+    fetchImpl,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  );
+  const bytes = await readResponseArrayBuffer(response, {
+    limit: MAX_RESPONSE_BYTES.workbook,
+    label: "SIPRI military expenditure history workbook",
+  });
+  const cells = await workbookSheetCells(bytes, /current.*us\$/i);
+  return parseSipriCurrentUsdHistoryCells(cells, startYear, endYear);
+}
+
 export {
   COMPARISON_IDS,
   IMF_DATAMAPPER,
@@ -285,11 +358,15 @@ export {
   fetchJson,
   fetchOecdSeries,
   fetchSipri2025Series,
+  fetchSipriCurrentUsdHistory,
   fetchText,
   fetchWorldBankSeries,
+  fetchWorldBankSeriesHistory,
   parseImfSeries,
   parseOecdCsvSeries,
   parseSipriCurrentUsdCells,
+  parseSipriCurrentUsdHistoryCells,
   parseSipriTop40Text,
   parseWorldBankSeries,
+  parseWorldBankSeriesHistory,
 };

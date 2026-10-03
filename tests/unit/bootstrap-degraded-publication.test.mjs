@@ -2,6 +2,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import { bootstrapCloudflarePublication } from "../../scripts/bootstrap-cloudflare-publication.mjs";
+import { REQUIRED_PUBLISHED_SECTION_IDS } from "../../worker/feed-registry.js";
 
 const SHA = "c".repeat(40);
 
@@ -10,6 +11,49 @@ function jsonResponse(payload, status = 200, headers = {}) {
     status,
     headers: { "Content-Type": "application/json", ...headers },
   });
+}
+
+function preparedSnapshot(missingSections = [], now = new Date()) {
+  const fetchedAt = new Date(now.getTime() - 30_000).toISOString();
+  const observedAt = new Date(now.getTime() - 60_000).toISOString();
+  const validUntil = new Date(now.getTime() + 60 * 60_000).toISOString();
+  const sources = {};
+  const sections = {};
+  for (const section of REQUIRED_PUBLISHED_SECTION_IDS) {
+    if (missingSections.includes(section)) continue;
+    sources[section] = {
+      status: "ok",
+      cacheState: "fresh",
+      fetchedAt,
+      provenance: { section },
+    };
+    sections[section] = {
+      expiresAt: validUntil,
+      __observation: {
+        status: "current",
+        period: "Current test period",
+        observedAt,
+        maxAgeDays: 30,
+      },
+    };
+    if (section === "sentimentPulse") {
+      sections[section].__measureValidity = Object.fromEntries(
+        ["inflation", "bankRate", "unemployment"].map((id) => [id, { validUntil }]),
+      );
+      sections[section].series = Object.fromEntries(
+        ["inflation", "bankRate", "unemployment"].map((id) => [id, { status: "current", value: 1 }]),
+      );
+    }
+  }
+  return {
+    meta: {
+      delivery: "published-snapshot",
+      publicationState: missingSections.length ? "degraded" : "ready",
+      missingRequiredSections: [...missingSections].sort(),
+      sources,
+    },
+    ...sections,
+  };
 }
 
 describe("Cloudflare deployment bootstrap with degraded evidence", () => {
@@ -26,14 +70,7 @@ describe("Cloudflare deployment bootstrap with degraded evidence", () => {
       )
       .mockResolvedValueOnce(
         jsonResponse(
-          {
-            meta: {
-              delivery: "published-snapshot",
-              publicationState: "degraded",
-              missingRequiredSections: ["nhsStats"],
-              publicationDiagnostics: {},
-            },
-          },
+          preparedSnapshot(["nhsStats"]),
           200,
           { "X-Publication-Delivery": "cloudflare-kv" }
         )

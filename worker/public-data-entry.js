@@ -19,16 +19,22 @@ import {
 } from "./international-comparison-publication.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
 import { listEditionSummaries, readEdition } from "./edition-archive.js";
+import { normalizeContractReleaseHistory } from "../contracts/government-contracts.js";
 
 const SNAPSHOT_PATH = "/data/metrics-snapshot.json";
 const HEALTH_PATH = "/data/health.json";
 const COMPARISON_PATH = "/data/international-comparison.json";
 const EDITIONS_PATH = "/data/editions.json";
 const EDITION_PATH = "/data/edition.json";
+const CONTRACT_HISTORY_PATH = "/data/contracts/history.json";
 const DEFAULT_SEED_URL =
   "https://public-data-org.pages.dev/data/metrics-snapshot.json";
 const PUBLIC_CACHE_FRESH_SECONDS = 300;
 const COMPARISON_CACHE_FRESH_SECONDS = 300;
+const CONTRACT_HISTORY_CACHE_SECONDS = 300;
+const CONTRACT_HISTORY_MAX_BYTES = 512 * 1024;
+const FIND_A_TENDER_RECORD_PACKAGE_BASE =
+  "https://www.find-tender.service.gov.uk/api/1.0/ocdsRecordPackages/";
 
 function cacheControlFor(validUntil, now = new Date(), maxFreshSeconds = PUBLIC_CACHE_FRESH_SECONDS) {
   const remaining = cacheLifetime(validUntil, now);
@@ -153,7 +159,7 @@ async function readPreparedPublicArtifact(env, now = new Date()) {
   }
 
   const currentSnapshot = withPublicationState(
-    filterCurrentSnapshot(preparedSnapshot, now)
+    filterCurrentSnapshot(publicSnapshot(preparedSnapshot), now)
   );
   if (!isCompleteSnapshot(currentSnapshot)) return null;
 
@@ -328,6 +334,38 @@ async function editionResponse(request, env, url) {
   return json({ edition: result.summary.id, asOf: result.asOf, availability: "historical", measureCatalog: result.catalog, summary: result.summary }, { head: request.method === "HEAD", cacheControl: "public, max-age=31536000, s-maxage=31536000, immutable" });
 }
 
+async function contractHistoryResponse(request, url) {
+  const values = url.searchParams.getAll("ocid");
+  if (values.length !== 1 || url.searchParams.size !== 1 || !/^ocds-h6vhtk-[0-9a-f]+$/i.test(values[0])) {
+    return json({ error: "A single valid procurement identifier is required" }, { status: 400, head: request.method === "HEAD" });
+  }
+
+  const upstreamUrl = `${FIND_A_TENDER_RECORD_PACKAGE_BASE}${values[0]}`;
+  try {
+    const response = await fetch(upstreamUrl, {
+      headers: { Accept: "application/json" },
+      redirect: "error",
+      signal: AbortSignal.timeout(8000),
+    });
+    if (response.status === 404) {
+      return json({ error: "No public release history is available for this procurement record" }, { status: 404, head: request.method === "HEAD" });
+    }
+    if (!response.ok) throw new Error("Find a Tender record package is unavailable");
+    assertSameHttpsHost(response, upstreamUrl, "Find a Tender record package");
+    const packageValue = await readResponseJson(response, {
+      limit: CONTRACT_HISTORY_MAX_BYTES,
+      label: "Find a Tender record package",
+    });
+    const history = normalizeContractReleaseHistory(packageValue, values[0]);
+    return json(history, {
+      head: request.method === "HEAD",
+      cacheControl: `public, max-age=${CONTRACT_HISTORY_CACHE_SECONDS}, s-maxage=${CONTRACT_HISTORY_CACHE_SECONDS}`,
+    });
+  } catch {
+    return json({ error: "Release history is temporarily unavailable" }, { status: 503, head: request.method === "HEAD" });
+  }
+}
+
 async function healthResponse(request, env) {
   if (!env?.METRICS_CACHE?.getWithMetadata) {
     return json(
@@ -376,7 +414,7 @@ async function healthResponse(request, env) {
 const publicDataWorker = {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (![SNAPSHOT_PATH, HEALTH_PATH, COMPARISON_PATH, EDITIONS_PATH, EDITION_PATH].includes(url.pathname)) {
+    if (![SNAPSHOT_PATH, HEALTH_PATH, COMPARISON_PATH, EDITIONS_PATH, EDITION_PATH, CONTRACT_HISTORY_PATH].includes(url.pathname)) {
       return json({ error: "Not found" }, { status: 404 });
     }
     if (request.method === "OPTIONS") {
@@ -390,6 +428,7 @@ const publicDataWorker = {
       if (url.pathname === COMPARISON_PATH) return comparisonResponse(request, env);
       if (url.pathname === EDITIONS_PATH) return editionsResponse(request, env);
       if (url.pathname === EDITION_PATH) return editionResponse(request, env, url);
+      if (url.pathname === CONTRACT_HISTORY_PATH) return contractHistoryResponse(request, url);
       return snapshotResponse(request, env);
     } catch {
       return json(
@@ -419,11 +458,13 @@ const publicDataWorker = {
 
 export {
   COMPARISON_PATH,
+  CONTRACT_HISTORY_PATH,
   EDITION_PATH,
   EDITIONS_PATH,
   HEALTH_PATH,
   SNAPSHOT_PATH,
   comparisonResponse,
+  contractHistoryResponse,
   editionResponse,
   editionsResponse,
   currentPublicArtifact,

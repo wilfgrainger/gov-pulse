@@ -1,5 +1,10 @@
 # PULSE trusted-government-lens architecture
 
+> Historical product concept. Its navigation list and roadmap are exploratory,
+> not current route requirements or scope limits. The user's priorities and the
+> active [round-two plan](../superpowers/plans/2026-10-02-publication-reinvention-round-2.md)
+> govern delivery. Reuse evidence and provenance ideas where they still fit.
+
 ## Purpose
 
 PULSE is an independent public-evidence service for understanding UK central government and national outcomes. The architecture must let a citizen understand important changes quickly while preserving enough provenance for journalists, analysts and public servants to verify every material claim.

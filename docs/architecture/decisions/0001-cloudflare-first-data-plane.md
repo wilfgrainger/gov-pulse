@@ -1,6 +1,6 @@
 # ADR-0001: Cloudflare-first runtime data plane
 
-- Status: accepted
+- Status: superseded in part by ADR-0002 and the round-two plan
 - Date: 1 August 2026
 - Decision owner: Jared, delegated product owner
 - Delivery: PR #283
@@ -21,17 +21,20 @@
 >    only as a bounded seed/fallback. Deployment is automatic from `main` via
 >    `.github/workflows/deploy.yml`, which deploys both the web and data Workers.
 >
+> **Platform choice superseded by ADR-0002.** The historical Free-plan
+> assumption below is withdrawn. Round two may compare platforms and runtimes
+> against measured product needs; paid spend still requires the user's approval.
 > See `docs/cloudflare-worker-backend.md`, `AGENTS.md` and ADR-0002 for the
-> current shipped architecture. No decision in this ADR
-> is reversed; this note records what shipped since.
+> current contracts. Retain a historical rule only when the current contract
+> independently confirms it.
 
 ## Context
 
 The previous design separated a route-less data Worker from a manually promoted static publication. Cloudflare collected evidence into KV, but a person had to run GitHub Actions to copy the candidate into a new Pages build. The Worker deployment also assumed the `public-data-jobs` Queue already existed. That undocumented dependency caused production run `30720378544` to fail before Worker deployment.
 
-The operating requirements are:
+The operating requirements at the time were:
 
-- Cloudflare performs all recurring data work on the Free plan;
+- Cloudflare performs all recurring data work on the Free plan (historical assumption; withdrawn 2 October 2026);
 - repository code defines and deploys everything running on Cloudflare;
 - GitHub Actions provides assurance and deployment, not scheduled data processing;
 - the public application remains simple, same-origin and open source;

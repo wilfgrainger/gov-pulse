@@ -2,6 +2,8 @@ const PRIMARY_POLL_MAX_AGE_DAYS = 14;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const ALLOWED_SOURCE_HOSTS = new Set([
+  "moreincommon.org.uk",
+  "www.moreincommon.org.uk",
   "yougov.com",
   "www.yougov.com",
   "yougov.co.uk",
@@ -20,6 +22,7 @@ const PARTY_LABELS = Object.freeze({
   plaidCymru: "Plaid Cymru",
   yourParty: "Your Party",
   restoreBritain: "Restore Britain",
+  other: "Other",
   other: "Other",
 });
 
@@ -49,6 +52,11 @@ function requiredText(value, label, maximum = 500) {
     throw new Error(`${label} is too long`);
   }
   return text;
+}
+
+function optionalText(value, label, maximum = 500) {
+  if (value === null || value === undefined) return null;
+  return requiredText(value, label, maximum);
 }
 
 function requiredUrl(value, label) {
@@ -104,16 +112,26 @@ function normalizePoll(value, nowMs) {
     throw new Error("Each poll must be an object");
   }
 
-  const publicationDate = parseDateOnly(value.publicationDate, "Publication date");
+  const publicationDateStatus = value.publicationDateStatus ??
+    (typeof value.publicationDate === "string" ? "published" : "not-disclosed");
+  let publicationDate = null;
+  if (publicationDateStatus === "published") {
+    if (typeof value.publicationDate !== "string") {
+      throw new Error("Publication date status says published but the date is not disclosed");
+    }
+    publicationDate = parseDateOnly(value.publicationDate, "Publication date");
+  } else if (publicationDateStatus !== "not-disclosed" || value.publicationDate !== null) {
+    throw new Error("Publication date status must distinguish a disclosed date from an undisclosed date");
+  }
   const fieldworkStart = parseDateOnly(value.fieldworkStart, "Fieldwork start");
   const fieldworkEnd = parseDateOnly(value.fieldworkEnd, "Fieldwork end");
   if (fieldworkStart.getTime() > fieldworkEnd.getTime()) {
     throw new Error("Fieldwork start must not be after fieldwork end");
   }
-  if (publicationDate.getTime() < fieldworkEnd.getTime()) {
+  if (publicationDate && publicationDate.getTime() < fieldworkEnd.getTime()) {
     throw new Error("Publication date must not precede fieldwork end");
   }
-  if (publicationDate.getTime() > nowMs + DAY_MS) {
+  if (publicationDate && publicationDate.getTime() > nowMs + DAY_MS) {
     throw new Error("Publication date cannot be in the future");
   }
 
@@ -137,16 +155,18 @@ function normalizePoll(value, nowMs) {
   return {
     id: requiredText(value.id, "Poll id", 160),
     pollster: requiredText(value.pollster, "Pollster", 100),
-    commissioner: requiredText(value.commissioner, "Commissioner", 160),
+    commissioner: optionalText(value.commissioner, "Commissioner", 160),
     title: requiredText(value.title, "Poll title", 300),
-    questionText: requiredText(value.questionText, "Question wording", 600),
-    publicationDate: publicationDate.toISOString().slice(0, 10),
+    questionText: optionalText(value.questionText, "Question wording", 600),
+    publicationDate: publicationDate?.toISOString().slice(0, 10) ?? null,
+    publicationDateStatus,
     fieldworkStart: fieldworkStart.toISOString().slice(0, 10),
     fieldworkEnd: fieldworkEnd.toISOString().slice(0, 10),
     sampleSize,
+    sampleSizeNote: optionalText(value.sampleSizeNote, "Sample-size basis", 400),
     geography: requiredText(value.geography, "Geography", 100),
     population: requiredText(value.population, "Population", 160),
-    mode: requiredText(value.mode, "Mode", 160),
+    mode: optionalText(value.mode, "Mode", 160),
     headlineMethod: requiredText(value.headlineMethod, "Headline method", 500),
     parties: normalizeParties(value.parties),
     sourceUrl,
@@ -157,6 +177,56 @@ function normalizePoll(value, nowMs) {
         ? null
         : requiredText(value.uncertainty, "Uncertainty statement", 600),
   };
+}
+
+function normalizePollSources(values, polls) {
+  const sourcePollsters = [...new Set(polls.map((poll) => poll.pollster))];
+  const supplied = values ?? sourcePollsters.map((pollster) => ({
+    pollster,
+    status: "current",
+    recordCount: polls.filter((poll) => poll.pollster === pollster).length,
+  }));
+  if (!Array.isArray(supplied) || supplied.length === 0 || supplied.length > 10) {
+    throw new Error("Polling source status must identify a bounded set of publishers");
+  }
+  const names = new Set();
+  return supplied.map((source) => {
+    if (!source || typeof source !== "object" || Array.isArray(source)) {
+      throw new Error("Polling source status must be an object");
+    }
+    const pollster = requiredText(source.pollster, "Source pollster", 100);
+    if (names.has(pollster)) throw new Error("Polling source status repeats a pollster");
+    names.add(pollster);
+    if (!["current", "partial", "unavailable"].includes(source.status)) {
+      throw new Error("Polling source status is invalid");
+    }
+    const recordCount = source.recordCount;
+    if (!Number.isSafeInteger(recordCount) || recordCount < 0) {
+      throw new Error("Polling source record count is invalid");
+    }
+    const actualCount = polls.filter((poll) => poll.pollster === pollster).length;
+    if (recordCount !== actualCount || (source.status === "unavailable" && recordCount !== 0)) {
+      throw new Error("Polling source status does not match its accepted publications");
+    }
+    const normalized = { pollster, status: source.status, recordCount };
+    for (const key of ["archiveFilesRequested", "archiveFilesValidated", "archiveFilesUnavailable"]) {
+      if (source[key] !== undefined) {
+        if (!Number.isSafeInteger(source[key]) || source[key] < 0) {
+          throw new Error(`Polling source ${key} is invalid`);
+        }
+        normalized[key] = source[key];
+      }
+    }
+    if (normalized.archiveFilesRequested !== undefined &&
+        (normalized.archiveFilesValidated !== recordCount ||
+         normalized.archiveFilesValidated + normalized.archiveFilesUnavailable !== normalized.archiveFilesRequested)) {
+      throw new Error("Polling archive coverage does not reconcile with accepted records");
+    }
+    if (source.status === "partial" && normalized.archiveFilesUnavailable === undefined) {
+      throw new Error("Partial polling source status must disclose unavailable archive records");
+    }
+    return normalized;
+  });
 }
 
 function normalizePrimaryPollPayload(data, now = new Date()) {
@@ -182,17 +252,26 @@ function normalizePrimaryPollPayload(data, now = new Date()) {
     sourceUrls.add(poll.sourceUrl);
     ids.add(poll.id);
   }
+  const sources = normalizePollSources(data.sources, polls);
 
   polls.sort((left, right) => {
     const byFieldwork = right.fieldworkEnd.localeCompare(left.fieldworkEnd);
-    return byFieldwork || right.publicationDate.localeCompare(left.publicationDate);
+    return byFieldwork || (right.publicationDate ?? "").localeCompare(left.publicationDate ?? "");
   });
 
-  const latestPublicationDate = polls.reduce(
-    (latest, poll) => (poll.publicationDate > latest ? poll.publicationDate : latest),
-    polls[0].publicationDate
+  const latestPublicationDate = polls.reduce((latest, poll) =>
+    poll.publicationDate && (!latest || poll.publicationDate > latest) ? poll.publicationDate : latest,
+    null,
   );
-  const latestDate = parseDateOnly(latestPublicationDate, "Latest publication date");
+  const latestFieldworkEnd = polls.reduce((latest, poll) =>
+    poll.fieldworkEnd > latest ? poll.fieldworkEnd : latest,
+    polls[0].fieldworkEnd,
+  );
+  const latestEvidenceDate = polls.reduce((latest, poll) => {
+    const date = poll.publicationDate ?? poll.fieldworkEnd;
+    return date > latest ? date : latest;
+  }, polls[0].publicationDate ?? polls[0].fieldworkEnd);
+  const latestDate = parseDateOnly(latestEvidenceDate, "Latest fieldwork or publication date");
   const expiresAt = new Date(latestDate.getTime() + PRIMARY_POLL_MAX_AGE_DAYS * DAY_MS);
   if (nowMs > expiresAt.getTime()) {
     throw new Error(
@@ -203,6 +282,8 @@ function normalizePrimaryPollPayload(data, now = new Date()) {
   return {
     available: true,
     latestPublicationDate,
+    latestFieldworkEnd,
+    sources,
     expiresAt: expiresAt.toISOString(),
     polls,
     aggregation: {

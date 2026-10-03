@@ -139,6 +139,7 @@ describe("government contracts publication", () => {
     expect(edition).toContain("DIRECT_EVIDENCE_LINKS");
     expect(workflow).toContain("Deploy Cloudflare data Worker");
     expect(workflow).toContain("public-data-jobs");
+    expect(workflow).not.toContain("--message-retention-period-secs");
     expect(workflow).toContain("fetch-cloudflare-publication-candidate.mjs");
     expect(workflow).toContain(
       "CLOUDFLARE_PUBLICATION_OUTPUT: public/data/metrics-snapshot.json"

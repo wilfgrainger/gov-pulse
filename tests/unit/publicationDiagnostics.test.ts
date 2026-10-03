@@ -49,10 +49,11 @@ describe("publication diagnostics", () => {
     expect(validatePublicationDiagnostics(diagnostics)).toBe(diagnostics);
   });
 
-  it("writes deterministic diagnostics into the published snapshot contract", async () => {
+  it("writes deterministic diagnostics to a private sidecar without changing the snapshot", async () => {
     const directory = await mkdtemp(join(tmpdir(), "publication-diagnostics-"));
     temporaryDirectories.push(directory);
     const snapshotPath = join(directory, "metrics-snapshot.json");
+    const outputPath = join(directory, "publication-diagnostics.json");
     await writeFile(
       snapshotPath,
       `${JSON.stringify({
@@ -70,19 +71,25 @@ describe("publication diagnostics", () => {
       "utf8"
     );
 
-    const first = await generatePublicationDiagnostics({ snapshot: snapshotPath });
+    const first = await generatePublicationDiagnostics({ snapshot: snapshotPath, output: outputPath });
     const firstOutput = await readFile(snapshotPath, "utf8");
-    const second = await generatePublicationDiagnostics({ snapshot: snapshotPath });
+    const firstSidecar = await readFile(outputPath, "utf8");
+    const second = await generatePublicationDiagnostics({ snapshot: snapshotPath, output: outputPath });
     const secondOutput = await readFile(snapshotPath, "utf8");
+    const secondSidecar = await readFile(outputPath, "utf8");
 
     expect(first.diagnostics.gdpTracker.code).toBe(
       PUBLICATION_DIAGNOSTIC_CODES.upstreamFetchFailure
     );
     expect(second.diagnostics).toEqual(first.diagnostics);
     expect(secondOutput).toBe(firstOutput);
-    expect(JSON.parse(secondOutput).meta.publicationDiagnostics).toEqual(
-      first.diagnostics
-    );
+    expect(firstOutput).not.toContain("publicationDiagnostics");
+    expect(firstOutput).toContain("Official source returned 503");
+    expect(JSON.parse(secondSidecar)).toEqual({
+      generatedAt: null,
+      diagnostics: first.diagnostics,
+    });
+    expect(secondSidecar).toBe(firstSidecar);
   });
 
   it("rejects diagnostics with an unknown public reason code", () => {
@@ -95,5 +102,23 @@ describe("publication diagnostics", () => {
         },
       })
     ).toThrow("Invalid publication diagnostic for gdpTracker");
+  });
+
+  it("refuses to write the private sidecar into a public directory", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "publication-diagnostics-"));
+    temporaryDirectories.push(directory);
+    const snapshotPath = join(directory, "metrics-snapshot.json");
+    await writeFile(
+      snapshotPath,
+      JSON.stringify({ meta: { sources: {} } }),
+      "utf8"
+    );
+
+    await expect(
+      generatePublicationDiagnostics({
+        snapshot: snapshotPath,
+        output: "public/data/public-diagnostics.json",
+      })
+    ).rejects.toThrow("private sidecar path");
   });
 });

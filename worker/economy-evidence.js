@@ -1,5 +1,6 @@
 import { fetchOfficialResponse } from "./official-source-fetch.js";
 import { readResponseText } from "./response-limits.js";
+import { parseOnsNextReleaseDate } from "./ons-release-date.js";
 
 const ONS_ORIGIN = "https://www.ons.gov.uk";
 const GDP_BULLETIN_URL =
@@ -405,6 +406,7 @@ function signedChange(text, noChangeExpression, changeExpression, label) {
 
 function parseGdpBulletin(html, finalUrl = GDP_BULLETIN_URL) {
   const text = decodeHtml(html);
+  const nextReleaseDate = parseOnsNextReleaseDate(text);
   const period = requiredMatch(
     text,
     /GDP monthly estimate, UK:\s*([A-Za-z]+\s+\d{4})/i,
@@ -429,6 +431,7 @@ function parseGdpBulletin(html, finalUrl = GDP_BULLETIN_URL) {
       period,
       observedAt: monthlyPeriodEnd(period),
       releaseDate: parseReleaseDate(text),
+      ...(nextReleaseDate ? { nextReleaseDate } : {}),
       monthlyGrowth,
       threeMonthGrowth,
     },
@@ -447,6 +450,7 @@ function parseGdpBulletin(html, finalUrl = GDP_BULLETIN_URL) {
 
 function parseLabourBulletin(html, finalUrl = LABOUR_BULLETIN_URL) {
   const text = decodeHtml(html);
+  const nextReleaseDate = parseOnsNextReleaseDate(text);
   const periodPattern = "([A-Za-z]+(?:\\s+\\d{4})?\\s+to\\s+[A-Za-z]+\\s+\\d{4})";
   function rateMatch(subject, label) {
     const current = text.match(
@@ -493,6 +497,7 @@ function parseLabourBulletin(html, finalUrl = LABOUR_BULLETIN_URL) {
       period,
       observedAt: rollingPeriodEnd(period),
       releaseDate: parseReleaseDate(text),
+      ...(nextReleaseDate ? { nextReleaseDate } : {}),
       employmentRate: numeric(employment.value, "employment rate"),
       unemploymentRate: numeric(unemployment.value, "unemployment rate"),
       inactivityRate: numeric(inactivity.value, "economic inactivity rate"),
@@ -513,6 +518,7 @@ function parseLabourBulletin(html, finalUrl = LABOUR_BULLETIN_URL) {
 
 function parseFinancesBulletin(html, finalUrl = FINANCES_BULLETIN_URL) {
   const text = decodeHtml(html);
+  const nextReleaseDate = parseOnsNextReleaseDate(text);
   const titlePeriod = requiredMatch(
     text,
     /Public sector finances, UK:\s*([A-Za-z]+\s+\d{4})/i,
@@ -534,6 +540,7 @@ function parseFinancesBulletin(html, finalUrl = FINANCES_BULLETIN_URL) {
       period: titlePeriod,
       observedAt: monthlyPeriodEnd(titlePeriod),
       releaseDate: parseReleaseDate(text),
+      ...(nextReleaseDate ? { nextReleaseDate } : {}),
       receiptsBillion: numeric(receiptsMatch[1], "central government receipts"),
       yearChangeBillion: receiptsMatch[4].toLowerCase() === "less" ? -yearChange : yearChange,
     },

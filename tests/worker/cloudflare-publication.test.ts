@@ -3,7 +3,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import queuedWorker, {
-  FREE_TIER_BUDGET,
   RUN_PREFIX,
   createRun,
   finaliseRun,
@@ -14,8 +13,15 @@ import queuedWorker, {
 import { PUBLICATION_CURRENT_KEY } from "@/worker/publication-entry";
 import {
   buildContractsFromShards,
+  MAX_CONTRACT_PAGE_BYTES,
+  MAX_PAGES_PER_REFRESH,
+  MAX_PAGES_PER_SLICE,
+  MAX_RELEASES_PER_REFRESH,
+  createContractsRetrievalBudget,
+  fetchSlice,
   previousCompleteDays,
   rankDailyAwards,
+  refreshGovernmentContracts,
 } from "@/worker/government-contracts-cloudflare";
 import { ukNationFromPostcode } from "@/contracts/government-contracts";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
@@ -65,8 +71,6 @@ function snapshot() {
       registryVersion: FEED_REGISTRY_VERSION,
       generatedAt: "2026-07-17T12:00:00.000Z",
       fetchedAt: "2026-07-17T12:00:00.000Z",
-      publicationMode: "queue-free-tier",
-      freeTierBudget: FREE_TIER_BUDGET,
       sources,
     },
     ...Object.fromEntries(REQUIRED.map((section) => [section, { value: section }])),
@@ -135,33 +139,16 @@ function rawRelease(
   };
 }
 
-describe("Cloudflare Free data publication", () => {
-  it("reports the healthy schedule and configured retry workload transparently", () => {
-    expect(FREE_TIER_BUDGET).toMatchObject({
-      cronInvocationsPerDay: 9,
-      queueJobsPerDayHealthyTarget: 30,
-      queueOperationsPerDayHealthyTarget: 90,
-      queueJobsPerDayConfiguredRetryUpperBound: 120,
-      queueOperationsPerDayConfiguredRetryUpperBound: 360,
-      officialSectionsPerDay: 12,
-      contractRequestsPerDayMax: 36,
-      kvWritesPerDayTargetMax: 120,
-      kvReadsPerDayTargetMax: 300,
-    });
-    expect(FREE_TIER_BUDGET.queueOperationsPerDayConfiguredRetryUpperBound).toBeGreaterThan(
-      FREE_TIER_BUDGET.queueOperationsPerDayHealthyTarget,
-    );
-    expect(FREE_TIER_BUDGET.kvWritesPerDayTargetMax).toBeLessThan(1_000);
-    expect(FREE_TIER_BUDGET.kvReadsPerDayTargetMax).toBeLessThan(100_000);
-  });
-
+describe("Cloudflare data publication", () => {
   it("schedules every public section and contracts daily", () => {
     const jobs = jobsForDay();
-    expect(jobs).toHaveLength(13);
+    expect(jobs).toHaveLength(15);
     expect(jobs.filter((job) => job.type === "refresh-section")).toHaveLength(9);
     expect(
       jobs.filter((job) => job.type === "refresh-external-section")
-    ).toHaveLength(3);
+    ).toHaveLength(5);
+    expect(jobs.some((job) => job.section === "releaseCalendar")).toBe(true);
+    expect(jobs.some((job) => job.section === "nhsReleaseCalendar")).toBe(true);
     expect(jobs.filter((job) => job.type === "refresh-contracts")).toHaveLength(1);
   });
 
@@ -218,7 +205,8 @@ describe("Cloudflare Free data publication", () => {
     expect(result.changed).toBe(true);
     expect(result.publication.migrationStats).toEqual(current.migrationStats);
     expect(result.publication.gdpTracker).toEqual(fragment.data);
-    expect(result.publication.meta.publicationMode).toBe("queue-free-tier");
+    expect(result.publication.meta).not.toHaveProperty("publicationMode");
+    expect(result.publication.meta).not.toHaveProperty("freeTierBudget");
     expect(result.publication.meta.delivery).toBe("published-snapshot");
     expect(result.publication.meta.publicationDiagnostics).toEqual(
       expect.any(Object),
@@ -343,7 +331,7 @@ describe("Cloudflare Free data publication", () => {
     expect(result.run.finalisedAt).toBeNull();
   });
 
-  it("builds exactly 100 ranked awards only from seven complete UTC shards", () => {
+  it("shows the 100 highest awards after reconciling every award in seven UTC shards", () => {
     const now = new Date("2026-07-18T12:00:00.000Z");
     const days = previousCompleteDays(now, 7);
     let cursor = 0;
@@ -368,7 +356,223 @@ describe("Cloudflare Free data publication", () => {
     expect(payload?.window.updatedTo).toBe(`${days[6]}T23:59:59.999Z`);
   });
 
-  it("keeps revisions outside each day's top 100 so the newest revision wins across shards", () => {
+  it("follows Find a Tender cursors until every result page is read", async () => {
+    const slice = {
+      updatedFrom: "2026-07-17T00:00:00",
+      updatedTo: "2026-07-17T05:59:59",
+    };
+    const nextUrl = new URL(
+      "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages",
+    );
+    nextUrl.searchParams.set("updatedFrom", slice.updatedFrom);
+    nextUrl.searchParams.set("updatedTo", slice.updatedTo);
+    nextUrl.searchParams.set("stages", "award");
+    nextUrl.searchParams.set("limit", "100");
+    nextUrl.searchParams.set("cursor", "MTAwM==");
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            publisher: { name: "Cabinet Office" },
+            version: "1.1",
+            releases: [{ id: "first" }],
+            links: { next: nextUrl.toString() },
+          }),
+          { headers: { "content-type": "application/json" } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            publisher: { name: "Cabinet Office" },
+            version: "1.1",
+            releases: [{ id: "second" }],
+          }),
+          { headers: { "content-type": "application/json" } },
+        ),
+      );
+
+    const result = await fetchSlice(slice, fetchImpl);
+
+    expect(result.releases.map((release) => release.id)).toEqual(["first", "second"]);
+    expect(result.pagesFetched).toBe(2);
+    expect(result.requestsMade).toBe(2);
+    const firstUrl = new URL(fetchImpl.mock.calls[0][0] as string);
+    const secondUrl = new URL(fetchImpl.mock.calls[1][0] as string);
+    expect(secondUrl.searchParams.get("cursor")).toBe("MTAwM==");
+    for (const name of ["updatedFrom", "updatedTo", "stages", "limit"]) {
+      expect(secondUrl.searchParams.get(name)).toBe(firstUrl.searchParams.get(name));
+    }
+  });
+
+  it("fails closed when a source cursor repeats", async () => {
+    const slice = {
+      updatedFrom: "2026-07-17T00:00:00",
+      updatedTo: "2026-07-17T05:59:59",
+    };
+    const page = JSON.stringify({
+      publisher: { name: "Cabinet Office" },
+      version: "1.1",
+      releases: [],
+      pagination: { nextCursor: "MTAwM==" },
+    });
+    const fetchImpl = vi.fn(async () =>
+      new Response(page, { headers: { "content-type": "application/json" } }),
+    );
+
+    await expect(fetchSlice(slice, fetchImpl)).rejects.toThrow(/repeated/i);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not follow a pagination link that changes the requested source window", async () => {
+    const slice = {
+      updatedFrom: "2026-07-17T00:00:00",
+      updatedTo: "2026-07-17T05:59:59",
+    };
+    const fetchImpl = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          publisher: { name: "Cabinet Office" },
+          version: "1.1",
+          releases: [],
+          links: {
+            next: "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?updatedFrom=2026-07-16T00%3A00%3A00&updatedTo=2026-07-17T05%3A59%3A59&stages=award&limit=100&cursor=MTAwM==",
+          },
+        }),
+        { headers: { "content-type": "application/json" } },
+      ),
+    );
+
+    await expect(fetchSlice(slice, fetchImpl)).rejects.toThrow(/requested API window/i);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails a contract slice rather than following an endless unique cursor chain", async () => {
+    const slice = {
+      updatedFrom: "2026-07-17T00:00:00",
+      updatedTo: "2026-07-17T05:59:59",
+    };
+    let calls = 0;
+    const fetchImpl = vi.fn(async () => {
+      calls += 1;
+      return new Response(JSON.stringify({
+        publisher: { name: "Cabinet Office" },
+        version: "1.1",
+        releases: [],
+        pagination: calls <= MAX_PAGES_PER_SLICE
+          ? { nextCursor: `CURSOR${calls}` }
+          : undefined,
+      }), { headers: { "content-type": "application/json" } });
+    });
+
+    await expect(fetchSlice(slice, fetchImpl)).rejects.toThrow(/slice page budget/i);
+    expect(calls).toBe(MAX_PAGES_PER_SLICE);
+  });
+
+  it("fails when one Find a Tender page exceeds the declared release page size", async () => {
+    const slice = {
+      updatedFrom: "2026-07-17T00:00:00",
+      updatedTo: "2026-07-17T05:59:59",
+    };
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({
+      publisher: { name: "Cabinet Office" },
+      version: "1.1",
+      releases: Array.from({ length: 101 }, (_, id) => ({ id })),
+    }), { headers: { "content-type": "application/json" } }));
+
+    await expect(fetchSlice(slice, fetchImpl)).rejects.toThrow(/page limit/i);
+  });
+
+  it("shares a hard page budget across all contract slices in one refresh", async () => {
+    const slice = {
+      updatedFrom: "2026-07-17T00:00:00",
+      updatedTo: "2026-07-17T05:59:59",
+    };
+    const budget = createContractsRetrievalBudget();
+    budget.pagesFetched = MAX_PAGES_PER_REFRESH - 1;
+    let calls = 0;
+    const fetchImpl = vi.fn(async () => {
+      calls += 1;
+      return new Response(JSON.stringify({
+        publisher: { name: "Cabinet Office" },
+        version: "1.1",
+        releases: [],
+        pagination: { nextCursor: "NEXT1" },
+      }), { headers: { "content-type": "application/json" } });
+    });
+
+    await expect(fetchSlice(slice, fetchImpl, budget)).rejects.toThrow(/refresh page budget/i);
+    expect(calls).toBe(1);
+  });
+
+  it("shares a hard release budget across all contract slices in one refresh", async () => {
+    const slice = {
+      updatedFrom: "2026-07-17T00:00:00",
+      updatedTo: "2026-07-17T05:59:59",
+    };
+    const budget = createContractsRetrievalBudget();
+    budget.releasesSeen = MAX_RELEASES_PER_REFRESH - 99;
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({
+      publisher: { name: "Cabinet Office" },
+      version: "1.1",
+      releases: Array.from({ length: 100 }, (_, id) => ({ id })),
+    }), { headers: { "content-type": "application/json" } }));
+
+    await expect(fetchSlice(slice, fetchImpl, budget)).rejects.toThrow(/refresh release budget/i);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects an oversized contract response before parsing it", async () => {
+    const slice = {
+      updatedFrom: "2026-07-17T00:00:00",
+      updatedTo: "2026-07-17T05:59:59",
+    };
+    const body = JSON.stringify({
+      publisher: { name: "Cabinet Office" },
+      version: "1.1",
+      releases: [],
+      padding: "x".repeat(MAX_CONTRACT_PAGE_BYTES),
+    });
+    const fetchImpl = vi.fn(async () => new Response(body, {
+      headers: { "content-type": "application/json" },
+    }));
+
+    await expect(fetchSlice(slice, fetchImpl)).rejects.toThrow(/response exceeded/i);
+  });
+
+  it("does not start a contract request after the refresh time budget expires", async () => {
+    const slice = {
+      updatedFrom: "2026-07-17T00:00:00",
+      updatedTo: "2026-07-17T05:59:59",
+    };
+    const budget = createContractsRetrievalBudget();
+    budget.deadlineAt = Date.now() - 1;
+    const fetchImpl = vi.fn();
+
+    await expect(fetchSlice(slice, fetchImpl, budget)).rejects.toThrow(/refresh time budget/i);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("collects every missing day in one source refresh", async () => {
+    const now = new Date("2026-07-18T12:00:00.000Z");
+    const { env } = kvEnv();
+    const fetchImpl = vi.fn(async () =>
+      new Response(
+        JSON.stringify({ publisher: { name: "Cabinet Office" }, version: "1.1", releases: [] }),
+        { headers: { "content-type": "application/json" } },
+      ),
+    );
+
+    const result = await refreshGovernmentContracts(env, { now, fetchImpl });
+
+    expect(result.collected).toEqual(previousCompleteDays(now, 7));
+    expect(result.completeDays).toBe(7);
+    expect(result.requestsMade).toBe(28);
+    expect(fetchImpl).toHaveBeenCalledTimes(28);
+  });
+
+  it("keeps revisions beyond the public display set so the newest version wins across shards", () => {
     const now = new Date("2026-07-18T12:00:00.000Z");
     const days = previousCompleteDays(now, 7);
     const amendment = JSON.parse(readFileSync(new URL("../fixtures/contracts/downward-amendment.json", import.meta.url), "utf8"));
@@ -402,13 +606,13 @@ describe("Cloudflare Free data publication", () => {
     expect(ukNationFromPostcode("JE1 1AA")).toBe("Other/Unknown");
   });
 
-  it("rejects a day shard above its retained-award cap instead of truncating it", () => {
+  it("retains every valid award above the old arbitrary shard count", () => {
     const now = new Date("2026-07-18T12:00:00.000Z");
     const day = previousCompleteDays(now, 7)[0];
     const releases = Array.from({ length: 2_501 }, (_, index) =>
       rawRelease(index + 1, day, 10_000 + index),
     );
-    expect(() => rankDailyAwards(releases, day, now)).toThrow(/2,?500-award shard limit/i);
+    expect(rankDailyAwards(releases, day, now).awards).toHaveLength(2_501);
   });
 
   it("retains cancellation tombstones so an earlier active release is removed", () => {

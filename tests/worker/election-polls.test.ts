@@ -84,6 +84,59 @@ describe("primary election poll evidence contract", () => {
     expect(isCurrentPrimaryPollPayload(result, new Date("2026-08-11T00:00:00Z"))).toBe(false);
   });
 
+  it("keeps a missing publisher date unknown and uses the disclosed fieldwork date for freshness", () => {
+    const result = normalizePrimaryPollPayload({
+      polls: [poll({
+        id: "more-in-common-2026-07-29",
+        pollster: "More in Common",
+        commissioner: null,
+        title: "GB voting intention tracker",
+        questionText: null,
+        publicationDate: null,
+        publicationDateStatus: "not-disclosed",
+        fieldworkStart: "2026-07-25",
+        fieldworkEnd: "2026-07-29",
+        sampleSize: 1514,
+        sampleSizeNote: "Unweighted headline base.",
+        mode: null,
+        sourceUrl: "https://www.moreincommon.org.uk/wp-content/uploads/2026/07/voting-intention-29-july.xlsx",
+        methodologyUrl: "https://www.moreincommon.org.uk/polling-tables/",
+      })],
+      sources: [{
+        pollster: "More in Common",
+        status: "partial",
+        recordCount: 1,
+        archiveFilesRequested: 12,
+        archiveFilesValidated: 1,
+        archiveFilesUnavailable: 11,
+      }],
+    }, new Date("2026-08-02T04:30:00.000Z"));
+
+    expect(result.latestPublicationDate).toBeNull();
+    expect(result.latestFieldworkEnd).toBe("2026-07-29");
+    expect(result.sources[0]).toMatchObject({ pollster: "More in Common", status: "partial", recordCount: 1, archiveFilesUnavailable: 11 });
+    expect(result.expiresAt).toBe("2026-08-12T00:00:00.000Z");
+    expect(result.polls[0]).toMatchObject({
+      publicationDate: null,
+      publicationDateStatus: "not-disclosed",
+      commissioner: null,
+      questionText: null,
+      mode: null,
+      sampleSizeNote: "Unweighted headline base.",
+    });
+    expect(isCurrentPrimaryPollPayload(result, new Date("2026-08-12T00:00:00.000Z"))).toBe(true);
+    expect(isCurrentPrimaryPollPayload(result, new Date("2026-08-13T00:00:00.000Z"))).toBe(false);
+  });
+
+  it("does not allow a missing date to masquerade as a publication date", () => {
+    expect(() => normalizePrimaryPollPayload({
+      polls: [poll({ publicationDate: null, publicationDateStatus: "published" })],
+    }, validationTime)).toThrow(/publication date status/i);
+    expect(() => normalizePrimaryPollPayload({
+      polls: [poll({ publicationDate: undefined })],
+    }, validationTime)).toThrow(/publication date status/i);
+  });
+
   it("rejects secondary or unapproved source hosts", () => {
     expect(() =>
       normalizePrimaryPollPayload(

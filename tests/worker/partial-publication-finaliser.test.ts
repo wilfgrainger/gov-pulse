@@ -2,7 +2,6 @@
 
 import { describe, expect, it, vi } from "vitest";
 import {
-  FREE_TIER_BUDGET,
   RUN_PREFIX,
   createRun,
   finaliseRun,
@@ -46,8 +45,6 @@ function currentSnapshot() {
       registryVersion: FEED_REGISTRY_VERSION,
       generatedAt: "2026-07-17T12:00:00.000Z",
       fetchedAt: "2026-07-17T12:00:00.000Z",
-      publicationMode: "queue-free-tier",
-      freeTierBudget: FREE_TIER_BUDGET,
       sources,
     },
     ...Object.fromEntries(

@@ -97,4 +97,34 @@ describe("international comparison publication", () => {
     expect(publication.measures.governmentDebt.comparableCountryCount).toBe(13);
     expect(publication.measures.taxRevenue.comparableCountryCount).toBe(10);
   });
+
+  it("retains source-backed defence history by common year with population provenance", () => {
+    const defence2023 = mapAll(65_000_000_000);
+    const population2023 = mapAll(68_000_000);
+    const defence2025 = mapAll(89_000_000_000);
+    const population2025 = mapAll(70_000_000);
+    const publication = buildInternationalComparisonPublication(comparisonSourceBundle({
+      gdpPerCapita2023: mapAll(48_000),
+      gdpPerCapita2024: mapAll(50_000),
+      gdpPerCapita2026: mapAll(61_060),
+      population2025,
+      populationByYear: new Map([[2023, population2023], [2025, population2025]]),
+      debtPctGdp2026: mapAll(80),
+      interestPctGdp2024: mapAll(2),
+      odaUsd2025: mapOecd(10_000_000_000),
+      defenceUsd2025: defence2025,
+      defenceUsdByYear: new Map([[2023, defence2023], [2025, defence2025]]),
+      socialPctGdp2023: mapOecd(15),
+      healthPerCapita2024: mapAll(4_000),
+      taxPctGdp2024: mapOecd(30),
+    }), new Date("2026-08-18T22:00:00.000Z"));
+
+    expect(publication.measures.defenceSpending.countryHistory).toHaveLength(26);
+    expect(publication.measures.defenceSpending.countryHistory?.find((row) => row.country === "GBR" && row.observationYear === 2023)).toMatchObject({
+      valueType: "historical",
+      value: 65_000_000_000 / 68_000_000,
+      source: { publisher: "SIPRI", additionalSources: [{ publisher: "World Bank World Development Indicators" }] },
+    });
+    expect(publication.measures.defenceSpending.countryHistory?.find((row) => row.country === "GBR" && row.observationYear === 2025)?.valueType).toBe("estimate");
+  });
 });

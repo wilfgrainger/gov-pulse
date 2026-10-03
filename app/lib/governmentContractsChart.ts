@@ -2,6 +2,8 @@ import type { ChartMetadata } from "@/app/lib/chartExport";
 
 export type SupplierConcentrationRow = {
   name: string;
+  entityId?: string | null;
+  identityBasis?: "publisher-id" | "exact-name";
   awardCount: number;
   disclosedValue: number;
   nation: string;
@@ -27,20 +29,26 @@ export function buildSupplierConcentrationMetadata(input: {
   const sourceUrl = /^https:\/\//.test(input.sourceUrl) ? input.sourceUrl : "Source URL unavailable in this publication.";
   const plotted = input.suppliers.length;
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     title: input.title,
-    sourceCitation: `${input.sourceLabel}: ${sourceUrl} · Plot shows ${plotted} of ${input.filteredSupplierCount} filtered suppliers (${input.fullSupplierCount} in the full publication) · Complete update window ${start ?? "date unavailable"} to ${end ?? "date unavailable"}`,
+    sourceCitation: `${input.sourceLabel}: ${sourceUrl} · Equal-share scenario, not supplier revenue · Plot shows ${plotted} of ${input.filteredSupplierCount} filtered supplier groups (${input.fullSupplierCount} in the full publication) · Complete update window ${start ?? "date unavailable"} to ${end ?? "date unavailable"}`,
     observationWindow: start && end
       ? { start: { period: start, observedAt: start }, end: { period: end, observedAt: end } }
       : { start: null, end: null },
     series: input.suppliers.map((supplier) => ({
-      key: supplier.name,
-      label: `${supplier.name} · ${new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(supplier.disclosedValue)} · ${supplier.awardCount} awards · ${supplier.nation}`,
+      key: supplier.entityId ? `id:${supplier.entityId}` : `name:${supplier.name}`,
+      label: `${supplier.name}${supplier.entityId ? ` · Find a Tender ID ${supplier.entityId}` : " · exact-name match"} · ${new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(supplier.disclosedValue)} scenario value · ${supplier.awardCount} awards · ${supplier.nation}`,
+    })),
+    observations: input.suppliers.map((supplier) => ({
+      period: `${start ?? "date unavailable"} to ${end ?? "date unavailable"}`,
+      observedAt: end,
+      values: { [supplier.entityId ? `id:${supplier.entityId}` : `name:${supplier.name}`]: supplier.disclosedValue },
+      details: { supplier: supplier.name, publisherId: supplier.entityId ?? null, identityBasis: supplier.identityBasis ?? "exact-name", awardCount: supplier.awardCount, nation: supplier.nation },
     })),
     caveats: [...new Set([
       ...input.caveats,
-      "Multi-supplier award values are allocated equally for the supplier ranking.",
-      `Only the first ${plotted} supplier rows are included in the image; ${input.filteredSupplierCount} suppliers match the current filter.`,
+      "Multi-supplier award values are split equally for a comparison scenario; they are not attributed supplier revenue or confirmed expenditure.",
+      `Only the first ${plotted} supplier-group rows are included in the image; ${input.filteredSupplierCount} groups match the current filter.`,
     ])],
   };
 }

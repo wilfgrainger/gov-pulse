@@ -432,7 +432,7 @@ export function buildCompleteContractsRecord(now = new Date()) {
         updatedTo,
         label,
         basis:
-          "Find a Tender award-stage releases from seven complete UTC day shards collected by the Cloudflare Free data worker",
+          "Find a Tender award-stage releases from seven complete UTC day shards collected by public-data.org",
       },
       source: {
         publisher: "Cabinet Office",

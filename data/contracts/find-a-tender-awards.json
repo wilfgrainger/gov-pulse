@@ -5,7 +5,7 @@
     "updatedFrom": "2026-09-24T15:34:53.133Z",
     "updatedTo": "2026-10-01T15:34:52.133Z",
     "label": "24 Sept 2026 to 1 Oct 2026",
-    "basis": "Find a Tender award-stage releases from seven complete UTC day shards collected by the Cloudflare Free data worker"
+    "basis": "Find a Tender award-stage releases from seven complete UTC day shards collected by public-data.org"
   },
   "source": {
     "publisher": "Cabinet Office",

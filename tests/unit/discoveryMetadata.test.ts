@@ -6,12 +6,15 @@ import {
   SECTION_DISCOVERY,
   SITE_DISCOVERY,
   absoluteUrl,
+  getBuildPublication,
   sectionPath,
   serializeJsonLd,
   socialImagePath,
   structuredDataForSection,
 } from "@/app/lib/discovery";
 import { SECTION_CONTENT } from "@/app/lib/sectionContent";
+import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
+import { publicSnapshot } from "@/worker/public-snapshot";
 
 function source(path: string) {
   return fs.readFileSync(path, "utf8");
@@ -85,14 +88,19 @@ describe("section discovery contract", () => {
     });
   });
 
-  it("uses the published snapshot edition rather than retrieval or wall-clock time", () => {
-    const discoverySource = source("app/lib/discovery.ts");
+  it("uses the primary source publication date rather than retrieval or snapshot generation time", () => {
     const feedSource = source("app/feed.xml/route.ts");
+    const snapshot = publicSnapshot(BUILD_METRICS_SNAPSHOT);
+    const sourceEdition = snapshot.meta.sources.gdpTracker;
+    const sourceMeasures = Object.values(snapshot.meta.measureCatalog.measures).filter((measure) => measure.sourceId === "gdpTracker");
+    const publication = getBuildPublication(SECTION_DISCOVERY.gdp);
 
-    expect(discoverySource).toContain("snapshot.meta.generatedAt");
-    expect(discoverySource).not.toContain("source.fetchedAt");
+    expect(sourceMeasures.length).toBeGreaterThan(0);
+    expect(publication?.dateModified).toBe(sourceMeasures.sort((left, right) => right.publishedAt.localeCompare(left.publishedAt))[0].publishedAt);
+    expect(publication?.dateModified).not.toBe(sourceEdition.fetchedAt);
+    expect(publication?.dateModified).not.toBe(snapshot.meta.generatedAt);
     expect(feedSource).not.toContain("new Date().toUTCString()");
-    expect(feedSource).toContain("lastBuildDate.toUTCString()");
+    expect(feedSource).not.toContain("lastBuildDate");
   });
 
   it("does not promote stale fallback data as a latest verified publication", () => {

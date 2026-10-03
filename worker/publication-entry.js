@@ -2,9 +2,6 @@ import { SECTION_BUILDERS } from "./section-builders.js";
 import { FEED_REGISTRY_VERSION } from "./feed-registry.js";
 import { buildMeasureCatalog } from "./measure-catalog.js";
 import { buildEditionSummary } from "./edition-summary.js";
-import {
-  MAX_REQUESTS_PER_RUN as CONTRACT_MAX_REQUESTS_PER_RUN,
-} from "./government-contracts-cloudflare.js";
 
 // Publication primitives used by the live queue path (queued-publication-entry.js)
 // and the public data worker (public-data-entry.js).
@@ -20,15 +17,6 @@ import {
 const PUBLICATION_CURRENT_KEY = "v12:publication:current";
 const PUBLICATION_STATUS_KEY = "v12:publication:status";
 const PUBLICATION_HISTORY_PREFIX = "v12:publication:history:";
-
-// Retained: stamped into published meta by mergePublication.
-const FREE_TIER_BUDGET = Object.freeze({
-  cronInvocationsPerDay: 1,
-  officialSectionsPerDay: 2,
-  contractRequestsPerDayMax: CONTRACT_MAX_REQUESTS_PER_RUN,
-  kvWritesPerDayTargetMax: 12,
-  kvReadsPerDayTargetMax: 40,
-});
 
 function isRecord(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -126,21 +114,18 @@ function mergePublication(previous, refreshedRecords, contractsRecord, now = new
     registryVersion: FEED_REGISTRY_VERSION,
     generatedAt: now.toISOString(),
     fetchedAt: now.toISOString(),
-    generator: "cloudflare-free-publication-worker",
-    backend: "cloudflare-worker-kv",
-    publicationMode: "daily-rotating-free-tier",
-    freeTierBudget: FREE_TIER_BUDGET,
   };
   const previousCatalog = base.meta.measureCatalog ?? null;
+  const measureCatalogDiagnostics = [];
   base.meta.measureCatalog = buildMeasureCatalog(base, now, {
-    onOmission: ({ measureId, reason }) => console.warn("Measure record omitted", { measureId, reason }),
+    onDiagnostic: (diagnostic) => measureCatalogDiagnostics.push(diagnostic),
   });
+  base.meta.measureCatalogDiagnostics = measureCatalogDiagnostics;
   base.meta.editionSummary = buildEditionSummary(previousCatalog, base.meta.measureCatalog);
   return base;
 }
 
 export {
-  FREE_TIER_BUDGET,
   PUBLICATION_CURRENT_KEY,
   PUBLICATION_HISTORY_PREFIX,
   PUBLICATION_STATUS_KEY,

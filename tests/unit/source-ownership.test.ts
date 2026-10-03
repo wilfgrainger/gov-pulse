@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { DATA_SOURCES } from "@/app/lib/config";
 import { WITHDRAWN_SECTION_IDS } from "@/app/lib/sections";
 import {
-  EXPECTED_PUBLICATION,
   validateSourceOwnership,
 } from "@/scripts/check-source-ownership.mjs";
 
@@ -12,7 +11,7 @@ const inventory = JSON.parse(
 );
 
 describe("source ownership inventory", () => {
-  it("covers every active feed with one existing collector, normalizer and entrypoint", () => {
+  it("covers every active feed with existing collector, normalizer and entrypoint owners", () => {
     expect(validateSourceOwnership(inventory)).toEqual([]);
   });
 
@@ -32,19 +31,6 @@ describe("source ownership inventory", () => {
     expect(actualRoutes).toEqual([...WITHDRAWN_SECTION_IDS].sort());
   });
 
-  it("records curated static evidence separately from automated feeds", () => {
-    expect(inventory.staticSources).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          section: "earlyYears",
-          automation: "static",
-          consumer: "app/components/EarlyYearsStats.tsx",
-          observationPeriod: "2024/25",
-        }),
-      ]),
-    );
-  });
-
   it("rejects duplicate or missing active section ownership", () => {
     const duplicate = structuredClone(inventory);
     duplicate.sources.push(structuredClone(duplicate.sources[0]));
@@ -55,61 +41,41 @@ describe("source ownership inventory", () => {
     expect(validateSourceOwnership(missing).join(" ")).toMatch(/missing sections/i);
   });
 
-  it("rejects collection or storage attached to withdrawn sources", () => {
+  it("rejects current collection on withdrawn sources while allowing a read-only archive", () => {
     const invalid = structuredClone(inventory);
     invalid.withdrawnSources[0].collector = "worker/index.js";
     invalid.withdrawnSources[0].schedule = "daily";
-    invalid.withdrawnSources[0].storage = "KV";
+    invalid.withdrawnSources[0].storage = "read-only historical archive";
     const failures = validateSourceOwnership(invalid).join(" ");
     expect(failures).toMatch(/null collector and normalizer/i);
-    expect(failures).toMatch(/must not schedule collection or store values/i);
+    expect(failures).toMatch(/must not schedule current collection/i);
+    expect(failures).not.toMatch(/storage/i);
   });
 
-  it("rejects retired, nonexistent or unreferenced ownership paths", () => {
-    const retired = structuredClone(inventory);
-    retired.sources[0].collector = "fetch_intel.py";
-    const failures = validateSourceOwnership(retired).join(" ");
-    expect(failures).toMatch(/does not exist/i);
-    expect(failures).toMatch(/retired path/i);
+  it("rejects nonexistent source implementation paths", () => {
+    const invalid = structuredClone(inventory);
+    invalid.sources[0].collector = ["worker/DoesNotExist.js", "worker/economic-indicators.js"];
+    const failures = validateSourceOwnership(invalid).join(" ");
+    expect(failures).toMatch(/collector.*does not exist/i);
 
     const route = structuredClone(inventory);
     route.withdrawnRoutes[0].consumer = "app/components/DoesNotExist.tsx";
     expect(validateSourceOwnership(route).join(" ")).toMatch(/consumer path/i);
   });
 
-  // Workflow-line reduction is measured from the GitHub compare diff; issue #231 tracks deleted-path PR description support.
-  it("records the duplicate execution paths and scheduled runs removed", () => {
-    expect(inventory.simplification).toMatchObject({
-      retiredCollectorImplementations: 1,
-      retiredCollectorLines: 1368,
-      workflowFilesRemoved: 3,
-      workflowLinesRemoved: 144,
-      ciJobsRemoved: 3,
-      scheduledRunsPerDayRemoved: 2,
-      testFilesRemoved: 0,
-    });
-    for (const workflow of inventory.simplification.removedDedicatedWorkflows) {
-      expect(fs.existsSync(workflow)).toBe(false);
-    }
-  });
+  it("allows multiple owners and new deployment contracts without a dated implementation veto", () => {
+    const evolved = structuredClone(inventory);
+    evolved.parentIssue = 999;
+    evolved.publicationArtifact = "object-storage:publication-records";
+    evolved.publicRoute = "/api/evidence/current";
+    evolved.livePublicationKey = "publication:current";
+    evolved.publicPublicationKey = "publication:public";
+    evolved.sources[0].collector = [
+      "worker/economic-indicators.js",
+      "worker/economy-evidence.js",
+    ];
+    delete evolved.simplification;
 
-  it("keeps the browser on the same-origin Cloudflare publication route", () => {
-    expect(inventory).toMatchObject({
-      ...EXPECTED_PUBLICATION,
-      browserConsumer: "app/lib/useMetrics.ts",
-    });
-
-    for (const [field, replacement] of [
-      ["publicationArtifact", "https://worker.example/metrics"],
-      ["publicRoute", "https://worker.example/metrics"],
-      ["livePublicationKey", "legacy:publication"],
-      ["publicPublicationKey", "legacy:public"],
-    ] as const) {
-      const invalid = structuredClone(inventory);
-      invalid[field] = replacement;
-      expect(validateSourceOwnership(invalid).join(" ")).toContain(
-        `${field} must be '${EXPECTED_PUBLICATION[field]}'`
-      );
-    }
+    expect(validateSourceOwnership(evolved)).toEqual([]);
   });
 });

@@ -30,6 +30,10 @@ zone_name = "public-data.org"
 pattern = "public-data.org/data/edition.json*"
 zone_name = "public-data.org"
 
+[[routes]]
+pattern = "public-data.org/data/contracts/history.json*"
+zone_name = "public-data.org"
+
 [triggers]
 crons = ["17 3 * * *", "47 */3 * * *"]
 

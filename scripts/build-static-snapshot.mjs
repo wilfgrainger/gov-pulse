@@ -5,6 +5,7 @@ import { SECTION_BUILDERS } from "../worker/section-builders.js";
 import { collectTaxRevenue } from "../worker/live-tax-revenue-collector.js";
 import { normalizePrimaryPollPayload } from "../worker/election-polls.js";
 import { provenanceFor } from "../worker/feed-registry.js";
+import { publicSnapshot } from "../worker/public-snapshot.js";
 import {
   FEED_REGISTRY,
   FEED_REGISTRY_VERSION,
@@ -149,7 +150,7 @@ export function validateSnapshot(
     const diagnostics = Object.entries(snapshot.meta.sources)
       .filter(([section]) => !verifiedSections.includes(section))
       .map(([section, source]) =>
-        `${section}=${source?.status ?? "unknown"}/${source?.cacheState ?? "unknown"}${source?.error ? ` (${source.error})` : ""}`
+        `${section}=${source?.status ?? "unknown"}/${source?.cacheState ?? "unknown"}`
       )
       .join("; ");
     throw new Error(
@@ -243,26 +244,7 @@ export function hasRequiredHistoryShape(section, data, now = Date.now()) {
 }
 
 export function sanitizePublishedSnapshot(value) {
-  if (Array.isArray(value)) {
-    return value.map(sanitizePublishedSnapshot);
-  }
-  if (!value || typeof value !== "object") {
-    return value;
-  }
-
-  return Object.fromEntries(
-    Object.entries(value).flatMap(([key, nestedValue]) => {
-      if (key === "backend" || key === "generator") return [];
-      if (
-        key === "retrieval" &&
-        typeof nestedValue === "string" &&
-        /github|cloudflare|worker/i.test(nestedValue)
-      ) {
-        return [[key, "scheduled-publication-check"]];
-      }
-      return [[key, sanitizePublishedSnapshot(nestedValue)]];
-    })
-  );
+  return publicSnapshot(value);
 }
 
 export async function buildStaticSnapshot(options) {

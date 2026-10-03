@@ -8,7 +8,16 @@ import measureInventory from "../contracts/measure-definitions.json" with { type
 
 const DEFINITIONS = measureInventory.measures;
 
+function diagnosticCategory(reason) {
+  if (reason === "source-section-missing") return "source-missing";
+  if (reason === "empty-history" || reason === "history-missing") return reason;
+  if (reason === "headline-history-mismatch") return reason;
+  if (reason === "expired-value" || reason === "source-not-current") return "freshness";
+  return "invalid-metadata";
+}
+
 function at(value, path) {
+  if (typeof path !== "string" || !path) return undefined;
   return path.split(".").reduce((current, key) => current && typeof current === "object" ? current[key] : undefined, value);
 }
 
@@ -28,9 +37,16 @@ function dateString(value) {
 function dateRange(label) {
   const normalized = String(label).replace(/^YE\s+/i, "Year ending ").trim();
   const monthNames = "January February March April May June July August September October November December".split(" ");
+  const monthIndex = (value) => {
+    const token = String(value).toLowerCase();
+    return monthNames.findIndex((name) => {
+      const fullName = name.toLowerCase();
+      return fullName === token || fullName.slice(0, 3) === token || (fullName === "september" && token === "sept");
+    });
+  };
   const yearEnd = normalized.match(/^Year ending ([A-Za-z]+) (20\d{2})$/i);
   if (yearEnd) {
-    const endMonth = monthNames.findIndex((month) => month.toLowerCase() === yearEnd[1].toLowerCase());
+    const endMonth = monthIndex(yearEnd[1]);
     if (endMonth >= 0) {
       const year = Number(yearEnd[2]);
       const startMonth = (endMonth + 1) % 12;
@@ -46,22 +62,32 @@ function dateRange(label) {
   const yearFirst = normalized.match(/^(20\d{2}) ([A-Za-z]+)$/i);
   const abbreviatedYearFirst = normalized.match(/^(20\d{2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$/i);
   if (range) {
-    const startMonth = monthNames.findIndex((month) => month.toLowerCase() === range[1].toLowerCase());
-    const endMonth = monthNames.findIndex((month) => month.toLowerCase() === range[2].toLowerCase());
+    const startMonth = monthIndex(range[1]);
+    const endMonth = monthIndex(range[2]);
     if (startMonth >= 0 && endMonth >= startMonth) {
       return { start: new Date(Date.UTC(Number(range[3]), startMonth, 1)).toISOString().slice(0, 10), end: new Date(Date.UTC(Number(range[3]), endMonth + 1, 0)).toISOString().slice(0, 10) };
     }
   }
   if (monthFirst || yearFirst || abbreviatedYearFirst) {
     const month = monthFirst
-      ? monthNames.findIndex((name) => name.toLowerCase() === monthFirst[1].toLowerCase())
+      ? monthIndex(monthFirst[1])
       : yearFirst
-        ? monthNames.findIndex((name) => name.toLowerCase() === yearFirst[2].toLowerCase())
-        : ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"].indexOf(abbreviatedYearFirst[2].toUpperCase());
+        ? monthIndex(yearFirst[2])
+        : monthIndex(abbreviatedYearFirst[2]);
     const year = Number(monthFirst ? monthFirst[2] : yearFirst ? yearFirst[1] : abbreviatedYearFirst[1]);
     if (month >= 0) return { start: new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10), end: new Date(Date.UTC(year, month + 1, 0)).toISOString().slice(0, 10) };
   }
-  const date = dateString(at({ label }, "label"));
+  const exactDate = normalized.match(/^(\d{1,2}) ([A-Za-z]+) (20\d{2})$/i);
+  if (exactDate) {
+    const month = monthIndex(exactDate[2]);
+    const date = new Date(Date.UTC(Number(exactDate[3]), month, Number(exactDate[1])));
+    if (month >= 0 && date.getUTCMonth() === month && date.getUTCDate() === Number(exactDate[1])) {
+      const day = date.toISOString().slice(0, 10);
+      return { start: day, end: day };
+    }
+    return null;
+  }
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? dateString(normalized) : null;
   return date ? { start: date, end: date } : null;
 }
 
@@ -84,18 +110,30 @@ function sourceUrl(data, source, definition) {
   return null;
 }
 
+function publisherFor(source, url, definition) {
+  const explicit = text(definition.publisher);
+  if (explicit) return explicit;
+  let host = "";
+  try { host = new URL(url).hostname; } catch { return null; }
+  const upstreams = source?.provenance?.upstreams ?? [];
+  const matched = upstreams.find((upstream) => {
+    try { return new URL(upstream?.url).hostname === host; } catch { return false; }
+  });
+  return text(matched?.publisher) ?? text(upstreams[0]?.publisher);
+}
+
 function editionId(data, source, definition, url, publishedAt, period) {
   const explicit = text(data?.source?.edition) ?? text(data?.source?.editionId) ??
     text(data?.headline?.editionId) ?? text(source?.provenance?.editionId);
   if (explicit) return explicit;
 
-  // ONS collectors can provide a dated bulletin and publication date without
-  // a publisher-issued edition ID. Use those source-owned fields and the
-  // observation period for a stable local identity, never a retrieval clock.
+  // Some primary publishers do not expose a machine-readable edition ID.
+  // The already allow-listed source URL, publication date and observation
+  // period form a stable local identity; retrieval time is never part of it.
   try {
     const parsed = new URL(url);
-    if (parsed.hostname !== "www.ons.gov.uk" || !publishedAt || !period) return null;
-    return `ons-${definition.id}-${publishedAt}-${fnv64(`${parsed.pathname}\n${period}`)}`;
+    if (!publishedAt || !period) return null;
+    return `source-${definition.id}-${publishedAt}-${fnv64(`${parsed.hostname}${parsed.pathname}\n${period}`)}`;
   } catch {
     return null;
   }
@@ -109,18 +147,27 @@ function normalizeObservation(point, definition, revisionId) {
   return { period, observedAt, value, valueStatus: definition.valueStatus, revisionId };
 }
 
-function makeMeasure(snapshot, definition, now, reportOmission) {
-  const omit = (reason) => {
-    reportOmission?.({ measureId: definition.id, reason });
+function makeMeasure(snapshot, definition, now, { onOmission, onDiagnostic } = {}) {
+  const omit = (reason, detail = null) => {
+    onOmission?.({ measureId: definition.id, reason });
+    onDiagnostic?.({ measureId: definition.id, reason, category: diagnosticCategory(reason), availability: "unavailable", ...(detail ? { detail } : {}) });
     return null;
   };
   const data = snapshot?.[definition.section];
   const source = snapshot?.meta?.sources?.[definition.section];
   if (!data || !source) return omit("source-section-missing");
   const sectionHistory = definition.historyPath ? at(data, definition.historyPath) : null;
-  const rawValue = definition.valueFromLatestHistory && Array.isArray(sectionHistory)
+  const sourceMeasureList = definition.valueMeasurePath ? at(data, definition.valueMeasurePath) : null;
+  if (definition.valueMeasurePath && !Array.isArray(sourceMeasureList)) return omit("source-measure-list-invalid");
+  const sourceMeasure = definition.valueMeasurePath
+    ? sourceMeasureList.find((measure) => measure?.id === definition.valueMeasureId)
+    : null;
+  if (definition.valueMeasurePath && !sourceMeasure) return omit("source-measure-missing");
+  const rawValue = sourceMeasure
+    ? sourceMeasure.value
+    : definition.valueFromLatestHistory && Array.isArray(sectionHistory)
     ? sectionHistory.at(-1)?.[definition.historyValue]
-    : at(data, definition.valuePath);
+    : definition.valuePath ? at(data, definition.valuePath) : undefined;
   const rawHistory = definition.historyPath
     ? sectionHistory
     : definition.observationPath
@@ -136,12 +183,13 @@ function makeMeasure(snapshot, definition, now, reportOmission) {
   const sourceEditionId = editionId(data, source, definition, url, publishedAt, period);
   if (!finite(rawValue) || !period || !publishedAt || !sourceEditionId || !url) return omit("headline-or-provenance-incomplete");
   if (!Array.isArray(rawHistory)) return omit("history-missing");
+  if (rawHistory.length === 0) return omit("empty-history");
   const points = rawHistory.map((point) => normalizeObservation(point, definition, sourceEditionId));
   if (points.some((point) => !point)) return omit("history-shape-invalid");
   points.sort((left, right) => left.observedAt.localeCompare(right.observedAt));
   const latestNumericPoint = [...points].reverse().find((point) => point.value !== null);
-  if ((definition.historyPath && !latestNumericPoint) ||
-      (latestNumericPoint && latestNumericPoint.value !== rawValue)) return omit("headline-history-mismatch");
+  if (definition.historyPath && !latestNumericPoint) return omit("empty-history");
+  if (latestNumericPoint && latestNumericPoint.value !== rawValue) return omit("headline-history-mismatch");
   const latestDate = latestNumericPoint?.observedAt ??
     dateString(definition.observationPath ? at(data, definition.observationPath) : null) ??
     dateString(data?.__observation?.observedAt);
@@ -162,15 +210,37 @@ function makeMeasure(snapshot, definition, now, reportOmission) {
   const deadline = new Date(explicitDeadline).toISOString();
   const fetchedAt = dateString(source.fetchedAt) ? new Date(source.fetchedAt).toISOString() : null;
   if (!fetchedAt) return omit("retrieval-time-invalid");
-  const availableNow = sourceIsCurrent && Date.parse(deadline) > checkedAt.getTime();
+  if (Date.parse(deadline) <= checkedAt.getTime()) return omit("expired-value");
+  const availableNow = sourceIsCurrent;
+  const revisionId = `${sourceEditionId}-r${fnv64(JSON.stringify({
+    value: rawValue,
+    points: points.map((point) => ({
+      period: point.period,
+      observedAt: point.observedAt,
+      value: point.value,
+      valueStatus: point.valueStatus,
+    })),
+  }))}`;
+  const revisionPoints = points.map((point) => ({ ...point, revisionId }));
+  if (!availableNow) {
+    onDiagnostic?.({
+      measureId: definition.id,
+      reason: "source-not-current",
+      category: "freshness",
+      availability: "historical",
+    });
+  }
+  const context = text(at(data, definition.contextPath));
   const record = {
     id: definition.id,
     label: definition.label,
-    evidenceClass: "official-statistics",
+    evidenceClass: definition.evidenceClass ?? "official-statistics",
+    publisher: publisherFor(source, url, definition) ?? undefined,
     comparisonKey: definition.comparisonKey,
     cadence: definition.cadence,
     unit: definition.unit,
     basis: definition.basis,
+    note: definition.note,
     geography: definition.geography,
     sourceId: definition.section,
     sourceUrl: url,
@@ -181,14 +251,14 @@ function makeMeasure(snapshot, definition, now, reportOmission) {
     validUntil: deadline,
     availability: availableNow ? "current" : "historical",
     value: rawValue,
-    revisionId: sourceEditionId,
-    points,
-    caveats: definition.caveats,
+    revisionId,
+    points: revisionPoints,
+    caveats: [...new Set([...definition.caveats, ...(context ? [context] : [])])],
   };
   try {
     return validateMeasureRecord(record);
-  } catch {
-    return omit("measure-contract-rejected");
+  } catch (error) {
+    return omit("measure-contract-rejected", error instanceof Error ? error.message : "Contract validation failed.");
   }
 }
 
@@ -197,10 +267,12 @@ function catalogRevisionIdentity(measures) {
     id: measure.id,
     label: measure.label,
     evidenceClass: measure.evidenceClass,
+    publisher: measure.publisher ?? null,
     comparisonKey: measure.comparisonKey,
     cadence: measure.cadence,
     unit: measure.unit,
     basis: measure.basis,
+    note: measure.note ?? null,
     geography: measure.geography,
     sourceId: measure.sourceId,
     sourceUrl: measure.sourceUrl,
@@ -216,7 +288,7 @@ function catalogRevisionIdentity(measures) {
   return `catalog-${fnv64(JSON.stringify(revisionInput))}`;
 }
 
-function buildMeasureCatalog(snapshot, now = new Date(), { onOmission } = {}) {
+function buildMeasureCatalog(snapshot, now = new Date(), { onOmission, onDiagnostic } = {}) {
   const generatedAt = new Date(now);
   if (!Number.isFinite(generatedAt.getTime())) throw new Error("Catalog generation time is invalid");
   const measures = {};
@@ -224,10 +296,11 @@ function buildMeasureCatalog(snapshot, now = new Date(), { onOmission } = {}) {
     snapshot?.meta?.sources && typeof snapshot.meta.sources === "object";
   for (const definition of compatible ? DEFINITIONS : []) {
     try {
-      const measure = makeMeasure(snapshot, definition, generatedAt, onOmission);
+      const measure = makeMeasure(snapshot, definition, generatedAt, { onOmission, onDiagnostic });
       if (measure) measures[measure.id] = measure;
     } catch {
       onOmission?.({ measureId: definition.id, reason: "adapter-error" });
+      onDiagnostic?.({ measureId: definition.id, reason: "adapter-error", category: "invalid-metadata", availability: "unavailable" });
     }
   }
   const deadlines = Object.values(measures).filter((measure) => measure.availability === "current").map((measure) => Date.parse(measure.validUntil));

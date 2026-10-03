@@ -22,14 +22,14 @@ describe("supplier concentration export metadata", () => {
       end: { period: "2026-06-07", observedAt: "2026-06-07" },
     });
     expect(metadata.sourceCitation).toContain("https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages");
-    expect(metadata.sourceCitation).toContain("Plot shows 2 of 2 filtered suppliers (81 in the full publication)");
+    expect(metadata.sourceCitation).toContain("Plot shows 2 of 2 filtered supplier groups (81 in the full publication)");
     expect(metadata.series).toEqual([
-      { key: "Supplier A", label: "Supplier A · £90 · 3 awards · England" },
-      { key: "Supplier B", label: "Supplier B · £30 · 2 awards · Scotland" },
+      { key: "name:Supplier A", label: "Supplier A · exact-name match · £90 scenario value · 3 awards · England" },
+      { key: "name:Supplier B", label: "Supplier B · exact-name match · £30 scenario value · 2 awards · Scotland" },
     ]);
     expect(metadata.caveats).toEqual(expect.arrayContaining([
       "Disclosed award values are not confirmed expenditure.",
-      "Multi-supplier award values are allocated equally for the supplier ranking.",
+      "Multi-supplier award values are split equally for a comparison scenario; they are not attributed supplier revenue or confirmed expenditure.",
     ]));
   });
 });

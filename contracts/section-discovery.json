@@ -87,7 +87,7 @@
     },
     "government-contracts": {
       "title": "UK government contracts",
-      "description": "The 100 largest comparable disclosed GBP awards in the latest complete Find a Tender window, with independent scrutiny.",
+      "description": "The largest comparable disclosed GBP awards in the latest complete Find a Tender window, with independent scrutiny.",
       "category": "Public money",
       "kind": "dataset",
       "sourceKey": "governmentContracts",

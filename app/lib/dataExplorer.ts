@@ -16,7 +16,7 @@ function record(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-function at(value: unknown, path: string | null): unknown {
+function at(value: unknown, path: string | null | undefined): unknown {
   if (!path) return undefined;
   return path
     .split(".")

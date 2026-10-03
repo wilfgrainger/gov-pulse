@@ -20,7 +20,7 @@ Routine data publication is automatic on Cloudflare. This checklist is for repos
 2. The `Deploy public-data.org` workflow automatically:
    - prepares assets and compiles the deployable OpenNext Worker once (the
      required PR `quality` result already ran lint, tests and the app build);
-   - creates or reconciles `public-data-jobs` with one-day retention;
+   - creates `public-data-jobs` only when it is absent, using the account's default retention; existing Queue retention is preserved;
    - deploys the Worker, Cron triggers, routes and bindings from `worker/wrangler.toml`;
    - verifies the deployed revision, reader routes and `/data/health.json`;
    - leaves the Pages fallback untouched unless explicitly requested.
@@ -60,7 +60,7 @@ Do not treat a newer retrieval check as a newer source observation. Do not exten
 
 ### Queue is missing
 
-Rerun the production workflow. Its Queue reconciliation step performs `wrangler queues info`, creates the named Queue only when absent, and enforces free-tier one-day retention. The deployment should not require dashboard mutation.
+Rerun the production workflow. Its Queue check performs `wrangler queues info` and creates the named Queue only when absent. It does not overwrite retention configured on an existing Queue; a newly created Queue uses the account's platform default. The deployment should not require dashboard mutation.
 
 ### Worker health is unavailable
 

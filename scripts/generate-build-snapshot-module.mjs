@@ -2,6 +2,9 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { filterCurrentSnapshot } from "../worker/publication-currentness.js";
+import { buildEditionSummary } from "../worker/edition-summary.js";
+import { buildMeasureCatalog } from "../worker/measure-catalog.js";
+import { publicSnapshot } from "../worker/public-snapshot.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -46,7 +49,12 @@ export function validateBuildSnapshot(value, now = new Date()) {
   if (!current) {
     throw new Error("Build snapshot does not contain current source-owned evidence");
   }
-  return current;
+  const snapshot = publicSnapshot(current);
+  const measureCatalog = buildMeasureCatalog(snapshot, now);
+  snapshot.meta.measureCatalog = measureCatalog;
+  // A single checked-in snapshot cannot establish a previous-publication baseline.
+  snapshot.meta.editionSummary = buildEditionSummary(null, measureCatalog);
+  return snapshot;
 }
 
 export async function generateBuildSnapshotModule(options) {

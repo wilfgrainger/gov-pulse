@@ -228,6 +228,13 @@ export const FEED_REGISTRY = Object.freeze({
         caveat: "The private Worker discovers the latest named voting-intention article and retains the direct primary result-table URL. Each payload expires after 14 days.",
       },
       {
+        publisher: "More in Common",
+        label: "More in Common voting-intention tracker archive",
+        url: "https://www.moreincommon.org.uk/polling-tables/?_polling_tables_type=voting-intention",
+        sourceClass: "primary-pollster-publication",
+        caveat: "The Worker reconciles the publisher's headline workbook and keeps a bounded fieldwork history. Publication date, question wording and collection mode remain undisclosed when the workbook does not state them.",
+      },
+      {
         publisher: "British Polling Council",
         label: "British Polling Council disclosure rules",
         url: "https://www.britishpollingcouncil.org/objects-and-rules/",
@@ -245,14 +252,10 @@ export const FEED_REGISTRY = Object.freeze({
     publicationCadence: "monthly",
     operationalStatus: "active",
     retrievalMaxAgeMs: 45 * DAY_MS,
-    // Temporarily optional: NHS England sits behind AWS WAF, which serves the
-    // Cloudflare Worker egress a JS/CAPTCHA bot-challenge instead of the RTT
-    // page (diagnosed 2026-09-29: htmlLen~2KB, zero links, awsWafCookieDomainList
-    // / gokuProps). The Worker cannot solve the challenge, so the section cannot
-    // be collected from production and must not degrade the whole publication.
-    // Revisit by ingesting NHS from a trusted (non-Cloudflare) IP and pushing to
-    // KV, then flip this back to required.
-    publicationRequirement: "optional",
+    // NHS is required by the national publication contract. The Worker cannot
+    // bypass NHS England's AWS WAF challenge; until an approved automated
+    // ingestion path is available, the national edition must report degraded.
+    publicationRequirement: "required",
     upstreams: [
       {
         publisher: "NHS England",
@@ -340,6 +343,48 @@ export const PUBLICATION_SOURCE_REGISTRY = Object.freeze({
     retrievalMaxAgeMs: 72 * HOUR_MS,
     publicationRequirement: "optional",
   },
+  releaseCalendar: {
+    section: "releaseCalendar",
+    title: "Official release calendar",
+    evidenceClass: "official-publication-schedule",
+    geography: "United Kingdom",
+    retrieval: "scheduled-publication-check",
+    refreshCadence: "daily",
+    publicationCadence: "publisher-announced dates",
+    operationalStatus: "active",
+    retrievalMaxAgeMs: 36 * HOUR_MS,
+    publicationRequirement: "optional",
+    upstreams: [
+      {
+        publisher: "Office for National Statistics",
+        label: "Official release calendar (upcoming and cancelled releases)",
+        url: "https://www.ons.gov.uk/releasecalendar",
+        sourceClass: "official-primary",
+        caveat: "The source publishes confirmed, provisional and cancelled release dates. Absence from the calendar is not interpreted as a scheduled date.",
+      },
+    ],
+  },
+  nhsReleaseCalendar: {
+    section: "nhsReleaseCalendar",
+    title: "NHS England RTT release schedule",
+    evidenceClass: "official-publication-schedule",
+    geography: "England",
+    retrieval: "scheduled-publication-check",
+    refreshCadence: "daily",
+    publicationCadence: "publisher-announced dates",
+    operationalStatus: "active",
+    retrievalMaxAgeMs: 36 * HOUR_MS,
+    publicationRequirement: "optional",
+    upstreams: [
+      {
+        publisher: "NHS England",
+        label: "12-month statistics calendar and current RTT plan PDF",
+        url: "https://www.england.nhs.uk/statistics/12-months-statistics-calendar/",
+        sourceClass: "official-primary",
+        caveat: "The current plan is labelled proposed; future dates remain provisional and are re-read from the publisher's current financial-year plan.",
+      },
+    ],
+  },
 });
 
 export function retrievalMaxAgeMsForSection(section) {
@@ -364,13 +409,16 @@ export const REQUIRED_PUBLISHED_SECTION_IDS = Object.freeze(
 );
 
 export const OPTIONAL_PUBLISHED_SECTION_IDS = Object.freeze(
-  Object.values(FEED_REGISTRY)
+  [
+    ...Object.values(FEED_REGISTRY),
+    ...Object.values(PUBLICATION_SOURCE_REGISTRY),
+  ]
     .filter((feed) => feed.publicationRequirement === "optional")
     .map((feed) => feed.section)
 );
 
 export function provenanceFor(section) {
-  const feed = FEED_REGISTRY[section];
+  const feed = FEED_REGISTRY[section] ?? PUBLICATION_SOURCE_REGISTRY[section];
   if (!feed) return null;
   return {
     registryVersion: FEED_REGISTRY_VERSION,

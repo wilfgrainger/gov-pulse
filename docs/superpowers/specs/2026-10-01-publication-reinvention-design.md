@@ -2,15 +2,15 @@
 
 > **Historical design brief.** Round two is the current product and execution reference: [plan](../plans/2026-10-02-publication-reinvention-round-2.md). Its Cloudflare-Free-only constraint was withdrawn on 2 October 2026. Preserve useful evidence requirements; earlier feature caps and deployment wording do not limit current execution.
 
-Status: approved for local implementation by the user on 2 October 2026.
+Status: historical. The round-two plan is the current scope and the earlier hosting constraint below was withdrawn on 2 October 2026.
 
 ## Intent and success
 
 Reinvent public-data.org as an engaging UK public-data publication: explain what changed, why it matters and how to verify it through distinctive editorial presentation and genuinely useful interactive tools. Classic FiveThirtyEight is the reference for energy, chart-first storytelling and statistical clarity, not a brand to copy.
 
-The user explicitly authorizes rearchitecture and amendment/removal of constraining Markdown. Hard constraint: deployed hosting/runtime uses Cloudflare Free only. Working assumption: curious UK readers are the primary audience, with journalist/researcher depth available. Existing free GitHub CI/builds and the source-specific trusted NHS importer are permitted upstream tooling; they are not a second paid runtime. If “Cloudflare only” excludes even this existing ingest exception, replace it only with a proven official source reachable from Cloudflare and report any remaining NHS blockage.
+The prior brief authorized rearchitecture and amendment/removal of constraining Markdown. Its Cloudflare-Free-only hosting rule is withdrawn and is not a current constraint. The target audience and evidence requirements remain useful context; choose runtime and ingestion options from verified source access, reader needs, reliability and full cost.
 
-Success means every existing public value and chart has a source-owned, tested contract; all pages share the new identity; all ten features meet their acceptance criteria; and resource usage is measured within verified Free limits. Missing inputs must remain honestly unavailable. Previously verified historical editions may be read as history, with explicit as-of dates, without being promoted to current headlines.
+Historical success criterion: every existing public value and chart has a source-owned, tested contract; all pages share the new identity; all ten features meet their acceptance criteria; and resource usage is measured. Missing inputs must remain honestly unavailable. Previously verified historical editions may be read as history, with explicit as-of dates, without being promoted to current headlines.
 
 Companion review: [website and evidence review](2026-10-01-publication-reinvention-review.md). Implementation plan: [phased plan](../plans/2026-10-01-publication-reinvention.md).
 
@@ -20,9 +20,9 @@ Companion review: [website and evidence review](2026-10-01-publication-reinventi
 | --- | --- | --- |
 | **Recommended: canonical evidence plus modular publication redesign** | Reuses Next, source collectors, Cloudflare jobs and existing contracts; fixes causes across every consumer; allows a full visual replacement | Requires disciplined data migration and measured OpenNext request budgets |
 | Visual overhaul on current components | Fast initial appearance change | Preserves contradictory availability, chart/export defects and duplicate registries; unsuitable for the requested repair |
-| Full framework/storage rewrite | Maximum freedom; a thin renderer may reduce CPU | Rebuilds already-working source logic, expands migration risk and delays meaningful features; reserve renderer replacement for a measured Free-limit failure |
+| Full framework/storage rewrite | Maximum architectural freedom | Rebuilds already-working source logic and expands migration risk; compare the measured reader and operating outcomes before choosing a replacement |
 
-The first approach permits replacing entire components and selected boundaries. It is not a mandate to preserve current names, visuals or page composition. Framework changes require a demonstrated product or Free-resource benefit.
+The first approach was the dated recommendation, not a mandate to preserve current names, visuals, components, service boundaries or page composition. Choose frameworks and architecture against reader value, evidence access, reliability, operability and full current cost; this historical comparison is not an approval gate or scope ceiling.
 
 ## Exactly ten new capabilities
 
@@ -30,9 +30,9 @@ Baseline repairs are mandatory work beneath these features; they do not count as
 
 | # | Capability | Reader experience and scope | Acceptance |
 | --- | --- | --- | --- |
-| 1 | **Vibrant editorial design across the platform** | New masthead, typography, topic identity, chart-led homepage, page layouts, mobile navigation, tables, exports, source/trust pages and all unavailable/withdrawn/error states | Every public route and all 16 existing shared-chart uses migrate; no legacy palette islands; usable at 320px and 200% zoom, keyboard/no-JS/reduced motion supported |
+| 1 | **Vibrant editorial design across the platform** | New masthead, typography, topic identity, chart-led homepage, page layouts, mobile navigation, tables, exports, source/trust pages and all unavailable/withdrawn/error states | Every public route and shared chart use migrate; no legacy palette islands; usable at 320px and 200% zoom, keyboard/no-JS/reduced motion supported |
 | 2 | **Complete measure atlas** | Dedicated `/measure/[id]/` pages and a registry-driven library for every supported displayed measure, not just today's eight explorer items; discover definitions, availability, source, history and related questions | Inventory coverage test accounts for every current displayed measure; search includes every active topic/measure; consistent figures/dates across home, atlas, topics and downloads |
-| 3 | **Chart and comparison studio** | A saved, shareable workspace with up to four synchronized panels, exact period selection, comparable overlays, chart/table views, and citation-complete image/data packages | Incompatible measures cannot share a numerical axis; dates clipped on both ends; no invented points; portable exports include all displayed sources/units/periods/caveats |
+| 3 | **Chart and comparison studio** | A saved, shareable workspace with synchronized panels, exact period selection, comparable overlays, chart/table views, and citation-complete image/data packages | Workspace size follows reader value and measured browser, URL and export capacity; no inherited panel count is a ceiling. Incompatible measures cannot share a numerical axis; dates clipped on both ends; no invented points; portable exports include all displayed sources/units/periods/caveats |
 | 4 | **The UK data briefing** | A dated editorial edition with “what changed since the last release”, concise sourced explanations and authored chart-led stories | Distinguishes new observations, revised observations and method changes; no story generated from unavailable evidence; no claim that refresh time is publication time |
 | 5 | **Release calendar and local watchlists** | Source-published upcoming releases, “follow this measure”, an on-device board and calendar-file download | Published release date and estimated cadence visually distinct; unknown dates remain unknown; no accounts/tracking; expired values disappear from local boards on revalidation |
 | 6 | **Cost-of-living lens** | Guided exploration of prices, real earnings, Bank Rate and official housing costs; initial new source contract is ONS private-rent price history; separate panels explain distinct clocks/geographies | Reuses existing CPI/earnings; verifies one new official rent series, units and revisions; no personal inflation estimate or inferred mortgage costs; missing rent data does not hide valid earnings |
@@ -63,43 +63,19 @@ One canonical catalog owns measure identity, definitions, sources and comparabil
 
 Collector parsers remain source-specific. Normalisation/reconciliation is shared through tested contracts; frontend components do not parse upstream data. Early Years moves from loose embedded fallback to a validated, explicitly dated source publication, with rolling collection only after source feasibility is proved. MOJ gets its own edition discovery. Indicator measures no longer inherit one all-or-nothing section clock. Existing explicit-expiry and partial-publication implementation is reused.
 
-Procurement resolves all amendments/cancellations in a bounded complete window before top-100 truncation. Unknown/ambiguous geography stays unknown unless official identifiers prove it. International validity is measure/edition-specific; a source timeout must not erase a still-valid previous measure or declare genuine missingness. NHS importer acceptance is followed by idempotent finalisation and bounded identity readback.
+Procurement resolves all amendments/cancellations across the complete retrieved window before forming a clearly labelled ranking display. Display defaults can expand when reader value and measured delivery capacity justify it; they never stand in for source coverage. Unknown/ambiguous geography stays unknown unless official identifiers prove it. International validity is measure/edition-specific; a source timeout must not erase a still-valid previous measure or declare genuine missingness. NHS importer acceptance is followed by idempotent finalisation and bounded identity readback.
 
 Use additive schema migration: retain current endpoints/fields while adding catalog/edition metadata; consumers tolerate both during rollout. Existing links and withdrawal explanations stay reachable. Do not couple comparison health to national readiness.
 
-## Cloudflare Free architecture
+## Historical platform design (retired 2 October 2026)
 
-Retain Next.js for authoring/app development and the current OpenNext renderer initially, a source-isolated ingestion Worker with Queue jobs, KV publication artifacts, and static assets. Prepare measure catalog, briefings, revision summaries and release metadata once in background jobs. Interactive filtering/comparison/export runs in the browser. The initial features require no D1, R2, Durable Objects, Workers AI, paid APIs, backend accounts, server subscriptions or per-reader jobs.
-
-Replace repeated origin self-fetches with a shared delivery adapter and optional service binding after measurement. Trust/static routes do not require a national snapshot read. Cache immutable edition artifacts by identity. For current artifacts, TTL is no longer than the earliest served validity boundary; no stale revalidation may promote expired evidence. Reader-specific watchlists are never edge-cache inputs.
-
-The bounded public-contract manifest is the source of truth for the exact public routes, including the current edition archive contracts. Archive edition identifiers are strictly validated. Internal collector/KV/run interfaces remain private. New public routes are permitted by the user's brief and approved manifest, not an open wildcard data API.
-
-Keep 60 dated edition summaries by default, with content-addressed bounded change records and shared history rather than duplicating large national datasets per visit. Retention and artifact sizes must be tested against verified storage/write budgets. Historical records have an as-of label and cannot seed a current number without current validity validation.
-
-Resource release gate: verify official Free limits, inspect the actual account configuration without printing credentials, derive schedule/message/retry/write/read counts from registry, and measure representative OpenNext HTTP requests plus large XLSX/PDF jobs. Include public traffic and cache misses in low/expected/peak scenarios. Keep at least 20% measured headroom against each enforced limit in the agreed workload; respect hard per-request/per-key limits. This is a project target, not an assertion about Cloudflare quotas. No auto-upgrade or paid billing fallback.
-
-Bound ingestion before measuring it. Initial Worker workbook limits are 8 MiB
-expanded per retained entry, 24 MiB total expanded retained content, 25,000 rows
-per worksheet and 250,000 parsed cells per workbook. Count actual decompressed
-stream bytes and stop before accumulating over the cap; ZIP header declarations
-alone are insufficient. Stored/uncompressed entries and decoded/shared-string
-allocations must also be accounted for. Test compressed-small/expanded-large
-inputs and real accepted publication fixtures. These are conservative project
-limits, not Cloudflare quota claims; they do not by themselves prove Free CPU
-or memory feasibility.
-
-If a valid official workbook exceeds the Worker budget, decompose by genuinely
-independent source module/sheet without dropping reconciliation. If that cannot
-fit, use the existing approved free trusted-ingest pattern with the same
-validation and publication contracts, after proving a free executor allowance.
-Otherwise report that source as blocked. Do not lift resource limits blindly,
-bypass integrity checks or upgrade to paid. Renderer replacement cannot solve
-an oversized ingestion job.
-
-**Renderer contingency:** if OpenNext cannot fit verified Free CPU/bundle constraints after bounded simplification, replace production delivery with a thin Cloudflare Worker serving pre-rendered editorial templates/static assets and injecting a validated compact edition. Reuse canonical contracts and browser islands. Prove escaping, hydration strategy, source/currentness parity, routing, metadata and no-JS tables before cutover. Do not retain two competing production renderers. This is a gated architectural decision, not two implementations to build in parallel.
-
-CI remains free repository tooling. Reuse the existing trusted NHS workflow rather than adding another scheduled workflow; prove it is within the available free CI allowance and does not require a paid executor. If no free compliant retrieval route exists, record the source as blocked rather than substitute unverifiable figures.
+The former Free-only architecture, resource release gate, fixed ingestion budgets,
+renderer contingency and deployment restrictions were round-one planning. They
+do not constrain this programme. See the [round-two execution plan](../plans/2026-10-02-publication-reinvention-round-2.md)
+and current architecture decisions for active direction. Keep source validation,
+currentness, privacy, accessibility and secret protection. Measure real provider
+limits and workload where they affect a reader journey; select infrastructure
+from verified access, reliability, performance, operating effort and full cost.
 
 ## Documentation authority
 

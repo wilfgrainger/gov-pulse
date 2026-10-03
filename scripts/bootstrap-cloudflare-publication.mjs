@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import { currentPublicationManifest } from "./publication-manifest.mjs";
 
 const DEFAULT_QUEUE_NAME = "public-data-jobs";
 const DEFAULT_HEALTH_URL = "https://public-data.org/data/health.json";
@@ -73,7 +74,7 @@ async function readHealth(fetchImpl, healthUrl) {
   return responseJson(response, "Cloudflare data health check");
 }
 
-async function hasPreparedPublication(fetchImpl, healthUrl) {
+async function hasPreparedPublication(fetchImpl, healthUrl, health) {
   const snapshotUrl = new URL(
     "/data/metrics-snapshot.json",
     healthUrl,
@@ -90,11 +91,32 @@ async function hasPreparedPublication(fetchImpl, healthUrl) {
       return false;
     }
     const snapshot = await response.json();
+    const meta = snapshot?.meta;
+    const sources = meta?.sources;
+    if (
+      !sources || typeof sources !== "object" || Array.isArray(sources) ||
+      Object.prototype.hasOwnProperty.call(meta, "publicationDiagnostics") ||
+      Object.prototype.hasOwnProperty.call(meta, "measureCatalogDiagnostics") ||
+      Object.values(sources).some((source) =>
+        source && typeof source === "object" &&
+          Object.prototype.hasOwnProperty.call(source, "error")
+      )
+    ) {
+      return false;
+    }
+    const expectedMissing = isDegradedPublicationHealth(health)
+      ? [...health.missingRequiredSections].sort()
+      : [];
+    const { missingRequiredSections: currentMissing } =
+      currentPublicationManifest(snapshot);
+    const actualMissing = Array.isArray(meta.missingRequiredSections)
+      ? [...meta.missingRequiredSections].sort()
+      : null;
     return (
-      snapshot?.meta?.delivery === "published-snapshot" &&
-      snapshot?.meta?.publicationDiagnostics &&
-      typeof snapshot.meta.publicationDiagnostics === "object" &&
-      !Array.isArray(snapshot.meta.publicationDiagnostics)
+      meta.delivery === "published-snapshot" &&
+      JSON.stringify(currentMissing) === JSON.stringify(expectedMissing) &&
+      JSON.stringify(actualMissing) === JSON.stringify(expectedMissing) &&
+      meta.publicationState === (expectedMissing.length ? "degraded" : "ready")
     );
   } catch {
     return false;
@@ -115,7 +137,7 @@ async function deploymentPublicationAvailable(fetchImpl, healthUrl, health) {
   if (health?.ready !== true && !isDegradedPublicationHealth(health)) {
     return false;
   }
-  return hasPreparedPublication(fetchImpl, healthUrl);
+  return hasPreparedPublication(fetchImpl, healthUrl, health);
 }
 
 async function findQueueId(fetchImpl, accountId, apiToken, queueName) {
@@ -354,7 +376,7 @@ async function bootstrapCloudflarePublication(options = {}) {
       // collectors ran. Forced refresh requires the active run to finalise.
       if (run?.finalisedAt && ["published", "no-change", "incomplete"].includes(run.status)) {
         lastHealth = await readHealth(fetchImpl, healthUrl);
-        if (lastHealth?.ready === true && await hasPreparedPublication(fetchImpl, healthUrl)) {
+        if (lastHealth?.ready === true && await hasPreparedPublication(fetchImpl, healthUrl, lastHealth)) {
           return { triggered: true, attempts: attempt, health: lastHealth };
         }
         // A STABLE degraded publication (ready:false + non-empty
@@ -362,7 +384,7 @@ async function bootstrapCloudflarePublication(options = {}) {
         // active run finalised and its prepared artifact is readable.
         if (
           isDegradedPublicationHealth(lastHealth) &&
-          (await hasPreparedPublication(fetchImpl, healthUrl))
+          (await hasPreparedPublication(fetchImpl, healthUrl, lastHealth))
         ) {
           return { triggered: true, attempts: attempt, health: lastHealth };
         }
@@ -391,7 +413,7 @@ async function bootstrapCloudflarePublication(options = {}) {
       // missing section from the public payload.
       if (
         isDegradedPublicationHealth(lastHealth) &&
-        (await hasPreparedPublication(fetchImpl, healthUrl))
+        (await hasPreparedPublication(fetchImpl, healthUrl, lastHealth))
       ) {
         return { triggered: true, attempts: attempt, health: lastHealth };
       }

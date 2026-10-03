@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { archiveEdition, EDITION_CONTENT_PREFIX, EDITION_SUMMARY_PREFIX, listEditionSummaries, readEdition } from "../../worker/edition-archive.js";
+import { archiveEdition, EDITION_CONTENT_PREFIX, EDITION_INDEX_KEY, EDITION_SUMMARY_PREFIX, listEditionSummaries, readEdition } from "../../worker/edition-archive.js";
 import { catalogRevisionIdentity } from "../../worker/measure-catalog.js";
 import publicDataWorker, { editionResponse, editionsResponse } from "../../worker/public-data-entry.js";
 
@@ -34,7 +34,7 @@ function edition(index: number) {
   };
   const measures = { measure };
   const catalog = { schemaVersion: 2, editionId: catalogRevisionIdentity(measures), generatedAt: publishedAt, validUntil: "2030-01-01T00:00:00.000Z", measures };
-  const summary = { id: catalog.editionId, publishedAt, sourceEditionIds: [`edition-${index}`], changes: [] };
+  const summary: { id: string; publishedAt: string; previousEditionId: string | null; sourceEditionIds: string[]; changes: Record<string, unknown>[] } = { id: catalog.editionId, publishedAt, previousEditionId: null, sourceEditionIds: [`edition-${index}`], changes: [] };
   return { catalog, summary };
 }
 
@@ -51,6 +51,108 @@ describe("content-addressed edition archive", () => {
     expect([...kv.values.keys()].filter((key) => key.startsWith(EDITION_CONTENT_PREFIX))).toHaveLength(1);
   });
 
+  it("archives source-linked value and metadata changes with their publication dates", async () => {
+    const kv = new MemoryKv();
+    const item = edition(9);
+    item.summary.previousEditionId = "catalog-previous";
+    item.summary.changes = [
+      {
+        measureId: "measure", kind: "revision", observedAt: "2024-01-31", period: "January 2024",
+        previousSourceEditionId: "edition-8", nextSourceEditionId: "edition-9",
+        previousRevisionId: "revision-8", nextRevisionId: "revision-9",
+        previousSourcePublishedAt: "2024-01-31T00:00:00.000Z", nextSourcePublishedAt: item.catalog.measures.measure.publishedAt,
+        previousSourceUrl: "https://www.ons.gov.uk/edition-8", nextSourceUrl: item.catalog.measures.measure.sourceUrl,
+        previousUnit: "units", nextUnit: "units", previous: 9, next: 10,
+      },
+      {
+        measureId: "measure", kind: "metadata-change", observedAt: null, period: null,
+        previousSourceEditionId: "edition-8", nextSourceEditionId: "edition-9",
+        previousRevisionId: "revision-8", nextRevisionId: "revision-9",
+        previousSourcePublishedAt: "2024-01-31T00:00:00.000Z", nextSourcePublishedAt: item.catalog.measures.measure.publishedAt,
+        previousSourceUrl: "https://www.ons.gov.uk/edition-8", nextSourceUrl: item.catalog.measures.measure.sourceUrl,
+        previousUnit: "units", nextUnit: "units", previous: null, next: null, changedFields: ["sourceUrl"],
+      },
+    ];
+
+    await archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary);
+
+    await expect(readEdition({ METRICS_CACHE: kv }, item.catalog.editionId)).resolves.toMatchObject({ summary: item.summary });
+    await expect(archiveEdition({ METRICS_CACHE: new MemoryKv() }, item.catalog, {
+      ...item.summary,
+      changes: [{ ...item.summary.changes[0], nextSourceUrl: "javascript:alert(1)" }],
+    })).rejects.toThrow("Edition summary change is invalid");
+  });
+
+  it("serializes concurrent duplicate finalisers into one immutable index entry", async () => {
+    const kv = new MemoryKv();
+    const item = edition(2);
+    await Promise.all([
+      archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary),
+      archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary),
+    ]);
+
+    expect(JSON.parse(kv.values.get(EDITION_INDEX_KEY)!.value)).toHaveLength(1);
+    expect([...kv.values.keys()].filter((key) => key.startsWith(EDITION_CONTENT_PREFIX))).toHaveLength(1);
+    expect(await readEdition({ METRICS_CACHE: kv }, item.catalog.editionId)).toMatchObject({ catalog: item.catalog });
+  });
+
+  it("retains an expired observation as historical evidence in the immutable detail", async () => {
+    const kv = new MemoryKv();
+    const item = edition(7);
+    item.catalog.measures.measure.availability = "historical";
+    item.catalog.measures.measure.validUntil = "2024-01-07T00:00:00.000Z";
+    item.catalog.editionId = catalogRevisionIdentity(item.catalog.measures);
+    item.summary.id = item.catalog.editionId;
+    await archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary);
+
+    const response = await editionResponse(
+      new Request(`https://public-data.org/data/edition.json?edition=${item.catalog.editionId}`),
+      { METRICS_CACHE: kv },
+      new URL(`https://public-data.org/data/edition.json?edition=${item.catalog.editionId}`),
+    );
+    const payload = await response.json();
+    expect(response.status).toBe(200);
+    expect(payload.availability).toBe("historical");
+    expect(payload.measureCatalog.measures.measure).toMatchObject({ availability: "historical", value: 8 });
+  });
+
+  it("does not advertise a listed edition after its content object disappears", async () => {
+    const kv = new MemoryKv();
+    const item = edition(3);
+    await archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary);
+    const entry = JSON.parse(kv.values.get(EDITION_INDEX_KEY)!.value)[0];
+    await kv.delete(`${EDITION_CONTENT_PREFIX}${entry.contentHash}`);
+
+    expect(await listEditionSummaries({ METRICS_CACHE: kv })).toEqual([]);
+    const response = await editionsResponse(
+      new Request("https://public-data.org/data/editions.json"),
+      { METRICS_CACHE: kv },
+    );
+    expect(await response.json()).toEqual({ editions: [], retention: 0 });
+  });
+
+  it("recovers an interrupted index write without leaving a dangling public entry", async () => {
+    const kv = new MemoryKv();
+    const item = edition(4);
+    const put = kv.put.bind(kv);
+    let failIndex = true;
+    kv.put = async (key, value, options) => {
+      if (key === EDITION_INDEX_KEY && failIndex) {
+        failIndex = false;
+        throw new Error("simulated index write interruption");
+      }
+      return put(key, value, options);
+    };
+
+    await expect(archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary)).rejects.toThrow("simulated index write interruption");
+    expect(await listEditionSummaries({ METRICS_CACHE: kv })).toEqual([]);
+
+    const recovered = await archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary);
+    expect(recovered.duplicate).toBe(true);
+    expect(await listEditionSummaries({ METRICS_CACHE: kv })).toEqual([item.summary]);
+    expect(await readEdition({ METRICS_CACHE: kv }, item.catalog.editionId)).not.toBeNull();
+  });
+
   it("refuses to rewrite an edition id with different evidence", async () => {
     const kv = new MemoryKv();
     const first = edition(1);
@@ -59,6 +161,18 @@ describe("content-addressed edition archive", () => {
     changed.catalog.measures.measure.value = 99;
     changed.catalog.measures.measure.points[0].value = 99;
     await expect(archiveEdition({ METRICS_CACHE: kv }, changed.catalog, changed.summary)).rejects.toThrow(/cannot be rewritten/i);
+  });
+
+  it("keeps an earlier briefing unchanged after a newer edition is archived", async () => {
+    const kv = new MemoryKv();
+    const earlier = edition(20);
+    const later = edition(21);
+    await archiveEdition({ METRICS_CACHE: kv }, earlier.catalog, earlier.summary);
+    const before = await readEdition({ METRICS_CACHE: kv }, earlier.catalog.editionId);
+
+    await archiveEdition({ METRICS_CACHE: kv }, later.catalog, later.summary);
+
+    expect(await readEdition({ METRICS_CACHE: kv }, earlier.catalog.editionId)).toEqual(before);
   });
 
   it("rejects unsafe archive identifiers before touching KV", async () => {

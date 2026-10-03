@@ -15,6 +15,7 @@ import {
   verifySitemapXml,
   verifySourcesHtml,
 } from "../../scripts/verify-production.mjs";
+import { REQUIRED_PUBLISHED_SECTION_IDS } from "../../worker/feed-registry.js";
 
 const revision = "abc123";
 const validHtml = `<!doctype html><html><head><title>public-data.org — UK Public Evidence</title><meta name="public-data-revision" content="${revision}"><link rel="canonical" href="https://public-data.org/"></head><body><script type="application/ld+json">{"@type":"WebSite"}</script><h1>public-data.org</h1><a href = "https://www.ons.gov.uk">ONS</a></body></html>`;
@@ -25,23 +26,51 @@ const validRobots = `User-Agent: *\nAllow: /\nSitemap: https://public-data.org/s
 const validFeed = `<?xml version="1.0"?><rss><channel><title>public-data.org — latest verified evidence</title><item><link>https://public-data.org/section/gdp/</link></item></channel></rss>`;
 
 const validHealth = JSON.stringify({ status: "ready", ready: true });
-const requiredSections = [
-  "sentimentPulse",
-  "gdpTracker",
-  "employmentStats",
-  "nationalDebt",
-  "taxRevenue",
-  "migrationStats",
-  "electionPolling",
-  "nhsStats",
-];
-const validSnapshot = JSON.stringify({
-  meta: {
-    registryVersion: "2026-08-02.1",
-    sources: Object.fromEntries(requiredSections.map((section) => [section, { status: "ok" }])),
-  },
-  ...Object.fromEntries(requiredSections.map((section) => [section, {}])),
-});
+const requiredSections = REQUIRED_PUBLISHED_SECTION_IDS;
+function publicationSnapshot({ missing = [], now = new Date() } = {}) {
+  const fetchedAt = new Date(now.getTime() - 30_000).toISOString();
+  const observedAt = new Date(now.getTime() - 60_000).toISOString();
+  const validUntil = new Date(now.getTime() + 60 * 60_000).toISOString();
+  const sources = {};
+  const sections = {};
+  for (const section of requiredSections) {
+    if (missing.includes(section)) continue;
+    sources[section] = {
+      status: "ok",
+      cacheState: "fresh",
+      fetchedAt,
+      provenance: { section },
+    };
+    sections[section] = {
+      expiresAt: validUntil,
+      __observation: {
+        status: "current",
+        period: "Current test period",
+        observedAt,
+        maxAgeDays: 30,
+      },
+    };
+    if (section === "sentimentPulse") {
+      sections[section].__measureValidity = Object.fromEntries(
+        ["inflation", "bankRate", "unemployment"].map((id) => [id, { validUntil }]),
+      );
+      sections[section].series = Object.fromEntries(
+        ["inflation", "bankRate", "unemployment"].map((id) => [id, { status: "current", value: 1 }]),
+      );
+    }
+  }
+  const missingRequiredSections = [...missing].sort();
+  return {
+    meta: {
+      registryVersion: "2026-08-02.1",
+      sources,
+      publicationState: missingRequiredSections.length ? "degraded" : "ready",
+      missingRequiredSections,
+    },
+    ...sections,
+  };
+}
+const validSnapshot = JSON.stringify(publicationSnapshot());
 const comparisonMeasureIds = [
   "governmentDebt",
   "officialDevelopmentAssistance",
@@ -167,6 +196,51 @@ describe("production deployment verifier", () => {
     expect(verifySectionHtml(validSectionHtml("section/uk-in-context/"), "section/uk-in-context/")).toEqual([]);
     expect(verifyDownload(validDownload("gdpTracker", "json"), "gdpTracker", "json")).toEqual([]);
     expect(verifyDownload(validDownload("gdpTracker", "csv"), "gdpTracker", "csv")).toEqual([]);
+  });
+
+  it("rejects private measure-catalog diagnostics in a public snapshot", () => {
+    const payload = JSON.parse(validSnapshot);
+    payload.meta.measureCatalogDiagnostics = [{ measureId: "bankRate", reason: "expired-value" }];
+    expect(verifySnapshotJson(JSON.stringify(payload))).toContain(
+      "public data snapshot exposes private diagnostics",
+    );
+  });
+
+  it("rejects required sections whose source status or evidence is stale", () => {
+    const now = new Date("2026-10-02T18:00:00.000Z");
+    const errored = publicationSnapshot({ now });
+    errored.meta.sources.gdpTracker.status = "error";
+    expect(verifySnapshotJson(JSON.stringify(errored), { now })).toContain(
+      "public data snapshot is missing required section gdpTracker",
+    );
+
+    const expired = publicationSnapshot({ now });
+    expired.nationalDebt.expiresAt = new Date(now.getTime() - 1).toISOString();
+    expect(verifySnapshotJson(JSON.stringify(expired), { now })).toContain(
+      "public data snapshot is missing required section nationalDebt",
+    );
+
+    const staleWithoutExpiry = publicationSnapshot({ now });
+    staleWithoutExpiry.meta.sources.employmentStats.cacheState = "stale";
+    delete staleWithoutExpiry.employmentStats.expiresAt;
+    expect(verifySnapshotJson(JSON.stringify(staleWithoutExpiry), { now })).toContain(
+      "public data snapshot is missing required section employmentStats",
+    );
+  });
+
+  it("rejects a ready manifest when all required data is absent", () => {
+    const emptyReady = JSON.stringify({
+      meta: {
+        registryVersion: "2026-08-02.1",
+        sources: {},
+        publicationState: "ready",
+        missingRequiredSections: [],
+      },
+    });
+
+    expect(verifySnapshotJson(emptyReady)).toContain(
+      "public data snapshot publication state does not match its missing-section manifest",
+    );
   });
 
   it("rejects an incomplete international comparison publication", () => {

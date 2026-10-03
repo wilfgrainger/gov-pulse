@@ -25,7 +25,11 @@ describe("static metrics snapshot", () => {
         registryVersion: FEED_REGISTRY_VERSION,
         sources: {
           gdpTracker: { status: "ok", cacheState: "fresh" },
-          taxRevenue: { status: "error", cacheState: "missing" },
+          taxRevenue: {
+            status: "error",
+            cacheState: "missing",
+            error: "private upstream response body",
+          },
         },
       },
       gdpTracker: {
@@ -38,7 +42,14 @@ describe("static metrics snapshot", () => {
     };
 
     expect(validateSnapshot(snapshot, 1)).toEqual(["gdpTracker"]);
-    expect(() => validateSnapshot(snapshot, 2)).toThrow("2 required");
+    let error: unknown;
+    try {
+      validateSnapshot(snapshot, 2);
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error).toMatchObject({ message: expect.stringContaining("2 required") });
+    expect((error as Error).message).not.toContain("private upstream response body");
   });
 
   it("rejects snapshots from an obsolete registry", () => {
@@ -177,5 +188,17 @@ describe("static metrics snapshot", () => {
       provenance: { retrieval: "scheduled-publication-check" },
       data: [{ value: 42 }],
     });
+  });
+
+  it("removes private source diagnostics from public snapshot metadata", () => {
+    expect(
+      sanitizePublishedSnapshot({
+        meta: {
+          publicationDiagnostics: { gdpTracker: { code: "internal" } },
+          measureCatalogDiagnostics: [{ measureId: "unemployment", reason: "invalid metadata" }],
+          sources: { gdpTracker: { status: "error", error: "private response detail" } },
+        },
+      })
+    ).toEqual({ meta: { sources: { gdpTracker: { status: "error" } } } });
   });
 });

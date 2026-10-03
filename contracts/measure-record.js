@@ -1,5 +1,6 @@
 const EVIDENCE_CLASSES = new Set([
   "official-statistics",
+  "official-policy",
   "administrative-data",
   "polling",
   "market-signal",
@@ -103,6 +104,8 @@ function validateMeasureRecord(input) {
     ? value.caveats.map((caveat, index) => requiredText(caveat, `Caveat ${index + 1}`, 500))
     : null;
   if (!caveats) throw new Error("Caveats must be an array");
+  const note = value.note === undefined ? undefined : requiredText(value.note, "Measure note", 1000);
+  const publisher = value.publisher === undefined ? undefined : requiredText(value.publisher, "Publisher", 200);
   return {
     id: requiredText(value.id, "Measure id", 160),
     label: requiredText(value.label, "Measure label", 200),
@@ -111,6 +114,8 @@ function validateMeasureRecord(input) {
     cadence: requiredText(value.cadence, "Cadence", 80),
     unit: requiredText(value.unit, "Unit", 80),
     basis: requiredText(value.basis, "Measure basis", 300),
+    ...(note ? { note } : {}),
+    ...(publisher ? { publisher } : {}),
     geography: {
       code: requiredText(geography.code, "Geography code", 30),
       label: requiredText(geography.label, "Geography label", 100),
@@ -172,7 +177,7 @@ function selectMeasure(catalog, id, now = new Date()) {
   try { measure = validateMeasureRecord(catalog.measures[id]); } catch { return null; }
   if (measure.id !== id) return null;
   if (Date.parse(measure.fetchedAt) > date.getTime()) return null;
-  if (measure.availability === "current" && Date.parse(measure.validUntil) <= date.getTime()) return null;
+  if (Date.parse(measure.validUntil) <= date.getTime()) return null;
   return measure;
 }
 

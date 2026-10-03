@@ -1,12 +1,5 @@
 {
-  "version": "2026-08-02.1",
-  "parentIssue": 208,
-  "dataPlaneIssue": 257,
-  "reliabilityIssue": 288,
-  "publicationArtifact": "cloudflare-kv:v14:publication:public",
-  "publicRoute": "/data/metrics-snapshot.json",
-  "livePublicationKey": "v12:publication:current",
-  "publicPublicationKey": "v14:publication:public",
+  "version": "2026-10-03.1",
   "browserConsumer": "app/lib/useMetrics.ts",
   "sources": [
     {
@@ -88,14 +81,14 @@
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron run through public-data-jobs Queue and deployment bootstrap when no ready publication exists",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",
-      "fallback": "previous verified primary poll publication for no more than 14 days; no secondary average"
+      "fallback": "previous verified primary poll snapshot only inside the 14-day window, measured from the source publication date when stated and otherwise from fieldwork end; historical polls retain their own dates and source status; no secondary average"
     },
     {
       "section": "nhsStats",
       "collector": "worker/live-nhs-publication-collector.js",
       "normalizer": "worker/nhs-rtt.js",
       "entrypoint": "worker/queued-publication-entry.js",
-      "schedule": "daily Cloudflare Cron run through public-data-jobs Queue and deployment bootstrap when no ready publication exists; the Worker's own egress is blocked by NHS England's AWS WAF (IP-reputation, not header-based — see PR #107), so .github/workflows/nhs-ingest.yml additionally runs scripts/trusted-nhs-rtt-ingest.mjs daily from a trusted GitHub Actions runner, reusing collector/normalizer unchanged and writing the identical KV section-fragment record the Worker's queue consumer would write",
+      "schedule": "daily Cloudflare Cron through public-data-jobs Queue and deployment bootstrap when no ready publication exists; NHS England currently returns AWS WAF challenge HTML to the Worker egress, so the collector fails closed and the required section remains unavailable until a supported source path is verified",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",
       "fallback": "previous verified NHS RTT press notice and workbook publication only inside the 45-day currentness window"
     },
@@ -120,8 +113,26 @@
   ],
   "publicationSources": [
     {
+      "section": "releaseCalendar",
+      "collector": "worker/ons-release-calendar.js",
+      "normalizer": "worker/ons-release-calendar.js",
+      "entrypoint": "worker/queued-publication-entry.js",
+      "schedule": "optional daily Cloudflare Queue job reading the ONS upcoming and cancelled release calendars",
+      "storage": "optional KV section fragment and current public artifact when the source identity and retrieval clock are valid",
+      "fallback": "no inferred dates; schedule evidence expires after 36 hours"
+    },
+    {
+      "section": "nhsReleaseCalendar",
+      "collector": "worker/nhs-release-calendar.js",
+      "normalizer": "worker/nhs-release-calendar.js",
+      "entrypoint": "worker/queued-publication-entry.js",
+      "schedule": "optional daily Cloudflare Queue job reading the current NHS England financial-year plan through its public statistics API",
+      "storage": "optional KV section fragment and current public artifact when the current-year plan PDF reconciles to future RTT release rows",
+      "fallback": "no inferred dates; proposed plan entries stay provisional and schedule evidence expires after 36 hours"
+    },
+    {
       "section": "governmentContracts",
-      "collector": "worker/government-contracts-bootstrap.js",
+      "collector": "worker/government-contracts-cloudflare.js",
       "normalizer": "contracts/government-contracts.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "one bounded daily Cloudflare Queue job",
@@ -224,23 +235,5 @@
       "source": "echoChamberMap",
       "consumer": "app/components/EchoChamberMap.tsx"
     }
-  ],
-  "simplification": {
-    "retiredCollectorImplementations": 1,
-    "retiredCollectorLines": 1368,
-    "retiredPaths": [
-      "fetch_intel.py",
-      "public/daily_threat_data.json"
-    ],
-    "removedDedicatedWorkflows": [
-      ".github/workflows/update-election-polls.yml",
-      ".github/workflows/update-nhs-rtt.yml",
-      ".github/workflows/update-betting-odds.yml"
-    ],
-    "workflowFilesRemoved": 3,
-    "workflowLinesRemoved": 144,
-    "ciJobsRemoved": 3,
-    "scheduledRunsPerDayRemoved": 2,
-    "testFilesRemoved": 0
-  }
+  ]
 }
