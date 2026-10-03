@@ -1,12 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart";
 import MetricsStatus from "@/app/components/MetricsStatus";
-import ReceiptsDebtVisual, {
-  type ReceiptsMonthPoint,
-} from "@/app/components/visuals/ReceiptsDebtVisual";
 import { useMetrics } from "@/app/lib/useMetrics";
 
 const FALLBACK = {
@@ -79,21 +75,6 @@ function formatPublicationDate(value: string) {
 
 export default function NationalDebtCounter() {
   const metrics = useMetrics("nationalDebt", FALLBACK);
-  const taxMetrics = useMetrics("taxRevenue", {
-    headline: { period: "", observedAt: 0, releaseDate: "", receiptsBillion: 0, yearChangeBillion: 0 },
-    history: [] as Array<{ period: string; observedAt: number; receiptsBillion: number }>,
-    methodology: { measure: "", status: "", caveat: "" },
-    source: { bulletinUrl: "", landingUrl: "" },
-  });
-  interface TaxHistoryItem {
-    period: string;
-    receiptsBillion?: number | null;
-  }
-  interface TaxPayload {
-    headline?: { receiptsBillion?: number | null; period?: string };
-    history?: TaxHistoryItem[];
-  }
-  const taxData = taxMetrics.data as TaxPayload | null;
   const data = metrics.data;
   const debtValue = Number(data.baseDebt);
   const debtRatio = Number(data.debtToGdp);
@@ -120,20 +101,6 @@ export default function NationalDebtCounter() {
     Array.isArray(data.history) &&
     data.history.length >= 13;
   const period = valid ? formatObservationPeriod(observationDate) : "";
-
-  const taxIsCurrent = taxMetrics.isLive && taxMetrics.cacheState === "fresh";
-  const receiptsHistory = useMemo<ReceiptsMonthPoint[]>(() => {
-    const raw = taxIsCurrent ? taxData?.history : null;
-    if (!Array.isArray(raw)) return [];
-    return raw.flatMap((p: TaxHistoryItem) =>
-      typeof p.period === "string" &&
-      p.period.trim() !== "" &&
-      typeof p.receiptsBillion === "number" &&
-      Number.isFinite(p.receiptsBillion)
-        ? [{ date: p.period, receiptsMillionGbp: p.receiptsBillion * 1000 }]
-        : [],
-    );
-  }, [taxData, taxIsCurrent]);
 
   return (
     <div className="space-y-8">
@@ -194,24 +161,6 @@ export default function NationalDebtCounter() {
               </div>
             </dl>
           </section>
-
-          {/* Visual 5: Receipts vs Debt Trajectory */}
-          {(() => {
-            return (
-              <ReceiptsDebtVisual
-                receiptsHistory={receiptsHistory}
-              currentReceiptsBillion={
-                taxIsCurrent && typeof taxData?.headline?.receiptsBillion === "number" && Number.isFinite(taxData.headline.receiptsBillion)
-                  ? taxData.headline.receiptsBillion
-                  : null
-              }
-              currentDebtBillion={debtValue / 1e9}
-              debtToGdpRatio={debtRatio}
-              receiptsPeriod={taxIsCurrent && taxData?.headline?.period ? taxData.headline.period : "Unavailable"}
-                debtPeriod={period}
-              />
-            );
-          })()}
 
           <FinancialTimeSeriesChart
             title="Debt relative to GDP"

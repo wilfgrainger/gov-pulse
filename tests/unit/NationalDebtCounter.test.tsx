@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import NationalDebtCounter from "@/app/components/NationalDebtCounter";
 
@@ -108,17 +108,9 @@ describe("NationalDebtCounter evidence integrity", () => {
     expect(screen.queryByText(/£2,984/)).not.toBeInTheDocument();
   });
 
-  it("keeps missing receipts unavailable and omits missing history points", () => {
+  it("keeps unrelated tax receipts and their withdrawn visual off the debt page", () => {
     useMetrics.mockImplementation((section: string) => ({
-      data: section === "nationalDebt"
-        ? currentDebt
-        : {
-            headline: { period: "May 2026", receiptsBillion: null },
-            history: [
-              { period: "April 2026", receiptsBillion: null },
-              { period: "May 2026", receiptsBillion: 120 },
-            ],
-          },
+      data: section === "nationalDebt" ? currentDebt : {},
       isLive: true,
       lastUpdated: new Date("2026-06-19T06:00:00Z"),
       source: "worker",
@@ -127,11 +119,10 @@ describe("NationalDebtCounter evidence integrity", () => {
 
     render(<NationalDebtCounter />);
 
-    expect(screen.getByText("Unavailable")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "View screen-reader table" }));
-    const table = screen.getByRole("table", { name: /monthly public sector receipts/i });
-    expect(within(table).getAllByRole("row")).toHaveLength(2);
-    expect(within(table).getByText("May 2026")).toBeInTheDocument();
-    expect(within(table).queryByText("April 2026")).not.toBeInTheDocument();
+    expect(useMetrics.mock.calls.map(([section]) => section)).toEqual(["nationalDebt"]);
+    expect(screen.getByText("Exact published value: £2,984,300,000,000")).toBeInTheDocument();
+    expect(screen.queryByText("Tax Receipts Flow vs National Debt Stock")).not.toBeInTheDocument();
+    expect(screen.queryByText("Monthly Tax Receipts")).not.toBeInTheDocument();
+    expect(screen.queryByText("100% Benchmark")).not.toBeInTheDocument();
   });
 });
