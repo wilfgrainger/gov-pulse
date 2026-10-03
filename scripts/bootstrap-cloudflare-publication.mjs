@@ -271,7 +271,7 @@ async function waitForComparisonRefresh(
           ? terminal.completedAt
           : null;
       latest = { status, completedAt };
-      if (status === "success") return latest;
+      if (status !== "pending") return latest;
     } catch {
       // A comparison diagnostic read must never change national readiness.
     }

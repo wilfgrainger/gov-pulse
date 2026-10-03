@@ -1,7 +1,9 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from "vitest";
+import { readFile } from "node:fs/promises";
 import {
+  DEFAULT_COMPARISON_TIMEOUT_MS,
   bootstrapAttemptId,
   bootstrapCloudflarePublication,
   hasPreparedPublication,
@@ -73,6 +75,26 @@ function degradedPreparedSnapshot(now = new Date()) {
 }
 
 describe("Cloudflare deployment bootstrap", () => {
+  it("reserves two minutes beyond the national and comparison waits in recovery", async () => {
+    const workflow = await readFile(
+      new URL("../../.github/workflows/deploy.yml", import.meta.url),
+      "utf8",
+    );
+    const recoveryJobStart = workflow.indexOf("\n  recover-evidence:");
+    expect(recoveryJobStart).toBeGreaterThanOrEqual(0);
+    const recoveryJob = workflow.slice(recoveryJobStart);
+    const timeoutMinutes = Number(
+      recoveryJob.match(/^\s+timeout-minutes:\s*(\d+)/m)?.[1],
+    );
+    const nationalTimeoutMs = Number(
+      recoveryJob.match(/^\s+BOOTSTRAP_TIMEOUT_MS:\s*"?(\d+)"?/m)?.[1],
+    );
+
+    expect(timeoutMinutes * 60_000).toBeGreaterThanOrEqual(
+      nationalTimeoutMs + DEFAULT_COMPARISON_TIMEOUT_MS + 2 * 60_000,
+    );
+  });
+
   it("keeps raw finaliser errors out of public bootstrap diagnostics", async () => {
     const runId = `bootstrap-${SHA}`;
     const run = {
@@ -418,6 +440,7 @@ describe("Cloudflare deployment bootstrap", () => {
       comparisonRefresh: { status: "failure", completedAt: "2026-10-03T12:00:10.000Z" },
     });
     expect(result.comparisonRefresh).not.toHaveProperty("result");
+    expect(now).toBe(10_000);
   });
 
   it("reports a missing comparison terminal as pending without failing national publication", async () => {
