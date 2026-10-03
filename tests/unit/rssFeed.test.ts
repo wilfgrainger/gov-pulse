@@ -1,0 +1,143 @@
+import { describe, expect, it } from "vitest";
+import { GET, renderRssFeed } from "@/app/feed.xml/route";
+import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
+import { SITE_DISCOVERY } from "@/app/lib/discovery";
+import type { MetricsSnapshot } from "@/app/lib/metricsSnapshot";
+import type { MeasureRecord } from "@/app/lib/measureCatalog";
+import { publicSnapshot } from "@/worker/public-snapshot";
+
+function rssSnapshot() {
+  const snapshot = publicSnapshot(BUILD_METRICS_SNAPSHOT) as MetricsSnapshot;
+  const publishedAt = "2026-09-11T06:00:00.000Z";
+  const gdp: MeasureRecord = {
+    id: "gdp-monthlyGrowth",
+    label: "GDP monthly growth",
+    evidenceClass: "official-statistics",
+    comparisonKey: "uk-real-gdp-monthly-growth",
+    cadence: "monthly",
+    unit: "%",
+    basis: "Monthly change in real gross domestic product",
+    geography: { code: "UK", label: "United Kingdom" },
+    sourceId: "gdpTracker",
+    sourceUrl: "https://www.ons.gov.uk/economy/grossdomesticproductgdp",
+    sourceEditionId: "source-gdp-2026-09-11",
+    observationPeriod: { start: "2026-07-01", end: "2026-07-31", label: "July 2026" },
+    publishedAt,
+    fetchedAt: "2026-10-03T00:00:00.000Z",
+    validUntil: "2026-11-20T00:00:00.000Z",
+    availability: "current",
+    value: 0.4,
+    revisionId: "source-gdp-2026-09-11-revision-a",
+    points: [{ period: "July 2026", observedAt: "2026-07-31", value: 0.4, valueStatus: "estimate", revisionId: "source-gdp-2026-09-11-revision-a" }],
+    caveats: ["Monthly growth is volatile and subject to revision."],
+  };
+
+  snapshot.meta.sources.gdpTracker = { status: "ok", fetchedAt: "2026-10-03T00:00:00.000Z" };
+  snapshot.meta.measureCatalog = {
+    schemaVersion: 2,
+    editionId: "catalog-rss-test",
+    generatedAt: "2026-10-03T00:00:00.000Z",
+    validUntil: "2026-10-22T00:00:00.000Z",
+    measures: { [gdp.id]: gdp },
+  };
+  snapshot.meta.editionSummary = {
+    id: "catalog-rss-test",
+    publishedAt: "2026-09-22T00:00:00.000Z",
+    previousEditionId: null,
+    sourceEditionIds: [gdp.sourceEditionId],
+    changes: [],
+  };
+  snapshot.gdpTracker = {
+    publishedAt,
+    __observation: { period: "July 2026", observedAt: "2026-07-31", status: "published" },
+  };
+  return snapshot;
+}
+
+describe("RSS publication feed", () => {
+  it("emits parseable source publications and authored stories with stable identities", async () => {
+    const response = GET();
+    const xml = renderRssFeed(rssSnapshot());
+    const document = new DOMParser().parseFromString(xml, "application/xml");
+    const items = [...document.querySelectorAll("channel > item")];
+    const snapshot = rssSnapshot();
+    const gdp = Object.values(snapshot.meta.measureCatalog.measures).find((measure) => measure.sourceId === "gdpTracker");
+    const gdpItem = items.find((item) => item.querySelector("link")?.textContent === `${SITE_DISCOVERY.origin}/section/gdp/`);
+
+    expect(response.headers.get("content-type")).toContain("application/rss+xml");
+    expect(document.querySelector("parsererror")).toBeNull();
+    expect(gdp).toBeDefined();
+    expect(gdpItem?.querySelector("category")?.textContent).toBe("Source data publication");
+    expect(new Date(gdpItem?.querySelector("pubDate")?.textContent ?? "").toISOString()).toBe(new Date(gdp!.publishedAt).toISOString());
+    const edition = items.find((item) => item.querySelector("category")?.textContent === "Evidence edition");
+    expect(edition?.querySelector("guid")?.textContent).toBe(`urn:public-data:edition:${snapshot.meta.editionSummary.id}`);
+    expect(new Date(edition?.querySelector("pubDate")?.textContent ?? "").toISOString()).toBe(new Date(snapshot.meta.editionSummary.publishedAt).toISOString());
+    if (snapshot.meta.editionSummary.changes.length === 0) {
+      const description = edition?.querySelector("description")?.textContent ?? "";
+      if (snapshot.meta.editionSummary.previousEditionId === null) {
+        expect(description).toMatch(/no comparable earlier publication.*no evidence changes are inferred/i);
+      } else if (snapshot.meta.editionSummary.previousEditionId) {
+        expect(description).toMatch(new RegExp(`no observation, revision, metadata or method changes.*${snapshot.meta.editionSummary.previousEditionId}`));
+      } else {
+        expect(description).toMatch(/does not record whether a comparable earlier publication/i);
+      }
+    }
+
+    const stories = items.filter((item) => item.querySelector("category")?.textContent === "Authored story");
+    expect(stories.map((item) => item.querySelector("link")?.textContent)).toEqual([
+      `${SITE_DISCOVERY.origin}/stories/household-budgets/`,
+      `${SITE_DISCOVERY.origin}/stories/public-finances/`,
+    ]);
+    expect(stories.every((item) => item.querySelector("guid")?.textContent === item.querySelector("link")?.textContent)).toBe(true);
+    expect(stories.every((item) => !item.querySelector("pubDate"))).toBe(true);
+    expect(items.every((item) => Boolean(item.querySelector("title")?.textContent && item.querySelector("link")?.textContent && item.querySelector("guid")?.textContent && item.querySelector("description")?.textContent))).toBe(true);
+    expect(new Set(items.map((item) => item.querySelector("guid")?.textContent)).size).toBe(items.length);
+  });
+
+  it.each([
+    [null, /no comparable earlier publication/i],
+    ["catalog-prior", /no observation, revision, metadata or method changes.*catalog-prior/i],
+    [undefined, /does not record whether a comparable earlier publication/i],
+  ])("states the RSS baseline honestly when its identity is %s", (previousEditionId, expected) => {
+    const snapshot = rssSnapshot();
+    snapshot.meta.editionSummary = {
+      ...snapshot.meta.editionSummary!,
+      previousEditionId,
+      changes: [],
+    };
+    const xml = renderRssFeed(snapshot);
+    const document = new DOMParser().parseFromString(xml, "application/xml");
+    const edition = [...document.querySelectorAll("channel > item")]
+      .find((item) => item.querySelector("category")?.textContent === "Evidence edition");
+
+    expect(document.querySelector("parsererror")).toBeNull();
+    expect(edition?.querySelector("description")?.textContent).toMatch(expected);
+  });
+
+  it("describes metadata-only changes with both dated publisher links and no numeric delta", () => {
+    const snapshot = rssSnapshot();
+    snapshot.meta.editionSummary = {
+      ...snapshot.meta.editionSummary!,
+      changes: [{
+        measureId: "inflation", kind: "metadata-change", observedAt: null, period: null,
+        previousSourceEditionId: "ons-old", nextSourceEditionId: "ons-new",
+        previousRevisionId: "revision-old", nextRevisionId: "revision-new",
+        previousSourcePublishedAt: "2026-09-01T07:00:00.000Z", nextSourcePublishedAt: "2026-10-01T07:00:00.000Z",
+        previousSourceUrl: "https://www.ons.gov.uk/prices/old", nextSourceUrl: "https://www.ons.gov.uk/prices/new",
+        previousUnit: "%", nextUnit: "%", previous: null, next: null, changedFields: ["sourceUrl"],
+      }],
+    };
+    const xml = renderRssFeed(snapshot);
+    const document = new DOMParser().parseFromString(xml, "application/xml");
+    const edition = [...document.querySelectorAll("channel > item")]
+      .find((item) => item.querySelector("category")?.textContent === "Evidence edition");
+    const description = edition?.querySelector("description")?.textContent ?? "";
+
+    expect(document.querySelector("parsererror")).toBeNull();
+    expect(description).toContain("Source metadata changed (sourceUrl); no numeric change is inferred.");
+    expect(description).toContain("2026-09-01 → 2026-10-01");
+    expect(description).toContain("https://www.ons.gov.uk/prices/old");
+    expect(description).toContain("https://www.ons.gov.uk/prices/new");
+    expect(description).not.toContain("not previously reported → unavailable");
+  });
+});
