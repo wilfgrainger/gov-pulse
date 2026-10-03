@@ -99,7 +99,7 @@ export default function FinancialTimeSeriesChart({
   axisFormatter = valueFormatter,
   referenceValue,
   referenceLabel,
-  downloadLabel = "Download published data (JSON)",
+  downloadLabel = "Download full edition (JSON)",
   citation,
   heightClass = "h-[300px]",
   showEvents = true,
@@ -118,7 +118,7 @@ export default function FinancialTimeSeriesChart({
   const range =
     first && latest ? `${first.period} to ${latest.period}` : "Published history unavailable";
   const chartMetadata: ChartMetadata = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     title,
     sourceCitation: citation ?? "Source details unavailable in this publication.",
     observationWindow: {
@@ -126,6 +126,11 @@ export default function FinancialTimeSeriesChart({
       end: latest ? { period: latest.period, observedAt: Number.isFinite(latest.observedAt) ? new Date(latest.observedAt).toISOString() : null } : null,
     },
     series: series.map(({ key, label }) => ({ key, label })),
+    observations: data.map((point) => ({
+      period: point.period,
+      observedAt: Number.isFinite(point.observedAt) ? new Date(point.observedAt).toISOString() : null,
+      values: Object.fromEntries(series.map(({ key }) => [key, typeof point[key] === "number" && Number.isFinite(point[key]) ? point[key] as number : null])),
+    })),
     caveats: [description],
   };
   const events =

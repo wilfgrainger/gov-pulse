@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   CartesianGrid,
   ResponsiveContainer,
@@ -24,11 +24,14 @@ type PollLike = {
   fieldworkEnd: string;
   sampleSize: number;
   title: string;
-  commissioner: string;
-  publicationDate: string;
+  commissioner: string | null;
+  questionText: string | null;
+  publicationDate: string | null;
+  publicationDateStatus: "published" | "not-disclosed";
   geography: string;
   population: string;
-  mode: string;
+  mode: string | null;
+  sampleSizeNote: string | null;
   headlineMethod: string;
   sourceUrl: string;
   methodologyUrl: string;
@@ -112,7 +115,10 @@ export default function PollingPublicationChart<PartyKey extends string>({
   partyMeta,
   partyOrder,
 }: Props<PartyKey>) {
-  const seriesByParty = partyOrder
+  const [selectedParties, setSelectedParties] = useState<Set<PartyKey>>(() => new Set(partyOrder));
+  const availablePartyOrder = partyOrder.filter((key) => polls.some((poll) => typeof poll.parties[key] === "number"));
+  const visiblePartyOrder = availablePartyOrder.filter((key) => selectedParties.has(key));
+  const seriesByParty = visiblePartyOrder
     .map((key) => ({ key, meta: partyMeta[key], points: buildSeries(polls, key) }))
     .filter((series) => series.points.length > 0);
 
@@ -141,17 +147,25 @@ export default function PollingPublicationChart<PartyKey extends string>({
     publications: polls.map((poll) => ({
       id: poll.id,
       publisher: poll.pollster,
+      title: poll.title,
+      commissioner: poll.commissioner ?? null,
+      questionText: poll.questionText ?? null,
+      headlineMethod: poll.headlineMethod,
+      population: poll.population,
+      geography: poll.geography,
+      mode: poll.mode ?? null,
+      sampleSize: poll.sampleSize,
+      sampleSizeNote: poll.sampleSizeNote ?? null,
+      partyResults: Object.fromEntries(Object.entries(poll.parties).filter((entry): entry is [string, number] => visiblePartyOrder.includes(entry[0] as PartyKey) && typeof entry[1] === "number")),
       sourceUrl: poll.sourceUrl,
       methodologyUrl: poll.methodologyUrl,
-      publishedAt: poll.publicationDate,
+      publishedAt: poll.publicationDate ?? null,
+      publicationDateStatus: poll.publicationDate
+        ? poll.publicationDateStatus ?? "published"
+        : "not-disclosed",
       fieldworkStart: poll.fieldworkStart,
       fieldworkEnd: poll.fieldworkEnd,
       disclosures: [
-        poll.title,
-        `Commissioned by ${poll.commissioner}`,
-        poll.headlineMethod,
-        `${poll.population}; ${poll.geography}; ${poll.mode}`,
-        `Sample size ${poll.sampleSize.toLocaleString("en-GB")}`,
         poll.uncertainty ?? "No publication-specific numeric uncertainty statement verified.",
       ],
     })),
@@ -174,10 +188,17 @@ export default function PollingPublicationChart<PartyKey extends string>({
         </div>
         <p className="font-mono text-xs tabular-nums text-gray-500">{range}</p>
       </figcaption>
+      <fieldset className="mb-3 border-t border-black/10 pt-3">
+        <legend className="text-xs font-semibold text-gray-700">Show party results</legend>
+        <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2">
+          {availablePartyOrder.map((key) => <label key={key} className="inline-flex min-h-8 items-center gap-2 text-sm"><input type="checkbox" aria-label={`Show ${partyMeta[key].label}`} checked={selectedParties.has(key)} onChange={() => setSelectedParties((current) => { const next = new Set(current); if (next.has(key)) next.delete(key); else next.add(key); return next; })} className="size-4 accent-[#14243b]"/>{partyMeta[key].label}</label>)}
+        </div>
+        {visiblePartyOrder.length === 0 ? <p role="status" className="mt-2 text-sm text-gray-600">Select at least one party to show publication results.</p> : null}
+      </fieldset>
       <div
         ref={chartContainerRef}
         role="img"
-        aria-label={`Scatter plot of individual poll publications by party share. Period shown: ${range}. No average, uncertainty interval or trend line is shown. See the data table below for exact per-poll values and sample counts.`}
+        aria-label={`Scatter plot of individual poll publications for ${visiblePartyOrder.map((key) => partyMeta[key].label).join(", ") || "no selected parties"}. Period shown: ${range}. No average, uncertainty interval or trend line is shown. See the data table below for exact per-poll values and sample counts.`}
         className="border-t border-black/10 pt-3"
       >
         <ClientOnlyChart heightClass="h-[340px]">
@@ -268,7 +289,7 @@ export default function PollingPublicationChart<PartyKey extends string>({
           </thead>
           <tbody>
             {polls.flatMap((poll) =>
-              partyOrder
+              visiblePartyOrder
                 .filter((key) => typeof poll.parties[key] === "number")
                 .map((key) => {
                   const share = poll.parties[key] as number;
@@ -278,7 +299,10 @@ export default function PollingPublicationChart<PartyKey extends string>({
                       <td className="py-1.5 pr-4">{fieldworkLabel(poll)}</td>
                       <td className="py-1.5 pr-4">{partyMeta[key].label}</td>
                       <td className="py-1.5 pr-4 tabular-nums">{share.toFixed(0)}%</td>
-                      <td className="py-1.5 pr-4 tabular-nums">{poll.sampleSize.toLocaleString("en-GB")}</td>
+                      <td className="py-1.5 pr-4 tabular-nums">
+                        {poll.sampleSize.toLocaleString("en-GB")}
+                        {poll.sampleSizeNote ? <span className="block text-xs text-gray-600">{poll.sampleSizeNote}</span> : null}
+                      </td>
                     </tr>
                   );
                 })

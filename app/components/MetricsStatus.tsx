@@ -8,6 +8,7 @@ import EvidenceClassBadge from "./EvidenceClassBadge";
 
 interface MetricsStatusProps {
   section: string;
+  showCurrentness?: boolean;
   status: Pick<
     MetricsResult<unknown>,
     | "isLive"
@@ -70,7 +71,7 @@ function formatCheckDate(value: Date | null) {
   return `Checked ${formatted} UTC`;
 }
 
-export default function MetricsStatus({ section, status }: MetricsStatusProps) {
+export default function MetricsStatus({ section, status, showCurrentness = true }: MetricsStatusProps) {
   const meta = DATA_SOURCES[section];
   const detail = DATA_SOURCE_DETAILS[section];
   if (!meta || !detail) return null;
@@ -134,64 +135,67 @@ export default function MetricsStatus({ section, status }: MetricsStatusProps) {
 
   return (
     <aside
-      className="mt-6 border-y border-[#d3dae1] bg-[#f7f9fb] px-4 py-5 md:px-5"
-      aria-label={`${meta.name} evidence and sources`}
+      className={`${showCurrentness ? "mt-6" : "mt-3"} border-y border-line-strong px-1 py-3 md:px-2`}
+      aria-label={`${meta.name} ${showCurrentness ? "evidence status" : "sources and methods"}`}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-accent">{"Evidence & sources"}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+      {showCurrentness ? (
+        <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             <span className={`border px-2.5 py-1 text-xs font-semibold ${dataStateTone}`}>
               {dataState}
             </span>
-            {revisionWarning ? (
+            {revisionWarning && status.isLive ? (
               <span className="border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900">
                 May be revised
               </span>
             ) : null}
             <EvidenceClassBadge evidenceClass={meta.evidenceClass} />
+            <span className="text-sm leading-6 text-neutral-700">{timing}</span>
+          </div>
+          <Link
+            href="/sources/"
+            prefetch={false}
+            className="min-h-11 inline-flex items-center text-sm font-semibold underline decoration-1 underline-offset-4 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#14243b]"
+          >
+            All sources
+          </Link>
+        </div>
+      ) : null}
+
+      <details className={`${showCurrentness ? "mt-1" : ""} max-w-4xl`}>
+        <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-semibold underline decoration-1 underline-offset-4 hover:text-accent">
+          Sources and methods
+        </summary>
+        <div className="grid gap-3 border-l-2 border-accent py-2 pl-4 text-sm leading-6 text-neutral-700 sm:ml-1 sm:grid-cols-[minmax(0,1fr)_minmax(15rem,0.8fr)] sm:gap-6">
+          <div>
+            <h2 className="font-semibold text-foreground">Primary publications</h2>
+            <ul className="mt-1 list-none space-y-1 p-0">
+              {meta.sources.map((source) => {
+                const url = SOURCE_URLS[source];
+                return (
+                  <li key={source}>
+                    {url ? (
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-semibold underline decoration-1 underline-offset-4 hover:text-accent"
+                        aria-label={`Open ${source} source website`}
+                      >
+                        {source}
+                      </a>
+                    ) : <span className="font-semibold">{source}</span>}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <div>
+            <h2 className="font-semibold text-foreground">How to read it</h2>
+            <p className="mt-1">{detail.caveat}</p>
           </div>
         </div>
-        <Link
-          href="/sources"
-          prefetch={false}
-          className="text-sm font-semibold underline decoration-1 underline-offset-4 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#14243b]"
-        >
-          View all sources
-        </Link>
-      </div>
-
-      <p className="mt-3 text-sm leading-6 text-neutral-700">{timing}</p>
-
-      <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
-        <span className="font-semibold text-black">Sources:</span>
-        {meta.sources.map((source, index) => {
-          const url = SOURCE_URLS[source];
-          return (
-            <span key={source}>
-              {url ? (
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-semibold underline decoration-1 underline-offset-4 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#14243b]"
-                  aria-label={`Open ${source} source website`}
-                >
-                  {source}
-                </a>
-              ) : (
-                <span className="font-semibold">{source}</span>
-              )}
-              {index < meta.sources.length - 1 ? ", " : ""}
-            </span>
-          );
-        })}
-      </div>
-
-      <p className="mt-4 border-l-2 border-accent pl-4 text-sm leading-6 text-neutral-700">
-        <span className="font-semibold text-black">{"What to know:"} </span>
-        {detail.caveat}
-      </p>
+      </details>
     </aside>
   );
 }

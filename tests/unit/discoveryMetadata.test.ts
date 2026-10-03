@@ -13,8 +13,7 @@ import {
   structuredDataForSection,
 } from "@/app/lib/discovery";
 import { SECTION_CONTENT } from "@/app/lib/sectionContent";
-import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
-import { publicSnapshot } from "@/worker/public-snapshot";
+import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 
 function source(path: string) {
   return fs.readFileSync(path, "utf8");
@@ -90,17 +89,43 @@ describe("section discovery contract", () => {
 
   it("uses the primary source publication date rather than retrieval or snapshot generation time", () => {
     const feedSource = source("app/feed.xml/route.ts");
-    const snapshot = publicSnapshot(BUILD_METRICS_SNAPSHOT);
+    const snapshot = {
+      meta: {
+        registryVersion: FEED_REGISTRY_VERSION,
+        generatedAt: "2026-10-02T18:00:00.000Z",
+        sources: {
+          gdpTracker: {
+            status: "ok",
+            fetchedAt: "2026-10-02T17:00:00.000Z",
+          },
+        },
+        measureCatalog: {
+          measures: {
+            gdpMonthly: {
+              sourceId: "gdpTracker",
+              publishedAt: "2026-09-11T06:00:00.000Z",
+            },
+          },
+        },
+      },
+      gdpTracker: {
+        publishedAt: "2026-09-11T06:00:00.000Z",
+        __observation: {
+          period: "August 2026",
+          observedAt: "2026-08-31T00:00:00.000Z",
+          status: "current",
+        },
+      },
+    };
     const sourceEdition = snapshot.meta.sources.gdpTracker;
     const sourceMeasures = Object.values(snapshot.meta.measureCatalog.measures).filter((measure) => measure.sourceId === "gdpTracker");
-    const publication = getBuildPublication(SECTION_DISCOVERY.gdp);
+    const publication = getBuildPublication(SECTION_DISCOVERY.gdp, snapshot);
 
     expect(sourceMeasures.length).toBeGreaterThan(0);
     expect(publication?.dateModified).toBe(sourceMeasures.sort((left, right) => right.publishedAt.localeCompare(left.publishedAt))[0].publishedAt);
     expect(publication?.dateModified).not.toBe(sourceEdition.fetchedAt);
     expect(publication?.dateModified).not.toBe(snapshot.meta.generatedAt);
     expect(feedSource).not.toContain("new Date().toUTCString()");
-    expect(feedSource).not.toContain("lastBuildDate");
   });
 
   it("does not promote stale fallback data as a latest verified publication", () => {

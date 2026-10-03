@@ -1,8 +1,11 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ElectionPolling from "@/app/components/ElectionPolling";
+import { HISTORICAL_POLL_CORRECTIONS } from "@/app/lib/pollingLab";
 
 const useMetrics = vi.fn();
+const createObjectUrlDescriptor = Object.getOwnPropertyDescriptor(URL, "createObjectURL");
+const revokeObjectUrlDescriptor = Object.getOwnPropertyDescriptor(URL, "revokeObjectURL");
 
 vi.mock("@/app/lib/useMetrics", () => ({
   useMetrics: (...args: unknown[]) => useMetrics(...args),
@@ -81,26 +84,90 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   useMetrics.mockReset();
   vi.useRealTimers();
+  if (createObjectUrlDescriptor) Object.defineProperty(URL, "createObjectURL", createObjectUrlDescriptor);
+  else Reflect.deleteProperty(URL, "createObjectURL");
+  if (revokeObjectUrlDescriptor) Object.defineProperty(URL, "revokeObjectURL", revokeObjectUrlDescriptor);
+  else Reflect.deleteProperty(URL, "revokeObjectURL");
 });
 
 describe("ElectionPolling evidence integrity", () => {
+  it("shows and exports historical same-poll corrections separately from current results", async () => {
+    useMetrics.mockReturnValue(result({
+      ...current,
+      correctionHistory: [{
+        id: "ipsos-scottish-parliament-first-vote-september-2013",
+        pollster: "Ipsos",
+        title: "Scottish Parliament first vote intention",
+        geography: "Scotland",
+        observationPeriod: "September 2013",
+        measure: "Certain to vote",
+        unit: "%",
+        correctedAt: "2013-10-03",
+        reason: "A data-processing error omitted minor-party responses, making major-party percentages too high.",
+        sourceUrl: "https://www.ipsos.com/en-uk/statement-voting-intention-figures-scottish-parliament-elections",
+        results: [
+          { partyId: "snp", label: "Scottish National Party (SNP)", original: 41, corrected: 39 },
+          { partyId: "labour", label: "Scottish Labour", original: 37, corrected: 35 },
+        ],
+      }],
+    }));
+
+    render(<ElectionPolling />);
+
+    expect(screen.getByRole("heading", { name: "Poll correction history" })).toBeInTheDocument();
+    expect(screen.getByText("Scottish Parliament first vote intention")).toBeInTheDocument();
+    expect(screen.getByRole("row", { name: /Scottish National Party.*41%.*39%/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Ipsos correction notice/ })).toHaveAttribute(
+      "href",
+      "https://www.ipsos.com/en-uk/statement-voting-intention-figures-scottish-parliament-elections"
+    );
+    expect(screen.getByRole("button", { name: "Download correction history CSV" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Download correction history JSON" })).toBeInTheDocument();
+
+    const blobs: Blob[] = [];
+    const filenames: string[] = [];
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: vi.fn((blob: Blob) => { blobs.push(blob); return `blob:poll-correction-${blobs.length}`; }),
+    });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      filenames.push(this.download);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Download correction history JSON" }));
+    fireEvent.click(screen.getByRole("button", { name: "Download correction history CSV" }));
+    expect(filenames).toEqual(["poll-correction-history.json", "poll-correction-history.csv"]);
+    vi.useRealTimers();
+    const readBlob = (blob: Blob) => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(blob);
+    });
+    const json = JSON.parse(await readBlob(blobs[0]));
+    const csv = await readBlob(blobs[1]);
+    expect(json.correctionHistory[0].results[0]).toMatchObject({ original: 41, corrected: 39 });
+    expect(csv).toContain('"41","39"');
+  });
+
   it("renders one primary publication with the complete editorial contract", () => {
     useMetrics.mockReturnValue(result(current));
 
     render(<ElectionPolling />);
 
     expect(
-      screen.getByRole("heading", { name: "YouGov reports Reform UK at 24%." })
+      screen.getByRole("heading", { name: "Reform UK" })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "YouGov reports Reform UK at 24%." })
+      screen.getByRole("heading", { name: "Reform UK" })
         .compareDocumentPosition(screen.getByRole("heading", { name: "Polling lab" })) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
     expect(screen.getByText(/2,285 GB adults/i)).toBeInTheDocument();
-    expect(screen.getByText(/This is one poll publication, not a polling average/i)).toBeInTheDocument();
+    expect(screen.getByText(/One poll publication, not a polling average/i)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Polling lab" })).toBeInTheDocument();
     expect(screen.getByText("Showing 1 of 1 verified publications.")).toBeInTheDocument();
     expect(screen.getByText("What changed?")).toBeInTheDocument();
@@ -168,8 +235,30 @@ describe("ElectionPolling evidence integrity", () => {
     fireEvent.change(screen.getByRole("combobox", { name: "Filter polling by pollster" }), { target: { value: "Ipsos" } });
 
     expect(screen.getByText("Showing 1 of 2 verified publications.")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Ipsos reports Reform UK at 24%." })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "YouGov reports Reform UK at 24%." })).not.toBeInTheDocument();
+    expect(screen.getByText("Latest verified poll · Ipsos")).toBeInTheDocument();
+    expect(screen.queryByText("Latest verified poll · YouGov")).not.toBeInTheDocument();
+  });
+
+  it("filters disclosed publication dates while leaving the unknown date explicit", () => {
+    const undated = {
+      ...current.polls[0],
+      id: "more-in-common-undated",
+      pollster: "More in Common",
+      publicationDate: null,
+      publicationDateStatus: "not-disclosed" as const,
+      fieldworkStart: "2026-07-03",
+      fieldworkEnd: "2026-07-06",
+      sourceUrl: "https://www.moreincommon.org.uk/wp-content/uploads/2026/07/voting-intention.xlsx",
+      methodologyUrl: "https://www.moreincommon.org.uk/polling-tables/",
+    };
+    useMetrics.mockReturnValue(result({ ...current, polls: [current.polls[0], undated] }));
+
+    render(<ElectionPolling />);
+    fireEvent.change(screen.getByLabelText("Polling publication from"), { target: { value: "2026-07-01" } });
+    fireEvent.change(screen.getByLabelText("Polling publication to"), { target: { value: "2026-07-31" } });
+
+    expect(screen.getByText("Showing 1 of 2 verified publications.")).toBeInTheDocument();
+    expect(screen.getByText("Latest verified poll · YouGov")).toBeInTheDocument();
   });
 
   it("shows the publication disclosure register", () => {
@@ -181,6 +270,50 @@ describe("ElectionPolling evidence integrity", () => {
     expect(screen.getAllByText("YouGov").length).toBeGreaterThan(0);
     expect(screen.getAllByText("5 Jul 2026–6 Jul 2026").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/MRP model/i).length).toBeGreaterThan(0);
+  });
+
+  it("shows an unknown publication date and partial historical-source coverage honestly", () => {
+    vi.setSystemTime(new Date("2026-10-03T12:00:00.000Z"));
+    const moreInCommon = {
+      ...current.polls[0],
+      id: "more-in-common-2026-09-29",
+      pollster: "More in Common",
+      commissioner: null,
+      title: "GB Voting Intention & Trackers",
+      questionText: null,
+      publicationDate: null,
+      publicationDateStatus: "not-disclosed",
+      fieldworkStart: "2026-09-25",
+      fieldworkEnd: "2026-09-29",
+      sampleSize: 1514,
+      sampleSizeNote: "Unweighted N on the headline table; workbook cover reports 2,041 total respondents.",
+      population: "GB adults (excludes Northern Ireland)",
+      mode: null,
+      headlineMethod: "Publisher-weighted voting-intention headline; weight GBNatRepWeight.",
+      parties: { conservative: 22.1, labour: 26.9, liberalDemocrats: 11.1, reformUK: 20.9, green: 8.5 },
+      sourceUrl: "https://www.moreincommon.org.uk/wp-content/uploads/2026/09/Voting-Intention-and-Trackers-25-29-Sept.xlsx",
+      methodologyUrl: "https://www.moreincommon.org.uk/polling-tables/",
+    };
+    useMetrics.mockReturnValue(result({
+      ...current,
+      latestPublicationDate: "2026-07-06",
+      latestFieldworkEnd: "2026-09-29",
+      expiresAt: "2026-10-13T00:00:00.000Z",
+      polls: [moreInCommon, current.polls[0]],
+      sources: [
+        { pollster: "YouGov", status: "current", recordCount: 1 },
+        { pollster: "More in Common", status: "partial", recordCount: 1, archiveFilesRequested: 12, archiveFilesValidated: 1, archiveFilesUnavailable: 11 },
+      ],
+    }));
+
+    render(<ElectionPolling />);
+
+    expect(screen.getByText("Latest verified poll · More in Common")).toBeInTheDocument();
+    expect(screen.getByText(/More in Common reports Labour at 27%/)).toBeInTheDocument();
+    expect(screen.getAllByText("Publisher did not disclose a publication date").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Unweighted N on the headline table; workbook cover reports 2,041 total respondents/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/More in Common: 1 publications verified; 11 historical archive files could not be checked/i)).toBeInTheDocument();
+    expect(screen.getByText(/Question wording is not disclosed in this publication/i)).toBeInTheDocument();
   });
 
   it("does not turn sample size into an uncertainty interval or a polling average", () => {
@@ -253,7 +386,12 @@ describe("ElectionPolling evidence integrity", () => {
     render(<ElectionPolling />);
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "It will not fall back to a secondary aggregation or an old embedded average"
+      "older polls and secondary averages are not presented as current"
+    );
+    expect(screen.getByRole("heading", { name: "Poll correction history" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Ipsos correction notice/ })).toHaveAttribute(
+      "href",
+      HISTORICAL_POLL_CORRECTIONS[0].sourceUrl
     );
   });
 });

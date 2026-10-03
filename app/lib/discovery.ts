@@ -55,8 +55,8 @@ export function serializeJsonLd(value: unknown) {
   return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
-export function getBuildPublication(section: SectionDiscovery) {
-  const snapshot = publicSnapshot(BUILD_METRICS_SNAPSHOT);
+export function getBuildPublication(section: SectionDiscovery, rawSnapshot: unknown = BUILD_METRICS_SNAPSHOT) {
+  const snapshot = publicSnapshot(rawSnapshot);
   if (!isCompatibleMetricsSnapshot(snapshot)) {
     return null;
   }

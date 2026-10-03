@@ -119,7 +119,7 @@ function MeasureDetail({
     : null;
   const compareCitation = [primaryExportCitation, comparisonExportCitation].filter(Boolean).join(" · ");
   const chartMetadata: ChartMetadata = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     title: compareMeasure ? `${measure.label} compared with ${compareMeasure.label}` : measure.label,
     sourceCitation: compareCitation,
     observationWindow: {
@@ -130,6 +130,26 @@ function MeasureDetail({
       { key: measure.id, label: `${measure.label} (${measure.unit})` },
       ...(compareMeasure ? [{ key: compareMeasure.id, label: `${compareMeasure.label} (${compareMeasure.unit})` }] : []),
     ],
+    observations: (() => {
+      const byDate = new Map<string, { period: string; observedAt: string; values: Record<string, number | null> }>();
+      for (const point of points) {
+        const observedAt = new Date(point.date).toISOString();
+        byDate.set(observedAt, { period: point.period, observedAt, values: { ...(byDate.get(observedAt)?.values ?? {}), [measure.id]: point.value } });
+      }
+      if (compareMeasure) for (const point of comparePointsForWindow) {
+        const observedAt = new Date(point.date).toISOString();
+        byDate.set(observedAt, { period: point.period, observedAt, values: { ...(byDate.get(observedAt)?.values ?? {}), [compareMeasure.id]: point.value } });
+      }
+      return [...byDate.values()]
+        .map((observation) => ({
+          ...observation,
+          values: {
+            [measure.id]: observation.values[measure.id] ?? null,
+            ...(compareMeasure ? { [compareMeasure.id]: observation.values[compareMeasure.id] ?? null } : {}),
+          },
+        }))
+        .sort((left, right) => left.observedAt.localeCompare(right.observedAt));
+    })(),
     caveats: [
       "Lines join published observations and leave long gaps open; no smoothing or interpolation is applied.",
       `The vertical scale spans ${formatMeasure(min, measure.unit)} to ${formatMeasure(max, measure.unit)} for the primary measure.`,
