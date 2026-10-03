@@ -80,6 +80,17 @@ describe("edition briefing and guided story contracts", () => {
     expect(renderToStaticMarkup(<BriefingEdition snapshot={snapshot}/>)).toContain(expected);
   });
 
+  it("does not describe an edition as its own previous baseline", () => {
+    const snapshot = { meta: {
+      registryVersion: "test", sources: {},
+      editionSummary: { id: "catalog-same", publishedAt: "2026-02-19T00:00:00.000Z", sourceEditionIds: ["ons-2026-02"], previousEditionId: "catalog-same", changes: [] },
+    } } as unknown as MetricsSnapshot;
+    const markup = renderToStaticMarkup(<BriefingEdition snapshot={snapshot}/>);
+
+    expect(markup).toContain("The accepted edition is unchanged; no evidence changes were recorded.");
+    expect(markup).not.toContain("No evidence changes were recorded against previous edition catalog-same.");
+  });
+
   it("maps every guided story reference to a canonical catalog measure", () => {
     for (const story of [householdStory, publicFinanceStory]) {
       expect(story.owner).toBeTruthy();

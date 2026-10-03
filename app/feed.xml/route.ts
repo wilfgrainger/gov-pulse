@@ -56,6 +56,7 @@ export function renderRssFeed(input: unknown) {
     .join("");
 
   const summary = snapshot?.meta?.editionSummary;
+  const sameEdition = Boolean(summary?.id && summary.previousEditionId === summary.id);
   const summaryDate = validDate(summary?.publishedAt);
   const summaryDescription = summary?.changes.length ? summary.changes.map((change) => {
     const measure = snapshot?.meta.measureCatalog?.measures[change.measureId];
@@ -71,14 +72,16 @@ export function renderRssFeed(input: unknown) {
     const sourceDates = ` Source publication date: ${change.previousSourcePublishedAt?.slice(0, 10) ?? "not recorded"} → ${change.nextSourcePublishedAt?.slice(0, 10) ?? "not recorded"}.`;
     const caveat = measure?.caveats.length ? ` ${measure.caveats.join(" ")}` : "";
     return `${label}, ${change.period ?? "measure definition"} (${change.kind}): ${values}; ${geography}; source edition ${change.previousSourceEditionId ?? "not previously recorded"} → ${change.nextSourceEditionId}.${sourceDates}${source}${caveat}`;
-  }).join("; ") : summary?.previousEditionId === null
-    ? "No comparable earlier publication was available; no evidence changes are inferred from a missing baseline."
+  }).join("; ") : sameEdition
+    ? "The accepted edition is unchanged; no evidence changes were recorded."
+    : summary?.previousEditionId === null
+      ? "No comparable earlier publication was available; no evidence changes are inferred from a missing baseline."
     : summary?.previousEditionId
       ? `No observation, revision, metadata or method changes were recorded against previous catalog ${summary.previousEditionId}; a retrieval alone is not evidence of a change.`
       : "The stored edition does not record whether a comparable earlier publication was available; no changes are inferred.";
   const summaryTitle = summary?.changes.length
     ? `Evidence edition ${summary.id}: ${summary.changes.length} published change${summary.changes.length === 1 ? "" : "s"}`
-    : `Evidence edition ${summary?.id ?? "unidentified"}: ${summary?.previousEditionId === null ? "no comparable baseline" : summary?.previousEditionId ? "no changes from prior catalog" : "comparison baseline not recorded"}`;
+    : `Evidence edition ${summary?.id ?? "unidentified"}: ${sameEdition ? "accepted edition is unchanged" : summary?.previousEditionId === null ? "no comparable baseline" : summary?.previousEditionId ? "no changes from prior catalog" : "comparison baseline not recorded"}`;
   const summaryEntry = summary ? [
     "<item>",
     `<title>${escapeXml(summaryTitle)}</title>`,
