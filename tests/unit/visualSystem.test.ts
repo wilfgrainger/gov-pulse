@@ -9,11 +9,36 @@ import { describe, expect, it } from "vitest";
 // reduced-motion and flat-evidence-panel contracts below intact.
 const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
 
+function token(name: string) {
+  return css.match(new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, "i"))?.[1] ?? null;
+}
+
+function relativeLuminance(hex: string) {
+  const [red, green, blue] = hex.slice(1).match(/../g)!.map((pair) => parseInt(pair, 16) / 255);
+  const linear = [red, green, blue].map((channel) =>
+    channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+  );
+  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+}
+
+function contrastRatio(first: string, second: string) {
+  const [lighter, darker] = [relativeLuminance(first), relativeLuminance(second)].sort((a, b) => b - a);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 describe("consumer visual system", () => {
   it("defines assignable semantic color tokens without pinning one aesthetic", () => {
     for (const token of ["background", "surface", "foreground", "accent", "accent-on-dark"]) {
       expect(css).toMatch(new RegExp(`--${token}:\\s*#[0-9a-f]{3,8}`, "i"));
     }
+  });
+
+  it("keeps dark masthead text above WCAG AA contrast on the vivid accent", () => {
+    const foreground = token("foreground");
+    const accent = token("accent-vivid");
+    expect(foreground).not.toBeNull();
+    expect(accent).not.toBeNull();
+    expect(contrastRatio(foreground!, accent!)).toBeGreaterThanOrEqual(4.5);
   });
 
   it("defines one v3 publication system for the first visit, edition and evidence pages", () => {

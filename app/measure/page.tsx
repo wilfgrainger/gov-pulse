@@ -3,6 +3,7 @@ import MeasureLibrary from "@/app/components/MeasureLibrary";
 import type { MeasureLibraryItem } from "@/app/components/MeasureLibrary";
 import SectionNav from "@/app/components/SectionNav";
 import SiteFooter from "@/app/components/SiteFooter";
+import { measureAvailabilityReason, measurePublisher } from "@/app/lib/measureAvailability";
 import { measureForDisplay } from "@/app/lib/measureCatalog";
 import { MEASURES } from "@/app/lib/measureDefinitions";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
@@ -14,24 +15,26 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://public-data.org/measure/" },
 };
 
-export default async function MeasureIndexPage() {
+export default async function MeasureIndexPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const query = process.env.STATIC_EXPORT === "true" ? {} : await searchParams;
+  const queryEntries: [string, string][] = [];
+  for (const [key, value] of Object.entries(query)) {
+    const first = Array.isArray(value) ? value[0] : value;
+    if (typeof first === "string") queryEntries.push([key, first]);
+  }
+  const initialSearch = new URLSearchParams(queryEntries).toString();
   const snapshot = await readServerMetricsSnapshot();
   const catalog = snapshot?.meta.measureCatalog;
   const now = new Date();
   const measures: MeasureLibraryItem[] = MEASURES.map((definition) => {
     const record = measureForDisplay(catalog, definition.id, now);
     const source = snapshot?.meta.sources[definition.section];
-    const provenance = source && typeof source === "object"
-      ? (source as { provenance?: { upstreams?: { publisher?: string }[] } }).provenance
-      : undefined;
-    const publisher = provenance?.upstreams?.map((upstream) => upstream.publisher).find(Boolean) ?? "Publisher not identified";
-    const status = source && typeof source === "object" ? (source as { status?: string }).status : undefined;
-    const availabilityReason = record?.availability === "historical"
-      ? `This verified publication is outside its current validity window${record.validUntil ? ` (valid through ${record.validUntil.slice(0, 10)})` : ""}.`
-      : record ? null
-        : !snapshot ? "No current national evidence edition is available."
-          : status === "error" || !source ? "The source section is unavailable in this edition."
-            : "No record passed the source, period and history checks for this edition.";
+    const publisher = measurePublisher(definition, source);
+    const availabilityReason = measureAvailabilityReason(definition, {
+      record,
+      source,
+      snapshotAvailable: Boolean(snapshot),
+    });
     return {
       ...definition,
       publisher,
@@ -50,7 +53,7 @@ export default async function MeasureIndexPage() {
         <h1 className="mt-2 text-5xl font-black tracking-[-0.06em] md:text-7xl">Measure library</h1>
         <p className="mt-4 max-w-3xl text-base leading-7 text-gray-700">Search measures by topic, publisher, geography, frequency, unit or availability. Verified observations keep their source and revision context; unavailable entries explain why no value is shown.</p>
       </header>
-      <MeasureLibrary measures={measures} />
+      <MeasureLibrary measures={measures} initialSearch={initialSearch} />
     </main>
     <SiteFooter />
   </div>;

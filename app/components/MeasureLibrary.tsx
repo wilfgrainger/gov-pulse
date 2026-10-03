@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useMemo, useSyncExternalStore } from "react";
 import { formatMeasure } from "@/app/lib/dataExplorer";
 import type { MeasureDefinition } from "@/app/lib/measureDefinitions";
 import type { MeasureRecord } from "@/app/lib/measureCatalog";
@@ -39,6 +39,18 @@ const AVAILABILITY_LABEL: Record<MeasureLibraryItem["availability"], string> = {
   historical: "Historical",
   unavailable: "Unavailable",
 };
+const SEARCH_CHANGE_EVENT = "public-data:measure-library-search-change";
+
+function subscribeToSearch(onChange: () => void) {
+  window.addEventListener("popstate", onChange);
+  window.addEventListener(SEARCH_CHANGE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("popstate", onChange);
+    window.removeEventListener(SEARCH_CHANGE_EVENT, onChange);
+  };
+}
+
+function currentSearch() { return window.location.search.slice(1); }
 
 function filtersFrom(search: string): Filters {
   const params = new URLSearchParams(search);
@@ -55,29 +67,21 @@ function filterOptions(items: MeasureLibraryItem[], key: Exclude<keyof Filters, 
     .map((value) => ({ value, label: value }));
 }
 
-export default function MeasureLibrary({ measures }: { measures: MeasureLibraryItem[] }) {
-  const router = useRouter();
+export default function MeasureLibrary({ measures, initialSearch = "" }: { measures: MeasureLibraryItem[]; initialSearch?: string }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [filters, setFilters] = useState(() => filtersFrom(searchParams.toString()));
-
-  useEffect(() => {
-    function restoreFiltersFromHistory() {
-      setFilters(filtersFrom(window.location.search));
-    }
-    window.addEventListener("popstate", restoreFiltersFromHistory);
-    return () => window.removeEventListener("popstate", restoreFiltersFromHistory);
-  }, []);
+  const search = useSyncExternalStore(subscribeToSearch, currentSearch, () => initialSearch);
+  const filters = filtersFrom(search);
 
   function changeFilter(key: keyof Filters, value: string) {
     const next = { ...filters, [key]: key === "q" ? value.slice(0, 120) : value };
-    setFilters(next);
     const params = new URLSearchParams();
     for (const filterKey of FILTER_KEYS) {
       const filterValue = next[filterKey].trim();
       if (filterValue) params.set(filterKey, filterValue);
     }
-    router.replace(params.size ? `${pathname}?${params.toString()}` : pathname, { scroll: false });
+    const url = params.size ? `${pathname}?${params.toString()}` : pathname;
+    window.history.replaceState(window.history.state, "", url);
+    window.dispatchEvent(new Event(SEARCH_CHANGE_EVENT));
   }
 
   const filtered = useMemo(() => {

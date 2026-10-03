@@ -11,7 +11,7 @@
   --accent: #a72d24;
   --accent-soft: #ffe0d4;
   --accent-on-dark: #ffd18b;
-  --accent-vivid: #ef5124;
+  --accent-vivid: #ff6b35;
   --teal: #08766c;
   --gold: #a45700;
   --blue: #4d43a5;
@@ -166,9 +166,17 @@ table.sr-only {
   background: var(--accent);
 }
 
-.v3-page-header-rail {
-  border-top: 1px solid var(--line);
-  padding-top: 1.25rem;
+.debt-lead > figure {
+  min-width: 0;
+  border-color: rgb(20 36 59 / 0.2);
+  background: rgb(255 255 255 / 0.82);
+  padding-inline: 0.8rem;
+}
+
+@media (min-width: 40rem) {
+  .debt-lead > figure {
+    padding-inline: 1.25rem;
+  }
 }
 
 .page-title {
@@ -178,6 +186,10 @@ table.sr-only {
   letter-spacing: -0.07em;
   line-height: 0.92;
   text-wrap: balance;
+}
+
+.comparison-page-title {
+  font-size: clamp(2.75rem, 5vw, 4.5rem);
 }
 
 .section-title {
@@ -601,7 +613,8 @@ table.sr-only {
 
 .v3-page-header {
   background:
-    linear-gradient(105deg, #fff2df 0 72%, #d7eee8 72% 100%);
+    radial-gradient(ellipse at 96% 8%, rgb(8 118 108 / 0.14), transparent 24rem),
+    #fff2df;
 }
 
 .v3-page-header::before {
@@ -729,15 +742,6 @@ input[type="text"]:focus {
 
   .v3-reading-guide {
     padding: 2rem;
-  }
-}
-
-@media (min-width: 54rem) {
-  .v3-page-header-rail {
-    border-top: 0;
-    border-left: 1px solid var(--line-strong);
-    padding-top: 0;
-    padding-left: 1.5rem;
   }
 }
 
