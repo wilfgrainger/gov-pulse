@@ -159,6 +159,52 @@ describe("Cloudflare publication bootstrap", () => {
     });
   });
 
+  it("records and acknowledges a failed bootstrap source job so finalisation can proceed", async () => {
+    const { env, store } = environment();
+    const runId = bootstrapRunId(SHA);
+    const message = {
+      body: {
+        type: "refresh-section",
+        section: "unknown-section",
+        runId,
+        jobId: "section:gdpTracker",
+      },
+      ack: vi.fn(),
+      retry: vi.fn(),
+    };
+
+    await queuedWorker.queue({ messages: [message] }, env, {});
+
+    expect(message.ack).toHaveBeenCalledOnce();
+    expect(message.retry).not.toHaveBeenCalled();
+    expect(store.get(`${RUN_PREFIX}${runId}:terminal:section:gdpTracker`)).toMatchObject({
+      status: "failure",
+      result: {
+        errorCode: "job-failed",
+        errorMessage: "Section 'unknown-section' is outside the generic publication set",
+      },
+    });
+  });
+
+  it("keeps non-bootstrap source failures retryable", async () => {
+    const { env } = environment();
+    const message = {
+      body: {
+        type: "refresh-section",
+        section: "unknown-section",
+        runId: "daily-2026-10-03",
+        jobId: "section:gdpTracker",
+      },
+      ack: vi.fn(),
+      retry: vi.fn(),
+    };
+
+    await queuedWorker.queue({ messages: [message] }, env, {});
+
+    expect(message.retry).toHaveBeenCalledOnce();
+    expect(message.ack).not.toHaveBeenCalled();
+  });
+
   it("rejects non-commit deployment identifiers", () => {
     expect(() => bootstrapRunId("main")).toThrow(
       "must be a full Git commit SHA"
