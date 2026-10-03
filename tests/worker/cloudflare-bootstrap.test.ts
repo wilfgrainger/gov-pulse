@@ -189,6 +189,72 @@ describe("Cloudflare publication bootstrap", () => {
     });
   });
 
+  it("gives a forced retry of a finalised bootstrap run a trackable terminal key", async () => {
+    const { env, store, send } = environment();
+    const runId = bootstrapRunId(SHA);
+    store.set(`${RUN_PREFIX}${runId}`, {
+      runId,
+      scope: "bootstrap",
+      status: "incomplete",
+      expectedJobIds: ["section:gdpTracker"],
+      deadlineAt: new Date(Date.now() - 60_000).toISOString(),
+      dispatchedAt: new Date(Date.now() - 60_000).toISOString(),
+      finalisedAt: new Date(Date.now() - 30_000).toISOString(),
+      comparisonRefreshRequested: true,
+      comparisonRefreshForce: false,
+      comparisonRefreshQueuedAt: new Date(Date.now() - 20_000).toISOString(),
+    });
+    const message = {
+      body: { type: "bootstrap-publication", deploymentId: SHA, forceComparison: true },
+      ack: vi.fn(),
+      retry: vi.fn(),
+    };
+
+    await queuedWorker.queue({ messages: [message] }, env, {});
+
+    expect(send).toHaveBeenCalledWith({
+      type: "refresh-international-comparison",
+      runId,
+      jobId: `comparison:${runId}`,
+      force: true,
+    });
+    expect(message.ack).toHaveBeenCalledOnce();
+  });
+
+  it("does not queue another forced comparison when its terminal already succeeded", async () => {
+    const { env, store, send } = environment();
+    const runId = bootstrapRunId(SHA);
+    store.set(`${RUN_PREFIX}${runId}`, {
+      runId,
+      scope: "bootstrap",
+      status: "published",
+      expectedJobIds: ["section:gdpTracker"],
+      deadlineAt: new Date(Date.now() - 60_000).toISOString(),
+      dispatchedAt: new Date(Date.now() - 60_000).toISOString(),
+      finalisedAt: new Date(Date.now() - 30_000).toISOString(),
+      comparisonRefreshRequested: true,
+      comparisonRefreshForce: true,
+      comparisonRefreshQueuedAt: new Date(Date.now() - 20_000).toISOString(),
+    });
+    store.set(`${RUN_PREFIX}${runId}:terminal:comparison:${runId}`, {
+      runId,
+      jobId: `comparison:${runId}`,
+      status: "success",
+    });
+    const message = {
+      body: { type: "bootstrap-publication", deploymentId: SHA, forceComparison: true },
+      ack: vi.fn(),
+      retry: vi.fn(),
+    };
+
+    await queuedWorker.queue({ messages: [message] }, env, {});
+
+    expect(send).not.toHaveBeenCalledWith(expect.objectContaining({
+      type: "refresh-international-comparison",
+    }));
+    expect(message.ack).toHaveBeenCalledOnce();
+  });
+
   it("acknowledges a duplicate comparison job after its run terminal succeeded", async () => {
     const { env, store } = environment();
     const runId = bootstrapRunId(SHA);
