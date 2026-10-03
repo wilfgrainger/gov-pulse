@@ -392,6 +392,12 @@ async function createRun(env, now, scope = "daily", options = {}) {
     expectedJobIds: jobs.map((job) => job.jobId),
     dispatchedAt: null,
     finalisedAt: null,
+    ...(scope === "bootstrap"
+      ? {
+          comparisonRefreshRequested: options.comparisonRefreshRequested === true,
+          comparisonRefreshForce: options.comparisonRefreshForce === true,
+        }
+      : {}),
   };
   await kvPut(env, runKey(runId), run, { expirationTtl: RUN_TTL_SECONDS });
   return { run, jobs, existing: false };
@@ -513,6 +519,36 @@ async function enqueueCompletedBootstrapFinaliser(runId, env) {
   return true;
 }
 
+async function enqueueBootstrapComparisonRefresh(run, env) {
+  if (
+    run?.scope !== "bootstrap" ||
+    !run.finalisedAt ||
+    run.comparisonRefreshRequested !== true ||
+    run.comparisonRefreshQueuedAt
+  ) {
+    return false;
+  }
+
+  const jobId = `comparison:${run.runId}`;
+  const terminal = await kvGet(env, terminalKey(run.runId, jobId));
+  if (terminal?.status !== "success") {
+    await env.DATA_JOBS.send({
+      type: "refresh-international-comparison",
+      runId: run.runId,
+      jobId,
+      ...(run.comparisonRefreshForce === true ? { force: true } : {}),
+    });
+  }
+
+  await kvPut(
+    env,
+    runKey(run.runId),
+    { ...run, comparisonRefreshQueuedAt: new Date().toISOString() },
+    { expirationTtl: RUN_TTL_SECONDS }
+  );
+  return terminal?.status !== "success";
+}
+
 const queuedPublicationWorker = {
   async fetch(request) {
     // The deployed entrypoint is public-data-entry.js, which serves the public
@@ -554,6 +590,7 @@ const queuedPublicationWorker = {
       try {
         if (job?.type === "bootstrap-publication") {
           const deploymentId = String(job.deploymentId ?? "");
+          const forceComparison = job.forceComparison === true;
           const result = await enqueuePublicationRun(
             env,
             new Date(),
@@ -563,12 +600,25 @@ const queuedPublicationWorker = {
               finaliseDelaySeconds: BOOTSTRAP_FINALISE_DELAY_SECONDS,
               deadlineSeconds: BOOTSTRAP_DEADLINE_SECONDS,
               finaliseRetrySeconds: BOOTSTRAP_FINALISE_RETRY_SECONDS,
+              comparisonRefreshRequested: true,
+              comparisonRefreshForce: forceComparison,
             }
           );
-          if (result.dispatched || job.forceComparison === true) {
+          if (!result.dispatched && forceComparison && !result.run.finalisedAt) {
+            await kvPut(
+              env,
+              runKey(result.run.runId),
+              {
+                ...result.run,
+                comparisonRefreshRequested: true,
+                comparisonRefreshForce: true,
+              },
+              { expirationTtl: RUN_TTL_SECONDS }
+            );
+          } else if (!result.dispatched && forceComparison && result.run.finalisedAt) {
             await env.DATA_JOBS.send({
               type: "refresh-international-comparison",
-              ...(job.forceComparison === true ? { force: true } : {}),
+              force: true,
             });
           }
           console.log("Cloudflare publication bootstrap accepted", {
@@ -590,6 +640,7 @@ const queuedPublicationWorker = {
                   : FINALISE_RETRY_SECONDS,
             });
           } else {
+            await enqueueBootstrapComparisonRefresh(result.run, env);
             console.log("Cloudflare publication run finalised", {
               runId: result.run.runId,
               scope: result.run.scope,
@@ -598,6 +649,18 @@ const queuedPublicationWorker = {
             message.ack();
           }
           continue;
+        }
+
+        if (
+          job?.type === "refresh-international-comparison" &&
+          typeof job.runId === "string" &&
+          typeof job.jobId === "string"
+        ) {
+          const terminal = await kvGet(env, terminalKey(job.runId, job.jobId));
+          if (terminal?.status === "success") {
+            message.ack();
+            continue;
+          }
         }
 
         const result = await processQueueJob(job, env, ctx);

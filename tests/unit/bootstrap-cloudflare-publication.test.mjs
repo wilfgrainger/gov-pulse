@@ -73,7 +73,7 @@ function degradedPreparedSnapshot(now = new Date()) {
 }
 
 describe("Cloudflare deployment bootstrap", () => {
-  it("includes finaliser failure details in private bootstrap diagnostics", async () => {
+  it("keeps raw finaliser errors out of public bootstrap diagnostics", async () => {
     const runId = `bootstrap-${SHA}`;
     const run = {
       status: "running",
@@ -95,7 +95,49 @@ describe("Cloudflare deployment bootstrap", () => {
 
     const result = await publicationDiagnostics(fetchImpl, "account", "token", "namespace", SHA);
 
-    expect(result.run?.finalisationFailure).toEqual(run.finalisationFailure);
+    expect(result.run?.finalisationFailure).toEqual({
+      at: run.finalisationFailure.at,
+      errorName: run.finalisationFailure.errorName,
+    });
+    expect(result.run?.finalisationFailure).not.toHaveProperty("errorMessage");
+  });
+
+  it("reports every expected job and the comparison terminal without raw errors", async () => {
+    const runId = `bootstrap-${SHA}`;
+    const expectedJobIds = [
+      "section:housePriceIndex",
+      "section:realWages",
+      "external:nhsStats",
+    ];
+    const run = {
+      status: "running",
+      expectedJobIds,
+      comparisonRefreshRequested: true,
+      finalisedAt: null,
+    };
+    const values = new Map([
+      [`v13:publication:run:${runId}`, run],
+      [`v13:publication:run:${runId}:terminal:section:housePriceIndex`, { status: "success", completedAt: "2026-10-03T12:00:00.000Z" }],
+      [`v13:publication:run:${runId}:terminal:section:realWages`, { status: "success", completedAt: "2026-10-03T12:01:00.000Z" }],
+      [`v13:publication:run:${runId}:terminal:external:nhsStats`, { status: "failure", completedAt: "2026-10-03T12:02:00.000Z", result: { errorMessage: "private source details" } }],
+      [`v13:publication:run:${runId}:terminal:comparison:${runId}`, { status: "success", completedAt: "2026-10-03T12:03:00.000Z" }],
+    ]);
+    const fetchImpl = vi.fn(async (input) => {
+      const url = new URL(String(input));
+      const encodedKey = url.pathname.split("/values/")[1] ?? "";
+      const key = decodeURIComponent(encodedKey);
+      return values.has(key) ? jsonResponse(values.get(key)) : new Response(null, { status: 404 });
+    });
+
+    const result = await publicationDiagnostics(fetchImpl, "account", "token", "namespace", SHA);
+
+    expect(Object.keys(result.terminals)).toEqual([
+      ...expectedJobIds,
+      `comparison:${runId}`,
+    ]);
+    expect(result.terminals["external:nhsStats"]).toMatchObject({ status: "failure" });
+    expect(result.terminals["external:nhsStats"]).not.toHaveProperty("result");
+    expect(result.terminals[`comparison:${runId}`]).toMatchObject({ status: "success" });
   });
 
   it("does not accept an empty ready artifact as a prepared publication", async () => {

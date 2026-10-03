@@ -63,7 +63,7 @@ describe("Cloudflare publication bootstrap", () => {
     expect(jobs.some((job) => job.type === "refresh-international-comparison")).toBe(false);
   });
 
-  it("creates one deterministic national run and dispatches an independent comparison refresh once", async () => {
+  it("keeps comparison work out of the queue until national finalisation", async () => {
     const { env, store, sendBatch, send } = environment();
     const first = bootstrapMessage();
     await queuedWorker.queue({ messages: [first] }, env, {});
@@ -80,28 +80,31 @@ describe("Cloudflare publication bootstrap", () => {
       },
       { delaySeconds: BOOTSTRAP_FINALISE_DELAY_SECONDS }
     );
-    expect(send).toHaveBeenCalledWith({ type: "refresh-international-comparison" });
-    expect(send).toHaveBeenCalledTimes(2);
+    expect(send).toHaveBeenCalledTimes(1);
 
     const run = store.get(`${RUN_PREFIX}${bootstrapRunId(SHA)}`) as {
       scope: string;
       dispatchedAt: string | null;
       expectedJobIds: string[];
+      comparisonRefreshRequested: boolean;
+      comparisonRefreshForce: boolean;
     };
     expect(run.scope).toBe("bootstrap");
     expect(run.dispatchedAt).toBeTruthy();
     expect(run.expectedJobIds).toHaveLength(10);
+    expect(run.comparisonRefreshRequested).toBe(true);
+    expect(run.comparisonRefreshForce).toBe(false);
     expect(run.expectedJobIds).not.toContain("refresh-international-comparison");
 
     const duplicate = bootstrapMessage();
     await queuedWorker.queue({ messages: [duplicate] }, env, {});
     expect(duplicate.ack).toHaveBeenCalledOnce();
     expect(sendBatch).toHaveBeenCalledOnce();
-    expect(send).toHaveBeenCalledTimes(2);
+    expect(send).toHaveBeenCalledTimes(1);
   });
 
-  it("forces the independent comparison refresh when manual bootstrap requests it", async () => {
-    const { env, send } = environment();
+  it("remembers a forced comparison refresh request until national finalisation", async () => {
+    const { env, store, send } = environment();
     const message = {
       body: { type: "bootstrap-publication", deploymentId: SHA, forceComparison: true },
       ack: vi.fn(),
@@ -110,12 +113,16 @@ describe("Cloudflare publication bootstrap", () => {
 
     await queuedWorker.queue({ messages: [message] }, env, {});
 
-    expect(send).toHaveBeenCalledWith({ type: "refresh-international-comparison", force: true });
+    expect(send).not.toHaveBeenCalledWith(expect.objectContaining({ type: "refresh-international-comparison" }));
+    expect(store.get(`${RUN_PREFIX}${bootstrapRunId(SHA)}`)).toMatchObject({
+      comparisonRefreshRequested: true,
+      comparisonRefreshForce: true,
+    });
     expect(message.ack).toHaveBeenCalledOnce();
   });
 
-  it("still queues a forced comparison refresh when the national bootstrap is already active", async () => {
-    const { env, send } = environment();
+  it("does not let a forced comparison request overtake an active national run", async () => {
+    const { env, store, send } = environment();
     await queuedWorker.queue({ messages: [bootstrapMessage()] }, env, {});
     send.mockClear();
     const forcedRepeat = {
@@ -126,8 +133,84 @@ describe("Cloudflare publication bootstrap", () => {
 
     await queuedWorker.queue({ messages: [forcedRepeat] }, env, {});
 
-    expect(send).toHaveBeenCalledWith({ type: "refresh-international-comparison", force: true });
+    expect(send).not.toHaveBeenCalledWith(expect.objectContaining({ type: "refresh-international-comparison" }));
+    expect(store.get(`${RUN_PREFIX}${bootstrapRunId(SHA)}`)).toMatchObject({
+      comparisonRefreshRequested: true,
+      comparisonRefreshForce: true,
+    });
     expect(forcedRepeat.ack).toHaveBeenCalledOnce();
+  });
+
+  it("queues comparison work only after a bootstrap run is already finalised", async () => {
+    const { env, store, send } = environment();
+    const runId = bootstrapRunId(SHA);
+    store.set(`${RUN_PREFIX}${runId}`, {
+      runId,
+      scope: "bootstrap",
+      status: "running",
+      expectedJobIds: ["section:gdpTracker"],
+      deadlineAt: new Date(Date.now() - 60_000).toISOString(),
+      finalisedAt: null,
+      comparisonRefreshRequested: true,
+      comparisonRefreshForce: true,
+    });
+    store.set(`${RUN_PREFIX}${runId}:terminal:section:gdpTracker`, {
+      jobId: "section:gdpTracker",
+      status: "failure",
+    });
+    send.mockImplementation(async (job) => {
+      expect(store.get(`${RUN_PREFIX}${runId}`)).toMatchObject({
+        status: "incomplete",
+      });
+      expect(
+        (store.get(`${RUN_PREFIX}${runId}`) as { finalisedAt: string }).finalisedAt
+      ).toBeTruthy();
+      expect(job).toMatchObject({ type: "refresh-international-comparison" });
+    });
+    const message = {
+      body: { type: "finalise-run", runId },
+      ack: vi.fn(),
+      retry: vi.fn(),
+    };
+
+    await queuedWorker.queue({ messages: [message] }, env, {});
+
+    expect(send).toHaveBeenCalledOnce();
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({
+      type: "refresh-international-comparison",
+      runId,
+      jobId: `comparison:${runId}`,
+      force: true,
+    }));
+    expect(message.ack).toHaveBeenCalledOnce();
+    expect(message.retry).not.toHaveBeenCalled();
+    expect(store.get(`${RUN_PREFIX}${runId}`)).toMatchObject({
+      comparisonRefreshQueuedAt: expect.any(String),
+    });
+  });
+
+  it("acknowledges a duplicate comparison job after its run terminal succeeded", async () => {
+    const { env, store } = environment();
+    const runId = bootstrapRunId(SHA);
+    const jobId = `comparison:${runId}`;
+    store.set(`${RUN_PREFIX}${runId}:terminal:${jobId}`, { status: "success" });
+    const message = {
+      body: { type: "refresh-international-comparison", runId, jobId, force: true },
+      ack: vi.fn(),
+      retry: vi.fn(),
+    };
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("unexpected fetch"));
+
+    try {
+      await queuedWorker.queue({ messages: [message] }, env, {});
+    } finally {
+      fetchSpy.mockRestore();
+    }
+
+    expect(message.ack).toHaveBeenCalledOnce();
+    expect(message.retry).not.toHaveBeenCalled();
+    expect(env.DATA_JOBS.send).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it("records finaliser errors on active bootstrap runs before retrying the Queue message", async () => {
