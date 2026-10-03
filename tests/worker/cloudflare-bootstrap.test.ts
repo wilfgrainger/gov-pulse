@@ -7,6 +7,7 @@ import queuedWorker, {
   RUN_PREFIX,
   bootstrapRunId,
   enqueueCompletedBootstrapFinaliser,
+  enqueueInternationalComparisonRefresh,
   refreshJobs,
 } from "@/worker/queued-publication-entry";
 
@@ -41,6 +42,25 @@ function bootstrapMessage() {
 }
 
 describe("Cloudflare publication bootstrap", () => {
+  it("queues bounded comparison work from the scheduled refresh path", async () => {
+    const { env, send } = environment();
+    const now = new Date("2026-10-03T12:00:00.000Z");
+
+    const result = await enqueueInternationalComparisonRefresh(env, {
+      runId: "daily-comparison-run",
+      now,
+    });
+
+    expect(result).toMatchObject({ queued: 7, reason: "queued" });
+    expect(send).toHaveBeenCalledTimes(7);
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({
+      runId: "daily-comparison-run",
+      batchId: "defence",
+      sourceIds: ["world-bank-population-2025", "sipri-2025"],
+      force: true,
+    }));
+  });
+
   it("schedules only required national sections", () => {
     const jobs = refreshJobs("bootstrap-run", "bootstrap");
     expect(jobs).toHaveLength(10);
@@ -175,12 +195,44 @@ describe("Cloudflare publication bootstrap", () => {
 
     await queuedWorker.queue({ messages: [message] }, env, {});
 
-    expect(send).toHaveBeenCalledOnce();
-    expect(send).toHaveBeenCalledWith(expect.objectContaining({
+    expect(send).toHaveBeenCalledTimes(7);
+    expect(send).toHaveBeenNthCalledWith(1, expect.objectContaining({
       type: "refresh-international-comparison",
       runId,
-      jobId: `comparison:${runId}`,
+      jobId: `comparison:${runId}:government-debt`,
+      batchId: "government-debt",
+      sourceIds: ["imf-gdp-2026", "imf-debt-2026"],
       force: true,
+    }));
+    expect(send).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      jobId: `comparison:${runId}:oda`,
+      batchId: "oda",
+      sourceIds: ["world-bank-population-2025", "oecd-oda-2025"],
+    }));
+    expect(send).toHaveBeenNthCalledWith(3, expect.objectContaining({
+      jobId: `comparison:${runId}:defence`,
+      batchId: "defence",
+      sourceIds: ["world-bank-population-2025", "sipri-2025"],
+    }));
+    expect(send).toHaveBeenNthCalledWith(4, expect.objectContaining({
+      jobId: `comparison:${runId}:social-spending`,
+      batchId: "social-spending",
+      sourceIds: ["imf-gdp-2023", "oecd-socx-2023"],
+    }));
+    expect(send).toHaveBeenNthCalledWith(5, expect.objectContaining({
+      jobId: `comparison:${runId}:healthcare`,
+      batchId: "healthcare",
+      sourceIds: ["world-bank-health-2024"],
+    }));
+    expect(send).toHaveBeenNthCalledWith(6, expect.objectContaining({
+      jobId: `comparison:${runId}:tax-revenue`,
+      batchId: "tax-revenue",
+      sourceIds: ["imf-gdp-2024", "oecd-tax-2024"],
+    }));
+    expect(send).toHaveBeenNthCalledWith(7, expect.objectContaining({
+      jobId: `comparison:${runId}:debt-interest`,
+      batchId: "debt-interest",
+      sourceIds: ["imf-gdp-2024", "imf-interest-2024"],
     }));
     expect(message.ack).toHaveBeenCalledOnce();
     expect(message.retry).not.toHaveBeenCalled();
@@ -189,7 +241,7 @@ describe("Cloudflare publication bootstrap", () => {
     });
   });
 
-  it("gives a forced retry of a finalised bootstrap run a trackable terminal key", async () => {
+  it("requeues only unfinished comparison batches for a forced finalised-run retry", async () => {
     const { env, store, send } = environment();
     const runId = bootstrapRunId(SHA);
     store.set(`${RUN_PREFIX}${runId}`, {
@@ -204,6 +256,16 @@ describe("Cloudflare publication bootstrap", () => {
       comparisonRefreshForce: false,
       comparisonRefreshQueuedAt: new Date(Date.now() - 20_000).toISOString(),
     });
+    store.set(`${RUN_PREFIX}${runId}:terminal:comparison:${runId}:healthcare`, {
+      runId,
+      jobId: `comparison:${runId}:healthcare`,
+      status: "success",
+    });
+    store.set(`${RUN_PREFIX}${runId}:terminal:comparison:${runId}`, {
+      runId,
+      jobId: `comparison:${runId}`,
+      status: "failure",
+    });
     const message = {
       body: { type: "bootstrap-publication", deploymentId: SHA, forceComparison: true },
       ack: vi.fn(),
@@ -212,11 +274,28 @@ describe("Cloudflare publication bootstrap", () => {
 
     await queuedWorker.queue({ messages: [message] }, env, {});
 
+    expect(send).toHaveBeenCalledTimes(6);
     expect(send).toHaveBeenCalledWith({
       type: "refresh-international-comparison",
       runId,
-      jobId: `comparison:${runId}`,
+      jobId: `comparison:${runId}:government-debt`,
+      batchId: "government-debt",
+      sourceIds: ["imf-gdp-2026", "imf-debt-2026"],
+      expectedBatchIds: [
+        "government-debt",
+        "oda",
+        "defence",
+        "social-spending",
+        "healthcare",
+        "tax-revenue",
+        "debt-interest",
+      ],
       force: true,
+    });
+    expect(send).not.toHaveBeenCalledWith(expect.objectContaining({ batchId: "healthcare" }));
+    expect(store.get(`${RUN_PREFIX}${runId}:terminal:comparison:${runId}`)).toMatchObject({
+      status: "pending",
+      completedAt: null,
     });
     expect(message.ack).toHaveBeenCalledOnce();
   });
@@ -258,10 +337,17 @@ describe("Cloudflare publication bootstrap", () => {
   it("acknowledges a duplicate comparison job after its run terminal succeeded", async () => {
     const { env, store } = environment();
     const runId = bootstrapRunId(SHA);
-    const jobId = `comparison:${runId}`;
+    const jobId = `comparison:${runId}:healthcare`;
     store.set(`${RUN_PREFIX}${runId}:terminal:${jobId}`, { status: "success" });
     const message = {
-      body: { type: "refresh-international-comparison", runId, jobId, force: true },
+      body: {
+        type: "refresh-international-comparison",
+        runId,
+        jobId,
+        batchId: "healthcare",
+        sourceIds: ["world-bank-health-2024"],
+        force: true,
+      },
       ack: vi.fn(),
       retry: vi.fn(),
     };

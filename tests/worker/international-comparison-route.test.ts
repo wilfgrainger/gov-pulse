@@ -252,4 +252,23 @@ describe("international comparison publication route", () => {
     await refreshInternationalComparison(env, { now, collect });
     expect(collect).toHaveBeenCalledTimes(1);
   });
+
+  it("does not age a shared-dependency measure while a batch refreshes only one of its sources", async () => {
+    const now = new Date("2026-08-20T22:00:00.000Z");
+    const previous = fixture("2026-08-19T22:00:00.000Z");
+    const candidate = fixture(now.toISOString());
+    candidate.meta.attemptedSources = ["imf-gdp-2024"];
+    candidate.meta.sourceFailures = [];
+    const { env } = envWith(previous);
+
+    const result = await refreshInternationalComparison(env, {
+      now,
+      force: true,
+      sourceIds: ["imf-gdp-2024"],
+      collect: async () => candidate,
+    });
+
+    expect(result.publication.measures.taxRevenue).toEqual(previous.measures.taxRevenue);
+    expect(result.publication.measures.debtInterest).toEqual(previous.measures.debtInterest);
+  });
 });

@@ -43,6 +43,15 @@ const INTERNATIONAL_SOURCES = Object.freeze([
   "world-bank-health-2024",
   "oecd-tax-2024",
 ]);
+const INTERNATIONAL_COMPARISON_REFRESH_BATCHES = Object.freeze([
+  Object.freeze({ id: "government-debt", sourceIds: Object.freeze(["imf-gdp-2026", "imf-debt-2026"]) }),
+  Object.freeze({ id: "oda", sourceIds: Object.freeze(["world-bank-population-2025", "oecd-oda-2025"]) }),
+  Object.freeze({ id: "defence", sourceIds: Object.freeze(["world-bank-population-2025", "sipri-2025"]) }),
+  Object.freeze({ id: "social-spending", sourceIds: Object.freeze(["imf-gdp-2023", "oecd-socx-2023"]) }),
+  Object.freeze({ id: "healthcare", sourceIds: Object.freeze(["world-bank-health-2024"]) }),
+  Object.freeze({ id: "tax-revenue", sourceIds: Object.freeze(["imf-gdp-2024", "oecd-tax-2024"]) }),
+  Object.freeze({ id: "debt-interest", sourceIds: Object.freeze(["imf-gdp-2024", "imf-interest-2024"]) }),
+]);
 const COMPARISON_VALIDITY_MS = 30 * 24 * 60 * 60 * 1000;
 
 const SOURCES = Object.freeze({
@@ -528,7 +537,8 @@ async function refreshInternationalComparison(env, options = {}) {
   }
 
   const collect = options.collect ?? collectInternationalComparison;
-  const selectedSources = current && !options.force ? sourcesDue(current, now) : [...INTERNATIONAL_SOURCES];
+  const selectedSources = options.sourceIds ??
+    (current && !options.force ? sourcesDue(current, now) : [...INTERNATIONAL_SOURCES]);
   const candidate = await collect(options.fetchImpl ?? fetch, now, { sourceIds: selectedSources });
   const candidatePublication = validateInternationalComparisonPublication(candidate);
   const mergedMeasures = { ...candidatePublication.measures };
@@ -542,6 +552,10 @@ async function refreshInternationalComparison(env, options = {}) {
     }
     const failed = dependencies.some((source) => (candidatePublication.meta.sourceFailures ?? []).includes(source));
     const allDependenciesAttempted = dependencies.every((source) => attempted.includes(source));
+    if (!allDependenciesAttempted && !failed) {
+      if (previous) mergedMeasures[id] = previous;
+      continue;
+    }
     if (!failed && allDependenciesAttempted) {
       const previousEdition = previous?.lifecycle?.sourceEditionId;
       const candidateEdition = candidatePublication.measures[id].lifecycle?.sourceEditionId;
@@ -616,6 +630,7 @@ export {
   SOURCES,
   COMPARISON_VALIDITY_MS,
   INTERNATIONAL_SOURCES,
+  INTERNATIONAL_COMPARISON_REFRESH_BATCHES,
   buildInternationalComparisonPublication,
   collectInternationalComparison,
   comparisonSourceBundle,
