@@ -46,14 +46,18 @@ describe("build snapshot module generator", () => {
     const now = new Date().toISOString();
     const snapshot = {
       meta: {
-        registryVersion: "test-registry",
+        registryVersion: FEED_REGISTRY_VERSION,
         generatedAt: now,
         sources: {
           gdpTracker: {
             status: "ok",
             cacheState: "fresh",
             fetchedAt: now,
+            error: "private build snapshot error",
           },
+        },
+        publicationDiagnostics: {
+          gdpTracker: { code: "upstream_fetch_failure", summary: "private diagnostic" },
         },
       },
       gdpTracker: {
@@ -75,6 +79,19 @@ describe("build snapshot module generator", () => {
     expect(generated).toContain("export const BUILD_METRICS_SNAPSHOT: unknown");
     expect(generated).toContain('"period": "Current test period"');
     expect(generated).toContain('"monthlyGrowth": 0.1');
+    expect(generated).toContain('"measureCatalog": {');
+    expect(generated).toContain('"schemaVersion": 2');
+    expect(generated).toContain('"previousEditionId": null');
+    expect(generated).not.toContain("publicationDiagnostics");
+    expect(generated).not.toContain("private build snapshot error");
+    expect(generated).not.toContain("private diagnostic");
+
+    const first = validateBuildSnapshot(snapshot, new Date(now));
+    const repeated = validateBuildSnapshot({
+      ...snapshot,
+      meta: { ...snapshot.meta, measureCatalog: first.meta.measureCatalog },
+    }, new Date(now));
+    expect(repeated.meta.editionSummary).toMatchObject({ previousEditionId: null, changes: [] });
   });
 
   it("sanitizes release metadata and protects spreadsheet cells", () => {
@@ -87,6 +104,7 @@ describe("build snapshot module generator", () => {
           cacheState: "fresh",
           fetchedAt: now,
           backend: "private-worker",
+          error: "private source rejection details",
         },
       ])
     );
@@ -117,6 +135,9 @@ describe("build snapshot module generator", () => {
           generatedAt: now,
           publicationMode: "queue-free-tier",
           freeTierBudget: { reads: 1 },
+          publicationDiagnostics: {
+            nhsStats: { code: "upstream_fetch_failure", summary: "The official source could not be collected." },
+          },
           sources,
         },
         ...sections,
@@ -126,6 +147,9 @@ describe("build snapshot module generator", () => {
 
     expect(candidate.meta.publicationMode).toBeUndefined();
     expect(candidate.meta.freeTierBudget).toBeUndefined();
+    expect(candidate.meta).not.toHaveProperty("publicationDiagnostics");
+    expect(candidate.meta.sources.electionPolling).not.toHaveProperty("error");
+    expect(JSON.stringify(candidate)).not.toContain("private source rejection details");
     expect(candidate.meta.sources.electionPolling.backend).toBeUndefined();
     expect(csvCell(candidate.electionPolling.value)).toBe(
       "\"'=HYPERLINK(\"\"bad\"\")\""

@@ -75,26 +75,42 @@ if (process.env.STATIC_EXPORT === "true") {
   }
 
   const gdpHtml = await readFile("out/section/gdp/index.html", "utf8");
-  let hasSeed = true;
-  try { await access("public/data/metrics-snapshot.json"); } catch { hasSeed = false; }
-  const expectedMarkers = [
+  const requiredDiscoveryMarkers = [
     "<title>UK GDP growth | public-data.org</title>",
     'rel="canonical" href="https://public-data.org/section/gdp/"',
     'type="application/ld+json"',
     '"@type":"Dataset"',
     'href="https://public-data.org/feed.xml"',
-    ...(hasSeed ? [
-      'href="/data/sections/gdpTracker.json"',
-      'href="/data/sections/gdpTracker.csv"',
-    ] : ["A download will appear when this section has current verified evidence."]),
   ];
 
-  for (const marker of expectedMarkers) {
+  for (const marker of requiredDiscoveryMarkers) {
     if (!gdpHtml.includes(marker)) {
       printDiagnosticTail();
       console.error(`GDP static HTML is missing discovery marker: ${marker}`);
       process.exit(1);
     }
+  }
+
+  const downloads = ["json", "csv"].map((format) => `href="/data/sections/gdpTracker.${format}"`);
+  const hasAnyDownload = downloads.some((marker) => gdpHtml.includes(marker));
+  const hasCompleteDownloads = downloads.every((marker) => gdpHtml.includes(marker)) &&
+    gdpHtml.includes("Source metadata, observation and publication dates, geography, attribution and licence are included with this current edition.");
+
+  if (hasCompleteDownloads) {
+    for (const format of ["json", "csv"]) {
+      const artifact = `out/data/sections/gdpTracker.${format}`;
+      try {
+        await access(artifact);
+      } catch (error) {
+        printDiagnosticTail();
+        console.error(`GDP static HTML links to a missing section download: ${artifact}`, error);
+        process.exit(1);
+      }
+    }
+  } else if (hasAnyDownload || !gdpHtml.includes("A download will appear when this section has current verified evidence.")) {
+    printDiagnosticTail();
+    console.error("GDP static HTML must show both verified downloads or an explicit unavailable state.");
+    process.exit(1);
   }
 }
 

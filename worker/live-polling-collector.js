@@ -1,4 +1,5 @@
 import { PARTY_LABELS, normalizePrimaryPollPayload } from "./election-polls.js";
+import { collectMoreInCommonPolls } from "./more-in-common-polling.js";
 import {
   absoluteUrl,
   MAX_RESPONSE_BYTES,
@@ -11,6 +12,12 @@ import {
 const YOU_GOV_ARTICLES_URL = "https://yougov.com/en-gb/articles";
 const YOU_GOV_METHOD_URL =
   "https://yougov.com/en-gb/articles/54278-how-yougov-conducts-voting-intention-polling";
+const YOU_GOV_ARTICLE_HOSTS = new Set(["yougov.com", "www.yougov.com"]);
+const YOU_GOV_RESULTS_HOSTS = new Set([
+  "ygo-assets-websites-editorial-emea.yougov.net",
+]);
+const MAX_PDF_STREAM_EXPANSION_BYTES = 2 * 1024 * 1024;
+const MAX_PDF_TOTAL_EXPANSION_BYTES = 8 * 1024 * 1024;
 
 const MONTH_NUMBER = Object.freeze({
   january: 1,
@@ -128,15 +135,40 @@ function parsePartyShares(text) {
   return result;
 }
 
+function approvedYouGovUrl(value, base, hosts, pathnamePattern) {
+  let url;
+  try {
+    url = new URL(absoluteUrl(base, value));
+  } catch {
+    return null;
+  }
+  if (
+    url.protocol !== "https:" ||
+    !hosts.has(url.hostname.toLowerCase()) ||
+    url.username ||
+    url.password ||
+    url.port ||
+    !pathnamePattern.test(url.pathname)
+  ) {
+    return null;
+  }
+  return url.toString();
+}
+
 function latestYouGovArticleUrl(html) {
   const urls = [...String(html).matchAll(
     /href=(?:"|')([^"']*\/en-gb\/articles\/(\d+)-voting-intention-[^"']+)(?:"|')/gi
   )]
     .map((match) => ({
-      url: absoluteUrl(YOU_GOV_ARTICLES_URL, match[1]),
+      url: approvedYouGovUrl(
+        match[1],
+        YOU_GOV_ARTICLES_URL,
+        YOU_GOV_ARTICLE_HOSTS,
+        /^\/en-gb\/articles\/\d+-voting-intention-[^/]+$/i,
+      ),
       id: Number(match[2]),
     }))
-    .filter((entry) => Number.isSafeInteger(entry.id));
+    .filter((entry) => entry.url && Number.isSafeInteger(entry.id));
   if (urls.length === 0) {
     throw new Error("YouGov article index did not expose a voting-intention publication");
   }
@@ -148,8 +180,13 @@ function findPdfUrl(html, base) {
   const urls = [...String(html).matchAll(
     /href=(?:"|')([^"']+\.pdf(?:\?[^"']*)?)(?:"|')/gi
   )]
-    .map((match) => absoluteUrl(base, match[1]))
-    .filter((url) => /VotingIntention/i.test(url));
+    .map((match) => approvedYouGovUrl(
+      match[1],
+      base,
+      YOU_GOV_RESULTS_HOSTS,
+      /^\/documents\/[^/]*VotingIntention[^/]*\.pdf$/i,
+    ))
+    .filter(Boolean);
   if (urls.length === 0) {
     throw new Error("YouGov article did not link primary result tables");
   }
@@ -164,11 +201,38 @@ function latin1(bytes) {
   return result;
 }
 
-async function inflate(bytes) {
+class PdfExpansionLimitError extends Error {}
+
+async function inflate(bytes, limit = MAX_PDF_STREAM_EXPANSION_BYTES) {
   const stream = new Blob([bytes])
     .stream()
     .pipeThrough(new DecompressionStream("deflate"));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
+  const reader = stream.getReader();
+  const chunks = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > limit) {
+        try { await reader.cancel(); } catch {}
+        throw new PdfExpansionLimitError(
+          `YouGov/NHS expanded PDF stream exceeded its ${limit}-byte limit`,
+        );
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const expanded = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    expanded.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return expanded;
 }
 
 function decodePdfLiteral(value) {
@@ -251,6 +315,7 @@ async function extractPdfText(arrayBuffer) {
   const bytes = new Uint8Array(arrayBuffer);
   const raw = latin1(bytes);
   const parts = [];
+  let expandedBytes = 0;
   const streamPattern = /<<(.*?)>>\s*stream\r?\n/gs;
   let match;
   while ((match = streamPattern.exec(raw))) {
@@ -271,13 +336,28 @@ async function extractPdfText(arrayBuffer) {
       chunkEnd -= 1;
     }
     const chunk = bytes.subarray(start, chunkEnd);
+    let decoded;
     try {
-      const decoded = /\/FlateDecode/.test(match[1]) ? await inflate(chunk) : chunk;
-      const text = latin1(decoded);
-      parts.push(pdfStrings(text));
-    } catch {
+      decoded = /\/FlateDecode/.test(match[1]) ? await inflate(chunk) : chunk;
+    } catch (error) {
+      if (error instanceof PdfExpansionLimitError) throw error;
       // Required metadata below still fails closed.
+      streamPattern.lastIndex = end + 9;
+      continue;
     }
+    if (decoded.byteLength > MAX_PDF_STREAM_EXPANSION_BYTES) {
+      throw new PdfExpansionLimitError(
+        `YouGov/NHS expanded PDF stream exceeded its ${MAX_PDF_STREAM_EXPANSION_BYTES}-byte limit`,
+      );
+    }
+    expandedBytes += decoded.byteLength;
+    if (expandedBytes > MAX_PDF_TOTAL_EXPANSION_BYTES) {
+      throw new PdfExpansionLimitError(
+        `YouGov/NHS total PDF expansion exceeded its ${MAX_PDF_TOTAL_EXPANSION_BYTES}-byte limit`,
+      );
+    }
+    const text = latin1(decoded);
+    parts.push(pdfStrings(text));
     streamPattern.lastIndex = end + 9;
   }
   return parts.join(" ").replace(/\s+/g, " ");
@@ -296,7 +376,7 @@ function sampleSizeFromPdfText(text) {
   throw new Error("YouGov primary tables did not expose a sample size");
 }
 
-async function collectElectionPolling(fetchImpl = fetch, now = new Date()) {
+async function collectYouGovPoll(fetchImpl = fetch) {
   const indexHtml = await readResponseText(
     await fetchResponse(YOU_GOV_ARTICLES_URL, fetchImpl),
     { label: "YouGov article index" },
@@ -327,38 +407,69 @@ async function collectElectionPolling(fetchImpl = fetch, now = new Date()) {
   const parties = parsePartyShares(articleText);
   const headlineMethod = headlineMethodFromPrimarySource(articleText, pdfUrl, pdfText);
 
-  return normalizePrimaryPollPayload(
-    {
-      polls: [
-        {
-          id: `yougov-${fieldwork.end}`,
-          pollster: "YouGov",
-          commissioner,
-          title,
-          questionText:
-            "Now, thinking specifically about your own constituency, if there were a general election held tomorrow and these were the parties standing, which party would you vote for?",
-          publicationDate,
-          fieldworkStart: fieldwork.start,
-          fieldworkEnd: fieldwork.end,
-          sampleSize,
-          geography: "Great Britain",
-          population: "GB adults",
-          mode: "Online panel",
-          headlineMethod,
-          parties,
-          sourceUrl: pdfUrl,
-          methodologyUrl: YOU_GOV_METHOD_URL,
-          bpcMember: true,
-          uncertainty: null,
-        },
-      ],
-    },
-    now
-  );
+  return {
+    id: `yougov-${fieldwork.end}`,
+    pollster: "YouGov",
+    commissioner,
+    title,
+    questionText:
+      "Now, thinking specifically about your own constituency, if there were a general election held tomorrow and these were the parties standing, which party would you vote for?",
+    publicationDate,
+    fieldworkStart: fieldwork.start,
+    fieldworkEnd: fieldwork.end,
+    sampleSize,
+    geography: "Great Britain",
+    population: "GB adults",
+    mode: "Online panel",
+    headlineMethod,
+    parties,
+    sourceUrl: pdfUrl,
+    methodologyUrl: YOU_GOV_METHOD_URL,
+    bpcMember: true,
+    uncertainty: null,
+  };
+}
+
+async function collectElectionPolling(fetchImpl = fetch, now = new Date()) {
+  const [youGovResult, moreInCommonResult] = await Promise.allSettled([
+    collectYouGovPoll(fetchImpl),
+    collectMoreInCommonPolls(fetchImpl),
+  ]);
+  const polls = [];
+  const sources = [];
+
+  if (youGovResult.status === "fulfilled") {
+    polls.push(youGovResult.value);
+    sources.push({ pollster: "YouGov", status: "current", recordCount: 1 });
+  } else {
+    sources.push({ pollster: "YouGov", status: "unavailable", recordCount: 0 });
+  }
+
+  if (moreInCommonResult.status === "fulfilled") {
+    const { polls: moreInCommonPolls, archive } = moreInCommonResult.value;
+    polls.push(...moreInCommonPolls);
+    sources.push({
+      pollster: "More in Common",
+      status: archive.status === "complete" ? "current" : "partial",
+      recordCount: moreInCommonPolls.length,
+      archiveFilesRequested: archive.requested,
+      archiveFilesValidated: archive.validated,
+      archiveFilesUnavailable: archive.unavailable,
+    });
+  } else {
+    sources.push({ pollster: "More in Common", status: "unavailable", recordCount: 0 });
+  }
+
+  if (!polls.length) throw new Error("No verified primary pollster publications were available");
+  return normalizePrimaryPollPayload({ polls, sources }, now);
 }
 
 export {
   YOU_GOV_ARTICLES_URL,
+  MAX_PDF_STREAM_EXPANSION_BYTES,
+  MAX_PDF_TOTAL_EXPANSION_BYTES,
+  collectYouGovPoll,
+  findPdfUrl,
   collectElectionPolling,
   pdfStrings,
   extractPdfText,

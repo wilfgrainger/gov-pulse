@@ -21,7 +21,10 @@ describe("evidenceSearch", () => {
 
   it("does not expose withdrawn or unsupported evidence as a current result", () => {
     expect(searchEvidence("PM approval")).toEqual([]);
-    expect(searchEvidence("crime statistics")).toEqual([]);
+    expect(searchEvidence("crime statistics")[0]).toMatchObject({
+      title: "CSEW headline crime",
+      href: "/section/crime-stats",
+    });
     expect(searchEvidence("polarization score")).toEqual([]);
   });
 

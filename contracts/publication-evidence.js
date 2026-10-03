@@ -6,6 +6,9 @@ const VOLATILE_PUBLICATION_KEYS = new Set([
   // the catalog itself already carries every evidence change that can matter.
   "editionArchiveStatus",
   "editionSummary",
+  // Private adapter diagnostics are stripped from the public artifact. They
+  // describe why a measure was omitted, not a change to published evidence.
+  "measureCatalogDiagnostics",
   "retrievalTime",
   "retrievedAt",
   "reusedAt",

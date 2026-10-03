@@ -19,8 +19,27 @@ export interface MetricsSnapshot {
     editionSummary?: {
       id: string;
       publishedAt: string;
+      previousEditionId?: string | null;
       sourceEditionIds: string[];
-      changes: { measureId: string; kind: "new-observation" | "revision" | "method-change"; observedAt: string | null; period: string | null; previousSourceEditionId: string | null; nextSourceEditionId: string; previousRevisionId: string | null; nextRevisionId: string; previous: number | null; next: number | null }[];
+      changes: {
+        measureId: string;
+        kind: "new-observation" | "revision" | "method-change" | "metadata-change";
+        observedAt: string | null;
+        period: string | null;
+        previousSourceEditionId: string | null;
+        nextSourceEditionId: string;
+        previousRevisionId: string | null;
+        nextRevisionId: string;
+        previousSourcePublishedAt?: string | null;
+        nextSourcePublishedAt?: string;
+        previousSourceUrl?: string | null;
+        nextSourceUrl?: string | null;
+        previousUnit?: string | null;
+        nextUnit?: string | null;
+        previous: number | null;
+        next: number | null;
+        changedFields?: string[];
+      }[];
     };
     [key: string]: unknown;
   };

@@ -51,6 +51,13 @@ function sourceResponse(url: string, ratio = debtGdpCsv) {
 }
 
 describe("official ONS national debt connector", () => {
+  it("retains the next release announced on the ONS series page", async () => {
+    const page = debtPage.replace("Release date: 19 June 2026", "Release date: 19 June 2026</p><p>Next release: 21 October 2026");
+    const fetchImpl = vi.fn(async (url: string) => ({ ok: true, status: 200, url, text: async () => url === DEBT_SERIES_URL ? page : url.includes("hf6x") ? debtGdpCsv : debtCsv }));
+    const result = await buildNationalDebt(fetchImpl as unknown as typeof fetch);
+    expect(result.nextReleaseDate).toBe("2026-10-21");
+  });
+
   it("parses only monthly observations and orders them chronologically", () => {
     const points = parseMonthlyOnsCsv(`Period,Value
 2026,2925.5

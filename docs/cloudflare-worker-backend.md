@@ -1,7 +1,7 @@
 # Cloudflare data Worker (runtime data plane)
 
 > Current runtime description. Prior revisions described this Worker as an
-> internal, route-less component. The data Worker presently owns five exact
+> internal, route-less component. The data Worker presently owns six exact
 > public `/data/*` routes,
 > runs a daily plus three-hourly cron, and deploys automatically from `main`.
 > Ground truth lives in `worker/wrangler.toml`, `worker/public-data-entry.js`
@@ -17,15 +17,16 @@ routes as same-origin public contracts.
 
 ## Public HTTP boundary
 
-The Worker currently exposes five public routes, attached in `worker/wrangler.toml` and enumerated in `contracts/public-surfaces.json`:
+The Worker currently exposes six public routes, attached in `worker/wrangler.toml` and enumerated in `contracts/public-surfaces.json`:
 
 - `/data/metrics-snapshot.json`
 - `/data/health.json`
 - `/data/international-comparison.json`
 - `/data/editions.json`
 - `/data/edition.json?edition=<validated-edition-id>`
+- `/data/contracts/history.json?ocid=<validated-OCID>`
 
-Every unlisted path returns 404. Add a reader capability by updating the public contract and its tests with the route; five is the current inventory, not a permanent product limit. `workers_dev = false` and `preview_urls = false`
+Every unlisted path returns 404. Add a reader capability by updating the public contract and its tests with the route; six is the current inventory, not a permanent product limit. `workers_dev = false` and `preview_urls = false`
 still prevent `workers.dev` and preview hostnames, so current public ingress is
 the listed zoned routes. The edition routes are read-only, bounded, and
 serve only retained historical evidence. No collector, refresh or diagnostic
@@ -35,7 +36,7 @@ decision and manifest/test updates.
 
 ## Scheduled responsibilities
 
-The Worker runs the Cloudflare Free plan schedule in `worker/wrangler.toml`
+The Worker currently uses the source-aligned schedule in `worker/wrangler.toml`
 (`crons = ["17 3 * * *", "47 */3 * * *"]`):
 
 - The daily cron (`17 3 * * *`) refreshes generic, external and procurement
@@ -82,7 +83,15 @@ after exact-head route/health checks and the affected public journey.
 - A degraded edition declares `meta.publicationState = "degraded"` and an exact
   `missingRequiredSections` manifest, and `/data/health.json` reports
   `ready: false`.
-- Do not add a public Worker route, browser Worker URL, second data service,
-  tracking, personal-data collection or a paid Cloudflare product without an
-  explicit architecture decision.
+- This implementation currently serves browser evidence through the listed
+  same-origin routes. The route inventory, hostname and service split may grow,
+  move or be replaced when a reader need or verified source constraint warrants
+  it; update the public contract, owning implementation, tests and deployment
+  together. A second data service is allowed when the product case supports it.
+- Every public evidence endpoint must have an explicit contract and keep
+  Queue/KV internals, credentials and private diagnostics inaccessible.
+  Wildcard routing that exposes internal collector operations is unsafe; this
+  boundary does not prohibit concrete reader-facing routes.
+- Do not add tracking or personal-data collection without a demonstrated need.
+  Paid services require the user's approval of a concrete cost.
 # Current runtime description. The public route list is contract-managed and may grow with reviewed product needs; it is not a feature-count ceiling.

@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { cache } from "react";
 import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
+import { publicSnapshot } from "@/worker/public-snapshot";
 import {
   isCompatibleMetricsSnapshot,
   requestSnapshot,
@@ -15,8 +16,9 @@ export const readServerMetricsSnapshot = cache(
     // Cloudflare Pages is retained only as the deterministic seed/fallback build.
     // It is not the production custom-domain renderer after the web Worker cutover.
     if (process.env.STATIC_EXPORT === "true") {
-      return isCompatibleMetricsSnapshot(BUILD_METRICS_SNAPSHOT)
-        ? BUILD_METRICS_SNAPSHOT
+      const snapshot = publicSnapshot(BUILD_METRICS_SNAPSHOT);
+      return isCompatibleMetricsSnapshot(snapshot)
+        ? snapshot
         : null;
     }
 
@@ -27,14 +29,16 @@ export const readServerMetricsSnapshot = cache(
     // Keep local development deterministic and offline-friendly. Request-time
     // production rendering is exercised by OpenNext/Cloudflare.
     if (process.env.NODE_ENV !== "production") {
-      return isCompatibleMetricsSnapshot(BUILD_METRICS_SNAPSHOT)
-        ? BUILD_METRICS_SNAPSHOT
+      const snapshot = publicSnapshot(BUILD_METRICS_SNAPSHOT);
+      return isCompatibleMetricsSnapshot(snapshot)
+        ? snapshot
         : null;
     }
 
     try {
       const loaded = await requestSnapshot(PRODUCTION_SNAPSHOT_URL, "snapshot");
-      return loaded.payload;
+      const snapshot = publicSnapshot(loaded.payload);
+      return isCompatibleMetricsSnapshot(snapshot) ? snapshot : null;
     } catch {
       return null;
     }

@@ -28,11 +28,15 @@ const catalog = {
 const summary = {
   id,
   publishedAt,
+  previousEditionId: "catalog-2026-06-01-b1",
   sourceEditionIds: ["ons-inflation-2026-06-16-a1"],
   changes: [{
     measureId: "inflation", kind: "new-observation", observedAt: "2026-06-30", period: "June 2026",
     previousSourceEditionId: null, nextSourceEditionId: "ons-inflation-2026-06-16-a1",
     previousRevisionId: null, nextRevisionId: "ons-inflation-2026-06-16-a1", previous: null, next: 3.2,
+    previousSourcePublishedAt: null, nextSourcePublishedAt: "2026-07-01T00:00:00.000Z",
+    previousSourceUrl: null, nextSourceUrl: "https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7g7/mm23",
+    previousUnit: null, nextUnit: "%",
   }],
 };
 const archived = {
@@ -61,10 +65,17 @@ describe("server edition archive reads", () => {
     await expect(readArchivedEdition(id)).resolves.toEqual(archived);
   });
 
+  it("continues to read archived summaries that predate baseline identity", async () => {
+    const legacySummary = Object.fromEntries(Object.entries(summary).filter(([key]) => key !== "previousEditionId"));
+    serve({ editions: [legacySummary], retention: 1 });
+    await expect(readEditionSummaries()).resolves.toEqual([legacySummary]);
+  });
+
   it.each([
     ["unsafe edition ID", { ...summary, id: "catalog other" }],
     ["invalid publication time", { ...summary, publishedAt: "not-a-time" }],
     ["unlisted source identity", { ...summary, changes: [{ ...summary.changes[0], nextSourceEditionId: "not-in-manifest" }] }],
+    ["unsafe source link", { ...summary, changes: [{ ...summary.changes[0], nextSourceUrl: "javascript:alert(1)" }] }],
   ])("rejects a summary with %s", async (_label, invalidSummary) => {
     serve({ editions: [invalidSummary], retention: 1 });
     await expect(readEditionSummaries()).resolves.toBeNull();

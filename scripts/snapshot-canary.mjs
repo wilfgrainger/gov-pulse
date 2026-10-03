@@ -1,15 +1,10 @@
 import { pathToFileURL } from "node:url";
 import { isCurrentGovernmentContractsPayload } from "../contracts/government-contracts.js";
 import {
-  classifyPublicationDiagnostic,
-  validatePublicationDiagnostics,
-} from "../contracts/publication-diagnostics.js";
-import {
   FEED_REGISTRY_VERSION,
-  OPTIONAL_PUBLISHED_SECTION_IDS,
-  REQUIRED_PUBLISHED_SECTION_IDS,
 } from "../worker/feed-registry.js";
 import { filterCurrentSnapshot } from "../worker/publication-currentness.js";
+import { currentPublicationManifest } from "./publication-manifest.mjs";
 import { validateSnapshot } from "./build-static-snapshot.mjs";
 
 const maximumBuildAgeMs = 6 * 60 * 60 * 1000;
@@ -39,51 +34,36 @@ function validateGovernmentContractsExtension(snapshot, now = new Date()) {
   return "current";
 }
 
-function diagnosticError(message, publicationDiagnostics) {
-  const error = new Error(message);
-  error.publicationDiagnostics = publicationDiagnostics;
-  return error;
-}
-
-function singleDiagnostic(section, source) {
-  return {
-    [section]: classifyPublicationDiagnostic({ section, source }),
-  };
-}
-
-export function validatePublishedDiagnostics(snapshot, verifiedSections) {
-  let diagnostics;
-  try {
-    diagnostics = validatePublicationDiagnostics(snapshot?.meta?.publicationDiagnostics);
-  } catch (error) {
-    throw diagnosticError(
-      error instanceof Error ? error.message : String(error),
-      singleDiagnostic("snapshot", {
-        status: "error",
-        cacheState: "missing",
-        error: "Publication contract validation failed",
-      })
-    );
+export function validatePublicationState(snapshot) {
+  const meta = snapshot?.meta;
+  const sourceErrors = Object.values(meta?.sources ?? {}).some(
+    (source) => source && typeof source === "object" &&
+      Object.prototype.hasOwnProperty.call(source, "error")
+  );
+  if (
+    Object.prototype.hasOwnProperty.call(meta ?? {}, "publicationDiagnostics") ||
+    Object.prototype.hasOwnProperty.call(meta ?? {}, "measureCatalogDiagnostics") ||
+    sourceErrors
+  ) {
+    throw new Error("Published snapshot exposes private diagnostics");
   }
 
-  const unavailableSections = [
-    ...REQUIRED_PUBLISHED_SECTION_IDS,
-    ...OPTIONAL_PUBLISHED_SECTION_IDS,
-  ].filter((section) => !verifiedSections.includes(section));
-  const uncoveredSections = unavailableSections.filter((section) => !diagnostics[section]);
-  if (uncoveredSections.length > 0) {
-    const missing = Object.fromEntries(
-      uncoveredSections.map((section) => [
-        section,
-        classifyPublicationDiagnostic({ section, source: null }),
-      ])
-    );
-    throw diagnosticError(
-      `Published diagnostics do not cover unavailable sections: ${uncoveredSections.join(", ")}`,
-      { ...diagnostics, ...missing }
-    );
+  const {
+    missingRequiredSections: requiredUnavailableSections,
+    unavailableOptionalSections: optionalUnavailableSections,
+  } = currentPublicationManifest(snapshot);
+  const declaredMissing = meta?.missingRequiredSections;
+  const expectedMissing = requiredUnavailableSections;
+  if (
+    !Array.isArray(declaredMissing) ||
+    declaredMissing.some((section) => typeof section !== "string") ||
+    JSON.stringify([...declaredMissing].sort()) !== JSON.stringify(expectedMissing) ||
+    meta?.publicationState !== (expectedMissing.length ? "degraded" : "ready")
+  ) {
+    throw new Error("Published snapshot missing-section manifest is inconsistent");
   }
-  return diagnostics;
+
+  return { requiredUnavailableSections, optionalUnavailableSections };
 }
 
 async function main(rawUrl) {
@@ -94,93 +74,51 @@ async function main(rawUrl) {
     signal: AbortSignal.timeout(20_000),
   });
   if (!response.ok) {
-    throw diagnosticError(
-      `Published snapshot returned ${response.status}`,
-      singleDiagnostic("snapshot", null)
-    );
+    throw new Error(`Published snapshot returned ${response.status}`);
   }
 
   let snapshot;
   try {
     snapshot = await response.json();
   } catch {
-    throw diagnosticError(
-      "Published snapshot returned invalid JSON",
-      singleDiagnostic("snapshot", {
-        status: "error",
-        cacheState: "missing",
-        error: "Invalid JSON response",
-      })
-    );
+    throw new Error("Published snapshot returned invalid JSON");
   }
 
   const checkedAt = new Date();
   const currentSnapshot = filterCurrentSnapshot(snapshot, checkedAt);
   if (!currentSnapshot) {
-    throw diagnosticError(
-      "Published snapshot contains no current source-owned evidence",
-      singleDiagnostic("snapshot", {
-        status: "error",
-        cacheState: "expired",
-        error: "Wall-clock currentness validation removed every section",
-      })
-    );
+    throw new Error("Published snapshot contains no current source-owned evidence");
   }
 
   let verifiedSections;
   try {
     // A release may be explicitly degraded when one or more sources are unavailable.
-    // Integrity is enforced below by requiring a public diagnostic for every absent
-    // required/optional section; completeness is not a prerequisite for code rollout.
+    // The public manifest records which required sections are missing; source rejection
+    // categories and raw errors stay in private operator state.
     verifiedSections = validateSnapshot(currentSnapshot, 1, []);
   } catch (error) {
-    let diagnostics = {};
-    try {
-      diagnostics = validatePublicationDiagnostics(currentSnapshot?.meta?.publicationDiagnostics);
-    } catch {
-      diagnostics = singleDiagnostic("snapshot", {
-        status: "error",
-        cacheState: "missing",
-        error: "Publication contract validation failed",
-      });
-    }
-    throw diagnosticError(
-      error instanceof Error ? error.message : String(error),
-      diagnostics
-    );
+    throw new Error(error instanceof Error ? error.message : String(error));
   }
 
-  const publicationDiagnostics = validatePublishedDiagnostics(
-    currentSnapshot,
-    verifiedSections
+  const publicationState = validatePublicationState(
+    currentSnapshot
   );
   if (currentSnapshot.meta.delivery !== "published-snapshot") {
-    throw diagnosticError(
-      "Published data is not marked as a verified snapshot",
-      publicationDiagnostics
-    );
+    throw new Error("Published data is not marked as a verified snapshot");
   }
   const governmentContracts = validateGovernmentContractsExtension(
     currentSnapshot,
     checkedAt
   );
-  const requiredUnavailableSections = REQUIRED_PUBLISHED_SECTION_IDS.filter(
-    (section) => !verifiedSections.includes(section)
-  );
-  const optionalUnavailableSections = OPTIONAL_PUBLISHED_SECTION_IDS.filter(
-    (section) => !verifiedSections.includes(section)
-  );
   console.log(
     JSON.stringify(
       {
-        status: requiredUnavailableSections.length > 0 ? "degraded" : "ok",
+        status: publicationState.requiredUnavailableSections.length > 0 ? "degraded" : "ok",
         snapshotUrl,
         registryVersion: FEED_REGISTRY_VERSION,
         generatedAt: currentSnapshot.meta.generatedAt,
         verifiedSections,
-        requiredUnavailableSections,
-        optionalUnavailableSections,
-        publicationDiagnostics: Object.values(publicationDiagnostics),
+        ...publicationState,
         governmentContracts,
       },
       null,
@@ -198,7 +136,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
           status: "failed",
           checkedAt: new Date().toISOString(),
           error: error instanceof Error ? error.message : String(error),
-          publicationDiagnostics: Object.values(error?.publicationDiagnostics ?? {}),
         },
         null,
         2

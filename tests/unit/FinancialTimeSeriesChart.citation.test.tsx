@@ -32,9 +32,11 @@ describe("FinancialTimeSeriesChart export citation", () => {
     expect(screen.getByTestId("chart-citation")).toHaveTextContent("ONS · https://www.ons.gov.uk/example");
     expect(screen.getByTestId("chart-citation")).toHaveTextContent("Observation period: September 2026 to October 2026");
     expect(screen.getByTestId("chart-citation")).toHaveTextContent("Estimate subject to revision.");
-    expect(screen.getByTestId("chart-metadata")).toHaveTextContent('"schemaVersion":1');
+    expect(screen.getByTestId("chart-metadata")).toHaveTextContent('"schemaVersion":2');
     expect(screen.getByTestId("chart-metadata")).toHaveTextContent('"key":"value"');
     expect(screen.getByTestId("chart-metadata")).toHaveTextContent("https://www.ons.gov.uk/example");
+    expect(screen.getByTestId("chart-metadata")).toHaveTextContent('"values":{"value":1}');
+    expect(screen.getByTestId("chart-metadata")).toHaveTextContent('"observedAt":"2026-09-01T00:00:00.000Z"');
     expect(screen.getByTestId("chart-metadata")).toHaveTextContent("Estimate subject to revision.");
   });
 });

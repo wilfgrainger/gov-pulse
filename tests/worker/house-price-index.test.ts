@@ -42,6 +42,11 @@ const historyCsv = `"Figure 1: UK house price inflation slowed again while rent 
 "Aug 2026","3.8",""`;
 
 describe("latest ONS house price index connector", () => {
+  it("retains a publisher-announced next release date", () => {
+    const announced = bulletinHtml.replace("Release date: 16 September 2026", "Release date: 16 September 2026</p><p>Next release: 21 October 2026");
+    expect(parseHpiBulletin(announced, "september2026").headline.nextReleaseDate).toBe("2026-10-21");
+  });
+
   it("discovers the latest edition from the canonical link when /latest does not redirect", () => {
     expect(discoverLatestEdition(bulletinHtml)).toBe("september2026");
   });

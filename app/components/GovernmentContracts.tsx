@@ -34,7 +34,7 @@ const FALLBACK = {
     missingProcedure: 0,
     frameworkAwards: 0,
     topBuyer: { name: "", awardCount: 0, disclosedValue: 0 },
-    topSupplier: { name: "", awardCount: 0, disclosedValue: 0 },
+    topSupplier: { name: "", entityId: null, awardCount: 0, disclosedValue: 0 },
   },
   awards: [],
   supplierConcentration: [],
@@ -58,7 +58,7 @@ const FALLBACK = {
     savingClaim: false,
     supplierAllocationMethod: "",
     comparisonCurrency: "GBP",
-    requiredAwardCount: 100,
+    displayedAwardLimit: 100,
   },
 };
 
@@ -70,7 +70,9 @@ type Award = {
   awardId: string;
   title: string;
   buyer: string;
+  buyerId?: string | null;
   suppliers: string[];
+  supplierIds?: Array<string | null>;
   supplierNations: string[];
   awardDate: string;
   publishedAt: string;
@@ -86,6 +88,9 @@ type Award = {
 
 type SupplierConcentrationEntry = {
   name: string;
+  entityId?: string | null;
+  identityBasis?: "publisher-id" | "exact-name";
+  aliases?: string[];
   awardCount: number;
   disclosedValue: number;
   nation: string;
@@ -188,6 +193,7 @@ export default function GovernmentContracts() {
     metrics.observationStatus === "current" &&
     isCurrentGovernmentContractsPayload(metrics.data);
   const data = metrics.data as ContractsPayload;
+  const displayedAwardLimit = data.evidencePolicy?.displayedAwardLimit ?? 100;
 
   const displayedAwards = useMemo(() => {
     if (!valid) return [];
@@ -231,7 +237,7 @@ export default function GovernmentContracts() {
   const fullSupplierCount = Array.isArray(data.supplierConcentration) ? data.supplierConcentration.length : 0;
   const supplierChartRef = useRef<SVGSVGElement | null>(null);
   const supplierChartMetadata = useMemo(() => buildSupplierConcentrationMetadata({
-    title: "Suppliers ranked by disclosed value",
+    title: "Supplier equal-share award-value scenario",
     suppliers: supplierChartRows,
     filteredSupplierCount: supplierConcentration.length,
     fullSupplierCount,
@@ -250,7 +256,7 @@ export default function GovernmentContracts() {
         <section role="status" className="border border-black/20 bg-white p-6">
           <h3 className="text-xl font-semibold">Government contracts evidence temporarily unavailable</h3>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">
-            This section only publishes when a complete Find a Tender update window produces 100 comparable GBP awards and the ranking, source links and disclosure checks all reconcile. It does not substitute estimates or an incomplete page of notices.
+            This section only publishes after the complete Find a Tender update window and every API page, source link and disclosure check reconcile. A smaller complete edition remains valid; estimates never fill missing records.
           </p>
         </section>
         <MetricsStatus section="governmentContracts" status={metrics} />
@@ -263,7 +269,7 @@ export default function GovernmentContracts() {
       <section aria-labelledby="contracts-briefing-title" className="border-y border-foreground py-6">
         <p className="text-sm font-semibold text-accent">Official procurement notices</p>
         <h3 id="contracts-briefing-title" className="mt-2 max-w-5xl text-3xl font-semibold leading-tight tracking-[-0.03em] md:text-5xl">
-          The 100 largest disclosed government contract awards in the latest complete window.
+          The largest {data.summary.awardCount} disclosed government contract award{data.summary.awardCount === 1 ? "" : "s"} in the latest complete window.
         </h3>
         <p className="mt-4 max-w-4xl text-lg leading-8 text-gray-700">
           Ranked from Cabinet Office Find a Tender award releases updated between {data.window.label}. Values are disclosure figures, not a claim about cash already spent or value for money.
@@ -277,7 +283,7 @@ export default function GovernmentContracts() {
         <SummaryFigure
           label="Disclosed value"
           value={formatCurrency(data.summary.disclosedValueTotal, true)}
-          note="Sum of the 100 ranked award values; not confirmed expenditure."
+          note="Sum of the displayed ranked awards; not confirmed expenditure."
         />
         <SummaryFigure
           label="Top ten share"
@@ -287,7 +293,7 @@ export default function GovernmentContracts() {
         <SummaryFigure
           label="Named suppliers"
           value={data.summary.distinctSuppliers.toLocaleString("en-GB")}
-          note={`${data.summary.distinctBuyers.toLocaleString("en-GB")} distinct buyers in the top 100.`}
+          note={`${data.summary.distinctBuyers.toLocaleString("en-GB")} distinct buyers in the displayed ranking.`}
         />
         <SummaryFigure
           label="Explicit direct signals"
@@ -322,14 +328,14 @@ export default function GovernmentContracts() {
             <dd className="mt-2 text-sm leading-6 text-gray-300">{data.summary.topBuyer.awardCount} ranked awards · {formatCurrency(data.summary.topBuyer.disclosedValue, true)} disclosed.</dd>
           </div>
           <div className="border-t border-white/30 pt-4">
-            <dt className="text-xs font-semibold uppercase tracking-wider text-gray-300">Leading supplier allocation</dt>
+            <dt className="text-xs font-semibold uppercase tracking-wider text-gray-300">Leading supplier equal-share scenario</dt>
             <dd className="mt-2 text-xl font-semibold">{data.summary.topSupplier.name}</dd>
-            <dd className="mt-2 text-sm leading-6 text-gray-300">{formatCurrency(data.summary.topSupplier.disclosedValue, true)} using equal allocation where an award names multiple suppliers.</dd>
+            <dd className="mt-2 text-sm leading-6 text-gray-300">{formatCurrency(data.summary.topSupplier.disclosedValue, true)} of disclosed award value under an equal-share scenario; this is not attributed supplier revenue.{data.summary.topSupplier.entityId ? ` Find a Tender ID: ${data.summary.topSupplier.entityId}.` : ""}</dd>
           </div>
         </dl>
       </section>
 
-      {/* Visual 2: Supplier Market Concentration & Allocation */}
+      {/* Visual 2: Supplier equal-share scenario */}
       <SupplierMarketConcentration
         suppliers={data.supplierConcentration}
         totalDisclosedValue={data.summary.disclosedValueTotal}
@@ -338,13 +344,13 @@ export default function GovernmentContracts() {
 
       <section aria-labelledby="supplier-concentration-title">
         <div className="border-b border-black/20 pb-5">
-          <p className="text-sm font-semibold text-accent">Who benefits</p>
+          <p className="text-sm font-semibold text-accent">Supplier award-value scenario</p>
           <h3 id="supplier-concentration-title" className="mt-1 text-2xl font-semibold md:text-3xl">
-            Suppliers ranked by total disclosed value
+            Disclosed awards under an equal-share scenario
           </h3>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">
-            Aggregates the 100 ranked awards above by named supplier, using equal allocation where an award names
-            multiple suppliers. This does not combine data from any other source.
+            Groups by publisher supplier ID where available, then exact name as a fallback. Multi-supplier awards are
+            divided equally for this scenario; the resulting values are not supplier revenue or proof of payments.
           </p>
         </div>
 
@@ -365,7 +371,7 @@ export default function GovernmentContracts() {
         </label>
 
         <p role="status" className="mt-4 text-sm text-gray-600">
-          Showing the first {visibleSupplierCount} of {supplierConcentration.length} filtered named suppliers ({data.supplierConcentration.length} in the full publication).
+          Showing the first {visibleSupplierCount} of {supplierConcentration.length} filtered supplier groups ({data.supplierConcentration.length} in the full publication).
         </p>
 
         <figure className="mt-4">
@@ -374,7 +380,7 @@ export default function GovernmentContracts() {
               ref={supplierChartRef}
               viewBox={`0 0 940 ${supplierChartHeight}`}
               role="img"
-              aria-label={`Supplier disclosed award values in pounds. First ${visibleSupplierCount} of ${supplierConcentration.length} filtered suppliers; scale begins at zero and ends at the full-publication top supplier value ${formatCurrency(supplierChartMax)}.`}
+              aria-label={`Equal-share supplier award-value scenario in pounds. First ${visibleSupplierCount} of ${supplierConcentration.length} filtered supplier groups; scale begins at zero and ends at ${formatCurrency(supplierChartMax)}.`}
               className="h-auto min-w-[52rem] w-full"
             >
               <rect x="0" y="0" width="940" height={supplierChartHeight} fill="#ffffff" />
@@ -388,9 +394,10 @@ export default function GovernmentContracts() {
               {supplierChartRows.map((entry, index) => {
                 const y = 25 + index * 32;
                 const width = supplierPlotWidth * barWidthPercent(entry.disclosedValue, supplierChartMax) / 100;
-                return <g key={entry.name}>
-                  <text x="210" y={y + 11} textAnchor="end" fontSize="12" fontWeight="600" fill="#192139">{entry.name} · {entry.nation}</text>
-                  <rect x="220" y={y} width={width} height="16" fill="#08766c"><title>{`${entry.name}: ${formatCurrency(entry.disclosedValue)} disclosed across ${entry.awardCount} awards; ${entry.nation}`}</title></rect>
+                const identity = entry.entityId ? ` · ID ${entry.entityId}` : " · exact-name match";
+                return <g key={entry.entityId ?? `name:${entry.name}`}>
+                  <text x="210" y={y + 11} textAnchor="end" fontSize="12" fontWeight="600" fill="#192139">{entry.name}{identity} · {entry.nation}</text>
+                  <rect x="220" y={y} width={width} height="16" fill="#08766c"><title>{`${entry.name}${identity}: ${formatCurrency(entry.disclosedValue)} under an equal-share scenario across ${entry.awardCount} awards; ${entry.nation}`}</title></rect>
                   <text x="832" y={y + 12} fontSize="12" fontWeight="600" fill="#192139">{formatCurrency(entry.disclosedValue, true)}</text>
                 </g>;
               })}
@@ -398,13 +405,13 @@ export default function GovernmentContracts() {
           </div>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[36rem] border-collapse text-sm">
-              <caption className="text-left text-xs font-bold uppercase tracking-wide">Exact supplier concentration rows in the chart</caption>
-              <thead><tr className="border-b border-line-strong text-left text-xs"><th scope="col" className="py-2 pr-3">Displayed order</th><th scope="col" className="py-2 pr-3">Supplier</th><th scope="col" className="py-2 pr-3">Disclosed value</th><th scope="col" className="py-2 pr-3">Awards</th><th scope="col" className="py-2">Supplier nation</th></tr></thead>
-              <tbody>{supplierChartRows.map((entry, index) => <tr key={entry.name} className="border-b border-line"><td className="py-2 pr-3 tabular-nums">{index + 1}</td><th scope="row" className="py-2 pr-3 text-left">{entry.name}</th><td className="py-2 pr-3 font-mono tabular-nums">{formatCurrency(entry.disclosedValue)}</td><td className="py-2 pr-3 tabular-nums">{entry.awardCount}</td><td className="py-2">{entry.nation}</td></tr>)}</tbody>
+              <caption className="text-left text-xs font-bold uppercase tracking-wide">Supplier equal-share scenario rows shown in the chart</caption>
+              <thead><tr className="border-b border-line-strong text-left text-xs"><th scope="col" className="py-2 pr-3">Displayed order</th><th scope="col" className="py-2 pr-3">Supplier</th><th scope="col" className="py-2 pr-3">Publisher ID</th><th scope="col" className="py-2 pr-3">Scenario value</th><th scope="col" className="py-2 pr-3">Awards</th><th scope="col" className="py-2">Supplier nation</th></tr></thead>
+              <tbody>{supplierChartRows.map((entry, index) => <tr key={entry.entityId ?? `name:${entry.name}`} className="border-b border-line"><td className="py-2 pr-3 tabular-nums">{index + 1}</td><th scope="row" className="py-2 pr-3 text-left">{entry.name}{entry.identityBasis === "exact-name" ? <span className="block text-xs font-normal text-gray-600">Exact-name match</span> : null}</th><td className="py-2 pr-3 font-mono text-xs">{entry.entityId ?? "Not disclosed"}</td><td className="py-2 pr-3 font-mono tabular-nums">{formatCurrency(entry.disclosedValue)}</td><td className="py-2 pr-3 tabular-nums">{entry.awardCount}</td><td className="py-2">{entry.nation}</td></tr>)}</tbody>
             </table>
           </div>
           <figcaption className="mt-2 flex flex-wrap items-start justify-between gap-3">
-            <p className="max-w-3xl text-xs leading-5 text-gray-600">Zero-based axis uses the top supplier in the full publication as its maximum. Each award naming multiple suppliers is divided equally for this ranking; values are disclosed awards, not confirmed expenditure.</p>
+            <p className="max-w-3xl text-xs leading-5 text-gray-600">Zero-based axis uses the largest supplier scenario value in the full publication as its maximum. Multi-supplier award values are split equally for comparison; these scenario values are not supplier revenue or confirmed expenditure.</p>
             <ChartExportButtons containerRef={supplierChartRef} chartMetadata={supplierChartMetadata} />
           </figcaption>
         </figure>
@@ -420,7 +427,7 @@ export default function GovernmentContracts() {
       <section aria-labelledby="contracts-table-title">
         <div className="grid gap-4 border-b border-black/20 pb-5 md:grid-cols-[minmax(0,1fr)_minmax(18rem,32rem)] md:items-end">
           <div>
-            <p className="text-sm font-semibold text-accent">Top 100 explorer</p>
+            <p className="text-sm font-semibold text-accent">Award explorer</p>
             <h3 id="contracts-table-title" className="mt-1 text-2xl font-semibold md:text-3xl">Search buyers, suppliers and awards</h3>
           </div>
           <p className="text-sm leading-6 text-gray-600">Every row links to the official notice and full procurement history.</p>
@@ -428,7 +435,7 @@ export default function GovernmentContracts() {
 
         <div className="mt-5 grid gap-4 sm:grid-cols-[minmax(0,1fr)_14rem]">
           <label className="text-sm font-semibold">
-            Search the top 100
+            Search ranked awards
             <input
               type="search"
               value={query}
@@ -452,7 +459,7 @@ export default function GovernmentContracts() {
             </select>
           </label>
         </div>
-        <p role="status" className="mt-4 text-sm text-gray-600">Showing {displayedAwards.length} of 100 awards.</p>
+        <p role="status" className="mt-4 text-sm text-gray-600">Showing {displayedAwards.length} of {data.awards.length} retained awards.</p>
 
         <div className="mt-3 md:hidden">
           {displayedAwards.map((award) => <AwardCard key={award.key} award={award} />)}
@@ -517,7 +524,7 @@ export default function GovernmentContracts() {
         }
         caveat={
           <p>
-            {data.caveats[0] ?? "See the method and coverage details below for full limitations."} The collector examined {data.dataQuality.releasesSeen.toLocaleString("en-GB")} releases and found {data.dataQuality.validComparableAwards.toLocaleString("en-GB")} comparable awards before selecting the largest 100.
+            {data.caveats[0] ?? "See the method and coverage details below for full limitations."} The collector examined {data.dataQuality.releasesSeen.toLocaleString("en-GB")} releases and found {data.dataQuality.validComparableAwards.toLocaleString("en-GB")} comparable awards in the complete window; this display retains the highest-valued awards.
           </p>
         }
         sourceLabel="Find a Tender OCDS API"
@@ -536,7 +543,7 @@ export default function GovernmentContracts() {
           <div>
             <h4 className="font-semibold text-black">What was ranked</h4>
             <p className="mt-2">{data.evidencePolicy.rankingMeasure}. Only comparable GBP awards in the complete update window are eligible.</p>
-            <p className="mt-3">The collector examined {data.dataQuality.releasesSeen.toLocaleString("en-GB")} releases across {data.dataQuality.pagesFetched.toLocaleString("en-GB")} complete API pages and found {data.dataQuality.validComparableAwards.toLocaleString("en-GB")} comparable awards before selecting the largest 100.</p>
+            <p className="mt-3">The collector examined {data.dataQuality.releasesSeen.toLocaleString("en-GB")} releases across {data.dataQuality.pagesFetched.toLocaleString("en-GB")} complete API pages and found {data.dataQuality.validComparableAwards.toLocaleString("en-GB")} comparable awards. The display retains up to {displayedAwardLimit} highest-valued records from that complete window.</p>
           </div>
           <div>
             <h4 className="font-semibold text-black">Important limitations</h4>

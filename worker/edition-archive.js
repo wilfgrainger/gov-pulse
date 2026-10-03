@@ -22,6 +22,19 @@ function validInstant(value) {
   return typeof value === "string" && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
 }
 
+function validOptionalText(value) {
+  return value === undefined || value === null || typeof value === "string" && Boolean(value.trim()) && value.length <= 1000;
+}
+
+function validOptionalSourceUrl(value) {
+  if (value === undefined || value === null) return true;
+  if (typeof value !== "string" || value.length > 1000) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password;
+  } catch { return false; }
+}
+
 function validateEditionId(id) {
   if (typeof id !== "string" || !EDITION_ID.test(id)) throw new Error("Edition id is invalid");
   return id;
@@ -42,7 +55,9 @@ function validateCatalog(input) {
 }
 
 function validateSummary(input, editionId) {
-  if (!input || typeof input !== "object" || input.id !== editionId || !validInstant(input.publishedAt) || !Array.isArray(input.sourceEditionIds) || input.sourceEditionIds.length > 100 || !Array.isArray(input.changes) || input.changes.length > MAX_EDITION_CHANGES) {
+  if (!input || typeof input !== "object" || input.id !== editionId || !validInstant(input.publishedAt) ||
+    !(input.previousEditionId === undefined || input.previousEditionId === null || EDITION_ID.test(input.previousEditionId)) ||
+    !Array.isArray(input.sourceEditionIds) || input.sourceEditionIds.length > 100 || !Array.isArray(input.changes) || input.changes.length > MAX_EDITION_CHANGES) {
     throw new Error("Edition summary is invalid");
   }
   const sourceEditionIds = input.sourceEditionIds.map((value) => {
@@ -50,10 +65,19 @@ function validateSummary(input, editionId) {
     return value;
   });
   const changes = input.changes.map((change) => {
-    if (!change || typeof change !== "object" || typeof change.measureId !== "string" || !change.measureId.trim() || !["new-observation", "revision", "method-change"].includes(change.kind) || !(change.observedAt === null || /^\d{4}-\d{2}-\d{2}$/.test(change.observedAt)) || !(change.period === null || typeof change.period === "string") || !(change.previous === null || Number.isFinite(change.previous)) || !(change.next === null || Number.isFinite(change.next)) || typeof change.nextSourceEditionId !== "string" || !change.nextSourceEditionId.trim()) throw new Error("Edition summary change is invalid");
+    if (!change || typeof change !== "object" || typeof change.measureId !== "string" || !change.measureId.trim() || !["new-observation", "revision", "method-change", "metadata-change"].includes(change.kind) || !(change.observedAt === null || /^\d{4}-\d{2}-\d{2}$/.test(change.observedAt)) || !(change.period === null || typeof change.period === "string") || !(change.previous === null || Number.isFinite(change.previous)) || !(change.next === null || Number.isFinite(change.next)) || typeof change.nextSourceEditionId !== "string" || !change.nextSourceEditionId.trim() ||
+      !(change.previousSourcePublishedAt === undefined || change.previousSourcePublishedAt === null || validInstant(change.previousSourcePublishedAt)) || !(change.nextSourcePublishedAt === undefined || validInstant(change.nextSourcePublishedAt)) ||
+      !validOptionalSourceUrl(change.previousSourceUrl) || !validOptionalSourceUrl(change.nextSourceUrl) || !validOptionalText(change.previousUnit) || !validOptionalText(change.nextUnit) ||
+      !(change.changedFields === undefined || Array.isArray(change.changedFields) && change.changedFields.length <= 20 && change.changedFields.every((field) => typeof field === "string" && /^[A-Za-z][A-Za-z0-9.]{0,79}$/.test(field)))) throw new Error("Edition summary change is invalid");
     return { ...change };
   });
-  return { id: editionId, publishedAt: input.publishedAt, sourceEditionIds: [...new Set(sourceEditionIds)].sort(), changes };
+  return {
+    id: editionId,
+    publishedAt: input.publishedAt,
+    ...(input.previousEditionId === undefined ? {} : { previousEditionId: input.previousEditionId }),
+    sourceEditionIds: [...new Set(sourceEditionIds)].sort(),
+    changes,
+  };
 }
 
 async function sha256(value) {
@@ -138,9 +162,18 @@ async function listEditionSummaries(env, limit = EDITION_SUMMARY_RETENTION) {
   if (!env?.METRICS_CACHE?.get) return [];
   if (!Number.isInteger(limit) || limit < 1 || limit > EDITION_SUMMARY_RETENTION) throw new Error("Edition summary limit is invalid");
   const index = await readIndex(env);
-  return index.slice(0, limit).flatMap((entry) => {
-    try { return [validateSummary(entry.summary, validateEditionId(entry.id))]; } catch { return []; }
-  });
+  const summaries = await Promise.all(index.slice(0, limit).map(async (entry) => {
+    try {
+      const id = validateEditionId(entry.id);
+      const summary = validateSummary(entry.summary, id);
+      const archived = await readEdition(env, id);
+      if (!archived || archived.contentHash !== entry.contentHash || stableStringify(archived.summary) !== stableStringify(summary)) return null;
+      return summary;
+    } catch {
+      return null;
+    }
+  }));
+  return summaries.filter((summary) => summary !== null);
 }
 
 export {

@@ -2,11 +2,13 @@ const FIND_A_TENDER_API =
   "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages";
 const FIND_A_TENDER_DOCUMENTATION =
   "https://www.find-tender.service.gov.uk/apidocumentation/1.0/GET-ocdsReleasePackages";
+const FIND_A_TENDER_RECORD_PACKAGE_DOCUMENTATION =
+  "https://www.find-tender.service.gov.uk/apidocumentation/1.0/GET-ocdsRecordPackages";
 const OPEN_GOVERNMENT_LICENCE =
   "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/";
 const MAX_PUBLICATION_AGE_MS = 72 * 60 * 60 * 1000;
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
-const REQUIRED_AWARD_COUNT = 100;
+const DISPLAYED_AWARD_LIMIT = 100;
 
 const SOURCE = Object.freeze({
   publisher: "Cabinet Office",
@@ -22,6 +24,7 @@ const CAVEATS = Object.freeze([
   "Framework and multi-supplier awards can state maximum or estimated values that may never be fully spent.",
   "The ranking covers comparable GBP awards updated in the stated window; missing, redacted and non-GBP values are excluded.",
   "A large award is not evidence of waste, fraud or poor value. The source notice and procurement context must be examined.",
+  "Supplier value concentration is an equal-share scenario across named suppliers, not publisher attribution or supplier revenue.",
   "Find a Tender is the central digital platform, but publication coverage and notice quality still depend on contracting authorities.",
 ]);
 
@@ -32,10 +35,26 @@ const EVIDENCE_POLICY = Object.freeze({
   fraudClaim: false,
   savingClaim: false,
   supplierAllocationMethod:
-    "equal allocation across named suppliers for concentration analysis only",
+    "equal-share scenario across named suppliers; not an attribution or supplier revenue measure",
   comparisonCurrency: "GBP",
-  requiredAwardCount: REQUIRED_AWARD_COUNT,
+  displayedAwardLimit: DISPLAYED_AWARD_LIMIT,
 });
+const LEGACY_COUNT_EVIDENCE_POLICY = { ...EVIDENCE_POLICY };
+delete LEGACY_COUNT_EVIDENCE_POLICY.displayedAwardLimit;
+LEGACY_COUNT_EVIDENCE_POLICY.requiredAwardCount = DISPLAYED_AWARD_LIMIT;
+Object.freeze(LEGACY_COUNT_EVIDENCE_POLICY);
+const LEGACY_ALLOCATION_EVIDENCE_POLICY = {
+  ...LEGACY_COUNT_EVIDENCE_POLICY,
+  supplierAllocationMethod: "equal allocation across named suppliers for concentration analysis only",
+};
+Object.freeze(LEGACY_ALLOCATION_EVIDENCE_POLICY);
+const LEGACY_CAVEATS = Object.freeze([
+  "Values are the amounts disclosed in Find a Tender award releases, not invoices or confirmed lifetime public expenditure.",
+  "Framework and multi-supplier awards can state maximum or estimated values that may never be fully spent.",
+  "The ranking covers comparable GBP awards updated in the stated window; missing, redacted and non-GBP values are excluded.",
+  "A large award is not evidence of waste, fraud or poor value. The source notice and procurement context must be examined.",
+  "Find a Tender is the central digital platform, but publication coverage and notice quality still depend on contracting authorities.",
+]);
 
 function round(value, digits = 2) {
   const factor = 10 ** digits;
@@ -89,6 +108,29 @@ function optionalText(value, maximum = 500) {
   return text;
 }
 
+function plainPublisherText(value, maximum = 1200) {
+  const text = optionalText(value, maximum * 2);
+  if (!text) return null;
+  const stripped = text
+    .replace(/<br\s*\/?\s*>/gi, "\n")
+    .replace(/<\/(?:p|div|li|h[1-6])\s*>/gi, "\n")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi, (_match, entity) => {
+      const named = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
+      if (!entity.startsWith("#")) return named[entity.toLowerCase()] ?? " ";
+      const codePoint = entity[1]?.toLowerCase() === "x"
+        ? Number.parseInt(entity.slice(2), 16)
+        : Number.parseInt(entity.slice(1), 10);
+      return Number.isSafeInteger(codePoint) && codePoint > 0 && codePoint <= 0x10ffff
+        ? String.fromCodePoint(codePoint)
+        : " ";
+    })
+    .replace(/[ \t\f\v]+/g, " ")
+    .replace(/ *\n+ */g, "\n")
+    .trim();
+  return stripped.length > maximum ? `${stripped.slice(0, maximum - 1).trimEnd()}…` : stripped || null;
+}
+
 function isoTimestamp(value, label) {
   const text = requiredText(value, label, 80);
   const timestamp = Date.parse(text);
@@ -121,40 +163,35 @@ function officialUrl(value, label, kind) {
   return url.toString().replace(/\/$/, "");
 }
 
-function normalizeSuppliers(value, label) {
-  if (!Array.isArray(value) || value.length === 0 || value.length > 100) {
-    throw new Error(`${label} must name between one and 100 suppliers`);
+function normalizeSupplierParties(rawSuppliers, rawIds, rawNations, label) {
+  if (!Array.isArray(rawSuppliers) || rawSuppliers.length === 0) {
+    throw new Error(`${label} must name at least one supplier`);
   }
-  const suppliers = value.map((supplier, index) =>
-    requiredText(supplier, `${label} supplier ${index + 1}`, 240)
-  );
-  const identities = suppliers.map((supplier) => supplier.toLocaleLowerCase("en-GB"));
-  if (new Set(identities).size !== suppliers.length) {
-    throw new Error(`${label} contains duplicate suppliers`);
+  const ids = rawIds === undefined ? rawSuppliers.map(() => null) : rawIds;
+  const nations = rawNations === undefined ? rawSuppliers.map(() => UK_NATIONS.OTHER_UNKNOWN) : rawNations;
+  if (!Array.isArray(ids) || ids.length !== rawSuppliers.length) {
+    throw new Error(`${label} supplier identifiers must match the supplier count`);
   }
-  return suppliers.sort((left, right) => left.localeCompare(right, "en-GB"));
-}
-
-// Pairs each RAW (pre-sort) supplier name with its nation, then sorts both
-// together so the result stays aligned with normalizeSuppliers' own sort of
-// the same raw list. Nation values are validated with
-// normalizeSupplierNation and default to "Other/Unknown" for anything not
-// one of the four canonical UK nations plus the unknown bucket.
-function normalizeSupplierNations(rawSuppliers, rawNations, label) {
-  const nations = Array.isArray(rawNations) ? rawNations : [];
-  if (nations.length !== 0 && nations.length !== rawSuppliers.length) {
+  if (!Array.isArray(nations) || nations.length !== rawSuppliers.length) {
     throw new Error(`${label} supplier nations must match the supplier count`);
   }
-  const names = rawSuppliers.map((supplier, index) =>
-    requiredText(supplier, `${label} supplier ${index + 1}`, 240)
+  const seen = new Set();
+  const parties = rawSuppliers.map((supplier, index) => {
+    const name = requiredText(supplier, `${label} supplier ${index + 1}`, 240);
+    const id = optionalText(ids[index], 240);
+    const identity = id ? `publisher-id:${id}` : `exact-name:${name.toLocaleLowerCase("en-GB")}`;
+    if (seen.has(identity)) throw new Error(`${label} contains a duplicate supplier identity`);
+    seen.add(identity);
+    return {
+      name,
+      id,
+      nation: normalizeSupplierNation(nations[index]),
+    };
+  });
+  return parties.sort((left, right) =>
+    left.name.localeCompare(right.name, "en-GB") ||
+    String(left.id ?? "").localeCompare(String(right.id ?? ""), "en-GB"),
   );
-  const pairs = names.map((name, index) => ({
-    name,
-    nation: normalizeSupplierNation(nations[index] ?? UK_NATIONS.OTHER_UNKNOWN),
-  }));
-  return pairs
-    .sort((left, right) => left.name.localeCompare(right.name, "en-GB"))
-    .map((pair) => pair.nation);
 }
 
 function normalizeAward(value, index) {
@@ -183,6 +220,7 @@ function normalizeAward(value, index) {
   const awardId = requiredText(value.awardId, `${label} award id`, 160);
   const key = `${ocid}:${awardId}`;
   if (value.key !== key) throw new Error(`${label} key is not canonical`);
+  const suppliers = normalizeSupplierParties(value.suppliers, value.supplierIds, value.supplierNations, label);
 
   return {
     rank: value.rank,
@@ -192,8 +230,10 @@ function normalizeAward(value, index) {
     awardId,
     title: requiredText(value.title, `${label} title`, 300),
     buyer: requiredText(value.buyer, `${label} buyer`, 240),
-    suppliers: normalizeSuppliers(value.suppliers, label),
-    supplierNations: normalizeSupplierNations(value.suppliers, value.supplierNations, label),
+    buyerId: optionalText(value.buyerId, 240),
+    suppliers: suppliers.map((supplier) => supplier.name),
+    supplierIds: suppliers.map((supplier) => supplier.id),
+    supplierNations: suppliers.map((supplier) => supplier.nation),
     awardDate,
     publishedAt,
     amount: round(value.amount, 2),
@@ -214,17 +254,42 @@ function normalizeAward(value, index) {
 function aggregate(awards, field, allocation = false) {
   const values = new Map();
   for (const award of awards) {
-    const names = field === "buyer" ? [award.buyer] : award.suppliers;
-    const allocated = allocation ? award.amount / names.length : award.amount;
-    for (const name of names) {
-      const current = values.get(name) ?? { name, awardCount: 0, disclosedValue: 0 };
+    const parties = field === "buyer"
+      ? [{ name: award.buyer, id: award.buyerId ?? null }]
+      : award.suppliers.map((name, index) => ({ name, id: award.supplierIds?.[index] ?? null }));
+    const allocated = allocation ? award.amount / parties.length : award.amount;
+    for (const party of parties) {
+      const key = party.id
+        ? `publisher-id:${party.id}`
+        : `exact-name:${party.name.toLocaleLowerCase("en-GB")}`;
+      const current = values.get(key) ?? {
+        name: party.name,
+        entityId: party.id,
+        identityBasis: party.id ? "publisher-id" : "exact-name",
+        aliases: new Set(),
+        latestPublishedAt: "",
+        awardCount: 0,
+        disclosedValue: 0,
+      };
+      current.aliases.add(party.name);
       current.awardCount += 1;
       current.disclosedValue += allocated;
-      values.set(name, current);
+      if (award.publishedAt > current.latestPublishedAt) {
+        current.name = party.name;
+        current.latestPublishedAt = award.publishedAt;
+      }
+      values.set(key, current);
     }
   }
   return [...values.values()]
-    .map((entry) => ({ ...entry, disclosedValue: round(entry.disclosedValue, 2) }))
+    .map((entry) => ({
+      name: entry.name,
+      entityId: entry.entityId,
+      identityBasis: entry.identityBasis,
+      aliases: [...entry.aliases].sort((left, right) => left.localeCompare(right, "en-GB")),
+      awardCount: entry.awardCount,
+      disclosedValue: round(entry.disclosedValue, 2),
+    }))
     .sort(
       (left, right) =>
         right.disclosedValue - left.disclosedValue ||
@@ -232,39 +297,31 @@ function aggregate(awards, field, allocation = false) {
     );
 }
 
-// Ranked-by-total-value supplier concentration: aggregates the EXISTING
-// award data by supplier (equal allocation across co-suppliers on the same
-// award, matching the summary's existing allocation method). Each entry
-// carries the supplier's nation when every award names a consistent,
-// known nation for that supplier, and "Other/Unknown" otherwise — this
-// never cross-references a different data source, only the 100 ranked
-// awards already in this payload.
+// Equal-share scenario by publisher identity, kept explicitly separate from
+// any claim of actual supplier revenue. Each entry carries only source-owned
+// names, identifiers and nations from the included award records.
 function buildSupplierConcentration(awards) {
-  const values = new Map();
+  const nations = new Map();
   for (const award of awards) {
-    const allocated = award.amount / award.suppliers.length;
     award.suppliers.forEach((name, index) => {
-      const nation = award.supplierNations[index] ?? UK_NATIONS.OTHER_UNKNOWN;
-      const current =
-        values.get(name) ?? { name, awardCount: 0, disclosedValue: 0, nations: new Set() };
-      current.awardCount += 1;
-      current.disclosedValue += allocated;
-      current.nations.add(nation);
-      values.set(name, current);
+      const id = award.supplierIds?.[index] ?? null;
+      const key = id ? `publisher-id:${id}` : `exact-name:${name.toLocaleLowerCase("en-GB")}`;
+      const values = nations.get(key) ?? new Set();
+      values.add(award.supplierNations[index] ?? UK_NATIONS.OTHER_UNKNOWN);
+      nations.set(key, values);
     });
   }
-  return [...values.values()]
-    .map((entry) => ({
-      name: entry.name,
-      awardCount: entry.awardCount,
-      disclosedValue: round(entry.disclosedValue, 2),
-      nation: entry.nations.size === 1 ? [...entry.nations][0] : UK_NATIONS.OTHER_UNKNOWN,
-    }))
-    .sort(
-      (left, right) =>
-        right.disclosedValue - left.disclosedValue ||
-        left.name.localeCompare(right.name, "en-GB")
-    );
+  return aggregate(awards, "suppliers", true)
+    .map((entry) => {
+      const key = entry.entityId
+        ? `publisher-id:${entry.entityId}`
+        : `exact-name:${entry.name.toLocaleLowerCase("en-GB")}`;
+      const knownNations = nations.get(key) ?? new Set([UK_NATIONS.OTHER_UNKNOWN]);
+      return {
+        ...entry,
+        nation: knownNations.size === 1 ? [...knownNations][0] : UK_NATIONS.OTHER_UNKNOWN,
+      };
+    });
 }
 
 function buildSummary(awards) {
@@ -320,10 +377,66 @@ function normalizeDataQuality(value) {
     }
     result[field] = value[field];
   }
-  if (result.validComparableAwards < REQUIRED_AWARD_COUNT) {
-    throw new Error("Fewer than 100 comparable awards were collected");
-  }
   return result;
+}
+
+function normalizeContractReleaseHistory(packageValue, expectedOcid) {
+  const ocid = requiredText(expectedOcid, "Expected OCID", 80);
+  if (!/^ocds-h6vhtk-[0-9a-f]+$/i.test(ocid)) throw new Error("Expected OCID is invalid");
+  if (!packageValue || typeof packageValue !== "object" || !Array.isArray(packageValue.records) || packageValue.records.length !== 1) {
+    throw new Error("Find a Tender record package must contain one record");
+  }
+
+  const record = packageValue.records[0];
+  if (!record || typeof record !== "object" || record.ocid !== ocid || !Array.isArray(record.releases)) {
+    throw new Error("Find a Tender record package OCID or releases are invalid");
+  }
+  if (record.releases.length < 1 || record.releases.length > 200) {
+    throw new Error("Find a Tender record package must contain between one and 200 releases");
+  }
+
+  const seen = new Set();
+  const releases = record.releases.map((release, index) => {
+    const label = `Release ${index + 1}`;
+    if (!release || typeof release !== "object" || release.ocid !== ocid) {
+      throw new Error(`${label} OCID is invalid`);
+    }
+    const id = requiredText(release.id, `${label} id`, 40);
+    if (!/^\d{6}-\d{4}$/.test(id)) throw new Error(`${label} id is invalid`);
+    if (seen.has(id)) throw new Error(`Find a Tender record package contains duplicate release IDs`);
+    seen.add(id);
+    const date = isoTimestamp(release.date, `${label} date`).text;
+    if (!Array.isArray(release.tag) || release.tag.length < 1 || release.tag.length > 8) {
+      throw new Error(`${label} tags are invalid`);
+    }
+    const tags = [...new Set(release.tag.map((tag) => {
+      const normalized = requiredText(tag, `${label} tag`, 48);
+      if (!/^[A-Za-z][A-Za-z0-9]*$/.test(normalized)) throw new Error(`${label} tag is invalid`);
+      return normalized;
+    }))];
+    if (tags.length !== release.tag.length) throw new Error(`${label} tags contain duplicates`);
+    const title = optionalText(release.tender?.title ?? release.title, 300);
+    const description = plainPublisherText(release.tender?.description ?? release.description);
+    return {
+      id,
+      date,
+      tags,
+      title,
+      description,
+      noticeUrl: `https://www.find-tender.service.gov.uk/Notice/${id}`,
+    };
+  }).sort((left, right) => left.date.localeCompare(right.date) || left.id.localeCompare(right.id));
+
+  return {
+    ocid,
+    source: {
+      publisher: "Cabinet Office",
+      service: "Find a Tender",
+      packageUrl: `https://www.find-tender.service.gov.uk/api/1.0/ocdsRecordPackages/${ocid}`,
+      documentationUrl: FIND_A_TENDER_RECORD_PACKAGE_DOCUMENTATION,
+    },
+    releases,
+  };
 }
 
 function normalizeGovernmentContractsPayload(data, now = new Date()) {
@@ -345,8 +458,12 @@ function normalizeGovernmentContractsPayload(data, now = new Date()) {
   if (windowFrom.timestamp >= windowTo.timestamp || windowTo.timestamp > generated.timestamp) {
     throw new Error("Government contracts window is invalid");
   }
-  if (!Array.isArray(data.awards) || data.awards.length !== REQUIRED_AWARD_COUNT) {
-    throw new Error("Government contracts payload must contain exactly 100 awards");
+  if (
+    !Array.isArray(data.awards) ||
+    data.awards.length === 0 ||
+    data.awards.length > DISPLAYED_AWARD_LIMIT
+  ) {
+    throw new Error(`Government contracts payload must contain between one and ${DISPLAYED_AWARD_LIMIT} displayed awards`);
   }
 
   const awards = data.awards.map(normalizeAward);
@@ -359,14 +476,23 @@ function normalizeGovernmentContractsPayload(data, now = new Date()) {
     }
   }
 
+  const dataQuality = normalizeDataQuality(data.dataQuality);
+  if (dataQuality.validComparableAwards < awards.length) {
+    throw new Error("Displayed contract awards exceed the complete-window comparable count");
+  }
   const summary = buildSummary(awards);
   if (JSON.stringify(data.summary) !== JSON.stringify(summary)) {
     throw new Error("Government contracts summary does not reconcile to the awards");
   }
-  if (JSON.stringify(data.caveats) !== JSON.stringify(CAVEATS)) {
+  if (JSON.stringify(data.caveats) !== JSON.stringify(CAVEATS) &&
+      JSON.stringify(data.caveats) !== JSON.stringify(LEGACY_CAVEATS)) {
     throw new Error("Government contracts caveats are not canonical");
   }
-  if (JSON.stringify(data.evidencePolicy) !== JSON.stringify(EVIDENCE_POLICY)) {
+  if (
+    JSON.stringify(data.evidencePolicy) !== JSON.stringify(EVIDENCE_POLICY) &&
+    JSON.stringify(data.evidencePolicy) !== JSON.stringify(LEGACY_COUNT_EVIDENCE_POLICY) &&
+    JSON.stringify(data.evidencePolicy) !== JSON.stringify(LEGACY_ALLOCATION_EVIDENCE_POLICY)
+  ) {
     throw new Error("Government contracts evidence policy is not canonical");
   }
 
@@ -383,7 +509,7 @@ function normalizeGovernmentContractsPayload(data, now = new Date()) {
     summary,
     awards,
     supplierConcentration: buildSupplierConcentration(awards),
-    dataQuality: normalizeDataQuality(data.dataQuality),
+    dataQuality,
     caveats: [...CAVEATS],
     evidencePolicy: { ...EVIDENCE_POLICY },
   };
@@ -412,12 +538,17 @@ function isCurrentGovernmentContractsPayload(data, now = new Date()) {
     const checkedAt = Date.parse(observation?.checkedAt ?? "");
     const { __observation: ignored, ...published } = data;
     void ignored;
+    const normalizedPublished = {
+      ...published,
+      evidencePolicy: canonical.evidencePolicy,
+      caveats: canonical.caveats,
+    };
     const hasValidMaxAge =
       observation?.maxAgeHours === MAX_PUBLICATION_AGE_MS / (60 * 60 * 1000) ||
       observation?.maxAgeDays === Math.ceil(MAX_PUBLICATION_AGE_MS / (24 * 60 * 60 * 1000));
     return (
       canonical.available === true &&
-      JSON.stringify(published) === JSON.stringify(canonical) &&
+      JSON.stringify(normalizedPublished) === JSON.stringify(canonical) &&
       observation?.status === "current" &&
       observation?.period === canonical.window.label &&
       observation?.observedAt === canonical.window.updatedTo &&
@@ -436,9 +567,10 @@ export {
   EVIDENCE_POLICY,
   FIND_A_TENDER_API,
   FIND_A_TENDER_DOCUMENTATION,
+  FIND_A_TENDER_RECORD_PACKAGE_DOCUMENTATION,
   MAX_PUBLICATION_AGE_MS,
   OPEN_GOVERNMENT_LICENCE,
-  REQUIRED_AWARD_COUNT,
+  DISPLAYED_AWARD_LIMIT,
   SOURCE,
   UK_NATIONS,
   ukNationFromCountryName,
@@ -448,4 +580,5 @@ export {
   ukNationFromPostcode,
   isCurrentGovernmentContractsPayload,
   normalizeGovernmentContractsPayload,
+  normalizeContractReleaseHistory,
 };

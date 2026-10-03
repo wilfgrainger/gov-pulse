@@ -1,8 +1,7 @@
 {
   "version": 1,
   "routeSource": "app/lib/sectionContent.ts",
-  "measureSource": "worker/measure-catalog.js",
+  "measureSource": "contracts/measure-definitions.json",
   "topics": ["pm-approval", "election-polls", "betting-odds", "govt-approval", "gov-trust-trend", "national-debt", "gdp", "economy", "tax", "uk-in-context", "government-contracts", "employment", "crime-stats", "nhs", "migration", "real-wages", "house-price-index", "early-years", "uk-regions", "policy-links"],
-  "canonicalMeasureIds": ["gdp-monthlyGrowth", "gdp-threeMonthGrowth", "gdp-annualGrowth", "inflation", "unemployment", "employmentRate", "inactivityRate", "vacancies", "waitingPathwaysEstimate", "debt-ratio", "debt-stock", "receipts", "netMigration", "immigration", "emigration", "regularPayRealGrowth", "totalPayRealGrowth", "housePriceChange", "privateRentAnnualChange", "privateRentAverage"],
-  "explorerMeasureIds": ["gdp-monthlyGrowth", "gdp-threeMonthGrowth", "gdp-annualGrowth", "inflation", "unemployment", "employmentRate", "inactivityRate", "vacancies", "waitingPathwaysEstimate", "debt-ratio", "debt-stock", "receipts", "netMigration", "immigration", "emigration", "regularPayRealGrowth", "totalPayRealGrowth", "housePriceChange", "privateRentAnnualChange", "privateRentAverage"]
+  "measureCoverage": "Every definition is represented in the worker catalog and browser library; live omissions carry a reason."
 }

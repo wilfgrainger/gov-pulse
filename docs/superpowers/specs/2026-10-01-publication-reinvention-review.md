@@ -74,7 +74,7 @@ Mobile/accessibility review must cover populated states. Fixed-viewBox explorer 
 
 ## Markdown and executable constraints
 
-The user's redesign authorization supersedes old aesthetic and architectural preferences. Preserve source truth, accessibility, privacy/security and free-only operation.
+The user's redesign authorization supersedes old aesthetic and architectural preferences. Preserve source truth, accessibility, privacy/security and explicit approval before paid spend. The earlier free-only preference was withdrawn in round two.
 
 | File | Conflict | Planned treatment |
 | --- | --- | --- |
@@ -99,15 +99,14 @@ At the time of this review, `AGENTS.md` had been updated to recognize the user's
 reinvention authority and correct current architecture. The implementation note
 below records the later removal of superseded duplicate guidance.
 
-## Cloudflare Free review
+## Historical platform review, retired 2 October 2026
 
-The repository model now derives 30 scheduled Queue deliveries/day and 120 with all three retries. These project estimates are **not** proof of Cloudflare quota feasibility or account headroom.
-
-Public traffic, SSR-to-data fetches, browser refetches, KV reads, cache deadlines, expanded workbook size, CPU, memory, bundle/storage sizes and retries all need accounting. Comparison collection runs directly inside Cron despite the Queue-isolation description. Successful local Next builds do not prove OpenNext meets Free request CPU limits.
-
-Recommended target: keep existing Next/Cloudflare investment, normalise measures once, prepare bounded artifacts in ingestion jobs, use one expiry-aware delivery path, cache valid editions, and run interaction in the browser. Keep the existing source-specific trusted NHS importer as an explicitly documented free CI exception if Cloudflare egress remains unusable. Hosting and deployed runtime remain Cloudflare Free. No paid APIs, billing fallback, Workers AI, Durable Objects, D1 or R2 are required by this programme.
-
-Measure representative request CPU and ingestion CPU/memory before committing to the current OpenNext renderer. If it cannot fit verified Free limits, use the pre-approved thin-Worker/pre-rendered delivery contingency described in the design, with SSR/no-JS correctness tests. Do not resolve a limit by upgrading to paid.
+The Free-only scenario and renderer contingency in this review are superseded;
+they do not choose or constrain the current host. Earlier request and schedule
+estimates are dated evidence, not account-quota proof. Use the current round-two
+plan for workload measurement, source-access comparisons, reliability and full
+operating cost. Cloudflare remains the current implementation while that
+comparison is completed; paid spend requires approval of a concrete estimate.
 
 ## Recommendation
 

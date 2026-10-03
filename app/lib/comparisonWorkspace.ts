@@ -2,6 +2,7 @@ import { availableMeasures, compareEligibility, type MeasureCatalog, type Measur
 import { validateDateWindow, type DateWindow } from "@/app/lib/chartModel";
 
 export type Workspace = { version: 1; measureIds: string[]; window: DateWindow; mode: "panels" | "overlay" };
+export const MAX_COMPARISON_MEASURES = 12;
 
 function defaultWindow(records: MeasureRecord[], available: MeasureRecord[]): DateWindow {
   const scope = records.length ? records : available;
@@ -24,12 +25,18 @@ function startingMeasureIds(measures: MeasureRecord[]) {
   return measures.slice(0, 2).map((measure) => measure.id);
 }
 
-export function parseWorkspace(search: string, catalog: MeasureCatalog): Workspace {
+export function parseWorkspace(search: string, catalog: Pick<MeasureCatalog, "measures">): Workspace {
   if (search.length > 2048) throw new Error("Comparison workspace URL is too large.");
   const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
-  for (const key of ["measure", "start", "end", "mode"]) {
+  const supportedParameters = new Set(["version", "measure", "start", "end", "mode"]);
+  for (const key of params.keys()) {
+    if (!supportedParameters.has(key)) throw new Error(`Comparison workspace parameter '${key}' is not supported.`);
+  }
+  for (const key of supportedParameters) {
     if (params.getAll(key).length > 1) throw new Error(`Comparison workspace parameter '${key}' is repeated.`);
   }
+  const version = params.get("version");
+  if (version !== null && version !== "1") throw new Error("This comparison link uses an unsupported workspace version.");
   const all = availableMeasures(catalog);
   const idsRaw = params.get("measure") ?? "";
   const measureIds = idsRaw
@@ -37,8 +44,8 @@ export function parseWorkspace(search: string, catalog: MeasureCatalog): Workspa
     : !params.has("measure") && params.size === 0
       ? startingMeasureIds(all)
       : [];
-  if (measureIds.length > 4 || new Set(measureIds).size !== measureIds.length || measureIds.some((id) => !id || !catalog.measures[id])) {
-    throw new Error("Choose up to four distinct measures from the catalog.");
+  if (measureIds.length > MAX_COMPARISON_MEASURES || new Set(measureIds).size !== measureIds.length || measureIds.some((id) => !id || !catalog.measures[id])) {
+    throw new Error(`Choose up to ${MAX_COMPARISON_MEASURES} distinct measures from the catalog.`);
   }
   const records = measureIds.map((id) => all.find((record) => record.id === id)).filter((record): record is MeasureRecord => Boolean(record));
   if (records.length !== measureIds.length) throw new Error("One or more selected measures are unavailable or invalid.");
@@ -58,6 +65,7 @@ export function parseWorkspace(search: string, catalog: MeasureCatalog): Workspa
 
 export function workspaceUrl(workspace: Workspace): string {
   const params = new URLSearchParams();
+  params.set("version", String(workspace.version));
   params.set("measure", workspace.measureIds.join(","));
   params.set("start", workspace.window.start);
   params.set("end", workspace.window.end);

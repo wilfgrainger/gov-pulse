@@ -26,4 +26,14 @@ describe("chart date axes", () => {
     expect(timeAxisTicks?.([point])).toEqual([Date.UTC(2026, 7, 27), Date.UTC(2026, 9, 28)]);
     expect(timeAxisTicks?.([point, point + 86_400_000])).toBeUndefined();
   });
+
+  it("centres a single point and maps dated points across the actual plot width", async () => {
+    const chartModel = await import("@/app/lib/chartModel") as Record<string, unknown>;
+    const timePosition = chartModel.timePosition as ((value: number, min: number, max: number, start: number, width: number) => number) | undefined;
+
+    expect(timePosition).toBeTypeOf("function");
+    expect(timePosition?.(5, 5, 5, 60, 680)).toBe(400);
+    expect(timePosition?.(10, 0, 20, 60, 680)).toBe(400);
+    expect(timePosition?.(20, 0, 20, 60, 680)).toBe(740);
+  });
 });

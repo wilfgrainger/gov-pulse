@@ -1,14 +1,80 @@
-import { COMPARISON_COUNTRY_NAMES, type ComparisonMeasure, type ComparisonCountryId, type ComparisonValueType } from "@/app/lib/internationalComparison";
+import { COMPARISON_COUNTRY_NAMES, COMPARISON_MEASURE_ORDER, type ComparisonMeasure, type ComparisonCountryId, type ComparisonValueType } from "@/app/lib/internationalComparison";
 import type { ChartMetadata } from "@/app/lib/chartExport";
+
+export type CountryComparisonUrlState = {
+  measureId: (typeof COMPARISON_MEASURE_ORDER)[number];
+  countries: ComparisonCountryId[];
+  valueTypes: ComparisonValueType[];
+  year: number | "latest";
+};
+
+const COUNTRY_IDS = Object.keys(COMPARISON_COUNTRY_NAMES) as ComparisonCountryId[];
+const VALUE_TYPES: ComparisonValueType[] = ["historical", "estimate", "projection"];
+const DEFAULT_COUNTRY_STATE: CountryComparisonUrlState = {
+  measureId: COMPARISON_MEASURE_ORDER[0],
+  countries: COUNTRY_IDS,
+  valueTypes: VALUE_TYPES,
+  year: "latest",
+};
+
+const COUNTRY_PRESETS: Record<string, ComparisonCountryId[]> = {
+  europe: ["GBR", "DEU", "FRA", "ITA", "ESP", "IRL", "NLD", "CHE", "POL"],
+  "major-powers": ["GBR", "USA", "CHN", "RUS", "DEU", "FRA"],
+};
+
+export function countryComparisonPreset(id: string): ComparisonCountryId[] | null {
+  if (id === "all") return [...COUNTRY_IDS];
+  return COUNTRY_PRESETS[id] ? [...COUNTRY_PRESETS[id]] : null;
+}
+
+export function parseCountryComparisonUrlState(search: string, availableYears: number[] = []): CountryComparisonUrlState {
+  const params = new URLSearchParams(String(search ?? "").replace(/^\?/, ""));
+  const rawMeasure = params.get("measure");
+  const measureId = COMPARISON_MEASURE_ORDER.includes(rawMeasure as CountryComparisonUrlState["measureId"])
+    ? rawMeasure as CountryComparisonUrlState["measureId"]
+    : DEFAULT_COUNTRY_STATE.measureId;
+  const rawCountries = params.get("countries");
+  const rawTypes = params.get("types");
+  const hasCountries = params.has("countries");
+  const hasTypes = params.has("types");
+  const selectedCountries = new Set((rawCountries ?? "").split(","));
+  const selectedTypes = new Set((rawTypes ?? "").split(","));
+  const countries = COUNTRY_IDS.filter((id) => selectedCountries.has(id));
+  const valueTypes = VALUE_TYPES.filter((type) => selectedTypes.has(type));
+  const rawYear = params.get("year");
+  const parsedYear = /^\d{4}$/.test(rawYear ?? "") ? Number(rawYear) : NaN;
+  return {
+    measureId,
+    countries: hasCountries && (countries.length || rawCountries === "") ? countries : [...DEFAULT_COUNTRY_STATE.countries],
+    valueTypes: hasTypes && (valueTypes.length || rawTypes === "") ? valueTypes : [...DEFAULT_COUNTRY_STATE.valueTypes],
+    year: availableYears.includes(parsedYear) ? parsedYear : "latest",
+  };
+}
+
+export function serializeCountryComparisonUrlState(state: CountryComparisonUrlState): string {
+  const params = new URLSearchParams();
+  if (COMPARISON_MEASURE_ORDER.includes(state.measureId) && state.measureId !== DEFAULT_COUNTRY_STATE.measureId) {
+    params.set("measure", state.measureId);
+  }
+  const selectedCountries = new Set(state.countries.filter((id) => COUNTRY_IDS.includes(id)));
+  if (selectedCountries.size !== COUNTRY_IDS.length) params.set("countries", COUNTRY_IDS.filter((id) => selectedCountries.has(id)).join(","));
+  const selectedTypes = new Set(state.valueTypes.filter((type) => VALUE_TYPES.includes(type)));
+  if (selectedTypes.size !== VALUE_TYPES.length) params.set("types", VALUE_TYPES.filter((type) => selectedTypes.has(type)).join(","));
+  if (typeof state.year === "number" && Number.isInteger(state.year)) params.set("year", String(state.year));
+  return params.toString();
+}
 
 export function canShareCountryAxis(left: ComparisonMeasure, right: ComparisonMeasure): boolean {
   return left.observationYear === right.observationYear && left.unit === right.unit && left.definition === right.definition;
 }
 
-export function selectCountryFigure(measure: ComparisonMeasure, countryIds: ComparisonCountryId[], valueTypes: ComparisonValueType[]) {
+export function selectCountryFigure(measure: ComparisonMeasure, countryIds: ComparisonCountryId[], valueTypes: ComparisonValueType[], selectedYear: number | "latest" = "latest") {
   const selected = new Set(countryIds);
   const typeFilter = new Set(valueTypes);
-  const included = measure.countries.filter((item) => selected.has(item.country) && item.value !== null && typeFilter.has(item.valueType));
+  const sourceRows = selectedYear === "latest"
+    ? measure.countries
+    : (measure.countryHistory ?? []).filter((item) => item.observationYear === selectedYear);
+  const included = sourceRows.filter((item) => selected.has(item.country) && item.value !== null && typeFilter.has(item.valueType));
   const years = new Set(included.map((item) => item.observationYear));
   const types = new Set(included.map((item) => item.valueType));
   const rankComparable = included.length > 0 && years.size === 1 && types.size === 1;
@@ -22,8 +88,8 @@ export function selectCountryFigure(measure: ComparisonMeasure, countryIds: Comp
     return { ...item, rank };
   });
   const includedIds = new Set(rows.map((item) => item.country));
-  const excluded = measure.countries.filter((item) => !includedIds.has(item.country)).map((item) => ({ ...item, reason: !selected.has(item.country) ? "Excluded by country filter" : item.value === null ? item.exclusionReason ?? "No comparable value published" : !typeFilter.has(item.valueType) ? `Excluded by ${item.valueType} status filter` : "Not comparable" }));
-  return { rows, excluded, denominator: rows.length, sourceCountryCount: measure.countries.length, commonYear: years.size === 1 ? [...years][0] : null, commonValueType: types.size === 1 ? [...types][0] : null, ranked: rankComparable };
+  const excluded = sourceRows.filter((item) => !includedIds.has(item.country)).map((item) => ({ ...item, reason: !selected.has(item.country) ? "Excluded by country filter" : item.value === null ? item.exclusionReason ?? "No comparable value published" : !typeFilter.has(item.valueType) ? `Excluded by ${item.valueType} status filter` : "Not comparable" }));
+  return { rows, excluded, denominator: rows.length, sourceCountryCount: sourceRows.length || measure.countries.length, commonYear: years.size === 1 ? [...years][0] : null, commonValueType: types.size === 1 ? [...types][0] : null, ranked: rankComparable };
 }
 
 export function buildCountryChartMetadata(
@@ -31,7 +97,9 @@ export function buildCountryChartMetadata(
   result: ReturnType<typeof selectCountryFigure>,
 ): ChartMetadata {
   const years = result.rows.map(({ observationYear }) => observationYear).sort((left, right) => left - right);
-  const sources = [...new Map(result.rows.flatMap(({ source }) => source ? [[source.url, source] as const] : [])).values()];
+  const sources = [...new Map(result.rows.flatMap(({ source }) => source
+    ? [source, ...(source.additionalSources ?? [])].map((item) => [item.url, item] as const)
+    : [])).values()];
   const sourceCitation = [
     `${measure.label}: ${measure.definition}`,
     `Visible denominator: ${result.denominator} of ${result.sourceCountryCount}; ${result.ranked ? `ranked within ${result.commonYear} ${result.commonValueType} observations` : "not ranked because year or evidence status differs"}`,
@@ -45,7 +113,7 @@ export function buildCountryChartMetadata(
     ...excludedCaveats,
   ].filter((value): value is string => Boolean(value));
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     title: `${measure.label} by country`,
     sourceCitation,
     observationWindow: years.length ? {
@@ -55,6 +123,12 @@ export function buildCountryChartMetadata(
     series: result.rows.map((row) => ({
       key: row.country,
       label: `${COMPARISON_COUNTRY_NAMES[row.country]} · ${row.value} ${measure.unit} · ${row.observationYear} · ${row.valueType} · ${row.rank === null ? "not ranked" : `rank ${row.rank}`}`,
+    })),
+    observations: result.rows.map((row) => ({
+      period: String(row.observationYear),
+      observedAt: `${row.observationYear}-12-31`,
+      values: { [row.country]: row.value },
+      details: { country: row.country, evidenceStatus: row.valueType, rank: row.rank },
     })),
     caveats,
   };

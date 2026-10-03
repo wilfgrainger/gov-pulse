@@ -20,7 +20,7 @@ Research leads from the prior review:
 
 ## Priority 2 — Deepen government-contract scrutiny
 
-The base Find a Tender contract is implemented: the latest complete seven-day update window is collected in paced six-hour slices, comparable disclosed GBP awards are validated, and the largest 100 are published through the same-origin snapshot with direct source links and an explicit unavailable state.
+The Find a Tender collector reads every cursor page from the complete seven-day update window, split into six-hour source queries. It validates comparable disclosed GBP awards across the complete retrieved window, then publishes the highest-valued records for the public ranking view with direct source links and an explicit unavailable state. The display limit is not a source-pagination or completeness limit; a smaller complete edition is valid.
 
 Research leads from the prior review:
 

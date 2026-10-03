@@ -10,10 +10,11 @@ import {
   ukNationFromPostcode,
 } from "../../contracts/government-contracts.js";
 import {
-  completeUtcWindow,
-  rankAwards,
-  slicedWindow,
-} from "../../scripts/prepare-government-contracts-ingest.mjs";
+  buildContractsFromShards,
+  daySlices,
+  previousCompleteDays,
+  rankDailyAwards,
+} from "../../worker/government-contracts-cloudflare.js";
 
 const NOW = new Date("2026-07-18T12:00:00.000Z");
 
@@ -29,7 +30,9 @@ function canonicalAward(index: number) {
     awardId,
     title: `Public contract ${index + 1}`,
     buyer: `Public buyer ${(index % 12) + 1}`,
+    buyerId: null as string | null,
     suppliers: [`Supplier ${(index % 25) + 1}`],
+    supplierIds: [null as string | null],
     supplierNations: ["Other/Unknown"],
     awardDate: `2026-07-${String((index % 17) + 1).padStart(2, "0")}T09:00:00.000Z`,
     publishedAt: `2026-07-${String((index % 17) + 1).padStart(2, "0")}T12:00:00.000Z`,
@@ -81,13 +84,14 @@ const SAMPLE_POSTCODES = ["EH1 1AA", "CF10 1AA", "BT1 1AA", "SW1A 1AA"];
 
 function rawRelease(index: number) {
   const award = canonicalAward(index);
+  const day = `2026-07-${String(11 + (index % 7)).padStart(2, "0")}`;
   const supplierId = `supplier-party-${index + 1}`;
   const postcode = SAMPLE_POSTCODES[index % SAMPLE_POSTCODES.length];
   return {
     ocid: award.ocid,
     id: award.releaseId,
-    date: award.publishedAt,
-    buyer: { name: award.buyer },
+    date: `${day}T12:00:00.000Z`,
+    buyer: { id: `buyer-party-${index + 1}`, name: award.buyer },
     parties: [
       {
         id: supplierId,
@@ -110,7 +114,7 @@ function rawRelease(index: number) {
       {
         id: award.awardId,
         title: award.title,
-        date: award.awardDate,
+        date: `${day}T09:00:00.000Z`,
         value: { amount: award.amount, currency: award.currency },
         suppliers: award.suppliers.map((name) => ({ id: supplierId, name })),
       },
@@ -119,7 +123,7 @@ function rawRelease(index: number) {
 }
 
 describe("government contracts contract", () => {
-  it("publishes exactly 100 ranked comparable GBP awards", () => {
+  it("publishes the largest 100 ranked comparable GBP awards", () => {
     const payload = buildGovernmentContractsPayload(payloadInput(), NOW);
 
     expect(payload.awards).toHaveLength(100);
@@ -131,10 +135,62 @@ describe("government contracts contract", () => {
     expect(isCurrentGovernmentContractsPayload(payload, NOW)).toBe(true);
   });
 
-  it("fails closed when the complete window cannot supply 100 awards", () => {
-    expect(() => buildGovernmentContractsPayload(payloadInput(99), NOW)).toThrow(
-      /exactly 100 awards/i
-    );
+  it("publishes a complete window when it contains fewer than 100 comparable awards", () => {
+    const payload = buildGovernmentContractsPayload(payloadInput(7), NOW);
+
+    expect(payload.awards).toHaveLength(7);
+    expect(payload.summary.awardCount).toBe(7);
+    expect(payload.dataQuality.validComparableAwards).toBe(7);
+    expect(isCurrentGovernmentContractsPayload(payload, NOW)).toBe(true);
+  });
+
+  it("accepts every named supplier on a valid multi-supplier award", () => {
+    const input = payloadInput(1);
+    input.awards[0].suppliers = Array.from({ length: 101 }, (_, index) => `Supplier ${index + 1}`);
+    input.awards[0].supplierIds = input.awards[0].suppliers.map(() => null);
+    input.awards[0].supplierNations = input.awards[0].suppliers.map(() => "Other/Unknown");
+    input.summary = buildSummary(input.awards);
+
+    const payload = buildGovernmentContractsPayload(input, NOW);
+
+    expect(payload.awards[0].suppliers).toHaveLength(101);
+    expect(payload.summary.distinctSuppliers).toBe(101);
+  });
+
+  it("preserves publisher entity IDs and separates supplier name collisions", () => {
+    const input = payloadInput(3);
+    input.awards[0].buyer = "Shared Buyer";
+    input.awards[1].buyer = "Shared Buyer";
+    input.awards[0].buyerId = "buyer-001";
+    input.awards[1].buyerId = "buyer-002";
+    input.awards[0].suppliers = ["Shared Supplier"];
+    input.awards[1].suppliers = ["Shared Supplier"];
+    input.awards[2].suppliers = ["Renamed Supplier"];
+    input.awards[0].supplierIds = ["supplier-001"];
+    input.awards[1].supplierIds = ["supplier-002"];
+    input.awards[2].supplierIds = ["supplier-001"];
+    input.summary = buildSummary(input.awards);
+
+    const payload = buildGovernmentContractsPayload(input, NOW);
+    const sameName = payload.awards.filter((award: { suppliers: string[] }) => award.suppliers.some((name) => name.includes("Supplier")));
+
+    expect(payload.awards[0].buyerId).toBe("buyer-001");
+    expect(payload.awards[0].supplierIds).toEqual(["supplier-001"]);
+    expect(payload.summary.distinctBuyers).toBe(3);
+    expect(payload.summary.distinctSuppliers).toBe(2);
+    expect(payload.supplierConcentration.map((entry: { entityId: string | null }) => entry.entityId).sort()).toEqual(["supplier-001", "supplier-002"]);
+    expect(sameName.length).toBe(3);
+  });
+
+  it("continues to read current editions with the retired count field", () => {
+    const legacy = buildGovernmentContractsPayload(payloadInput(), NOW);
+    legacy.evidencePolicy = {
+      ...legacy.evidencePolicy,
+      requiredAwardCount: 100,
+    } as typeof legacy.evidencePolicy;
+    delete (legacy.evidencePolicy as { displayedAwardLimit?: number }).displayedAwardLimit;
+
+    expect(isCurrentGovernmentContractsPayload(legacy, NOW)).toBe(true);
   });
 
   it("rejects tampered values and provenance", () => {
@@ -158,31 +214,45 @@ describe("government contracts contract", () => {
   });
 
   it("splits the complete seven-day window into six-hour slices", () => {
-    const window = completeUtcWindow(NOW);
-    const slices = slicedWindow(window);
+    const days = previousCompleteDays(NOW, 7);
+    const slices = days.flatMap((day) => daySlices(day));
 
-    expect(window.label).toBe("11 Jul 2026 to 17 Jul 2026");
+    expect(days).toEqual([
+      "2026-07-11",
+      "2026-07-12",
+      "2026-07-13",
+      "2026-07-14",
+      "2026-07-15",
+      "2026-07-16",
+      "2026-07-17",
+    ]);
     expect(slices).toHaveLength(28);
     expect(slices[0]).toEqual({
-      apiFrom: "2026-07-11T00:00:00",
-      apiTo: "2026-07-11T05:59:59",
+      updatedFrom: "2026-07-11T00:00:00",
+      updatedTo: "2026-07-11T05:59:59",
     });
     expect(slices[27]).toEqual({
-      apiFrom: "2026-07-17T18:00:00",
-      apiTo: "2026-07-17T23:59:59",
+      updatedFrom: "2026-07-17T18:00:00",
+      updatedTo: "2026-07-17T23:59:59",
     });
   });
 
   it("normalizes raw OCDS releases into the same canonical ranking", () => {
-    const payload = rankAwards(
-      Array.from({ length: 100 }, (_, index) => rawRelease(index)),
-      28,
-      NOW,
-      28
+    const days = previousCompleteDays(NOW, 7);
+    const shards = days.map((day, index) =>
+      rankDailyAwards(
+        index === 0 ? Array.from({ length: 100 }, (_, row) => rawRelease(row)) : [],
+        day,
+        NOW,
+        { pagesFetched: 4, requestsMade: 4 },
+      ),
     );
+    const payload = buildContractsFromShards(shards, NOW)!;
 
     expect(payload.awards).toHaveLength(100);
     expect(payload.awards[0].noticeUrl).toMatch(/find-tender\.service\.gov\.uk\/Notice/);
+    expect(payload.awards[0].buyerId).toBe("buyer-party-1");
+    expect(payload.awards[0].supplierIds).toEqual(["supplier-party-1"]);
     expect(payload.summary.disclosedValueTotal).toBe(
       buildSummary(payload.awards).disclosedValueTotal
     );

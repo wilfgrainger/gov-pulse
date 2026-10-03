@@ -10,6 +10,7 @@
  * the exported image always matches what the reader is looking at.
  */
 
+import { safeCsvCell } from "./chartModel";
 import type { ExportPackage } from "./chartModel";
 
 const XMLNS = "http://www.w3.org/2000/svg";
@@ -41,7 +42,7 @@ type ExportMetadata = {
 };
 
 export type ChartMetadata = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   title: string;
   sourceCitation: string;
   observationWindow: {
@@ -49,8 +50,22 @@ export type ChartMetadata = {
     end: { period: string; observedAt: string | null } | null;
   };
   series: { key: string; label: string }[];
+  observations: { period: string; observedAt: string | null; values: Record<string, number | null>; details?: Record<string, string | number | null> }[];
   caveats: string[];
 };
+
+export function serializeChartMetadataCsv(metadata: ChartMetadata): string {
+  const columns = ["chart_title", "period", "observed_at", "series_key", "series_label", "value", "value_status", "source_citation", "caveats", "details"];
+  const rows = metadata.observations.flatMap((observation) => Object.entries(observation.values)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, value]) => {
+      const series = metadata.series.find((item) => item.key === key);
+      return [metadata.title, observation.period, observation.observedAt, key, series?.label ?? key, value,
+        value === null ? "not available" : "published", metadata.sourceCitation, metadata.caveats.join(" "),
+        observation.details ? JSON.stringify(observation.details) : ""].map(safeCsvCell).join(",");
+    }));
+  return [columns.map(safeCsvCell).join(","), ...rows].join("\r\n") + "\r\n";
+}
 
 function wrapCitation(citation: string, width: number): string[] {
   const maximumCharacters = Math.max(28, Math.floor((width - 16) / 6.2));
@@ -231,7 +246,7 @@ export async function downloadChartPng(svg: SVGSVGElement, filename: string, met
 }
 
 /** Slugifies a chart title into a filesystem-safe base filename. */
-export function chartExportFilename(title: string, extension: "svg" | "png"): string {
+export function chartExportFilename(title: string, extension: "svg" | "png" | "csv" | "json"): string {
   const slug = title
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")

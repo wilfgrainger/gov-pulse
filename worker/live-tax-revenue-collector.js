@@ -5,6 +5,7 @@ import {
 } from "./economy-evidence.js";
 import { fetchOfficialResponse } from "./official-source-fetch.js";
 import { readResponseText } from "./response-limits.js";
+import { parseOnsNextReleaseDate } from "./ons-release-date.js";
 import { sectionRecord } from "./live-feed-common.js";
 
 const ONS_ORIGIN = "https://www.ons.gov.uk";
@@ -136,6 +137,7 @@ function legacyReceipts(text, titlePeriod) {
 
 function parseTaxRevenueBulletin(html, finalUrl = FINANCES_BULLETIN_URL) {
   const text = decodeHtml(html);
+  const nextReleaseDate = parseOnsNextReleaseDate(text);
   const titlePeriod = requiredMatch(
     text,
     /Public sector finances, UK:\s*([A-Za-z]+\s+\d{4})/i,
@@ -161,6 +163,7 @@ function parseTaxRevenueBulletin(html, finalUrl = FINANCES_BULLETIN_URL) {
       period: titlePeriod,
       observedAt: monthlyPeriodEnd(titlePeriod),
       releaseDate,
+      ...(nextReleaseDate ? { nextReleaseDate } : {}),
       receiptsBillion: receipts.current,
       yearChangeBillion: receipts.difference,
     },

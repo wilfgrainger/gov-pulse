@@ -11,13 +11,17 @@ export type MeasureDefinition = {
   unit: string;
   basis: string;
   cadence: string;
-  evidenceClass: "official-statistics";
+  evidenceClass: "official-statistics" | "official-policy" | "administrative-data";
+  publisher?: string;
   valuePath: string;
+  valueMeasurePath?: string;
+  valueMeasureId?: string;
+  contextPath?: string;
   valueFromLatestHistory?: boolean;
   periodPath: string;
   publicationPath: string;
-  historyPath: string | null;
-  historyValue: string | null;
+  historyPath?: string | null;
+  historyValue?: string | null;
   note: string;
 };
 
@@ -41,8 +45,12 @@ export const MEASURES: MeasureDefinition[] = inventory.measures.map((measure) =>
   unit: measure.unit,
   basis: measure.basis,
   cadence: measure.cadence,
-  evidenceClass: "official-statistics",
+  evidenceClass: (measure.evidenceClass ?? "official-statistics") as MeasureDefinition["evidenceClass"],
+  publisher: measure.publisher,
   valuePath: measure.valuePath ?? "",
+  valueMeasurePath: measure.valueMeasurePath,
+  valueMeasureId: measure.valueMeasureId,
+  contextPath: measure.contextPath,
   valueFromLatestHistory: measure.valueFromLatestHistory ?? false,
   periodPath: measure.periodPath,
   publicationPath: measure.publishedPath,

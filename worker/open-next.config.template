@@ -3,8 +3,8 @@ import staticAssetsIncrementalCache from "@opennextjs/cloudflare/overrides/incre
 
 // public-data.org does not use ISR as a source of truth. Dynamic evidence is
 // read on each request from the exact same-origin data route. This read-only
-// cache is only for Next.js prerendered/static artifacts and needs no R2, D1 or
-// Durable Object binding on the Cloudflare Free plan.
+// cache is only for Next.js prerendered/static artifacts and does not
+// require object storage or a Durable Object binding in the current design.
 export default defineCloudflareConfig({
   incrementalCache: staticAssetsIncrementalCache,
   enableCacheInterception: true,

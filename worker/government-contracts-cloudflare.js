@@ -4,7 +4,7 @@ import {
   FIND_A_TENDER_API,
   FIND_A_TENDER_DOCUMENTATION,
   OPEN_GOVERNMENT_LICENCE,
-  REQUIRED_AWARD_COUNT,
+  DISPLAYED_AWARD_LIMIT,
   buildGovernmentContractsPayload,
   buildSummary,
   ukNationFromCountryName,
@@ -16,12 +16,17 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const SHARD_PREFIX = "v12:contracts:day:";
 const CURRENT_RECORD_KEY = "v12:section:governmentContracts";
 const SHARD_TTL_SECONDS = 10 * 24 * 60 * 60;
-const MAX_DAYS_PER_RUN = 3;
 const SLICES_PER_DAY = 4;
 const PAGE_LIMIT = 100;
-const MAX_REQUESTS_PER_RUN = MAX_DAYS_PER_RUN * SLICES_PER_DAY;
-const MAX_AWARDS_PER_SHARD = 2_500;
-const MAX_SHARD_BYTES = 4 * 1024 * 1024;
+const MAX_PAGES_PER_SLICE = 8;
+const MAX_PAGES_PER_REFRESH = 64;
+const MAX_RELEASES_PER_SLICE = MAX_PAGES_PER_SLICE * PAGE_LIMIT;
+const MAX_RELEASES_PER_REFRESH = MAX_PAGES_PER_REFRESH * PAGE_LIMIT;
+const MAX_CONTRACT_PAGE_BYTES = 2 * 1024 * 1024;
+const MAX_RETRIEVAL_DURATION_MS = 4 * 60 * 1000;
+// Workers KV documents a 25 MiB maximum value. Measure the encoded JSON
+// before writing so valid records are retained up to the actual store limit.
+const MAX_SHARD_BYTES = 25 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 20_000;
 const USER_AGENT = "public-data.org-cloudflare-contracts/1.0";
 
@@ -59,10 +64,27 @@ function finiteAmount(value) {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
 }
 
+function supplierReferences(award) {
+  const seen = new Set();
+  const references = [];
+  for (const supplier of Array.isArray(award?.suppliers) ? award.suppliers : []) {
+    const name = text(supplier?.name);
+    if (!name) continue;
+    const id = text(supplier?.id) || null;
+    const identity = id ? `publisher-id:${id}` : `exact-name:${name.toLocaleLowerCase("en-GB")}`;
+    if (seen.has(identity)) continue;
+    seen.add(identity);
+    references.push({ id, name });
+  }
+  return references;
+}
+
 function supplierNames(award) {
-  return Array.isArray(award?.suppliers)
-    ? [...new Set(award.suppliers.map((supplier) => text(supplier?.name)).filter(Boolean))]
-    : [];
+  return supplierReferences(award).map((supplier) => supplier.name);
+}
+
+function supplierIds(award) {
+  return supplierReferences(award).map((supplier) => supplier.id);
 }
 
 // OCDS 1.1 moves organization details (including address) out of embedded
@@ -86,17 +108,10 @@ function partyCountryById(release) {
 // Resolves each award supplier from an exact nation value on its linked
 // party. Missing, broad-country, and non-UK labels stay Other/Unknown.
 function supplierNationsFor(award, countryById) {
-  const seen = new Set();
-  const nations = [];
-  for (const supplier of Array.isArray(award?.suppliers) ? award.suppliers : []) {
-    const name = text(supplier?.name);
-    if (!name || seen.has(name)) continue;
-    seen.add(name);
-    const id = text(supplier?.id);
-    const countryName = id ? countryById.get(id) : "";
-    nations.push(ukNationFromCountryName(countryName) ?? ukNationFromPostcode(""));
-  }
-  return nations;
+  return supplierReferences(award).map((supplier) => {
+    const countryName = supplier.id ? countryById.get(supplier.id) : "";
+    return ukNationFromCountryName(countryName) ?? ukNationFromPostcode("");
+  });
 }
 
 function isFramework(release) {
@@ -186,7 +201,9 @@ function extractComparableAwards(release, counters) {
       awardId,
       title,
       buyer,
+      buyerId: text(release?.buyer?.id) || null,
       suppliers,
+      supplierIds: supplierIds(award),
       supplierNations: supplierNationsFor(award, partyCountryById(release)),
       awardDate: new Date(awardDate).toISOString(),
       publishedAt: new Date(publishedAt).toISOString(),
@@ -219,40 +236,136 @@ function initialUrl(slice) {
   return url.toString();
 }
 
-async function fetchSlice(slice, fetchImpl = fetch) {
-  const response = await fetchImpl(initialUrl(slice), {
-    headers: { Accept: "application/json", "User-Agent": USER_AGENT },
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-  });
-  if (!response.ok) throw new Error(`Find a Tender returned ${response.status}`);
-  assertSameHttpsHost(response, FIND_A_TENDER_API, "Find a Tender");
-  const payload = await readResponseJson(response, { label: "Find a Tender JSON" });
-  if (
-    payload?.publisher?.name !== "Cabinet Office" ||
-    !String(payload?.version ?? "").startsWith("1.1") ||
-    !Array.isArray(payload?.releases)
-  ) {
-    throw new Error("Find a Tender returned an unexpected OCDS release package");
-  }
-
-  const hasNext = Boolean(
-    payload?.links?.next ||
-      payload?.pagination?.next ||
-      payload?.pagination?.nextCursor ||
-      payload?.next ||
-      payload?.nextPage ||
-      response.headers.get("link")
-  );
-  if (hasNext || payload.releases.length >= PAGE_LIMIT) {
-    throw new Error("Find a Tender slice exceeded the one-page free-tier completeness bound");
-  }
-  return payload.releases;
+function createContractsRetrievalBudget(nowMs = Date.now()) {
+  return {
+    pagesFetched: 0,
+    releasesSeen: 0,
+    deadlineAt: nowMs + MAX_RETRIEVAL_DURATION_MS,
+  };
 }
 
-function rankDailyAwards(releases, day, collectedAt = new Date()) {
+function apiUrl(value, baseUrl, label) {
+  let url;
+  try {
+    url = new URL(value, baseUrl);
+  } catch {
+    throw new Error(`Find a Tender returned an invalid ${label} URL`);
+  }
+  const base = new URL(baseUrl);
+  const allowedParameters = new Set(["updatedFrom", "updatedTo", "stages", "limit", "cursor"]);
+  const cursorValues = url.searchParams.getAll("cursor");
+  if (
+    url.protocol !== "https:" ||
+    url.hostname !== base.hostname ||
+    url.pathname !== base.pathname ||
+    url.username ||
+    url.password ||
+    url.port ||
+    url.searchParams.get("updatedFrom") !== base.searchParams.get("updatedFrom") ||
+    url.searchParams.get("updatedTo") !== base.searchParams.get("updatedTo") ||
+    url.searchParams.get("stages") !== "award" ||
+    url.searchParams.get("limit") !== String(PAGE_LIMIT) ||
+    [...url.searchParams.keys()].some((parameter) => !allowedParameters.has(parameter)) ||
+    cursorValues.length > 1 ||
+    (cursorValues.length === 1 &&
+      (cursorValues[0].length > 300 || !/^[A-Za-z0-9=]+$/.test(cursorValues[0])))
+  ) {
+    throw new Error(`Find a Tender ${label} URL left the requested API window`);
+  }
+  return url.toString();
+}
+
+function nextPageUrl(payload, response, currentUrl) {
+  const cursor = payload?.pagination?.nextCursor ?? payload?.nextCursor;
+  if (cursor !== undefined && cursor !== null && cursor !== "") {
+    if (typeof cursor !== "string" || cursor.length > 300 || !/^[A-Za-z0-9=]+$/.test(cursor)) {
+      throw new Error("Find a Tender returned an invalid pagination cursor");
+    }
+    const url = new URL(currentUrl);
+    url.searchParams.set("cursor", cursor);
+    return apiUrl(url.toString(), currentUrl, "next-page");
+  }
+
+  const headerLink = response.headers.get("link") ?? "";
+  const headerNext = headerLink
+    .split(",")
+    .map((part) => part.trim())
+    .find((part) => /rel=["']?next["']?/i.test(part))
+    ?.match(/<([^>]+)>/)?.[1];
+  const next = [payload?.links?.next, payload?.pagination?.next, payload?.next, payload?.nextPage, headerNext]
+    .find((value) => typeof value === "string" && value.trim());
+  return next ? apiUrl(next, currentUrl, "next-page") : null;
+}
+
+async function fetchSlice(slice, fetchImpl = fetch, budget = createContractsRetrievalBudget()) {
+  const releases = [];
+  const seenPages = new Set();
+  let url = initialUrl(slice);
+  let pagesFetched = 0;
+
+  while (url) {
+    if (pagesFetched >= MAX_PAGES_PER_SLICE) {
+      throw new Error(`Find a Tender slice page budget exceeded (${MAX_PAGES_PER_SLICE})`);
+    }
+    if (budget.pagesFetched >= MAX_PAGES_PER_REFRESH) {
+      throw new Error(`Find a Tender refresh page budget exceeded (${MAX_PAGES_PER_REFRESH})`);
+    }
+    const remainingMs = budget.deadlineAt - Date.now();
+    if (!Number.isFinite(remainingMs) || remainingMs <= 0) {
+      throw new Error("Find a Tender refresh time budget exceeded");
+    }
+    if (seenPages.has(url)) throw new Error("Find a Tender pagination repeated a page");
+    seenPages.add(url);
+    const response = await fetchImpl(url, {
+      headers: { Accept: "application/json", "User-Agent": USER_AGENT },
+      signal: AbortSignal.timeout(Math.min(REQUEST_TIMEOUT_MS, remainingMs)),
+    });
+    if (!response.ok) {
+      const error = new Error(`Find a Tender returned ${response.status}`);
+      if (response.status === 429 || response.status === 503) {
+        const retryAfter = Number.parseInt(response.headers.get("retry-after") ?? "", 10);
+        if (Number.isFinite(retryAfter) && retryAfter > 0) {
+          error.retryAfterSeconds = Math.min(retryAfter, 43_200);
+        }
+      }
+      throw error;
+    }
+    assertSameHttpsHost(response, url, "Find a Tender");
+    if (response.url) apiUrl(response.url, url, "response");
+    const payload = await readResponseJson(response, {
+      limit: MAX_CONTRACT_PAGE_BYTES,
+      label: "Find a Tender JSON",
+    });
+    if (
+      payload?.publisher?.name !== "Cabinet Office" ||
+      !String(payload?.version ?? "").startsWith("1.1") ||
+      !Array.isArray(payload?.releases)
+    ) {
+      throw new Error("Find a Tender returned an unexpected OCDS release package");
+    }
+    if (payload.releases.length > PAGE_LIMIT) {
+      throw new Error(`Find a Tender page exceeded its ${PAGE_LIMIT}-release page limit`);
+    }
+    if (releases.length + payload.releases.length > MAX_RELEASES_PER_SLICE) {
+      throw new Error(`Find a Tender slice release budget exceeded (${MAX_RELEASES_PER_SLICE})`);
+    }
+    if (budget.releasesSeen + payload.releases.length > MAX_RELEASES_PER_REFRESH) {
+      throw new Error(`Find a Tender refresh release budget exceeded (${MAX_RELEASES_PER_REFRESH})`);
+    }
+    releases.push(...payload.releases);
+    pagesFetched += 1;
+    budget.pagesFetched += 1;
+    budget.releasesSeen += payload.releases.length;
+    url = nextPageUrl(payload, response, url);
+  }
+
+  return { releases, pagesFetched, requestsMade: pagesFetched };
+}
+
+function rankDailyAwards(releases, day, collectedAt = new Date(), retrieval = {}) {
   const counters = {
-    pagesFetched: SLICES_PER_DAY,
-    requestsMade: SLICES_PER_DAY,
+    pagesFetched: retrieval.pagesFetched ?? 0,
+    requestsMade: retrieval.requestsMade ?? 0,
     releasesSeen: releases.length,
     awardsSeen: 0,
     validComparableAwards: 0,
@@ -283,9 +396,6 @@ function rankDailyAwards(releases, day, collectedAt = new Date()) {
         Date.parse(right.awardDate) - Date.parse(left.awardDate) ||
         left.key.localeCompare(right.key, "en-GB")
     );
-  if (awards.length > MAX_AWARDS_PER_SHARD) {
-    throw new Error(`Find a Tender day exceeded the ${MAX_AWARDS_PER_SHARD}-award shard limit`);
-  }
   counters.validComparableAwards = [...byKey.values()].filter((award) => !award.cancelled).length;
   const shard = {
     schemaVersion: 1,
@@ -295,7 +405,8 @@ function rankDailyAwards(releases, day, collectedAt = new Date()) {
     awards,
     dataQuality: counters,
   };
-  if (new TextEncoder().encode(JSON.stringify(shard)).byteLength > MAX_SHARD_BYTES) {
+  const serialized = JSON.stringify(shard);
+  if (new TextEncoder().encode(serialized).byteLength > MAX_SHARD_BYTES) {
     throw new Error(`Find a Tender day exceeded the ${MAX_SHARD_BYTES}-byte shard limit`);
   }
   return shard;
@@ -311,12 +422,24 @@ async function writeJson(env, key, value, expirationTtl) {
   await env.METRICS_CACHE.put(key, JSON.stringify(value), options);
 }
 
-async function collectDayShard(day, env, fetchImpl = fetch, now = new Date()) {
+async function collectDayShard(
+  day,
+  env,
+  fetchImpl = fetch,
+  now = new Date(),
+  budget = createContractsRetrievalBudget(),
+) {
   const releases = [];
+  let pagesFetched = 0;
   for (const slice of daySlices(day)) {
-    releases.push(...(await fetchSlice(slice, fetchImpl)));
+    const result = await fetchSlice(slice, fetchImpl, budget);
+    releases.push(...result.releases);
+    pagesFetched += result.pagesFetched;
   }
-  const shard = rankDailyAwards(releases, day, now);
+  const shard = rankDailyAwards(releases, day, now, {
+    pagesFetched,
+    requestsMade: pagesFetched,
+  });
   await writeJson(env, `${SHARD_PREFIX}${day}`, shard, SHARD_TTL_SECONDS);
   return shard;
 }
@@ -371,8 +494,8 @@ function buildContractsFromShards(shards, now = new Date()) {
       Date.parse(right.awardDate) - Date.parse(left.awardDate) ||
       left.key.localeCompare(right.key, "en-GB")
   );
-  if (comparable.length < REQUIRED_AWARD_COUNT) return null;
-  const awards = comparable.slice(0, REQUIRED_AWARD_COUNT).map((award, index) => ({
+  if (comparable.length === 0) return null;
+  const awards = comparable.slice(0, DISPLAYED_AWARD_LIMIT).map((award, index) => ({
     ...award,
     rank: index + 1,
   }));
@@ -390,7 +513,7 @@ function buildContractsFromShards(shards, now = new Date()) {
         updatedTo: to,
         label: `${days[0]} to ${days.at(-1)}`,
         basis:
-          "Find a Tender award-stage releases from seven complete UTC day shards collected by the Cloudflare Free data worker",
+          "Find a Tender award-stage releases from seven complete UTC day shards collected by public-data.org",
       },
       source: {
         publisher: "Cabinet Office",
@@ -423,15 +546,13 @@ async function refreshGovernmentContracts(env, options = {}) {
   }
 
   let requestsMade = 0;
+  const budget = createContractsRetrievalBudget();
   const collected = [];
-  for (const day of missing.slice(0, MAX_DAYS_PER_RUN)) {
-    const shard = await collectDayShard(day, env, fetchImpl, now);
-    requestsMade += SLICES_PER_DAY;
+  for (const day of missing) {
+    const shard = await collectDayShard(day, env, fetchImpl, now, budget);
+    requestsMade += shard.dataQuality.requestsMade;
     collected.push(day);
     shards.push(shard);
-  }
-  if (requestsMade > MAX_REQUESTS_PER_RUN) {
-    throw new Error("Government contracts collector exceeded its free-tier request budget");
   }
 
   const byDay = new Map(shards.map((shard) => [shard.day, shard]));
@@ -452,7 +573,6 @@ async function refreshGovernmentContracts(env, options = {}) {
     data,
     fetchedAt: now.toISOString(),
     sourceLabel: "Cabinet Office Find a Tender OCDS award releases",
-    backend: "cloudflare-free-daily-shards",
   };
   await writeJson(env, CURRENT_RECORD_KEY, record);
   return { updated: true, collected, completeDays: 7, requestsMade, record };
@@ -460,12 +580,17 @@ async function refreshGovernmentContracts(env, options = {}) {
 
 export {
   CURRENT_RECORD_KEY,
-  MAX_DAYS_PER_RUN,
-  MAX_REQUESTS_PER_RUN,
+  MAX_CONTRACT_PAGE_BYTES,
+  MAX_PAGES_PER_REFRESH,
+  MAX_PAGES_PER_SLICE,
+  MAX_RELEASES_PER_REFRESH,
+  MAX_RELEASES_PER_SLICE,
   SHARD_PREFIX,
   buildContractsFromShards,
   collectDayShard,
+  createContractsRetrievalBudget,
   daySlices,
+  fetchSlice,
   previousCompleteDays,
   rankDailyAwards,
   refreshGovernmentContracts,

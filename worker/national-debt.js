@@ -1,4 +1,5 @@
 import { fetchOfficialText as fetchSourceText } from "./official-source-fetch.js";
+import { parseOnsNextReleaseDate } from "./ons-release-date.js";
 
 const ONS_ORIGIN = "https://www.ons.gov.uk";
 const ONS_GENERATOR = `${ONS_ORIGIN}/generator?format=csv&uri=`;
@@ -202,6 +203,7 @@ async function buildNationalDebt(fetchImpl = fetch) {
     debtToGdp: Number(debtToGdp.value.toFixed(1)),
     observationPeriod: debt.period,
     publicationDate: parseOnsReleaseDate(debtPage),
+    nextReleaseDate: parseOnsNextReleaseDate(decodeHtml(debtPage)),
     annualDelta: {
       debtBillion: Number((debt.value - priorYear.debtBillion).toFixed(1)),
       debtToGdpPoints: Number((debtToGdp.value - priorYear.debtToGdp).toFixed(1)),

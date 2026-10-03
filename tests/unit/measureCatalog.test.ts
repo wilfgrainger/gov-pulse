@@ -80,7 +80,7 @@ describe("canonical measure contract", () => {
     expect(selectMeasure(catalog, "missing", new Date(instant))).toBeNull();
   });
 
-  it("keeps a verified expired record discoverable as historical", () => {
+  it("does not relabel an expired current record as historical in the active catalogue", () => {
     const catalog = {
       schemaVersion: 2,
       editionId: "catalog-2026-07-01",
@@ -88,12 +88,11 @@ describe("canonical measure contract", () => {
       validUntil: "2026-07-08T00:00:00.000Z",
       measures: { "unemployment-rate": validateMeasureRecord(measure()) },
     };
-    expect(measureForDisplay(catalog, "unemployment-rate", new Date("2026-07-09T00:00:00.000Z")))
-      .toMatchObject({ availability: "historical", value: 4.9, validUntil: "2026-07-08T00:00:00.000Z" });
+    expect(measureForDisplay(catalog, "unemployment-rate", new Date("2026-07-09T00:00:00.000Z"))).toBeNull();
     expect(measureForDisplay(catalog, "missing", new Date("2026-07-09T00:00:00.000Z"))).toBeNull();
   });
 
-  it("retains historical provenance when a publisher republishes the same expired edition", () => {
+  it("preserves historical provenance but excludes an expired record from the active catalogue", () => {
     const historic = validateMeasureRecord(measure({
       fetchedAt: "2026-07-10T00:00:00.000Z",
       validUntil: "2026-07-08T00:00:00.000Z",
@@ -106,7 +105,7 @@ describe("canonical measure contract", () => {
       generatedAt: "2026-07-10T00:00:00.000Z",
       validUntil: null,
       measures: { "unemployment-rate": historic },
-    }, "unemployment-rate", new Date("2026-07-10T00:00:00.000Z"))?.availability).toBe("historical");
+    }, "unemployment-rate", new Date("2026-07-10T00:00:00.000Z"))).toBeNull();
   });
 
   it("rejects a catalog key that does not match the record identity", () => {

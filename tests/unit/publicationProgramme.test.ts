@@ -7,6 +7,7 @@ import { publicRouteAllowed } from "../../scripts/lib/public-surfaces.mjs";
 import { SECTION_CONTENT } from "../../app/lib/sectionContent";
 import { MEASURES } from "../../app/lib/dataExplorer";
 import { MEASURE_IDS } from "../../worker/measure-catalog.js";
+import { FEED_REGISTRY } from "../../worker/feed-registry.js";
 import { MEASURE_COUNTS_BY_ROUTE } from "../../app/lib/sections";
 
 const wranglerPath = "worker/wrangler.toml";
@@ -16,6 +17,9 @@ describe("approved public evidence surfaces", () => {
   it("authorizes the exact edition archive routes and leaves retired endpoints closed", () => {
     expect(publicRouteAllowed("/data/editions.json")).toBe(true);
     expect(publicRouteAllowed("/data/edition.json?edition=catalog-1.2-a")).toBe(true);
+    expect(publicRouteAllowed("/data/contracts/history.json?ocid=ocds-h6vhtk-047306")).toBe(true);
+    expect(publicRouteAllowed("/data/contracts/history.json?ocid=../secret")).toBe(false);
+    expect(publicRouteAllowed("/data/contracts/history.json?ocid=ocds-h6vhtk-047306&source=https://attacker.example")).toBe(false);
     expect(publicRouteAllowed("/data/measure-catalog.json")).toBe(false);
   });
 
@@ -73,9 +77,27 @@ describe("approved public evidence surfaces", () => {
     expect(publicRouteAllowed("/data/edition.json/extra?edition=a1")).toBe(false);
   });
 
+  it("routes every active automated source to a public topic page", () => {
+    const surfaces = JSON.parse(readFileSync("contracts/public-surfaces.json", "utf8"));
+    const activeTopicIds = new Set(
+      surfaces.topics
+        .filter((topic: { id: string; status: string }) => topic.status === "active")
+        .map((topic: { id: string }) => topic.id),
+    );
+    const activeDataSections = Object.entries(SECTION_CONTENT)
+      .filter(([id]) => activeTopicIds.has(id))
+      .flatMap(([, content]) => content.dataSection ? [content.dataSection] : []);
+
+    const activeFeedIds = Object.entries(FEED_REGISTRY)
+      .filter(([, feed]) => feed.operationalStatus === "active")
+      .map(([id]) => id);
+    expect(activeDataSections.toSorted()).toEqual(activeFeedIds.toSorted());
+  });
   it("keeps every topic and explorer measure in the presentation inventory", () => {
     const surfaces = JSON.parse(readFileSync("contracts/public-surfaces.json", "utf8"));
     const coverage = JSON.parse(readFileSync("contracts/measure-coverage.json", "utf8"));
+    const definitionInventory = JSON.parse(readFileSync("contracts/measure-definitions.json", "utf8"));
+    const definitionIds = definitionInventory.measures.map((measure: { id: string }) => measure.id);
 
     expect(Object.keys(SECTION_CONTENT).toSorted()).toEqual(
       surfaces.topics.map((topic: { id: string }) => topic.id).toSorted(),
@@ -83,12 +105,12 @@ describe("approved public evidence surfaces", () => {
     expect(coverage.topics.toSorted()).toEqual(
       surfaces.topics.map((topic: { id: string }) => topic.id).toSorted(),
     );
-    expect(MEASURES.map(({ id }) => id).toSorted()).toEqual(surfaces.explorerMeasureIds.toSorted());
-    expect(MEASURE_IDS.toSorted()).toEqual(coverage.canonicalMeasureIds.toSorted());
-    expect(MEASURE_IDS.toSorted()).toEqual(MEASURES.map(({ id }) => id).toSorted());
+    expect(surfaces.measureDefinitions).toBe(coverage.measureSource);
+    expect(coverage.measureSource).toBe("contracts/measure-definitions.json");
+    expect(MEASURE_IDS.toSorted()).toEqual(definitionIds.toSorted());
+    expect(MEASURES.map(({ id }) => id).toSorted()).toEqual(definitionIds.toSorted());
     expect(Object.values(MEASURE_COUNTS_BY_ROUTE).reduce((total, count) => total + count, 0)).toBe(MEASURE_IDS.length);
     expect(Object.keys(MEASURE_COUNTS_BY_ROUTE).toSorted()).toEqual([...new Set(MEASURES.map(({ route }) => route.replace(/\/$/, "")))].toSorted());
-    expect(coverage.explorerMeasureIds.toSorted()).toEqual(surfaces.explorerMeasureIds.toSorted());
   });
 
 });

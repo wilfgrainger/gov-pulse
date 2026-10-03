@@ -109,6 +109,18 @@ function validateSource(source) {
   ) {
     throw new Error("Comparison value source publicationDate must be YYYY-MM-DD");
   }
+  if (source.additionalSources !== undefined) {
+    if (!Array.isArray(source.additionalSources) || source.additionalSources.length > 4) {
+      throw new Error("Comparison value additionalSources are invalid");
+    }
+    for (const item of source.additionalSources) {
+      if (!isRecord(item) || item.additionalSources !== undefined || typeof item.publisher !== "string" ||
+        !item.publisher.trim() || !validHttpsUrl(item.url) || typeof item.series !== "string" || !item.series.trim() ||
+        (item.publicationDate !== undefined && (typeof item.publicationDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(item.publicationDate)))) {
+        throw new Error("Comparison value additional source is invalid");
+      }
+    }
+  }
   return source;
 }
 
@@ -208,7 +220,7 @@ function rankComparisonObservations(observations) {
   return validated.map((observation) => byCountry.get(observation.country) ?? observation);
 }
 
-function buildComparisonMeasure({ id, definition, observationYear, observations }) {
+function buildComparisonMeasure({ id, definition, observationYear, observations, countryHistory }) {
   const descriptor = MEASURE_BY_ID.get(id);
   if (!descriptor) throw new Error(`Unknown comparison measure '${id}'`);
   if (typeof definition !== "string" || !definition.trim()) {
@@ -223,7 +235,7 @@ function buildComparisonMeasure({ id, definition, observationYear, observations 
 
   const validated = observations.map((observation) => validateObservation({ ...observation }));
   const ranked = rankComparisonObservations(validated);
-  return {
+  const result = {
     id,
     label: descriptor.label,
     definition: definition.trim(),
@@ -234,6 +246,29 @@ function buildComparisonMeasure({ id, definition, observationYear, observations 
     ...(descriptor.caveat ? { caveat: descriptor.caveat } : {}),
     countries: ranked,
   };
+  if (countryHistory !== undefined) {
+    if (!Array.isArray(countryHistory) || countryHistory.length > 2_600) {
+      throw new Error(`Comparison measure '${id}' countryHistory is invalid`);
+    }
+    const groups = new Map();
+    const keys = new Set();
+    for (const raw of countryHistory) {
+      const observation = validateObservation({ ...raw });
+      const key = `${observation.observationYear}:${observation.country}`;
+      if (keys.has(key)) throw new Error(`Comparison measure '${id}' countryHistory contains a duplicate country-year`);
+      keys.add(key);
+      const values = groups.get(observation.observationYear) ?? [];
+      values.push(observation);
+      groups.set(observation.observationYear, values);
+    }
+    result.countryHistory = [...groups.entries()].sort(([left], [right]) => left - right).flatMap(([year, values]) => {
+      if (JSON.stringify(values.map(({ country }) => country).toSorted()) !== JSON.stringify([...COUNTRY_IDS].toSorted())) {
+        throw new Error(`Comparison measure '${id}' countryHistory ${year} must explicitly cover the country universe`);
+      }
+      return rankComparisonObservations(values);
+    });
+  }
+  return result;
 }
 
 function validateInternationalComparisonPublication(publication) {
@@ -287,6 +322,34 @@ function validateInternationalComparisonPublication(publication) {
     for (const observation of measure.countries) {
       if ((observation.rank ?? null) !== expectedRanks.get(observation.country)) {
         throw new Error(`International comparison measure '${id}' contains an invalid rank`);
+      }
+    }
+    if (measure.countryHistory !== undefined) {
+      if (!Array.isArray(measure.countryHistory) || measure.countryHistory.length > 2_600) {
+        throw new Error(`International comparison measure '${id}' countryHistory is invalid`);
+      }
+      const historyGroups = new Map();
+      const seenHistory = new Set();
+      for (const observation of measure.countryHistory) {
+        validateObservation(observation);
+        const key = `${observation.observationYear}:${observation.country}`;
+        if (seenHistory.has(key)) throw new Error(`International comparison measure '${id}' countryHistory duplicates a country-year`);
+        seenHistory.add(key);
+        const group = historyGroups.get(observation.observationYear) ?? [];
+        group.push(observation);
+        historyGroups.set(observation.observationYear, group);
+      }
+      for (const [year, history] of historyGroups) {
+        if (JSON.stringify(history.map(({ country }) => country).toSorted()) !== JSON.stringify([...expectedCountries].toSorted())) {
+          throw new Error(`International comparison measure '${id}' history year ${year} does not cover its country universe`);
+        }
+        const rankedHistory = rankComparisonObservations(history);
+        const historyRanks = new Map(rankedHistory.map(({ country, rank }) => [country, rank]));
+        for (const observation of history) {
+          if ((observation.rank ?? null) !== historyRanks.get(observation.country)) {
+            throw new Error(`International comparison measure '${id}' history contains an invalid rank for ${observation.country} in ${year}: ${observation.rank ?? null} vs ${historyRanks.get(observation.country) ?? null}`);
+          }
+        }
       }
     }
     if (measure.comparableCountryCount !== measure.countries.filter(({ value }) => value !== null).length) {

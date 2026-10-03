@@ -2,6 +2,7 @@ import discovery from "@/contracts/section-discovery.json";
 import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
 import { DATA_SOURCES } from "@/app/lib/config";
 import { isCompatibleMetricsSnapshot, type MetricsSnapshot } from "@/app/lib/metricsSnapshot";
+import { publicSnapshot } from "@/worker/public-snapshot";
 
 export type DiscoveryKind = "dataset" | "tool" | "withdrawn";
 
@@ -54,14 +55,15 @@ export function serializeJsonLd(value: unknown) {
   return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
-export function getBuildPublication(section: SectionDiscovery) {
-  if (!isCompatibleMetricsSnapshot(BUILD_METRICS_SNAPSHOT)) {
+export function getBuildPublication(section: SectionDiscovery, rawSnapshot: unknown = BUILD_METRICS_SNAPSHOT) {
+  const snapshot = publicSnapshot(rawSnapshot);
+  if (!isCompatibleMetricsSnapshot(snapshot)) {
     return null;
   }
 
-  const snapshot = BUILD_METRICS_SNAPSHOT as MetricsSnapshot;
-  const source = snapshot.meta.sources[section.sourceKey];
-  const data = snapshot[section.sourceKey];
+  const typedSnapshot = snapshot as MetricsSnapshot;
+  const source = typedSnapshot.meta.sources[section.sourceKey];
+  const data = typedSnapshot[section.sourceKey];
   if (!source || source.status !== "ok" || !data) {
     return null;
   }
@@ -70,16 +72,25 @@ export function getBuildPublication(section: SectionDiscovery) {
     typeof data === "object" && !Array.isArray(data)
       ? (data as { __observation?: { period?: unknown; observedAt?: unknown; status?: unknown } }).__observation
       : undefined;
+  const measureRecords = Object.values(typedSnapshot.meta.measureCatalog?.measures ?? {})
+    .filter((measure) => measure.sourceId === section.sourceKey)
+    .sort((left, right) => right.publishedAt.localeCompare(left.publishedAt));
+  const latestMeasure = measureRecords[0];
+  const rawData = data && typeof data === "object" && !Array.isArray(data)
+    ? data as { headline?: { releaseDate?: unknown }; publishedAt?: unknown }
+    : {};
+  const releaseValue = latestMeasure?.publishedAt ??
+    (typeof rawData.publishedAt === "string" ? rawData.publishedAt : undefined) ??
+    (typeof rawData.headline?.releaseDate === "string" ? rawData.headline.releaseDate : undefined);
+  const releaseDate = releaseValue ? new Date(releaseValue) : null;
+  const publisherPublishedAt = releaseDate && Number.isFinite(releaseDate.getTime()) ? releaseDate.toISOString() : undefined;
 
   return {
-    dateModified:
-      typeof snapshot.meta.generatedAt === "string"
-        ? snapshot.meta.generatedAt
-        : undefined,
+    dateModified: publisherPublishedAt,
     temporalCoverage:
       typeof observation?.period === "string" && observation.period.trim()
         ? observation.period.trim()
-        : undefined,
+        : latestMeasure?.observationPeriod.label,
     observationStatus:
       typeof observation?.status === "string" ? observation.status : undefined,
   };

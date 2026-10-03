@@ -55,7 +55,9 @@ function awardWithNation(index: number, nation: string) {
     awardId,
     title: `Government award ${index + 1}`,
     buyer: `Buyer ${(index % 10) + 1}`,
+    buyerId: `buyer-${(index % 10) + 1}`,
     suppliers: [`Supplier ${index + 1}`],
+    supplierIds: [`supplier-${index + 1}`],
     supplierNations: [nation],
     awardDate: "2026-07-10T09:00:00.000Z",
     publishedAt: "2026-07-10T12:00:00.000Z",
@@ -133,28 +135,29 @@ describe("GovernmentContracts nation breakdown and supplier concentration", () =
     ).toBeInTheDocument();
   });
 
-  it("renders the supplier concentration view ranked by disclosed value", () => {
+  it("renders supplier values as an ID-aware equal-share scenario", () => {
     useMetrics.mockReturnValue(result(currentPayload({ withNations: true })));
     const exportSpy = vi.spyOn(chartExport, "downloadChartSvg").mockImplementation(() => {});
 
     render(<GovernmentContracts />);
 
     expect(
-      screen.getByRole("heading", { name: "Suppliers ranked by total disclosed value" })
+      screen.getByRole("heading", { name: "Disclosed awards under an equal-share scenario" })
     ).toBeInTheDocument();
-    expect(screen.getByText("Showing the first 20 of 100 filtered named suppliers (100 in the full publication)."))
+    expect(screen.getByText("Showing the first 20 of 100 filtered supplier groups (100 in the full publication)."))
       .toBeInTheDocument();
-    expect(screen.getByRole("img", { name: /supplier disclosed award values in pounds/i })).toBeInTheDocument();
-    expect(screen.getByRole("table", { name: "Exact supplier concentration rows in the chart" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /equal-share supplier award-value scenario in pounds/i })).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "Supplier equal-share scenario rows shown in the chart" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "SVG" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "SVG" }));
     expect(exportSpy).toHaveBeenCalledOnce();
     const chartMetadata = exportSpy.mock.calls[0][2]?.chartMetadata;
-    expect(chartMetadata?.title).toBe("Suppliers ranked by disclosed value");
+    expect(chartMetadata?.title).toBe("Supplier equal-share award-value scenario");
     expect(chartMetadata?.series[0]).toMatchObject({
-      key: "Supplier 1",
+      key: "id:supplier-1",
       label: expect.stringContaining("£500,000,000"),
     });
+    expect(chartMetadata?.sourceCitation).toMatch(/not supplier revenue/i);
     expect(screen.getAllByText("Supplier 1").length).toBeGreaterThan(0);
     expect(
       screen.queryByText(/Supplier nation is currently Other\/Unknown for every ranked supplier/i)

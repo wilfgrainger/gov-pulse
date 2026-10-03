@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDossier, filteredAwardCoverage, serializePublicAwardsCsv, type PublicAward } from "@/app/lib/publicMoney";
+import { buildDossier, filteredAwardCoverage, parsePublicMoneyUrlState, serializePublicAwardsCsv, serializePublicMoneyUrlState, type PublicAward } from "@/app/lib/publicMoney";
 
 const award = (key: string, amount: number, supplier = "Example Ltd"): PublicAward => ({
   rank: 1, key, ocid: `ocds-h6vhtk-${key}`, releaseId: "123456-2026", awardId: key, title: `Award ${key}`, buyer: "Department A", suppliers: [supplier], supplierNations: ["Other/Unknown"],
@@ -55,5 +55,75 @@ describe("notice-level public-money dossiers", () => {
     expect(supplier).toMatchObject({ identityBasis: "exact-supplier-string", disclosedTotal: 350, noticeCount: 2 });
     expect(supplier.caveats.join(" ")).toMatch(/multi-supplier awards are not allocated/i);
     expect(supplier.caveats.join(" ")).toMatch(/not a complete release history/i);
+  });
+
+  it("uses publisher identifiers to separate same-name entities and join renamed supplier records", () => {
+    const awards = [
+      { ...award("ocds-h6vhtk-a1", 100, "Old Supplier Name"), supplierIds: ["org-001"], buyerId: "buyer-10" },
+      { ...award("ocds-h6vhtk-b2", 250, "Other Legal Entity"), supplierIds: ["org-002"], buyerId: "buyer-20" },
+      { ...award("ocds-h6vhtk-c3", 500, "New Supplier Name"), supplierIds: ["org-001"], buyerId: "buyer-10" },
+    ];
+
+    const supplier = buildDossier(awards, "org-001", "supplier", "publisher-id")!;
+    const sameNameDifferentId = buildDossier([
+      { ...awards[0], suppliers: ["Shared Name"], supplierIds: ["org-001"] },
+      { ...awards[1], suppliers: ["Shared Name"], supplierIds: ["org-002"] },
+    ], "org-002", "supplier", "publisher-id")!;
+    const buyer = buildDossier(awards, "buyer-10", "buyer", "publisher-id")!;
+
+    expect(supplier.identityBasis).toBe("publisher-supplier-id");
+    expect(supplier.noticeCount).toBe(2);
+    expect(supplier.aliases).toEqual(["New Supplier Name", "Old Supplier Name"]);
+    expect(sameNameDifferentId.noticeCount).toBe(1);
+    expect(buyer).toMatchObject({ identityBasis: "publisher-buyer-id", entityId: "buyer-10", noticeCount: 2 });
+    expect(supplier.caveats.join(" ")).toMatch(/not attributed supplier revenue/i);
+  });
+
+  it("round-trips filters and an identifier-based dossier in the URL", () => {
+    const state = {
+      query: "water & transport",
+      buyer: "Department of Example",
+      nation: "Scotland",
+      page: 2,
+      dossier: { kind: "supplier" as const, basis: "publisher-id" as const, identity: "GB-FTS-9988" },
+    };
+
+    const query = serializePublicMoneyUrlState(state);
+
+    expect(parsePublicMoneyUrlState(query)).toEqual(state);
+    expect(parsePublicMoneyUrlState("?dossier=supplier%3Apublisher-id%3AGB-FTS-9988")).toMatchObject({
+      dossier: state.dossier,
+    });
+    expect(parsePublicMoneyUrlState("?dossier=supplier%3Apublisher-id%3Abad%00id").dossier).toBeNull();
+  });
+
+  it("exports publisher identifiers and neutralizes spreadsheet formulas", () => {
+    const source = {
+      ...award("ocds-h6vhtk-a1", 100, "=HYPERLINK(\"https://bad.example\")"),
+      buyerId: "buyer-001",
+      supplierIds: ["supplier-001"],
+    };
+    const csv = serializePublicAwardsCsv([source]);
+
+    expect(csv).toContain("Buyer ID");
+    expect(csv).toContain("Supplier IDs");
+    expect(csv).toContain("buyer-001");
+    expect(csv).toContain("supplier-001");
+    expect(csv).toContain("'=HYPERLINK");
+  });
+
+  it("adds the filtered count, source denominator, window and currency note to exports", () => {
+    const csv = serializePublicAwardsCsv(
+      [award("ocds-h6vhtk-a1", 100)],
+      {
+        windowLabel: "1–7 August 2026",
+        sourceWindowAwardCount: 4,
+        filteredCoverage: 0.25,
+      },
+    );
+
+    expect(csv.split("\n")).toHaveLength(2);
+    expect(csv).toContain("Source window,Filtered row count,Full source-window award count,Window coverage,Currency basis note");
+    expect(csv).toContain("1–7 August 2026,1,4,25.0%,\"GBP only; award values are publisher-disclosed, not confirmed expenditure\"");
   });
 });

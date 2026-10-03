@@ -1,5 +1,6 @@
 import { fetchOfficialResponse } from "./official-source-fetch.js";
 import { readResponseText } from "./response-limits.js";
+import { parseOnsNextReleaseDate } from "./ons-release-date.js";
 
 const BULLETIN_BASE_URL =
   "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/averageweeklyearningsingreatbritain";
@@ -271,6 +272,7 @@ function parseRealWagesHistoryCsv(text) {
 
 function parseRealWagesBulletin(html, edition) {
   const text = decodeHtml(html);
+  const nextReleaseDate = parseOnsNextReleaseDate(text);
   const releaseDate = matchRequired(
     text,
     /Release date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})/i,
@@ -296,6 +298,7 @@ function parseRealWagesBulletin(html, edition) {
       period,
       observedAt: rollingPeriodEnd(period),
       releaseDate: isoDate(releaseDate, "real wages release date"),
+      ...(nextReleaseDate ? { nextReleaseDate } : {}),
       regularPayRealGrowthPercent,
       totalPayRealGrowthPercent,
       deflator: "CPIH",

@@ -4,8 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 import {
   bootstrapAttemptId,
   bootstrapCloudflarePublication,
+  hasPreparedPublication,
   positiveInteger,
 } from "../../scripts/bootstrap-cloudflare-publication.mjs";
+import { REQUIRED_PUBLISHED_SECTION_IDS } from "../../worker/feed-registry.js";
 
 const SHA = "a".repeat(40);
 
@@ -16,19 +18,98 @@ function jsonResponse(payload, status = 200) {
   });
 }
 
+function preparedSnapshot(now = new Date()) {
+  const fetchedAt = new Date(now.getTime() - 30_000).toISOString();
+  const observedAt = new Date(now.getTime() - 60_000).toISOString();
+  const validUntil = new Date(now.getTime() + 60 * 60_000).toISOString();
+  const sources = {};
+  const sections = {};
+  for (const section of REQUIRED_PUBLISHED_SECTION_IDS) {
+    sources[section] = {
+      status: "ok",
+      cacheState: "fresh",
+      fetchedAt,
+      provenance: { section },
+    };
+    sections[section] = {
+      expiresAt: validUntil,
+      __observation: {
+        status: "current",
+        period: "Current test period",
+        observedAt,
+        maxAgeDays: 30,
+      },
+    };
+    if (section === "sentimentPulse") {
+      sections[section].__measureValidity = Object.fromEntries(
+        ["inflation", "bankRate", "unemployment"].map((id) => [id, { validUntil }]),
+      );
+      sections[section].series = Object.fromEntries(
+        ["inflation", "bankRate", "unemployment"].map((id) => [id, { status: "current", value: 1 }]),
+      );
+    }
+  }
+  return {
+    meta: {
+      delivery: "published-snapshot",
+      registryVersion: "2026-08-02.1",
+      generatedAt: now.toISOString(),
+      publicationState: "ready",
+      missingRequiredSections: [],
+      sources,
+    },
+    ...sections,
+  };
+}
+
 describe("Cloudflare deployment bootstrap", () => {
+  it("does not accept an empty ready artifact as a prepared publication", async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
+      meta: {
+        delivery: "published-snapshot",
+        publicationState: "ready",
+        missingRequiredSections: [],
+        sources: {},
+      },
+    }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Publication-Delivery": "cloudflare-kv",
+      },
+    }));
+
+    await expect(hasPreparedPublication(
+      fetchImpl,
+      "https://public-data.org/data/health.json",
+      { status: "ready", ready: true },
+    )).resolves.toBe(false);
+  });
+
+  it("rejects a prepared publication that exposes private catalog diagnostics", async () => {
+    const leaked = preparedSnapshot();
+    leaked.meta.measureCatalogDiagnostics = [{ measureId: "bankRate", reason: "expired-value" }];
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ status: "ready", ready: true }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(leaked), {
+        status: 200,
+        headers: { "Content-Type": "application/json", "X-Publication-Delivery": "cloudflare-kv" },
+      }));
+
+    await expect(hasPreparedPublication(
+      fetchImpl,
+      "https://public-data.org/data/health.json",
+      { status: "ready", ready: true },
+    )).resolves.toBe(false);
+  });
+
   it("skips Queue work when the prepared publication is already ready", async () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse({ status: "ready", ready: true }))
       .mockResolvedValueOnce(
         new Response(
-          JSON.stringify({
-            meta: {
-              delivery: "published-snapshot",
-              publicationDiagnostics: {},
-            },
-          }),
+          JSON.stringify(preparedSnapshot()),
           {
             status: 200,
             headers: {
@@ -60,7 +141,7 @@ describe("Cloudflare deployment bootstrap", () => {
       .mockResolvedValueOnce(jsonResponse({ status: "running", finalisedAt: null }))
       .mockResolvedValueOnce(jsonResponse({ status: "published", finalisedAt: "2026-09-28T09:00:00.000Z" }))
       .mockResolvedValueOnce(jsonResponse({ status: "ready", ready: true }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ meta: { delivery: "published-snapshot", publicationDiagnostics: {} } }), {
+      .mockResolvedValueOnce(new Response(JSON.stringify(preparedSnapshot()), {
         status: 200,
         headers: { "Content-Type": "application/json", "X-Publication-Delivery": "cloudflare-kv" },
       }));
@@ -87,7 +168,9 @@ describe("Cloudflare deployment bootstrap", () => {
           JSON.stringify({
             meta: {
               delivery: "published-snapshot",
-              publicationDiagnostics: {},
+              publicationState: "ready",
+              missingRequiredSections: [],
+              sources: {},
             },
           }),
           {
@@ -227,9 +310,7 @@ describe("Cloudflare deployment bootstrap", () => {
         });
       }
       if (url.endsWith("/data/metrics-snapshot.json")) {
-        return new Response(JSON.stringify({
-          meta: { delivery: "published-snapshot", publicationDiagnostics: {} },
-        }), {
+        return new Response(JSON.stringify(preparedSnapshot()), {
           status: 200,
           headers: {
             "Content-Type": "application/json",

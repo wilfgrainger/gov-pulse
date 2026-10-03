@@ -39,6 +39,11 @@ const historyCsv = `"Figure 3: Real regular earnings growth remained unchanged a
 "May to July 2026","0.9","0.6","3.0"`;
 
 describe("latest ONS real wages bulletin connector", () => {
+  it("retains a publisher-announced next release date", () => {
+    const announced = bulletinHtml.replace("Release date: 15 September 2026", "Release date: 15 September 2026</p><p>Next release: 20 October 2026");
+    expect(parseRealWagesBulletin(announced, "september2026").headline.nextReleaseDate).toBe("2026-10-20");
+  });
+
   it("discovers the latest edition from the canonical link when /latest does not redirect", () => {
     expect(discoverLatestEdition(bulletinHtml)).toBe("september2026");
   });

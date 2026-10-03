@@ -27,9 +27,29 @@ function validTextOrNull(value: unknown): value is string | null {
   return value === null || (typeof value === "string" && Boolean(value.trim()) && value.length <= 500);
 }
 
+function validOptionalInstant(value: unknown): boolean {
+  return value === undefined || value === null || validInstant(value);
+}
+
+function validOptionalSourceUrl(value: unknown): boolean {
+  if (value === undefined || value === null) return true;
+  if (typeof value !== "string" || value.length > 1000) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password;
+  } catch { return false; }
+}
+
+function validOptionalFieldList(value: unknown): boolean {
+  return value === undefined || Array.isArray(value) && value.length <= 20 &&
+    value.every((field) => typeof field === "string" && /^[A-Za-z][A-Za-z0-9.]{0,79}$/.test(field));
+}
+
 function validEditionSummary(value: unknown, id?: string): value is EditionSummary {
   if (!object(value) || typeof value.id !== "string" || !safeEditionId(value.id) || (id && value.id !== id) ||
-    !validInstant(value.publishedAt) || !Array.isArray(value.sourceEditionIds) || value.sourceEditionIds.length > 100 ||
+    !validInstant(value.publishedAt) || !(value.previousEditionId === undefined || value.previousEditionId === null ||
+      typeof value.previousEditionId === "string" && safeEditionId(value.previousEditionId)) ||
+    !Array.isArray(value.sourceEditionIds) || value.sourceEditionIds.length > 100 ||
     !Array.isArray(value.changes) || value.changes.length > 5_000) return false;
   const sourceIds = new Set<string>();
   for (const sourceId of value.sourceEditionIds) {
@@ -38,12 +58,18 @@ function validEditionSummary(value: unknown, id?: string): value is EditionSumma
   }
   for (const change of value.changes) {
     if (!object(change) || typeof change.measureId !== "string" || !change.measureId.trim() || change.measureId.length > 160 ||
-      !["new-observation", "revision", "method-change"].includes(String(change.kind)) || !validDateOrNull(change.observedAt) ||
+      !["new-observation", "revision", "method-change", "metadata-change"].includes(String(change.kind)) || !validDateOrNull(change.observedAt) ||
       !validTextOrNull(change.period) || !validTextOrNull(change.previousSourceEditionId) ||
       typeof change.nextSourceEditionId !== "string" || !change.nextSourceEditionId.trim() || change.nextSourceEditionId.length > 200 ||
       !validTextOrNull(change.previousRevisionId) || typeof change.nextRevisionId !== "string" || !change.nextRevisionId.trim() ||
       !(change.previous === null || typeof change.previous === "number" && Number.isFinite(change.previous)) ||
       !(change.next === null || typeof change.next === "number" && Number.isFinite(change.next)) ||
+      !validOptionalInstant(change.previousSourcePublishedAt) ||
+      !(change.nextSourcePublishedAt === undefined || validInstant(change.nextSourcePublishedAt)) ||
+      !validOptionalSourceUrl(change.previousSourceUrl) || !validOptionalSourceUrl(change.nextSourceUrl) ||
+      !validTextOrNull(change.previousUnit) && change.previousUnit !== undefined ||
+      !validTextOrNull(change.nextUnit) && change.nextUnit !== undefined ||
+      !validOptionalFieldList(change.changedFields) ||
       !sourceIds.has(change.nextSourceEditionId)) return false;
   }
   return true;

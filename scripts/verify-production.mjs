@@ -1,3 +1,6 @@
+import { REQUIRED_PUBLISHED_SECTION_IDS } from "../worker/feed-registry.js";
+import { currentPublicationManifest } from "./publication-manifest.mjs";
+
 const DEFAULT_ATTEMPTS = 12;
 const DEFAULT_DELAY_MS = 10_000;
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -33,16 +36,6 @@ export const PUBLIC_DOWNLOAD_SECTION_IDS = [
   "migrationStats",
 ];
 
-const REQUIRED_NATIONAL_SECTION_IDS = [
-  "sentimentPulse",
-  "gdpTracker",
-  "employmentStats",
-  "nationalDebt",
-  "taxRevenue",
-  "migrationStats",
-  "electionPolling",
-  "nhsStats",
-];
 const INTERNATIONAL_COMPARISON_MEASURE_IDS = [
   "governmentDebt",
   "officialDevelopmentAssistance",
@@ -67,10 +60,6 @@ const INTERNATIONAL_COMPARISON_COUNTRY_IDS = [
   "CHE",
   "POL",
 ];
-
-function isRecord(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 export function verifyProductionHtml(html, expectedRevision) {
   const failures = [];
@@ -223,18 +212,39 @@ export function verifySnapshotJson(text, options = {}) {
     if (!payload?.meta?.sources || typeof payload.meta.sources !== "object") {
       failures.push("public data snapshot source manifest was not found");
     }
-    for (const section of REQUIRED_NATIONAL_SECTION_IDS) {
-      const present = Boolean(payload?.[section] && payload?.meta?.sources?.[section]);
-      if (present) continue;
+    if (
+      Object.prototype.hasOwnProperty.call(payload?.meta ?? {}, "publicationDiagnostics") ||
+      Object.prototype.hasOwnProperty.call(payload?.meta ?? {}, "measureCatalogDiagnostics") ||
+      Object.values(payload?.meta?.sources ?? {}).some((source) =>
+        source && typeof source === "object" &&
+          Object.prototype.hasOwnProperty.call(source, "error")
+      )
+    ) {
+      failures.push("public data snapshot exposes private diagnostics");
+    }
+    const { missingRequiredSections: actualMissing } = currentPublicationManifest(
+      payload,
+      options.now ?? new Date(),
+    );
+    const actualMissingSet = new Set(actualMissing);
+    for (const section of REQUIRED_PUBLISHED_SECTION_IDS) {
+      if (!actualMissingSet.has(section)) continue;
       if (allowedMissingSections.has(section)) {
-        if (!isRecord(payload?.meta?.publicationDiagnostics?.[section])) {
-          failures.push(
-            `public data snapshot has no diagnostic for unavailable section ${section}`,
-          );
-        }
         continue;
       }
       failures.push(`public data snapshot is missing required section ${section}`);
+    }
+    const declaredMissing = payload?.meta?.missingRequiredSections;
+    const expectedMissing = [...actualMissing].sort();
+    const healthMissing = [...allowedMissingSections].sort();
+    if (
+      !Array.isArray(declaredMissing) ||
+      declaredMissing.some((section) => typeof section !== "string") ||
+      JSON.stringify([...declaredMissing].sort()) !== JSON.stringify(expectedMissing) ||
+      JSON.stringify(expectedMissing) !== JSON.stringify(healthMissing) ||
+      payload?.meta?.publicationState !== (expectedMissing.length ? "degraded" : "ready")
+    ) {
+      failures.push("public data snapshot publication state does not match its missing-section manifest");
     }
     return failures;
   } catch {

@@ -114,6 +114,17 @@ function fetchFor(
 }
 
 describe("official ONS economy bulletin connectors", () => {
+  it("retains an ONS-announced next release date separately from the current publication date", () => {
+    const html = gdpHtml.replace(
+      "<p>Release date: 10 July 2026</p>",
+      "<p>Release date: 10 July 2026</p><p>Next release: 15 October 2026</p>"
+    );
+    expect(parseGdpBulletin(html, gdpEditionUrl).headline).toMatchObject({
+      releaseDate: "2026-07-10",
+      nextReleaseDate: "2026-10-15",
+    });
+  });
+
   it("discovers the first current edition from a stable landing page", () => {
     expect(discoverLatestBulletinUrl(landing(gdpEditionUrl), GDP_BULLETIN_URL)).toBe(gdpEditionUrl);
   });

@@ -165,7 +165,7 @@ export const DATA_SOURCES: Record<string, DataSourceDefinition> = {
     evidenceClass: "official-data",
     geographicCoverage: "United Kingdom — Find a Tender publication coverage",
     freshnessWindow: "Within 72 hours of the verified collection",
-    freshnessRationale: "The ranking uses seven complete UTC day shards collected by the Cloudflare Free data worker and can reuse only a still-current bounded last-known-good publication.",
+    freshnessRationale: "The ranking uses seven complete UTC day shards collected by public-data.org and can reuse only a still-current publication.",
     freshnessWindowMs: 72 * HOUR_MS,
     publicationRequirement: "optional",
   },

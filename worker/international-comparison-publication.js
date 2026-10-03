@@ -13,8 +13,9 @@ import {
   calculatePerResidentFromTotal,
   fetchImfSeries,
   fetchOecdSeries,
-  fetchSipri2025Series,
+  fetchSipriCurrentUsdHistory,
   fetchWorldBankSeries,
+  fetchWorldBankSeriesHistory,
 } from "./international-comparison-sources.js";
 
 const COUNTRY_IDS = COMPARISON_COUNTRIES.map(({ id }) => id);
@@ -75,6 +76,11 @@ const SOURCES = Object.freeze({
     url: SOURCE_QUERIES.sipriMilitary2025,
     series: "SIPRI Military Expenditure Database: 2025 current USD",
   }),
+  worldBankPopulationHistory: Object.freeze({
+    publisher: "World Bank World Development Indicators",
+    url: "https://api.worldbank.org/v2/country/GBR;USA;CHN;RUS;UKR;DEU;FRA;ITA;ESP;IRL;NLD;CHE;POL/indicator/SP.POP.TOTL?date=2015:2025&format=json&per_page=500",
+    series: "SP.POP.TOTL: annual population used to calculate SIPRI military expenditure per resident",
+  }),
   whoViaWorldBank2024: Object.freeze({
     publisher: "WHO Global Health Expenditure Database via World Bank WDI",
     url: SOURCE_QUERIES.worldBankHealth2024,
@@ -92,6 +98,8 @@ function comparisonSourceBundle(values = {}) {
     interestPctGdp2024: values.interestPctGdp2024 ?? null,
     odaUsd2025: values.odaUsd2025 ?? null,
     defenceUsd2025: values.defenceUsd2025 ?? null,
+    defenceUsdByYear: values.defenceUsdByYear ?? null,
+    populationByYear: values.populationByYear ?? null,
     socialPctGdp2023: values.socialPctGdp2023 ?? null,
     healthPerCapita2024: values.healthPerCapita2024 ?? null,
     taxPctGdp2024: values.taxPctGdp2024 ?? null,
@@ -128,6 +136,15 @@ function lifecycleFor(id, comparisonMeasure, now, sourceFailures) {
     source?.url ?? null,
     source?.series ?? null,
   ]);
+  if (comparisonMeasure.countryHistory) {
+    sourceEdition.push(...comparisonMeasure.countryHistory.map(({ country, value, observationYear, source }) => [
+      country,
+      observationYear,
+      value,
+      source?.url ?? null,
+      source?.series ?? null,
+    ]));
+  }
   const hasValues = comparisonMeasure.comparableCountryCount > 0;
   const historical = comparisonMeasure.observationYear < now.getUTCFullYear();
   return {
@@ -274,6 +291,41 @@ function buildInternationalComparisonPublication(bundle, now = new Date()) {
     ),
   };
 
+  if (bundle.defenceUsdByYear instanceof Map && bundle.populationByYear instanceof Map) {
+    const years = [...bundle.defenceUsdByYear.keys()]
+      .filter((year) => bundle.populationByYear.has(year) && Number.isInteger(year) && year >= 2015 && year <= 2025)
+      .sort((left, right) => left - right);
+    const countryHistory = years.flatMap((year) => {
+      const defence = bundle.defenceUsdByYear.get(year);
+      const population = bundle.populationByYear.get(year);
+      if (!(defence instanceof Map) || !(population instanceof Map)) return [];
+      const yearSource = {
+        ...SOURCES.sipri2025,
+        series: `SIPRI Military Expenditure Database: ${year} current USD divided by World Bank SP.POP.TOTL ${year} population`,
+        additionalSources: [SOURCES.worldBankPopulationHistory],
+      };
+      return totalObservations(
+        defence,
+        population,
+        year,
+        yearSource,
+        () => true,
+        "publisher-reported-no-value",
+        year === 2025 ? "estimate" : "historical",
+      );
+    });
+    if (countryHistory.length) {
+      const latest = measures.defenceSpending;
+      measures.defenceSpending = buildComparisonMeasure({
+        id: latest.id,
+        definition: latest.definition,
+        observationYear: latest.observationYear,
+        observations: latest.countries,
+        countryHistory,
+      });
+    }
+  }
+
   for (const [id, item] of Object.entries(measures)) {
     item.lifecycle = lifecycleFor(id, item, now, bundle.sourceFailures ?? []);
   }
@@ -317,11 +369,11 @@ async function collectInternationalComparison(fetchImpl = fetch, now = new Date(
     gdpPerCapita2023,
     gdpPerCapita2024,
     gdpPerCapita2026,
-    population2025,
+    populationByYear,
     debtPctGdp2026,
     interestPctGdp2024,
     odaUsd2025,
-    defenceUsd2025,
+    defenceUsdByYear,
     socialPctGdp2023,
     healthPerCapita2024,
     taxPctGdp2024,
@@ -329,11 +381,11 @@ async function collectInternationalComparison(fetchImpl = fetch, now = new Date(
     attempt("imf-gdp-2023", () => fetchImfSeries("NGDPDPC", 2023, fetchImpl)),
     attempt("imf-gdp-2024", () => fetchImfSeries("NGDPDPC", 2024, fetchImpl)),
     attempt("imf-gdp-2026", () => fetchImfSeries("NGDPDPC", 2026, fetchImpl)),
-    attempt("world-bank-population-2025", () => fetchWorldBankSeries("SP.POP.TOTL", 2025, fetchImpl)),
+    attempt("world-bank-population-2025", () => fetchWorldBankSeriesHistory("SP.POP.TOTL", 2015, 2025, fetchImpl)),
     attempt("imf-debt-2026", () => fetchImfSeries("GGXWDG_NGDP", 2026, fetchImpl)),
     attempt("imf-interest-2024", () => fetchImfSeries("ie", 2024, fetchImpl)),
     attempt("oecd-oda-2025", () => fetchOecdSeries(SOURCE_QUERIES.oecdOda2025, 2025, fetchImpl)),
-    attempt("sipri-2025", () => fetchSipri2025Series(fetchImpl)),
+    attempt("sipri-2025", () => fetchSipriCurrentUsdHistory(fetchImpl, 2015, 2025)),
     attempt("oecd-socx-2023", () => fetchOecdSeries(SOURCE_QUERIES.oecdSocx2023, 2023, fetchImpl)),
     attempt("world-bank-health-2024", () => fetchWorldBankSeries("SH.XPD.CHEX.PC.CD", 2024, fetchImpl)),
     attempt("oecd-tax-2024", () => fetchOecdSeries(SOURCE_QUERIES.oecdTax2024, 2024, fetchImpl)),
@@ -344,11 +396,13 @@ async function collectInternationalComparison(fetchImpl = fetch, now = new Date(
       gdpPerCapita2023,
       gdpPerCapita2024,
       gdpPerCapita2026,
-      population2025,
+      populationByYear,
+      population2025: populationByYear instanceof Map ? populationByYear.get(2025) ?? null : null,
       debtPctGdp2026,
       interestPctGdp2024,
       odaUsd2025,
-      defenceUsd2025,
+      defenceUsdByYear,
+      defenceUsd2025: defenceUsdByYear instanceof Map ? defenceUsdByYear.get(2025) ?? null : null,
       socialPctGdp2023,
       healthPerCapita2024,
       taxPctGdp2024,

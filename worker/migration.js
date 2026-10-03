@@ -1,4 +1,5 @@
 import { fetchOfficialText as fetchSourceText } from "./official-source-fetch.js";
+import { parseOnsNextReleaseDate } from "./ons-release-date.js";
 
 const DATASET_URL =
   "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/longterminternationalimmigrationemigrationandnetmigrationflowsprovisional";
@@ -178,6 +179,7 @@ async function fetchOfficialText(url, fetchImpl = fetch) {
 
 function parseMigrationBulletin(html, edition) {
   const text = decodeHtml(html);
+  const nextReleaseDate = parseOnsNextReleaseDate(text);
   const releaseDate = matchRequired(
     text,
     /Release date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})/i,
@@ -229,6 +231,7 @@ function parseMigrationBulletin(html, edition) {
       period: `YE ${period}`,
       observedAt: periodEnd(period),
       releaseDate: isoDate(releaseDate, "migration release date"),
+      ...(nextReleaseDate ? { nextReleaseDate } : {}),
       netMigration,
       immigration,
       emigration,
