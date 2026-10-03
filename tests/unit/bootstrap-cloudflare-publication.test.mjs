@@ -62,6 +62,15 @@ function preparedSnapshot(now = new Date()) {
   };
 }
 
+function degradedPreparedSnapshot(now = new Date()) {
+  const snapshot = preparedSnapshot(now);
+  delete snapshot.nhsStats;
+  delete snapshot.meta.sources.nhsStats;
+  snapshot.meta.publicationState = "degraded";
+  snapshot.meta.missingRequiredSections = ["nhsStats"];
+  return snapshot;
+}
+
 describe("Cloudflare deployment bootstrap", () => {
   it("does not accept an empty ready artifact as a prepared publication", async () => {
     const fetchImpl = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
@@ -156,6 +165,59 @@ describe("Cloudflare deployment bootstrap", () => {
     expect(result).toMatchObject({ triggered: true, attempts: 1, health: { ready: true } });
     expect(fetchImpl.mock.calls[2][0]).toContain("/queues/queue-id/messages");
     expect(fetchImpl.mock.calls[3][0]).toContain(`v13%3Apublication%3Arun%3Abootstrap-${SHA}`);
+  });
+
+  it("waits for an active forced run instead of starting a second run before its deadline", async () => {
+    let now = 0;
+    let pushes = 0;
+    const fetchImpl = vi.fn(async (input) => {
+      const url = String(input);
+      if (url.endsWith("/data/health.json")) {
+        return now === 0
+          ? jsonResponse({ status: "ready", ready: true })
+          : jsonResponse({ status: "degraded", ready: false, degraded: true, missingRequiredSections: ["nhsStats"] });
+      }
+      if (url.includes("/queues?per_page=")) {
+        return jsonResponse({
+          success: true,
+          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
+        });
+      }
+      if (url.includes("/queues/queue-id/messages")) {
+        pushes += 1;
+        return jsonResponse({ success: true });
+      }
+      if (url.includes("/storage/kv/namespaces/")) {
+        const finalised = now >= 20_000;
+        return jsonResponse({
+          status: finalised ? "incomplete" : "running",
+          finalisedAt: finalised ? "2026-10-02T00:00:20.000Z" : null,
+        });
+      }
+      if (url.endsWith("/data/metrics-snapshot.json")) {
+        return new Response(JSON.stringify(degradedPreparedSnapshot()), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "X-Publication-Delivery": "cloudflare-kv" },
+        });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+
+    const result = await bootstrapCloudflarePublication({
+      accountId: "account",
+      apiToken: "token",
+      deploymentId: SHA,
+      forceRefresh: true,
+      fetchImpl,
+      timeoutMs: 30_000,
+      pollIntervalMs: 10_000,
+      recoveryIntervalMs: 10_000,
+      nowImpl: () => now,
+      sleepImpl: async (milliseconds) => { now += milliseconds; },
+    });
+
+    expect(result).toMatchObject({ triggered: true, attempts: 1, health: { status: "degraded" } });
+    expect(pushes).toBe(1);
   });
 
   it("does not skip when ready health is backed by migration delivery", async () => {
