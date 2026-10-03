@@ -9,17 +9,6 @@ const DEFAULT_TIMEOUT_MS = 12 * 60 * 1000;
 const DEFAULT_POLL_INTERVAL_MS = 10_000;
 const DEFAULT_RECOVERY_INTERVAL_MS = 4 * 60 * 1000;
 const DEFAULT_KV_NAMESPACE_ID = "f950b17f36a447dca7bb339cba8818de";
-const BOOTSTRAP_SECTIONS = Object.freeze([
-  "gdpTracker",
-  "sentimentPulse",
-  "employmentStats",
-  "taxRevenue",
-  "nationalDebt",
-  "migrationStats",
-  "electionPolling",
-  "nhsStats",
-]);
-
 function required(value, label) {
   const normalized = String(value ?? "").trim();
   if (!normalized) throw new Error(`${label} is required`);
@@ -202,14 +191,13 @@ async function publicationDiagnostics(
     prefix
   );
   const terminals = {};
-  for (const section of BOOTSTRAP_SECTIONS) {
-    const type = [
-      "electionPolling",
-      "nhsStats",
-    ].includes(section)
-      ? "external"
-      : "section";
-    const jobId = `${type}:${section}`;
+  const jobIds = new Set([
+    ...(Array.isArray(run?.expectedJobIds)
+      ? run.expectedJobIds.filter((jobId) => typeof jobId === "string")
+      : []),
+    `comparison:${runId}`,
+  ]);
+  for (const jobId of jobIds) {
     terminals[jobId] = await readKvValue(
       fetchImpl,
       accountId,
@@ -227,7 +215,12 @@ async function publicationDiagnostics(
           successfulJobIds: run.successfulJobIds ?? [],
           failedJobIds: run.failedJobIds ?? [],
           missingJobIds: run.missingJobIds ?? [],
-          finalisationFailure: run.finalisationFailure ?? null,
+          finalisationFailure: run.finalisationFailure
+            ? {
+                at: run.finalisationFailure.at ?? null,
+                errorName: run.finalisationFailure.errorName ?? null,
+              }
+            : null,
         }
       : null,
     terminals: Object.fromEntries(
