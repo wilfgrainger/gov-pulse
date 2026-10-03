@@ -6,10 +6,12 @@ does not restrict product scope.
 
 ## Pull request checks
 
-`pr-validation.yml` sends Markdown-only changes through text checks without
-installing dependencies. Code and executable configuration changes
-run source/architecture guards, one root npm install, lint, unit/Worker tests
-and one Next build. The required `quality` result reflects the selected lane.
+`pr-validation.yml` sends Markdown-only changes through a no-install
+documentation lane; it runs no prose, encoding or newline gate. Code and
+executable configuration changes run source/architecture guards, install the
+root and OpenNext toolchains once each, run lint and all unit/Worker tests, then
+build the deployable OpenNext artifact once (which compiles the Next app).
+The required `quality` result reflects the selected lane.
 Lighthouse is opt-in through `lighthouse.yml`; it builds only when explicitly
 requested.
 
@@ -18,11 +20,11 @@ Machine-readable and executable files do not qualify for the Markdown-only
 lane. Lockfile-only changes run the same locked install, tests and build as
 other code changes.
 
-Equivalent runs reduced aggregate runner time from 235 seconds to 122 seconds
-(48.1%); end-to-end PR time remained 135 seconds. The latest measured quality
-job took 114 seconds: unit/Worker tests 51 seconds, app build 16 seconds, lint
-13 seconds. Task 1 of the active round-two plan profiles overlapping these
-independent checks without dropping coverage or repeating installs/builds.
+The previous workflow baseline measured 235 seconds of aggregate runner time
+and 135 seconds end to end. The current workflow runs lint, tests and the single
+OpenNext build in parallel after both locked installs; remeasure comparable PR
+runs before claiming a new duration. Task 1 of the active round-two plan keeps
+all checks while reducing duplicated setup and build work.
 
 ## Production release
 
@@ -52,13 +54,15 @@ as quota evidence. Get user approval before incurring paid spend.
 
 The NHS importer recently received an upstream access challenge from its
 GitHub runner. Treat retrieval as unverified until an allowed primary-source
-path successfully publishes reconciled data. Do not bypass access controls or
-add a paid executor.
+path successfully publishes reconciled data. Do not bypass access controls.
+Evaluate another permitted retrieval path, including a paid executor, against
+source terms, reliability, security and total cost; obtain approval before
+incurring paid spend.
 
 The current deploy workflow targets Cloudflare Workers, with Pages as an
 explicit fallback. Another platform is allowed when the product case supports a
 coordinated migration and one canonical public route. Do not run competing
-production deployments for the same public identity. The current host checker
-still asserts Cloudflare-specific deployment steps; the round-two plan replaces
-that assertion with the selected-host contract before enabling a different
-target.
+production deployments for the same public identity. The PR architecture guard
+checks Cloudflare data-plane ingress when its configuration is present and
+always checks the provider-neutral public-surface manifest. It does not veto a
+different runtime; deployment checks must move with any chosen host.

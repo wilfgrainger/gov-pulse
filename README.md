@@ -69,7 +69,7 @@ npm run build:check
 npm run test:e2e
 ```
 
-Pull requests run changed-text, architecture and source-ownership checks, lint, unit/Worker tests and one application build. Lighthouse, browser and exhaustive production diagnostics are explicit checks. The named aggregate `quality` job reports the selected documentation or code lane.
+Pull requests use a documentation-only lane for prose changes. Code changes run public-route and source-ownership checks, lint, unit/Worker tests and one application build. Lighthouse, browser and exhaustive production diagnostics are explicit checks. The named aggregate `quality` job reports the selected lane.
 
 ## Deployment
 

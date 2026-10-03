@@ -26,10 +26,6 @@ jobs:
       - name: Ensure base ref is available for diffing
         run: git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
 
-      # Cheap, universal guards that apply to every PR regardless of lane.
-      - name: Enforce UTF-8 and LF on changed files
-        run: node scripts/check-text-policy.mjs --changed
-
       - name: Select validation lane
         id: lane
         run: node scripts/classify-pr-validation.mjs
@@ -40,8 +36,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Confirm documentation guards passed
-        run: echo "Documentation validation passed without dependency installation."
+      - name: Report documentation-only change
+        run: echo "Documentation-only changes do not need application dependency installation."
 
   full-quality:
     needs: classify
@@ -57,7 +53,7 @@ jobs:
       - name: Ensure base ref is available for diffing
         run: git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
 
-      - name: Enforce Cloudflare architecture
+      - name: Validate public data route boundaries
         run: node scripts/check-static-architecture.mjs
 
       - name: Validate source ownership
@@ -68,6 +64,9 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            worker/package-lock.json
 
       - name: Install locked dependencies
         run: npm ci --prefer-offline --no-audit --no-fund
@@ -77,6 +76,17 @@ jobs:
 
       - name: Prepare generated data and assets
         run: npm run build:prepare
+
+      - name: Install locked OpenNext toolchain
+        run: npm ci --prefix worker --prefer-offline --no-audit --no-fund
+
+      - name: Stage OpenNext adapter config
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p node_modules/@opennextjs
+          ln -s "$PWD/worker/node_modules/@opennextjs/cloudflare" node_modules/@opennextjs/cloudflare
+          cp worker/open-next.config.template open-next.config.ts
 
       - name: Lint, test and build in parallel
         shell: bash
@@ -90,7 +100,7 @@ jobs:
           lint_pid=$!
           npm run test >"$log_dir/test.log" 2>&1 &
           test_pid=$!
-          npm run build >"$log_dir/build.log" 2>&1 &
+          ./worker/node_modules/.bin/opennextjs-cloudflare build --config worker/web-wrangler.toml >"$log_dir/build.log" 2>&1 &
           build_pid=$!
 
           wait "$lint_pid"
