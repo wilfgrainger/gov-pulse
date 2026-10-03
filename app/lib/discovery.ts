@@ -157,14 +157,14 @@ export function structuredDataForSection(id: string) {
   };
 }
 
-export function publicationEntries() {
+export function publicationEntries(rawSnapshot: unknown = BUILD_METRICS_SNAPSHOT) {
   return Object.entries(SECTION_DISCOVERY)
     .filter(([, section]) => section.kind === "dataset")
     .map(([id, section]) => ({
       id,
       ...section,
       path: sectionPath(id),
-      publication: getBuildPublication(section),
+      publication: getBuildPublication(section, rawSnapshot),
     }))
     .filter((entry) => entry.publication);
 }
