@@ -6,6 +6,7 @@ import {
   bootstrapCloudflarePublication,
   hasPreparedPublication,
   positiveInteger,
+  publicationDiagnostics,
 } from "../../scripts/bootstrap-cloudflare-publication.mjs";
 import { REQUIRED_PUBLISHED_SECTION_IDS } from "../../worker/feed-registry.js";
 
@@ -72,6 +73,31 @@ function degradedPreparedSnapshot(now = new Date()) {
 }
 
 describe("Cloudflare deployment bootstrap", () => {
+  it("includes finaliser failure details in private bootstrap diagnostics", async () => {
+    const runId = `bootstrap-${SHA}`;
+    const run = {
+      status: "running",
+      dispatchedAt: "2026-10-03T12:00:00.000Z",
+      finalisedAt: null,
+      finalisationFailure: {
+        at: "2026-10-03T12:04:00.000Z",
+        errorName: "Error",
+        errorMessage: "publication artifact could not be written",
+      },
+    };
+    const fetchImpl = vi.fn(async (input) => {
+      const url = String(input);
+      if (url.includes(encodeURIComponent(`v13:publication:run:${runId}`))) {
+        return jsonResponse(run);
+      }
+      return new Response(null, { status: 404 });
+    });
+
+    const result = await publicationDiagnostics(fetchImpl, "account", "token", "namespace", SHA);
+
+    expect(result.run?.finalisationFailure).toEqual(run.finalisationFailure);
+  });
+
   it("does not accept an empty ready artifact as a prepared publication", async () => {
     const fetchImpl = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
       meta: {

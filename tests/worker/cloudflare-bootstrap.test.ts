@@ -130,6 +130,35 @@ describe("Cloudflare publication bootstrap", () => {
     expect(forcedRepeat.ack).toHaveBeenCalledOnce();
   });
 
+  it("records finaliser errors on active bootstrap runs before retrying the Queue message", async () => {
+    const { env, store } = environment();
+    const runId = bootstrapRunId(SHA);
+    store.set(`${RUN_PREFIX}${runId}`, {
+      runId,
+      scope: "bootstrap",
+      status: "running",
+      expectedJobIds: [],
+      finalisedAt: null,
+    });
+    vi.mocked(env.METRICS_CACHE.get).mockRejectedValueOnce(new Error("KV read failed"));
+    const message = {
+      body: { type: "finalise-run", runId },
+      ack: vi.fn(),
+      retry: vi.fn(),
+    };
+
+    await queuedWorker.queue({ messages: [message] }, env, {});
+
+    expect(message.retry).toHaveBeenCalledOnce();
+    expect(message.ack).not.toHaveBeenCalled();
+    expect(store.get(`${RUN_PREFIX}${runId}`)).toMatchObject({
+      finalisationFailure: {
+        errorName: "Error",
+        errorMessage: "KV read failed",
+      },
+    });
+  });
+
   it("rejects non-commit deployment identifiers", () => {
     expect(() => bootstrapRunId("main")).toThrow(
       "must be a full Git commit SHA"

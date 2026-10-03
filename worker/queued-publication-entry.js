@@ -347,6 +347,28 @@ async function recordTerminal(env, job, status, result = null) {
   );
 }
 
+async function recordFinaliseFailure(env, runId, error, now = new Date()) {
+  if (typeof runId !== "string" || !runId.startsWith("bootstrap-")) return false;
+  const run = await kvGet(env, runKey(runId));
+  if (run?.scope !== "bootstrap" || run.finalisedAt) return false;
+  const errorName = error instanceof Error ? error.name : "Error";
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  await kvPut(
+    env,
+    runKey(runId),
+    {
+      ...run,
+      finalisationFailure: {
+        at: now.toISOString(),
+        errorName: errorName.slice(0, 100),
+        errorMessage: errorMessage.slice(0, 500),
+      },
+    },
+    { expirationTtl: RUN_TTL_SECONDS }
+  );
+  return true;
+}
+
 async function createRun(env, now, scope = "daily", options = {}) {
   const runId = options.runId ?? runIdFor(now);
   const existing = await kvGet(env, runKey(runId));
@@ -593,6 +615,13 @@ const queuedPublicationWorker = {
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
+        if (job?.type === "finalise-run") {
+          try {
+            await recordFinaliseFailure(env, String(job.runId ?? ""), error);
+          } catch {
+            // Preserve the Queue retry even if the private diagnostic write fails.
+          }
+        }
         // Persist the real failure reason (not just an opaque code) so a
         // repeatedly-failing section — e.g. an external collector blocked at
         // Cloudflare egress — is diagnosable from the terminal record in KV
@@ -636,6 +665,7 @@ export {
   jobsForDay,
   missingRequiredSections,
   processQueueJob,
+  recordFinaliseFailure,
   publicationFragments,
   publishFromCaches,
   refreshJobs,

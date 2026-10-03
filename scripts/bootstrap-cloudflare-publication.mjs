@@ -227,6 +227,7 @@ async function publicationDiagnostics(
           successfulJobIds: run.successfulJobIds ?? [],
           failedJobIds: run.failedJobIds ?? [],
           missingJobIds: run.missingJobIds ?? [],
+          finalisationFailure: run.finalisationFailure ?? null,
         }
       : null,
     terminals: Object.fromEntries(
