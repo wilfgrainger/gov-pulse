@@ -635,6 +635,20 @@ const queuedPublicationWorker = {
           job,
           error: errorMessage,
         });
+        if (
+          (job?.type === "refresh-section" ||
+            job?.type === "refresh-external-section") &&
+          typeof job?.runId === "string" &&
+          job.runId.startsWith("bootstrap-") &&
+          typeof job.jobId === "string"
+        ) {
+          console.warn("Cloudflare bootstrap source failure is terminal; allowing degraded finalisation", {
+            runId: job.runId,
+            jobId: job.jobId,
+          });
+          message.ack();
+          continue;
+        }
         const retryAfterSeconds =
           error && typeof error === "object" && Number.isSafeInteger(error.retryAfterSeconds)
             ? error.retryAfterSeconds
