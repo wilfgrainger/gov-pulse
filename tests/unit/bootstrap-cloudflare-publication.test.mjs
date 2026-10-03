@@ -295,6 +295,70 @@ describe("Cloudflare deployment bootstrap", () => {
     expect(comparisonReads).toBe(2);
   });
 
+  it("keeps the full comparison wait when national publication finishes near its timeout", async () => {
+    let now = 0;
+    const runId = `bootstrap-${SHA}`;
+    const fetchImpl = vi.fn(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/data/health.json") {
+        return jsonResponse({ status: "ready", ready: true });
+      }
+      if (url.pathname.endsWith("/queues")) {
+        return jsonResponse({
+          success: true,
+          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
+        });
+      }
+      if (url.pathname.endsWith("/queues/queue-id/messages")) {
+        return jsonResponse({ success: true });
+      }
+      if (url.pathname.endsWith("/data/metrics-snapshot.json")) {
+        return new Response(JSON.stringify(preparedSnapshot()), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "X-Publication-Delivery": "cloudflare-kv" },
+        });
+      }
+      if (url.pathname.includes("/storage/kv/namespaces/")) {
+        const key = decodeURIComponent(url.pathname.split("/values/")[1] ?? "");
+        if (key === `v13:publication:run:${runId}`) {
+          const finalised = now >= 50_000;
+          return jsonResponse({
+            status: finalised ? "published" : "running",
+            finalisedAt: finalised ? "2026-10-03T12:00:50.000Z" : null,
+          });
+        }
+        if (key === `v13:publication:run:${runId}:terminal:comparison:${runId}`) {
+          if (now >= 70_000) {
+            return jsonResponse({ status: "success", completedAt: "2026-10-03T12:01:10.000Z" });
+          }
+          return new Response(null, { status: 404 });
+        }
+        return new Response(null, { status: 404 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+
+    const result = await bootstrapCloudflarePublication({
+      accountId: "account",
+      apiToken: "token",
+      deploymentId: SHA,
+      forceRefresh: true,
+      forceComparison: true,
+      fetchImpl,
+      timeoutMs: 60_000,
+      comparisonTimeoutMs: 20_000,
+      pollIntervalMs: 10_000,
+      nowImpl: () => now,
+      sleepImpl: async (milliseconds) => { now += milliseconds; },
+    });
+
+    expect(result).toMatchObject({
+      triggered: true,
+      comparisonRefresh: { status: "success", completedAt: "2026-10-03T12:01:10.000Z" },
+    });
+    expect(now).toBe(70_000);
+  });
+
   it("reports comparison failure without failing the completed national publication", async () => {
     let now = 0;
     const runId = `bootstrap-${SHA}`;

@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       refresh_evidence:
-        description: "Force national publication and country-comparison refresh (up to ~7 minutes)"
+        description: "Force national publication and country-comparison refresh (up to ~9 minutes)"
         type: boolean
         default: false
       refresh_pages_seed:

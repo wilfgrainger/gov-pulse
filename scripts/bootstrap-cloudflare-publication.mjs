@@ -409,7 +409,7 @@ async function bootstrapCloudflarePublication(options = {}) {
         apiToken,
         namespaceId,
         runId,
-        Math.max(0, Math.min(comparisonTimeoutMs, deadline - nowImpl())),
+        comparisonTimeoutMs,
         pollIntervalMs,
         sleepImpl,
         nowImpl
