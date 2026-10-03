@@ -6,6 +6,7 @@ import { currentPublicationManifest } from "./publication-manifest.mjs";
 const DEFAULT_QUEUE_NAME = "public-data-jobs";
 const DEFAULT_HEALTH_URL = "https://public-data.org/data/health.json";
 const DEFAULT_TIMEOUT_MS = 12 * 60 * 1000;
+const DEFAULT_COMPARISON_TIMEOUT_MS = 90 * 1000;
 const DEFAULT_POLL_INTERVAL_MS = 10_000;
 const DEFAULT_RECOVERY_INTERVAL_MS = 4 * 60 * 1000;
 const DEFAULT_KV_NAMESPACE_ID = "f950b17f36a447dca7bb339cba8818de";
@@ -237,6 +238,50 @@ async function publicationDiagnostics(
   };
 }
 
+async function waitForComparisonRefresh(
+  fetchImpl,
+  accountId,
+  apiToken,
+  namespaceId,
+  runId,
+  timeoutMs,
+  pollIntervalMs,
+  sleepImpl,
+  nowImpl
+) {
+  const deadline = nowImpl() + timeoutMs;
+  const key = `v13:publication:run:${runId}:terminal:comparison:${runId}`;
+  let latest = { status: "pending", completedAt: null };
+
+  while (true) {
+    try {
+      const terminal = await readKvValue(
+        fetchImpl,
+        accountId,
+        apiToken,
+        namespaceId,
+        key
+      );
+      const status = ["success", "failure"].includes(terminal?.status)
+        ? terminal.status
+        : "pending";
+      const completedAt =
+        typeof terminal?.completedAt === "string" &&
+        Number.isFinite(Date.parse(terminal.completedAt))
+          ? terminal.completedAt
+          : null;
+      latest = { status, completedAt };
+      if (status === "success") return latest;
+    } catch {
+      // A comparison diagnostic read must never change national readiness.
+    }
+
+    const remainingMs = deadline - nowImpl();
+    if (remainingMs <= 0) return latest;
+    await sleepImpl(Math.min(pollIntervalMs, remainingMs));
+  }
+}
+
 async function pushBootstrapMessage(
   fetchImpl,
   accountId,
@@ -322,6 +367,10 @@ async function bootstrapCloudflarePublication(options = {}) {
     options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     "BOOTSTRAP_TIMEOUT_MS"
   );
+  const comparisonTimeoutMs = positiveInteger(
+    options.comparisonTimeoutMs ?? DEFAULT_COMPARISON_TIMEOUT_MS,
+    "COMPARISON_WAIT_TIMEOUT_MS"
+  );
   const pollIntervalMs = positiveInteger(
     options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS,
     "pollIntervalMs"
@@ -350,6 +399,24 @@ async function bootstrapCloudflarePublication(options = {}) {
   let latestRunActive = false;
   let nextAttemptAt = nowImpl();
   let lastHealth = initialHealth;
+  const completedResult = async (health) => {
+    const result = { triggered: true, attempts: attempt, health };
+    if (forceComparison && latestAttemptId) {
+      const runId = `bootstrap-${latestAttemptId.toLowerCase()}`;
+      result.comparisonRefresh = await waitForComparisonRefresh(
+        fetchImpl,
+        accountId,
+        apiToken,
+        namespaceId,
+        runId,
+        Math.max(0, Math.min(comparisonTimeoutMs, deadline - nowImpl())),
+        pollIntervalMs,
+        sleepImpl,
+        nowImpl
+      );
+    }
+    return result;
+  };
   const dispatchAttempt = async () => {
     const attemptId = bootstrapAttemptId(deploymentId, attempt);
     await pushBootstrapMessage(
@@ -381,7 +448,7 @@ async function bootstrapCloudflarePublication(options = {}) {
       if (run?.finalisedAt && ["published", "no-change", "incomplete"].includes(run.status)) {
         lastHealth = await readHealth(fetchImpl, healthUrl);
         if (lastHealth?.ready === true && await hasPreparedPublication(fetchImpl, healthUrl, lastHealth)) {
-          return { triggered: true, attempts: attempt, health: lastHealth };
+          return completedResult(lastHealth);
         }
         // A STABLE degraded publication (ready:false + non-empty
         // missingRequiredSections) is an accepted terminal state once the
@@ -390,7 +457,7 @@ async function bootstrapCloudflarePublication(options = {}) {
           isDegradedPublicationHealth(lastHealth) &&
           (await hasPreparedPublication(fetchImpl, healthUrl, lastHealth))
         ) {
-          return { triggered: true, attempts: attempt, health: lastHealth };
+          return completedResult(lastHealth);
         }
       }
     }
@@ -423,7 +490,11 @@ async function bootstrapCloudflarePublication(options = {}) {
       }
     }
 
-    if (forceRefresh && nowImpl() >= nextAttemptAt && !latestRunActive) {
+    if (
+      forceRefresh &&
+      nowImpl() >= nextAttemptAt &&
+      !latestRunActive
+    ) {
       await dispatchAttempt();
     }
 
@@ -464,13 +535,14 @@ async function main() {
     healthUrl: process.env.HEALTH_URL,
     namespaceId: process.env.CLOUDFLARE_KV_NAMESPACE_ID,
     timeoutMs: process.env.BOOTSTRAP_TIMEOUT_MS,
+    comparisonTimeoutMs: process.env.COMPARISON_WAIT_TIMEOUT_MS,
     recoveryIntervalMs: process.env.BOOTSTRAP_RECOVERY_INTERVAL_MS,
     forceRefresh: process.env.FORCE_PUBLICATION_REFRESH === "true",
     forceComparison: process.env.FORCE_COMPARISON_REFRESH === "true",
   });
   console.log(
     result.triggered
-      ? `Cloudflare publication bootstrap completed after ${result.attempts} attempt${result.attempts === 1 ? "" : "s"}.`
+      ? `Cloudflare publication bootstrap completed after ${result.attempts} attempt${result.attempts === 1 ? "" : "s"}.${result.comparisonRefresh ? ` Comparison refresh status=${result.comparisonRefresh.status}${result.comparisonRefresh.completedAt ? ` completedAt=${result.comparisonRefresh.completedAt}` : ""}.` : ""}`
       : "Cloudflare prepared publication was already deployable; bootstrap skipped."
   );
 }
@@ -484,6 +556,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
 
 export {
   DEFAULT_HEALTH_URL,
+  DEFAULT_COMPARISON_TIMEOUT_MS,
   DEFAULT_POLL_INTERVAL_MS,
   DEFAULT_QUEUE_NAME,
   DEFAULT_RECOVERY_INTERVAL_MS,
