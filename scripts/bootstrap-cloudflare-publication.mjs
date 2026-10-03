@@ -353,6 +353,7 @@ async function bootstrapCloudflarePublication(options = {}) {
   const deadline = nowImpl() + timeoutMs;
   let attempt = 0;
   let latestAttemptId = null;
+  let latestRunActive = false;
   let nextAttemptAt = nowImpl();
   let lastHealth = initialHealth;
   const dispatchAttempt = async () => {
@@ -366,6 +367,7 @@ async function bootstrapCloudflarePublication(options = {}) {
       forceComparison
     );
     latestAttemptId = attemptId;
+    latestRunActive = true;
     attempt += 1;
     nextAttemptAt = nowImpl() + recoveryIntervalMs;
   };
@@ -379,6 +381,7 @@ async function bootstrapCloudflarePublication(options = {}) {
         namespaceId,
         `v13:publication:run:bootstrap-${latestAttemptId}`
       );
+      latestRunActive = Boolean(run && !run.finalisedAt);
       // A previously serveable edition cannot prove that this deployment's
       // collectors ran. Forced refresh requires the active run to finalise.
       if (run?.finalisedAt && ["published", "no-change", "incomplete"].includes(run.status)) {
@@ -399,8 +402,8 @@ async function bootstrapCloudflarePublication(options = {}) {
     }
 
     // For an ordinary deployment retain the original fast path: dispatch the
-    // initial attempt, then inspect health. For forced refresh, inspect the
-    // active attempt above before replacing its ID with a recovery attempt.
+    // initial attempt, then inspect health. A forced recovery starts another
+    // run only after the current run has finalised or its KV record is absent.
     if (!forceRefresh && nowImpl() >= nextAttemptAt) {
       await dispatchAttempt();
     }
@@ -426,7 +429,7 @@ async function bootstrapCloudflarePublication(options = {}) {
       }
     }
 
-    if (forceRefresh && nowImpl() >= nextAttemptAt) {
+    if (forceRefresh && nowImpl() >= nextAttemptAt && !latestRunActive) {
       await dispatchAttempt();
     }
 
