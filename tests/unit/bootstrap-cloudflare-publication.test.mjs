@@ -235,6 +235,180 @@ describe("Cloudflare deployment bootstrap", () => {
     expect(fetchImpl.mock.calls[3][0]).toContain(`v13%3Apublication%3Arun%3Abootstrap-${SHA}`);
   });
 
+  it("waits for a forced comparison refresh after national publication succeeds", async () => {
+    let now = 0;
+    let comparisonReads = 0;
+    const runId = `bootstrap-${SHA}`;
+    const fetchImpl = vi.fn(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/data/health.json") {
+        return jsonResponse({ status: "ready", ready: true });
+      }
+      if (url.pathname.endsWith("/queues")) {
+        return jsonResponse({
+          success: true,
+          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
+        });
+      }
+      if (url.pathname.endsWith("/queues/queue-id/messages")) {
+        return jsonResponse({ success: true });
+      }
+      if (url.pathname.endsWith("/data/metrics-snapshot.json")) {
+        return new Response(JSON.stringify(preparedSnapshot()), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "X-Publication-Delivery": "cloudflare-kv" },
+        });
+      }
+      if (url.pathname.includes("/storage/kv/namespaces/")) {
+        const key = decodeURIComponent(url.pathname.split("/values/")[1] ?? "");
+        if (key === `v13:publication:run:${runId}`) {
+          return jsonResponse({ status: "published", finalisedAt: "2026-10-03T12:00:00.000Z" });
+        }
+        if (key === `v13:publication:run:${runId}:terminal:comparison:${runId}`) {
+          comparisonReads += 1;
+          if (comparisonReads === 1) return new Response(null, { status: 404 });
+          return jsonResponse({ status: "success", completedAt: "2026-10-03T12:00:10.000Z" });
+        }
+        return new Response(null, { status: 404 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+
+    const result = await bootstrapCloudflarePublication({
+      accountId: "account",
+      apiToken: "token",
+      deploymentId: SHA,
+      forceRefresh: true,
+      forceComparison: true,
+      fetchImpl,
+      timeoutMs: 60_000,
+      comparisonTimeoutMs: 30_000,
+      pollIntervalMs: 10_000,
+      nowImpl: () => now,
+      sleepImpl: async (milliseconds) => { now += milliseconds; },
+    });
+
+    expect(result).toMatchObject({
+      triggered: true,
+      comparisonRefresh: { status: "success", completedAt: "2026-10-03T12:00:10.000Z" },
+    });
+    expect(comparisonReads).toBe(2);
+  });
+
+  it("reports comparison failure without failing the completed national publication", async () => {
+    let now = 0;
+    const runId = `bootstrap-${SHA}`;
+    const fetchImpl = vi.fn(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/data/health.json") {
+        return jsonResponse({ status: "ready", ready: true });
+      }
+      if (url.pathname.endsWith("/queues")) {
+        return jsonResponse({
+          success: true,
+          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
+        });
+      }
+      if (url.pathname.endsWith("/queues/queue-id/messages")) {
+        return jsonResponse({ success: true });
+      }
+      if (url.pathname.endsWith("/data/metrics-snapshot.json")) {
+        return new Response(JSON.stringify(preparedSnapshot()), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "X-Publication-Delivery": "cloudflare-kv" },
+        });
+      }
+      if (url.pathname.includes("/storage/kv/namespaces/")) {
+        const key = decodeURIComponent(url.pathname.split("/values/")[1] ?? "");
+        if (key === `v13:publication:run:${runId}`) {
+          return jsonResponse({ status: "published", finalisedAt: "2026-10-03T12:00:00.000Z" });
+        }
+        if (key === `v13:publication:run:${runId}:terminal:comparison:${runId}`) {
+          return jsonResponse({
+            status: "failure",
+            completedAt: "2026-10-03T12:00:10.000Z",
+            result: { errorMessage: "private upstream details" },
+          });
+        }
+        return new Response(null, { status: 404 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+
+    const result = await bootstrapCloudflarePublication({
+      accountId: "account",
+      apiToken: "token",
+      deploymentId: SHA,
+      forceRefresh: true,
+      forceComparison: true,
+      fetchImpl,
+      timeoutMs: 60_000,
+      comparisonTimeoutMs: 20_000,
+      pollIntervalMs: 10_000,
+      nowImpl: () => now,
+      sleepImpl: async (milliseconds) => { now += milliseconds; },
+    });
+
+    expect(result).toMatchObject({
+      triggered: true,
+      comparisonRefresh: { status: "failure", completedAt: "2026-10-03T12:00:10.000Z" },
+    });
+    expect(result.comparisonRefresh).not.toHaveProperty("result");
+  });
+
+  it("reports a missing comparison terminal as pending without failing national publication", async () => {
+    let now = 0;
+    const runId = `bootstrap-${SHA}`;
+    const fetchImpl = vi.fn(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/data/health.json") {
+        return jsonResponse({ status: "ready", ready: true });
+      }
+      if (url.pathname.endsWith("/queues")) {
+        return jsonResponse({
+          success: true,
+          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
+        });
+      }
+      if (url.pathname.endsWith("/queues/queue-id/messages")) {
+        return jsonResponse({ success: true });
+      }
+      if (url.pathname.endsWith("/data/metrics-snapshot.json")) {
+        return new Response(JSON.stringify(preparedSnapshot()), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "X-Publication-Delivery": "cloudflare-kv" },
+        });
+      }
+      if (url.pathname.includes("/storage/kv/namespaces/")) {
+        const key = decodeURIComponent(url.pathname.split("/values/")[1] ?? "");
+        if (key === `v13:publication:run:${runId}`) {
+          return jsonResponse({ status: "published", finalisedAt: "2026-10-03T12:00:00.000Z" });
+        }
+        return new Response(null, { status: 404 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+
+    const result = await bootstrapCloudflarePublication({
+      accountId: "account",
+      apiToken: "token",
+      deploymentId: SHA,
+      forceRefresh: true,
+      forceComparison: true,
+      fetchImpl,
+      timeoutMs: 60_000,
+      comparisonTimeoutMs: 20_000,
+      pollIntervalMs: 10_000,
+      nowImpl: () => now,
+      sleepImpl: async (milliseconds) => { now += milliseconds; },
+    });
+
+    expect(result).toMatchObject({
+      triggered: true,
+      comparisonRefresh: { status: "pending", completedAt: null },
+    });
+  });
+
   it("waits for an active forced run instead of starting a second run before its deadline", async () => {
     let now = 0;
     let pushes = 0;
