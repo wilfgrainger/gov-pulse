@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       refresh_evidence:
-        description: "Run publication bootstrap recovery (up to ~7 minutes)"
+        description: "Force national publication and country-comparison refresh (up to ~7 minutes)"
         type: boolean
         default: false
       refresh_pages_seed:
@@ -191,11 +191,12 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      - name: Bootstrap fresh evidence and report recovery result
+      - name: Bootstrap national evidence and force the independent comparison refresh
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           HEALTH_URL: https://public-data.org/data/health.json
           BOOTSTRAP_TIMEOUT_MS: "420000"
           FORCE_PUBLICATION_REFRESH: "true"
+          FORCE_COMPARISON_REFRESH: "true"
         run: node scripts/bootstrap-cloudflare-publication.mjs

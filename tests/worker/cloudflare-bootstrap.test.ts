@@ -100,6 +100,36 @@ describe("Cloudflare publication bootstrap", () => {
     expect(send).toHaveBeenCalledTimes(2);
   });
 
+  it("forces the independent comparison refresh when manual bootstrap requests it", async () => {
+    const { env, send } = environment();
+    const message = {
+      body: { type: "bootstrap-publication", deploymentId: SHA, forceComparison: true },
+      ack: vi.fn(),
+      retry: vi.fn(),
+    };
+
+    await queuedWorker.queue({ messages: [message] }, env, {});
+
+    expect(send).toHaveBeenCalledWith({ type: "refresh-international-comparison", force: true });
+    expect(message.ack).toHaveBeenCalledOnce();
+  });
+
+  it("still queues a forced comparison refresh when the national bootstrap is already active", async () => {
+    const { env, send } = environment();
+    await queuedWorker.queue({ messages: [bootstrapMessage()] }, env, {});
+    send.mockClear();
+    const forcedRepeat = {
+      body: { type: "bootstrap-publication", deploymentId: SHA, forceComparison: true },
+      ack: vi.fn(),
+      retry: vi.fn(),
+    };
+
+    await queuedWorker.queue({ messages: [forcedRepeat] }, env, {});
+
+    expect(send).toHaveBeenCalledWith({ type: "refresh-international-comparison", force: true });
+    expect(forcedRepeat.ack).toHaveBeenCalledOnce();
+  });
+
   it("rejects non-commit deployment identifiers", () => {
     expect(() => bootstrapRunId("main")).toThrow(
       "must be a full Git commit SHA"
