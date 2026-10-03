@@ -616,10 +616,19 @@ const queuedPublicationWorker = {
               { expirationTtl: RUN_TTL_SECONDS }
             );
           } else if (!result.dispatched && forceComparison && result.run.finalisedAt) {
-            await env.DATA_JOBS.send({
-              type: "refresh-international-comparison",
-              force: true,
-            });
+            const comparisonJobId = `comparison:${result.run.runId}`;
+            const comparisonTerminal = await kvGet(
+              env,
+              terminalKey(result.run.runId, comparisonJobId)
+            );
+            if (comparisonTerminal?.status !== "success") {
+              await env.DATA_JOBS.send({
+                type: "refresh-international-comparison",
+                runId: result.run.runId,
+                jobId: comparisonJobId,
+                force: true,
+              });
+            }
           }
           console.log("Cloudflare publication bootstrap accepted", {
             runId: result.run.runId,
