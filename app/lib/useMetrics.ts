@@ -42,7 +42,14 @@ function compatibleShape(expected: unknown, candidate: unknown): boolean {
     return candidate.every((item) => compatibleShape(expected[0], item));
   }
 
-  if (expected === null || candidate === null) return expected === candidate;
+  if (expected === null) {
+    // A null fallback cannot describe the non-null type of a nullable leaf.
+    return candidate === null ||
+      typeof candidate === "string" ||
+      typeof candidate === "boolean" ||
+      (typeof candidate === "number" && Number.isFinite(candidate));
+  }
+  if (candidate === null) return false;
   if (typeof expected !== "object") return typeof candidate === typeof expected;
   if (typeof candidate !== "object" || Array.isArray(candidate)) return false;
 
