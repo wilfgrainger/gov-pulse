@@ -1,11 +1,6 @@
 import { access, readFile, writeFile } from "node:fs/promises";
 import { execFileSync, spawn } from "node:child_process";
 
-execFileSync(process.execPath, ["scripts/generate-section-downloads.mjs", "--optional-missing"], {
-  env: process.env,
-  stdio: "inherit",
-});
-
 execFileSync(process.execPath, ["scripts/generate-social-cards.mjs"], {
   env: process.env,
   stdio: "inherit",
@@ -48,6 +43,11 @@ if (/width\(-1\)|height\(-1\)|The width\(-1\)/.test(output)) {
 }
 
 if (process.env.STATIC_EXPORT === "true") {
+  execFileSync(process.execPath, ["scripts/generate-section-downloads.mjs", "--optional-missing"], {
+    env: process.env,
+    stdio: "inherit",
+  });
+
   const requiredPagesArtifacts = [
     "out/index.html",
     "out/sources/index.html",

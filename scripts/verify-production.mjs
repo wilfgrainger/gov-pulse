@@ -312,6 +312,38 @@ export function verifyDownload(text, section, extension) {
   }
 }
 
+export function verifyDownloadMatchesSnapshot(text, section, extension, generatedAt) {
+  let downloadedSection;
+  let downloadedAt;
+
+  if (extension === "json") {
+    try {
+      const payload = JSON.parse(text);
+      downloadedSection = payload?.section;
+      downloadedAt = payload?.generatedAt;
+    } catch {
+      return [];
+    }
+  } else if (extension === "csv") {
+    const valueFor = (path) => text.split(/\r?\n/)
+      .find((row) => row.startsWith(`${path},`))
+      ?.slice(path.length + 1);
+    downloadedSection = valueFor("$.section");
+    downloadedAt = valueFor("$.generatedAt");
+  } else {
+    return [`${section}.${extension} download used an unsupported format`];
+  }
+
+  const failures = [];
+  if (downloadedSection !== section) {
+    failures.push(`${section}.${extension} download did not identify its section`);
+  }
+  if (typeof generatedAt !== "string" || downloadedAt !== generatedAt) {
+    failures.push(`${section}.${extension} download does not match the current snapshot edition`);
+  }
+  return failures;
+}
+
 export function verifySitemapXml(xml) {
   const failures = [];
   if (!/<urlset\b/i.test(xml)) failures.push("sitemap urlset was not found");
@@ -417,6 +449,12 @@ export async function verifyProduction({
       const sitemapXml = remaining[sectionUrls.length + downloadUrls.length];
       const robotsTxt = remaining[sectionUrls.length + downloadUrls.length + 1];
       const feedXml = remaining[sectionUrls.length + downloadUrls.length + 2];
+      let snapshotGeneratedAt;
+      try {
+        snapshotGeneratedAt = JSON.parse(snapshotJson)?.meta?.generatedAt;
+      } catch {
+        snapshotGeneratedAt = null;
+      }
       const allowedMissingSections = degradedMissingSections(healthJson);
       const allowedMissing = new Set(allowedMissingSections);
       const failures = [
@@ -435,7 +473,10 @@ export async function verifyProduction({
           if (!result || result.status < 200 || result.status >= 300) {
             return [`${url} returned HTTP ${result?.status ?? "unknown"}`];
           }
-          return verifyDownload(result.text, section, extension);
+          return [
+            ...verifyDownload(result.text, section, extension),
+            ...verifyDownloadMatchesSnapshot(result.text, section, extension, snapshotGeneratedAt),
+          ];
         }),
         ...verifySitemapXml(sitemapXml),
         ...verifyRobotsTxt(robotsTxt),
