@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import Link from "next/link";
 import EvidenceFigure from "@/app/components/charts/EvidenceFigure";
 import SectionNav from "@/app/components/SectionNav";
@@ -9,14 +10,13 @@ import { SITE_DISCOVERY } from "@/app/lib/discovery";
 import { SECTIONS } from "@/app/lib/sections";
 
 const STATIC_FALLBACK_ARCHIVE_ID = "_archive_unavailable";
-export const dynamic = "force-dynamic";
 
 async function getEdition(id: string) { return /^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/.test(id) ? readArchivedEdition(id) : null; }
 
-// The Pages seed has no retained archive payload. Give its export one honest
-// unavailable page; the primary OpenNext Worker resolves real IDs at request time.
+// Build one honest unavailable route in both outputs. Pages has no archive
+// payload; the Worker renders real IDs on demand.
 export function generateStaticParams() {
-  return process.env.STATIC_EXPORT === "true" ? [{ id: STATIC_FALLBACK_ARCHIVE_ID }] : [];
+  return [{ id: STATIC_FALLBACK_ARCHIVE_ID }];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -61,8 +61,9 @@ function EditionChanges({ edition }: { edition: ArchivedEdition }) {
 
 export default async function EditionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const staticFallback = process.env.STATIC_EXPORT === "true" && id === STATIC_FALLBACK_ARCHIVE_ID;
-  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/.test(id)) notFound();
+  const staticFallback = id === STATIC_FALLBACK_ARCHIVE_ID;
+  if (!staticFallback && !/^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/.test(id)) notFound();
+  if (!staticFallback) await connection();
   const edition = staticFallback ? null : await getEdition(id);
   return <div className="min-h-screen bg-background text-foreground">
     <a href="#historical-edition" className="sr-only focus:not-sr-only focus:block focus:bg-white focus:p-4">Skip to historical edition</a>
