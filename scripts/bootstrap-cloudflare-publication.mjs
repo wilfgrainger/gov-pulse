@@ -271,7 +271,7 @@ async function waitForComparisonRefresh(
           ? terminal.completedAt
           : null;
       latest = { status, completedAt };
-      if (status === "success") return latest;
+      if (status !== "pending") return latest;
     } catch {
       // A comparison diagnostic read must never change national readiness.
     }
@@ -409,7 +409,7 @@ async function bootstrapCloudflarePublication(options = {}) {
         apiToken,
         namespaceId,
         runId,
-        Math.max(0, Math.min(comparisonTimeoutMs, deadline - nowImpl())),
+        comparisonTimeoutMs,
         pollIntervalMs,
         sleepImpl,
         nowImpl
