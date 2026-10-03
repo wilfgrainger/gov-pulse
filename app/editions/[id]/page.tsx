@@ -9,6 +9,7 @@ import { SITE_DISCOVERY } from "@/app/lib/discovery";
 import { SECTIONS } from "@/app/lib/sections";
 
 const STATIC_FALLBACK_ARCHIVE_ID = "_archive_unavailable";
+export const dynamic = "force-dynamic";
 
 async function getEdition(id: string) { return /^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/.test(id) ? readArchivedEdition(id) : null; }
 
@@ -20,8 +21,10 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const edition = await getEdition(id);
-  return edition ? { title: `Historical edition ${id}`, description: `Evidence archived as of ${edition.asOf.slice(0, 10)}. This edition is historical and is not a current reading.` } : {};
+  return {
+    title: `Historical edition ${id}`,
+    description: "An immutable archived evidence catalog. Values describe their publication date and are not current readings.",
+  };
 }
 
 function changeTitle(kind: string) {
@@ -58,7 +61,7 @@ function EditionChanges({ edition }: { edition: ArchivedEdition }) {
 
 export default async function EditionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const staticFallback = id === STATIC_FALLBACK_ARCHIVE_ID;
+  const staticFallback = process.env.STATIC_EXPORT === "true" && id === STATIC_FALLBACK_ARCHIVE_ID;
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/.test(id)) notFound();
   const edition = staticFallback ? null : await getEdition(id);
   return <div className="min-h-screen bg-background text-foreground">

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import EvidenceFigure from "@/app/components/charts/EvidenceFigure";
-import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart";
+import BankRateChart from "@/app/components/BankRateChart";
 import { availableMeasures, type MeasureCatalog, type MeasureRecord } from "@/app/lib/measureCatalog";
 import type { MetricsSnapshot } from "@/app/lib/metricsSnapshot";
 
@@ -64,6 +64,13 @@ export default function CostOfLivingLens({ snapshot }: { snapshot: MetricsSnapsh
       {housePriceChange ? <EvidenceFigure measure={housePriceChange} title="House prices: published observations" description="Annual percentage change in the UK House Price Index. This transaction-based measure remains separate from private rents and CPI." window={{ start: housePriceChange.points[0]?.observedAt ?? housePriceChange.observationPeriod.start, end: housePriceChange.points.at(-1)?.observedAt ?? housePriceChange.observationPeriod.end }} variant="line"/> : <p role="status" className="text-sm">UK house-price annual-change history is unavailable in this edition.</p>}
     </section> : null}
     {realPay ? <EvidenceFigure measure={realPay} title="Real regular pay growth: published observations" description="ONS regular pay growth adjusted directly using CPIH. It remains separate from consumer prices and household budgets." window={{ start: realPay.points[0]?.observedAt ?? realPay.observationPeriod.start, end: realPay.points.at(-1)?.observedAt ?? realPay.observationPeriod.end }} variant="line"/> : <p role="status" className="border-l-4 border-accent bg-white p-5 text-sm">The real-pay catalog record is unavailable in this edition.</p>}
-    {bank?.status === "current" && bankHistory.length ? <FinancialTimeSeriesChart title="Bank Rate: published decisions" description="The Bank of England policy rate, plotted as dated official decisions. It does not estimate a household borrowing rate." citation={`${bank.publisher} · ${bank.sourceUrl} · published ${bank.publishedAt} · observation period ${bank.period} · ${bank.revisionStatus}; this is not a household borrowing rate.`} data={bankHistory} series={[{ key: "value", label: "Bank Rate", color: "#08766c", lineType: "stepAfter" }]} valueFormatter={(value) => `${value.toFixed(2)}%`} showEvents={false}/> : <p role="status" className="border-l-4 border-accent bg-white p-5 text-sm">Bank Rate history is unavailable or expired in this edition.</p>}
+    {bank?.status === "current" && bankHistory.length ? <BankRateChart
+      publisher={bank.publisher}
+      sourceUrl={bank.sourceUrl}
+      publishedAt={bank.publishedAt}
+      period={bank.period}
+      revisionStatus={bank.revisionStatus}
+      data={bankHistory}
+    /> : <p role="status" className="border-l-4 border-accent bg-white p-5 text-sm">Bank Rate history is unavailable or expired in this edition.</p>}
   </div>;
 }
