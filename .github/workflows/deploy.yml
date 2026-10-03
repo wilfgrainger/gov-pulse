@@ -51,6 +51,9 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            worker/package-lock.json
 
       - name: Install locked dependencies
         run: npm ci --prefer-offline --no-audit --no-fund
@@ -111,7 +114,6 @@ jobs:
           if ! npx wrangler queues info "$QUEUE_NAME" >/dev/null 2>&1; then
             npx wrangler queues create "$QUEUE_NAME" || npx wrangler queues info "$QUEUE_NAME"
           fi
-          npx wrangler queues update "$QUEUE_NAME" --message-retention-period-secs 86400
 
       - name: Deploy Cloudflare data Worker
         env:
