@@ -99,6 +99,14 @@ describe("useMetrics", () => {
     })).toBe(false);
   });
 
+  it("accepts populated nullable scalar fields while still rejecting object-shaped values", async () => {
+    const { acceptsCompleteLivePayload } = await loadUseMetrics();
+    const nullableFallback = { latestPublicationDate: null };
+
+    expect(acceptsCompleteLivePayload(nullableFallback, { latestPublicationDate: "2026-09-29" })).toBe(true);
+    expect(acceptsCompleteLivePayload(nullableFallback, { latestPublicationDate: { year: 2026 } })).toBe(false);
+  });
+
   it("derives a sourced result from a publication snapshot", async () => {
     const { metricsResultFromSnapshot } = await loadUseMetrics();
     const result = metricsResultFromSnapshot(
