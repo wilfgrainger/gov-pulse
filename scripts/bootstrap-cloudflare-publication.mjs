@@ -248,7 +248,8 @@ async function pushBootstrapMessage(
   accountId,
   apiToken,
   queueId,
-  deploymentId
+  deploymentId,
+  forceComparison = false
 ) {
   const response = await fetchImpl(
     `https://api.cloudflare.com/client/v4/accounts/${accountId}/queues/${queueId}/messages`,
@@ -260,7 +261,11 @@ async function pushBootstrapMessage(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        body: { type: "bootstrap-publication", deploymentId },
+        body: {
+          type: "bootstrap-publication",
+          deploymentId,
+          ...(forceComparison ? { forceComparison: true } : {}),
+        },
       }),
       signal: AbortSignal.timeout(15_000),
     }
@@ -332,6 +337,7 @@ async function bootstrapCloudflarePublication(options = {}) {
     "BOOTSTRAP_RECOVERY_INTERVAL_MS"
   );
   const forceRefresh = options.forceRefresh === true;
+  const forceComparison = options.forceComparison === true;
 
   const initialHealth = await readHealth(fetchImpl, healthUrl);
   if (!forceRefresh && await deploymentPublicationAvailable(fetchImpl, healthUrl, initialHealth)) {
@@ -356,7 +362,8 @@ async function bootstrapCloudflarePublication(options = {}) {
       accountId,
       apiToken,
       queueId,
-      attemptId
+      attemptId,
+      forceComparison
     );
     latestAttemptId = attemptId;
     attempt += 1;
@@ -462,6 +469,7 @@ async function main() {
     timeoutMs: process.env.BOOTSTRAP_TIMEOUT_MS,
     recoveryIntervalMs: process.env.BOOTSTRAP_RECOVERY_INTERVAL_MS,
     forceRefresh: process.env.FORCE_PUBLICATION_REFRESH === "true",
+    forceComparison: process.env.FORCE_COMPARISON_REFRESH === "true",
   });
   console.log(
     result.triggered

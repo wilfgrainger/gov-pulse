@@ -195,6 +195,7 @@ describe("Cloudflare deployment bootstrap", () => {
       accountId: "account",
       apiToken: "token",
       deploymentId: SHA,
+      forceComparison: true,
       fetchImpl,
       timeoutMs: 60_000,
       pollIntervalMs: 10_000,
@@ -227,6 +228,7 @@ describe("Cloudflare deployment bootstrap", () => {
       accountId: "account",
       apiToken: "token",
       deploymentId: SHA,
+      forceComparison: true,
       fetchImpl,
       timeoutMs: 60_000,
       pollIntervalMs: 10_000,
@@ -241,7 +243,7 @@ describe("Cloudflare deployment bootstrap", () => {
     const pushCall = fetchImpl.mock.calls[2];
     expect(pushCall[0]).toContain("/queues/queue-id/messages");
     expect(JSON.parse(pushCall[1].body)).toEqual({
-      body: { type: "bootstrap-publication", deploymentId: SHA },
+      body: { type: "bootstrap-publication", deploymentId: SHA, forceComparison: true },
     });
   });
 

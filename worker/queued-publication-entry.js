@@ -301,6 +301,7 @@ async function processQueueJob(job, env, ctx, options = {}) {
     const result = await refreshInternationalComparison(env, {
       fetchImpl: options.fetchImpl ?? fetch,
       now: options.now ?? new Date(),
+      force: job.force === true,
     });
     return { type: job.type, updated: result.updated, due: result.due };
   }
@@ -542,8 +543,11 @@ const queuedPublicationWorker = {
               finaliseRetrySeconds: BOOTSTRAP_FINALISE_RETRY_SECONDS,
             }
           );
-          if (result.dispatched) {
-            await env.DATA_JOBS.send({ type: "refresh-international-comparison" });
+          if (result.dispatched || job.forceComparison === true) {
+            await env.DATA_JOBS.send({
+              type: "refresh-international-comparison",
+              ...(job.forceComparison === true ? { force: true } : {}),
+            });
           }
           console.log("Cloudflare publication bootstrap accepted", {
             runId: result.run.runId,
