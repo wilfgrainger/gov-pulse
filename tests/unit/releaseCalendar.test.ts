@@ -115,6 +115,29 @@ describe("publisher release calendar", () => {
     })]);
   });
 
+  it("falls back to the ISO release date when a publisher label names a different day", () => {
+    const events = buildReleaseEvents({
+      meta: { sources: { nhsReleaseCalendar: { status: "ok", fetchedAt: "2026-10-03T08:00:00.000Z" } } },
+      nhsReleaseCalendar: { events: [
+        {
+          id: "nhs-rtt-2026-08",
+          title: "Planned NHS RTT publication for August 2026",
+          familyIds: ["nhsStats"],
+          date: "2026-10-08",
+          dateLabel: "8 August 2026",
+          status: "provisional",
+          publisherUrl: "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/09/20260924_Proposed-12-month-plan-for-2026-27-for-publication.pdf",
+          checkedAt: "2026-10-03T08:00:00.000Z",
+        },
+      ] },
+    }, new Date("2026-10-03T12:00:00.000Z"));
+
+    expect(events).toEqual([expect.objectContaining({
+      date: "2026-10-08",
+      dateLabel: "8 October 2026",
+    })]);
+  });
+
   it("rejects a forged or stale NHS schedule event", () => {
     const events = buildReleaseEvents({
       meta: { sources: { nhsReleaseCalendar: { status: "stale", fetchedAt: "2026-10-01T08:00:00.000Z" } } },
