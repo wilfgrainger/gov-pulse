@@ -57,6 +57,9 @@ const SIPRI_COUNTRY_IDS = Object.freeze({
   Switzerland: "CHE",
   Poland: "POL",
 });
+const SIPRI_COUNTRY_IDS_BY_LABEL = new Map(
+  Object.entries(SIPRI_COUNTRY_IDS).map(([name, country]) => [normalizedLabel(name), country])
+);
 const SIPRI_COUNTRY_PATTERN = Object.keys(SIPRI_COUNTRY_IDS)
   .sort((left, right) => right.length - left.length)
   .map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
@@ -192,11 +195,29 @@ function cellParts(reference) {
 }
 
 function sipriCountryId(value) {
-  const normalized = normalizedLabel(value);
-  const match = Object.keys(SIPRI_COUNTRY_IDS).find(
-    (name) => normalizedLabel(name) === normalized
-  );
-  return match ? SIPRI_COUNTRY_IDS[match] : null;
+  return SIPRI_COUNTRY_IDS_BY_LABEL.get(normalizedLabel(value)) ?? null;
+}
+
+function sipriCountryRows(cells) {
+  const rowsByCountry = new Map();
+  for (const [reference, label] of cells.entries()) {
+    const parts = cellParts(reference);
+    if (parts?.column !== "A") continue;
+    const country = sipriCountryId(label);
+    if (country) rowsByCountry.set(country, parts.row);
+  }
+  return rowsByCountry;
+}
+
+function sipriUsdForColumn(cells, rowsByCountry, column) {
+  const values = new Map();
+  for (const [country, row] of rowsByCountry) {
+    const millions = finiteNumber(cells.get(`${column}${row}`));
+    if (millions !== null && millions > 0) {
+      values.set(country, millions * 1_000_000);
+    }
+  }
+  return values;
 }
 
 function parseSipriCurrentUsdCells(cells, year) {
@@ -208,17 +229,10 @@ function parseSipriCurrentUsdCells(cells, year) {
     throw new Error(`SIPRI workbook did not expose ${year}`);
   }
 
+  const rowsByCountry = sipriCountryRows(cells);
   let best = new Map();
   for (const yearColumn of [...new Set(yearColumns)]) {
-    const candidate = new Map();
-    for (const [reference, label] of cells.entries()) {
-      const country = sipriCountryId(label);
-      const parts = cellParts(reference);
-      if (!country || !parts) continue;
-      const millions = finiteNumber(cells.get(`${yearColumn}${parts.row}`));
-      if (millions === null || millions <= 0) continue;
-      candidate.set(country, millions * 1_000_000);
-    }
+    const candidate = sipriUsdForColumn(cells, rowsByCountry, yearColumn);
     if (candidate.size > best.size) best = candidate;
   }
 
@@ -233,6 +247,7 @@ function parseSipriCurrentUsdHistoryCells(cells, startYear, endYear) {
     startYear < 1949 || startYear > endYear || endYear > 2025 || endYear - startYear > 100) {
     throw new Error("SIPRI workbook historical year range is invalid");
   }
+  const rowsByCountry = sipriCountryRows(cells);
   const columnsByYear = new Map();
   for (const [reference, rawYear] of cells.entries()) {
     const parts = cellParts(reference);
@@ -247,16 +262,7 @@ function parseSipriCurrentUsdHistoryCells(cells, startYear, endYear) {
   for (const [year, columns] of columnsByYear) {
     let best = new Map();
     for (const column of [...new Set(columns)]) {
-      const candidate = new Map();
-      for (const [reference, label] of cells.entries()) {
-        const parts = cellParts(reference);
-        if (!parts) continue;
-        const country = sipriCountryId(label);
-        if (!country) continue;
-        const millions = finiteNumber(cells.get(`${column}${parts.row}`));
-        if (millions === null || millions <= 0) continue;
-        candidate.set(country, millions * 1_000_000);
-      }
+      const candidate = sipriUsdForColumn(cells, rowsByCountry, column);
       if (candidate.size > best.size) best = candidate;
     }
     if (best.size) result.set(year, best);
