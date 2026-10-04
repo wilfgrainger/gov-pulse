@@ -51,7 +51,7 @@ test("deployed Pixel 7 journey passes evidence, search, touch and overflow check
   await expect(page.getByRole("heading", { level: 1, name: "Britain, in evidence." })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Latest figures" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "The country at a glance" })).toBeVisible();
-  expect(await page.getByTestId("signal-card").count()).toBeGreaterThan(0);
+  await expect(page.getByTestId("signal-card").first()).toBeVisible();
   await expect(page.locator("details[id^='category-']")).toHaveCount(0);
   await assertNoHorizontalOverflow(page);
 
