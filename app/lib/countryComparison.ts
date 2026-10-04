@@ -1,4 +1,4 @@
-import { COMPARISON_COUNTRY_NAMES, COMPARISON_MEASURE_ORDER, type ComparisonMeasure, type ComparisonCountryId, type ComparisonValueType } from "@/app/lib/internationalComparison";
+import { COMPARISON_COUNTRY_NAMES, COMPARISON_MEASURE_ORDER, type ComparisonMeasure, type ComparisonMeasureId, type ComparisonCountryId, type ComparisonValueType } from "@/app/lib/internationalComparison";
 import type { ChartMetadata } from "@/app/lib/chartExport";
 
 export type CountryComparisonUrlState = {
@@ -17,6 +17,19 @@ const DEFAULT_COUNTRY_STATE: CountryComparisonUrlState = {
   year: "latest",
 };
 
+export function defaultCountryComparisonMeasureId(
+  measures: Partial<Record<ComparisonMeasureId, ComparisonMeasure>>,
+): ComparisonMeasureId {
+  return [...COMPARISON_MEASURE_ORDER].sort((leftId, rightId) => {
+    const left = measures[leftId];
+    const right = measures[rightId];
+    const currentCoverage = (measure: ComparisonMeasure | undefined) => measure?.comparableCountryCount ?? 0;
+    const historyCoverage = (measure: ComparisonMeasure | undefined) =>
+      measure?.countryHistory?.filter(({ value }) => value !== null).length ?? 0;
+    return currentCoverage(right) - currentCoverage(left) || historyCoverage(right) - historyCoverage(left);
+  })[0] ?? DEFAULT_COUNTRY_STATE.measureId;
+}
+
 const COUNTRY_PRESETS: Record<string, ComparisonCountryId[]> = {
   europe: ["GBR", "DEU", "FRA", "ITA", "ESP", "IRL", "NLD", "CHE", "POL"],
   "major-powers": ["GBR", "USA", "CHN", "RUS", "DEU", "FRA"],
@@ -27,12 +40,16 @@ export function countryComparisonPreset(id: string): ComparisonCountryId[] | nul
   return COUNTRY_PRESETS[id] ? [...COUNTRY_PRESETS[id]] : null;
 }
 
-export function parseCountryComparisonUrlState(search: string, availableYears: number[] = []): CountryComparisonUrlState {
+export function parseCountryComparisonUrlState(
+  search: string,
+  availableYears: number[] = [],
+  defaultMeasureId: ComparisonMeasureId = DEFAULT_COUNTRY_STATE.measureId,
+): CountryComparisonUrlState {
   const params = new URLSearchParams(String(search ?? "").replace(/^\?/, ""));
   const rawMeasure = params.get("measure");
   const measureId = COMPARISON_MEASURE_ORDER.includes(rawMeasure as CountryComparisonUrlState["measureId"])
     ? rawMeasure as CountryComparisonUrlState["measureId"]
-    : DEFAULT_COUNTRY_STATE.measureId;
+    : defaultMeasureId;
   const rawCountries = params.get("countries");
   const rawTypes = params.get("types");
   const hasCountries = params.has("countries");
@@ -51,9 +68,12 @@ export function parseCountryComparisonUrlState(search: string, availableYears: n
   };
 }
 
-export function serializeCountryComparisonUrlState(state: CountryComparisonUrlState): string {
+export function serializeCountryComparisonUrlState(
+  state: CountryComparisonUrlState,
+  defaultMeasureId: ComparisonMeasureId = DEFAULT_COUNTRY_STATE.measureId,
+): string {
   const params = new URLSearchParams();
-  if (COMPARISON_MEASURE_ORDER.includes(state.measureId) && state.measureId !== DEFAULT_COUNTRY_STATE.measureId) {
+  if (COMPARISON_MEASURE_ORDER.includes(state.measureId) && state.measureId !== defaultMeasureId) {
     params.set("measure", state.measureId);
   }
   const selectedCountries = new Set(state.countries.filter((id) => COUNTRY_IDS.includes(id)));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCountryChartMetadata, canShareCountryAxis, countryComparisonPreset, parseCountryComparisonUrlState, selectCountryFigure, serializeCountryComparisonUrlState } from "@/app/lib/countryComparison";
+import { buildCountryChartMetadata, canShareCountryAxis, countryComparisonPreset, defaultCountryComparisonMeasureId, parseCountryComparisonUrlState, selectCountryFigure, serializeCountryComparisonUrlState } from "@/app/lib/countryComparison";
 import type { ComparisonMeasure } from "@/app/lib/internationalComparison";
 
 function measure(overrides: Partial<ComparisonMeasure> = {}): ComparisonMeasure {
@@ -90,6 +90,17 @@ describe("interactive country comparison", () => {
     expect(malformed.valueTypes).toEqual(["historical", "estimate", "projection"]);
     expect(countryComparisonPreset("europe")).toEqual(["GBR", "DEU", "FRA", "ITA", "ESP", "IRL", "NLD", "CHE", "POL"]);
     expect(countryComparisonPreset("major-powers")).toEqual(["GBR", "USA", "CHN", "RUS", "DEU", "FRA"]);
+  });
+
+  it("chooses the most populated source-backed measure as the default and keeps explicit measure state in URLs", () => {
+    const debt = measure({ id: "governmentDebt", comparableCountryCount: 0, countries: [] });
+    const defence = measure({ id: "defenceSpending", comparableCountryCount: 13 });
+    const measures = { governmentDebt: debt, defenceSpending: defence } as Record<string, ComparisonMeasure>;
+
+    const defaultMeasure = defaultCountryComparisonMeasureId(measures);
+    expect(defaultMeasure).toBe("defenceSpending");
+    expect(parseCountryComparisonUrlState("?measure=invalid", [], defaultMeasure).measureId).toBe("defenceSpending");
+    expect(serializeCountryComparisonUrlState({ measureId: "defenceSpending", countries: ["GBR"], valueTypes: ["historical"], year: "latest" })).toContain("measure=defenceSpending");
   });
 
   it("preserves an intentional empty country or evidence-status selection in shared URLs", () => {

@@ -30,11 +30,11 @@ function measures(): Record<string, ComparisonMeasure> {
     unit: "USD per resident",
     rankDirection: "highest-first",
     observationYear: 2024,
-    comparableCountryCount: 3,
+    comparableCountryCount: id === "governmentDebt" ? 0 : id === "defenceSpending" ? 3 : 2,
     countries: [
-      { country: "GBR", value: 100, rank: 1, observationYear: 2024, valueType: "estimate", source },
-      { country: "USA", value: 90, rank: 2, observationYear: 2024, valueType: "estimate", source },
-      { country: "DEU", value: 80, rank: 3, observationYear: 2024, valueType: "estimate", source },
+      { country: "GBR", value: id === "governmentDebt" ? null : 100, rank: id === "governmentDebt" ? null : 1, observationYear: 2024, valueType: "estimate", source },
+      { country: "USA", value: id === "governmentDebt" ? null : 90, rank: id === "governmentDebt" ? null : 2, observationYear: 2024, valueType: "estimate", source },
+      { country: "DEU", value: id === "governmentDebt" ? null : 80, rank: id === "governmentDebt" ? null : 3, observationYear: 2024, valueType: "estimate", source },
     ],
     countryHistory: [
       { country: "GBR", value: 60, rank: 1, observationYear: 2023, valueType: "historical", source },
@@ -45,6 +45,26 @@ function measures(): Record<string, ComparisonMeasure> {
 }
 
 describe("shareable country comparison controls", () => {
+  it("starts on the measure with the strongest published country coverage", async () => {
+    render(<CountryComparisonFigures measures={measures()} />);
+
+    await waitFor(() => expect(screen.getByLabelText("Measure")).toHaveValue("defenceSpending"));
+    expect(screen.getByRole("status")).toHaveTextContent("Visible denominator: 3 of 3");
+  });
+
+  it("keeps the selected year clear when status filters leave no values", async () => {
+    render(<CountryComparisonFigures measures={measures()} />);
+    await waitFor(() => expect(screen.getByLabelText("Measure")).toHaveValue("defenceSpending"));
+
+    fireEvent.change(screen.getByLabelText("Comparison year"), { target: { value: "2023" } });
+    fireEvent.click(screen.getByLabelText("Historical observation"));
+
+    await waitFor(() => expect(screen.getAllByRole("status")[0]).toHaveTextContent("common year 2023"));
+    expect(screen.getAllByRole("status")[0]).toHaveTextContent("no values match the selected filters");
+    expect(screen.getAllByRole("status")[0]).not.toHaveTextContent("mixed evidence status");
+    expect(screen.getAllByRole("status")[0]).not.toHaveTextContent("latest source years may differ");
+  });
+
   it("offers and shares a source-retained common year and exports the selected observations with both sources", async () => {
     render(<CountryComparisonFigures measures={measures()} />);
     await waitFor(() => expect(screen.getByLabelText("Comparison year")).toHaveValue("latest"));
@@ -96,14 +116,14 @@ describe("shareable country comparison controls", () => {
     expect(screen.getByLabelText("Germany")).not.toBeChecked();
 
     fireEvent.change(screen.getByLabelText("Measure"), { target: { value: "defenceSpending" } });
-    await waitFor(() => expect(new URL(window.location.href).searchParams.get("measure")).toBe("defenceSpending"));
+    await waitFor(() => expect(new URL(window.location.href).searchParams.has("measure")).toBe(false));
     fireEvent.click(screen.getByRole("button", { name: "UK + Europe" }));
     await waitFor(() => expect(new URL(window.location.href).searchParams.get("countries")).toBe("GBR,DEU,FRA,ITA,ESP,IRL,NLD,CHE,POL"));
   });
 
   it("follows browser back and forward state changes", async () => {
     render(<CountryComparisonFigures measures={measures()} />);
-    await waitFor(() => expect(screen.getByLabelText("Measure")).toHaveValue("governmentDebt"));
+    await waitFor(() => expect(screen.getByLabelText("Measure")).toHaveValue("defenceSpending"));
 
     window.history.replaceState({}, "", "/compare/?measure=healthcareSpending&countries=GBR%2CDEU&types=estimate");
     fireEvent(window, new PopStateEvent("popstate"));
