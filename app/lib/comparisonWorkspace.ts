@@ -4,6 +4,9 @@ import { validateDateWindow, type DateWindow } from "@/app/lib/chartModel";
 export type Workspace = { version: 1; measureIds: string[]; window: DateWindow; mode: "panels" | "overlay" };
 export const MAX_COMPARISON_MEASURES = 12;
 
+// Related cost-of-living measures make a useful start, but their definitions require separate panels.
+const STARTING_PANEL_MEASURE_PAIRS = [["inflation", "privateRentAnnualChange"]] as const;
+
 function defaultWindow(records: MeasureRecord[], available: MeasureRecord[]): DateWindow {
   const scope = records.length ? records : available;
   const dates = scope.flatMap((record) => record.points.map((point) => point.observedAt)).sort();
@@ -15,14 +18,28 @@ function defaultWindow(records: MeasureRecord[], available: MeasureRecord[]): Da
 }
 
 function startingMeasureIds(measures: MeasureRecord[]) {
-  for (let left = 0; left < measures.length; left += 1) {
-    for (let right = left + 1; right < measures.length; right += 1) {
-      if (compareEligibility(measures[left], measures[right]) === "overlay") {
-        return [measures[left].id, measures[right].id];
+  const populated = measures.filter((measure) => measure.points.some(({ value }) => value !== null));
+  const byId = new Map(populated.map((measure) => [measure.id, measure]));
+
+  for (const pair of STARTING_PANEL_MEASURE_PAIRS) {
+    if (pair.every((id) => byId.has(id))) return [...pair];
+  }
+
+  for (let left = 0; left < populated.length; left += 1) {
+    for (let right = left + 1; right < populated.length; right += 1) {
+      if (compareEligibility(populated[left], populated[right]) === "overlay") {
+        return [populated[left].id, populated[right].id];
       }
     }
   }
-  return measures.slice(0, 2).map((measure) => measure.id);
+
+  const mostPopulated = [...populated].sort((left, right) =>
+    right.points.filter(({ value }) => value !== null).length -
+      left.points.filter(({ value }) => value !== null).length ||
+    right.observationPeriod.end.localeCompare(left.observationPeriod.end) ||
+    left.id.localeCompare(right.id)
+  )[0];
+  return mostPopulated ? [mostPopulated.id] : [];
 }
 
 export function parseWorkspace(search: string, catalog: Pick<MeasureCatalog, "measures">): Workspace {
