@@ -22,6 +22,8 @@ type Props = {
   citation?: string;
   chartMetadata?: ChartMetadata;
   className?: string;
+  /** Hide image exports when this component is used to export missing data only. */
+  dataOnly?: boolean;
 };
 
 const subscribeToPngSupport = () => () => {};
@@ -40,7 +42,7 @@ function getClientPngSupport() {
  * PNG export additionally needs canvas rasterisation support; the button is
  * omitted (rather than shown and failing) when that is not available.
  */
-export default function ChartExportButtons({ containerRef, title, exportPackage, citation, chartMetadata, className }: Props) {
+export default function ChartExportButtons({ containerRef, title, exportPackage, citation, chartMetadata, className, dataOnly = false }: Props) {
   const [error, setError] = useState<string | null>(null);
   const pngSupported = useSyncExternalStore(subscribeToPngSupport, getClientPngSupport, getServerPngSupport);
   const exportTitle = exportPackage?.title ?? chartMetadata?.title ?? title ?? "Evidence chart";
@@ -94,7 +96,7 @@ export default function ChartExportButtons({ containerRef, title, exportPackage,
           <button type="button" onClick={() => downloadData("json")} className="min-h-11 font-semibold underline decoration-black/30 underline-offset-4 hover:decoration-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14243b]">JSON</button>
         </div>
       ) : null}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+      {!dataOnly ? <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <span className="text-xs font-semibold text-gray-600">Download chart as image:</span>
         <button
           type="button"
@@ -112,7 +114,7 @@ export default function ChartExportButtons({ containerRef, title, exportPackage,
             PNG
           </button>
         ) : null}
-      </div>
+      </div> : null}
       {error ? (
         <p role="status" className="mt-1 text-xs text-amber-800">
           {error}

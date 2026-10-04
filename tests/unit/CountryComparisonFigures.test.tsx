@@ -52,6 +52,68 @@ describe("shareable country comparison controls", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Visible denominator: 3 of 3");
   });
 
+  it("exports explicit unavailable country rows when no values match", async () => {
+    const publishedMeasures = measures();
+    publishedMeasures.governmentDebt = {
+      ...publishedMeasures.governmentDebt,
+      countries: publishedMeasures.governmentDebt.countries.map((row) => ({
+        ...row,
+        observationYear: 2026,
+        exclusionReason: "source-unavailable",
+      })),
+      countryHistory: [],
+    };
+    render(<CountryComparisonFigures measures={publishedMeasures} />);
+    await waitFor(() => expect(screen.getByLabelText("Measure")).toHaveValue("defenceSpending"));
+    fireEvent.change(screen.getByLabelText("Measure"), { target: { value: "governmentDebt" } });
+
+    await waitFor(() => expect(screen.getAllByRole("status")[0]).toHaveTextContent("Visible denominator: 0 of 3"));
+    expect(screen.getByRole("button", { name: "JSON" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "CSV" })).toBeInTheDocument();
+    expect(screen.queryByText("Download chart as image:")).not.toBeInTheDocument();
+
+    let exportedBlob: Blob | null = null;
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: vi.fn((blob: Blob) => { exportedBlob = blob; return "blob:country-comparison-unavailable"; }),
+    });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    fireEvent.click(screen.getByRole("button", { name: "JSON" }));
+
+    await waitFor(() => expect(exportedBlob).toBeInstanceOf(Blob));
+    const json = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(exportedBlob!);
+    });
+    const exported = JSON.parse(json);
+    expect(exported.sourceCitation).toContain("Visible denominator: 0 of 3");
+    expect(exported.sourceCitation).toContain("no values matched the selected filters");
+    expect(exported.observations.map((item: { observedAt: string | null; values: Record<string, number | null>; details: Record<string, unknown> }) => [
+      item.observedAt,
+      Object.values(item.values)[0],
+      item.details.includedInDenominator,
+      item.details.exclusionReason,
+    ])).toEqual([
+      [null, null, "no", "The source is unavailable"],
+      [null, null, "no", "The source is unavailable"],
+      [null, null, "no", "The source is unavailable"],
+    ]);
+
+    fireEvent.click(screen.getByRole("button", { name: "CSV" }));
+    await waitFor(() => expect(exportedBlob).toBeInstanceOf(Blob));
+    const csv = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(exportedBlob!);
+    });
+    expect(csv).toContain("Visible denominator: 0 of 3");
+    expect(csv).toContain("The source is unavailable");
+  });
+
   it("shows the published numeric value in the table while keeping chart labels rounded", async () => {
     const publishedMeasures = measures();
     publishedMeasures.defenceSpending = {

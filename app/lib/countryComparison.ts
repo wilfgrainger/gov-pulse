@@ -134,19 +134,23 @@ export function buildCountryChartMetadata(
   result: ReturnType<typeof selectCountryFigure>,
 ): ChartMetadata {
   const years = result.rows.map(({ observationYear }) => observationYear).sort((left, right) => left - right);
-  const sources = [...new Map(result.rows.flatMap(({ source }) => source
+  const includedRecords = result.rows.map((row) => ({ row, included: true as const, exclusionReason: null }));
+  const unavailableRecords = (result.rows.length ? [] : result.excluded.filter(({ reason }) => reason !== "Excluded by country filter"))
+    .map((row) => ({ row, included: false as const, exclusionReason: countryComparisonExclusionLabel(row.reason) }));
+  const records = [...includedRecords, ...unavailableRecords];
+  const sources = [...new Map(records.flatMap(({ row: { source } }) => source
     ? [source, ...(source.additionalSources ?? [])].map((item) => [item.url, item] as const)
     : [])).values()];
   const sourceCitation = [
     `${measure.label}: ${measure.definition}`,
-    `Visible denominator: ${result.denominator} of ${result.sourceCountryCount}; ${result.ranked ? `ranked within ${result.commonYear} ${result.commonValueType} observations` : "not ranked because year or evidence status differs"}`,
+    `Visible denominator: ${result.denominator} of ${result.sourceCountryCount}; ${result.rows.length === 0 ? "no values matched the selected filters; no ranking is available" : result.ranked ? `ranked within ${result.commonYear} ${result.commonValueType} observations` : "not ranked because year or evidence status differs"}`,
     ...sources.map((source) => `${source.publisher}${source.publicationDate ? `, published ${source.publicationDate}` : ""}${sourceUpdateAttribution(source) ? `, ${sourceUpdateAttribution(source)}` : ""}: ${source.url}`),
   ].join(" · ");
   const excludedCaveats = [...new Set(result.excluded.map(({ reason }) => countryComparisonExclusionLabel(reason)))];
   const caveats = [
     measure.caveat,
     `Visible denominator is ${result.denominator} of ${result.sourceCountryCount} source-set countries; excluded or missing values are not zero.`,
-    result.ranked ? `Ranks apply only to the selected ${result.commonYear} ${result.commonValueType} observations.` : "No rank is shown because selected observations do not share one year and evidence status.",
+    result.rows.length === 0 ? "No values matched the selected filters; no ranking is available." : result.ranked ? `Ranks apply only to the selected ${result.commonYear} ${result.commonValueType} observations.` : "No rank is shown because selected observations do not share one year and evidence status.",
     ...excludedCaveats,
   ].filter((value): value is string => Boolean(value));
   return {
@@ -157,22 +161,24 @@ export function buildCountryChartMetadata(
       start: { period: String(years[0]), observedAt: `${years[0]}-01-01` },
       end: { period: String(years.at(-1)), observedAt: `${years.at(-1)}-12-31` },
     } : { start: null, end: null },
-    series: result.rows.map((row) => ({
+    series: records.map(({ row, included, exclusionReason }) => ({
       key: row.country,
-      label: `${COMPARISON_COUNTRY_NAMES[row.country]} · ${row.value} ${measure.unit} · ${row.observationYear} · ${row.valueType} · ${row.rank === null ? "not ranked" : `rank ${row.rank}`}`,
+      label: `${COMPARISON_COUNTRY_NAMES[row.country]} · ${row.value === null ? "unavailable" : `${row.value} ${measure.unit}`} · ${row.observationYear} · ${row.valueType} · ${included ? row.rank === null ? "not ranked" : `rank ${row.rank}` : `excluded: ${exclusionReason}`}`,
     })),
-    observations: result.rows.map((row) => {
+    observations: records.map(({ row, included, exclusionReason }) => {
       const details: Record<string, string | number | null> = {
         country: row.country,
         evidenceStatus: row.valueType,
-        rank: row.rank,
+        rank: included ? row.rank : null,
+        includedInDenominator: included ? "yes" : "no",
+        exclusionReason,
       };
       for (const [name, input] of Object.entries(row.calculationInputs ?? {})) {
         details[`input_${name}`] = input;
       }
       return {
         period: String(row.observationYear),
-        observedAt: `${row.observationYear}-12-31`,
+        observedAt: row.value === null ? null : `${row.observationYear}-12-31`,
         values: { [row.country]: row.value },
         details,
       };
