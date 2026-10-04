@@ -34,6 +34,18 @@ test.beforeEach(({}, testInfo) => {
   test.skip(!publicBaseUrl, "Production URL is supplied only after deployment");
 });
 
+test("measure library filters and briefing cards reflow at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+
+  for (const path of ["measure/", "briefing/"]) {
+    await test.step(path, async () => {
+      await page.goto(liveUrl(path), { waitUntil: "networkidle" });
+      await expect(page.locator("main")).toBeVisible();
+      await assertNoHorizontalOverflow(page);
+    });
+  }
+});
+
 test("deployed Pixel 7 journey passes evidence, search, touch and overflow checks", async ({ page }) => {
   await page.goto(liveUrl(), { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { level: 1, name: "Britain, in evidence." })).toBeVisible();
