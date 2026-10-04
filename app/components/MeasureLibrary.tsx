@@ -114,9 +114,9 @@ export default function MeasureLibrary({ measures, initialSearch = "" }: { measu
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {(["topic", "publisher", "geography", "cadence", "unit", "availability"] as const).map((key) => (
-            <label key={key} className="grid gap-1 text-xs font-bold capitalize">
+            <label key={key} className="grid min-w-0 gap-1 text-xs font-bold capitalize">
               <span>{key === "cadence" ? "Frequency" : key}</span>
-              <select value={filters[key]} onChange={(event) => changeFilter(key, event.target.value)} className="min-h-10 border border-foreground bg-white px-2 text-sm font-normal">
+              <select value={filters[key]} onChange={(event) => changeFilter(key, event.target.value)} className="min-h-10 w-full min-w-0 border border-foreground bg-white px-2 text-sm font-normal">
                 <option value="">All {FILTER_PLURALS[key]}</option>
                 {filterOptions(measures, key).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
