@@ -14,6 +14,7 @@ describe("supplier concentration export metadata", () => {
       updateWindow: { updatedFrom: "2026-06-01T00:00:00Z", updatedTo: "2026-06-07T23:59:59Z" },
       sourceUrl: "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages",
       sourceLabel: "Cabinet Office Find a Tender OCDS API",
+      valueBasisLabel: "disclosed award value",
       caveats: ["Disclosed award values are not confirmed expenditure."],
     });
 
@@ -29,7 +30,7 @@ describe("supplier concentration export metadata", () => {
     ]);
     expect(metadata.caveats).toEqual(expect.arrayContaining([
       "Disclosed award values are not confirmed expenditure.",
-      "Multi-supplier award values are split equally for a comparison scenario; they are not attributed supplier revenue or confirmed expenditure.",
+      "Values use disclosed award value. Multi-supplier amounts are split equally for a comparison scenario; they are not attributed supplier revenue or confirmed expenditure.",
     ]));
   });
 });
