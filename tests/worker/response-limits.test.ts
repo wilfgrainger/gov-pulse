@@ -89,4 +89,23 @@ describe("bounded upstream response readers", () => {
       fetchResponse("https://yougov.com/source", offHost),
     ).rejects.toThrow(/redirected away/i);
   });
+
+  it("identifies the evidence collector instead of impersonating a browser", async () => {
+    const requests: Array<{ url: string; headers: Record<string, string> }> = [];
+    const response = {
+      ok: true,
+      url: "https://www.england.nhs.uk/statistics",
+      headers: new Headers(),
+    };
+
+    await fetchResponse(response.url, async (url, init) => {
+      requests.push({ url, headers: init.headers });
+      return response;
+    });
+
+    expect(requests[0].headers["User-Agent"]).toBe(
+      "public-data.org evidence collector/1.0 (+https://public-data.org/sources)",
+    );
+    expect(requests[0].headers["User-Agent"]).not.toMatch(/Mozilla|Chrome|Safari/i);
+  });
 });
