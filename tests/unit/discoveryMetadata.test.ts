@@ -128,6 +128,35 @@ describe("section discovery contract", () => {
     expect(feedSource).not.toContain("new Date().toUTCString()");
   });
 
+  it("uses publisher dates for polling, debt and the latest contract notice", () => {
+    const snapshot = {
+      meta: {
+        registryVersion: FEED_REGISTRY_VERSION,
+        generatedAt: "2026-10-05T12:00:00.000Z",
+        sources: {
+          electionPolling: { status: "ok", fetchedAt: "2026-10-05T11:00:00.000Z" },
+          nationalDebt: { status: "ok", fetchedAt: "2026-10-05T11:00:00.000Z" },
+          governmentContracts: { status: "ok", fetchedAt: "2026-10-05T11:00:00.000Z" },
+        },
+      },
+      electionPolling: { latestPublicationDate: "2026-09-29" },
+      nationalDebt: { publicationDate: "2026-09-22" },
+      governmentContracts: {
+        awards: [
+          { publishedAt: "2026-09-25T10:00:00.000Z" },
+          { publishedAt: "2026-09-30T15:58:23.000Z" },
+        ],
+      },
+    };
+
+    expect(getBuildPublication(SECTION_DISCOVERY["election-polls"], snapshot)?.dateModified)
+      .toBe("2026-09-29T00:00:00.000Z");
+    expect(getBuildPublication(SECTION_DISCOVERY["national-debt"], snapshot)?.dateModified)
+      .toBe("2026-09-22T00:00:00.000Z");
+    expect(getBuildPublication(SECTION_DISCOVERY["government-contracts"], snapshot)?.dateModified)
+      .toBe("2026-09-30T15:58:23.000Z");
+  });
+
   it("does not promote stale fallback data as a latest verified publication", () => {
     const discoverySource = source("app/lib/discovery.ts");
 

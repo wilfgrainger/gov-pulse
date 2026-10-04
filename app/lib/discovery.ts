@@ -79,13 +79,35 @@ export function getBuildPublication(section: SectionDiscovery, rawSnapshot: unkn
     .sort((left, right) => right.publishedAt.localeCompare(left.publishedAt));
   const latestMeasure = measureRecords[0];
   const rawData = data && typeof data === "object" && !Array.isArray(data)
-    ? data as { headline?: { releaseDate?: unknown }; publishedAt?: unknown }
+    ? data as {
+      headline?: { releaseDate?: unknown };
+      latestPublicationDate?: unknown;
+      publicationDate?: unknown;
+      publishedAt?: unknown;
+      awards?: unknown;
+    }
     : {};
-  const releaseValue = latestMeasure?.publishedAt ??
-    (typeof rawData.publishedAt === "string" ? rawData.publishedAt : undefined) ??
-    (typeof rawData.headline?.releaseDate === "string" ? rawData.headline.releaseDate : undefined);
-  const releaseDate = releaseValue ? new Date(releaseValue) : null;
-  const publisherPublishedAt = releaseDate && Number.isFinite(releaseDate.getTime()) ? releaseDate.toISOString() : undefined;
+  const normalizeDate = (value: unknown) => {
+    if (typeof value !== "string") return undefined;
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toISOString() : undefined;
+  };
+  const contractNoticeDates = Array.isArray(rawData.awards)
+    ? rawData.awards
+      .map((award) => award && typeof award === "object" && !Array.isArray(award)
+        ? normalizeDate((award as { publishedAt?: unknown }).publishedAt)
+        : undefined)
+      .filter((date): date is string => Boolean(date))
+      .sort()
+    : [];
+  const publisherPublishedAt = [
+    latestMeasure?.publishedAt,
+    rawData.publishedAt,
+    rawData.latestPublicationDate,
+    rawData.publicationDate,
+    rawData.headline?.releaseDate,
+    contractNoticeDates.at(-1),
+  ].map(normalizeDate).find((date): date is string => Boolean(date));
 
   return {
     dateModified: publisherPublishedAt,
