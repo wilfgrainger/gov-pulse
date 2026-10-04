@@ -581,6 +581,82 @@ describe("Cloudflare deployment bootstrap", () => {
     expect(pushes).toBe(1);
   });
 
+  it("returns sanitized source diagnostics when a forced run accepts a degraded edition", async () => {
+    let healthReads = 0;
+    const executionId = "diagnostic-42.1";
+    const runId = `bootstrap-${bootstrapAttemptId(SHA, 0, executionId)}`;
+    const prefix = `v13:publication:run:${runId}`;
+    const values = new Map([
+      [prefix, {
+        status: "incomplete",
+        finalisedAt: "2026-10-04T12:01:00.000Z",
+        expectedJobIds: ["external:nhsStats"],
+        failedJobIds: ["external:nhsStats"],
+        missingJobIds: [],
+      }],
+      [`${prefix}:terminal:external:nhsStats`, {
+        status: "failure",
+        completedAt: "2026-10-04T12:00:30.000Z",
+        result: {
+          errorName: "TypeError",
+          errorMessage: "Failed to fetch https://private.internal/feed?token=secret",
+        },
+      }],
+    ]);
+    const fetchImpl = vi.fn(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/data/health.json") {
+        healthReads += 1;
+        return healthReads === 1
+          ? jsonResponse({ status: "ready", ready: true })
+          : jsonResponse({ status: "degraded", ready: false, degraded: true, missingRequiredSections: ["nhsStats"] });
+      }
+      if (url.pathname.endsWith("/queues")) {
+        return jsonResponse({ success: true, result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }] });
+      }
+      if (url.pathname.endsWith("/queues/queue-id/messages")) return jsonResponse({ success: true });
+      if (url.pathname.endsWith("/data/metrics-snapshot.json")) {
+        return new Response(JSON.stringify(degradedPreparedSnapshot()), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "X-Publication-Delivery": "cloudflare-kv" },
+        });
+      }
+      if (url.pathname.includes("/storage/kv/namespaces/")) {
+        const key = decodeURIComponent(url.pathname.split("/values/")[1] ?? "");
+        return values.has(key) ? jsonResponse(values.get(key)) : new Response(null, { status: 404 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+
+    const result = await bootstrapCloudflarePublication({
+      accountId: "account",
+      apiToken: "token",
+      deploymentId: SHA,
+      executionId,
+      forceRefresh: true,
+      fetchImpl,
+      timeoutMs: 60_000,
+      pollIntervalMs: 10_000,
+      nowImpl: () => 0,
+      sleepImpl: async () => {},
+    });
+
+    expect(result).toMatchObject({
+      triggered: true,
+      health: { status: "degraded" },
+      sourceDiagnostics: {
+        runStatus: "incomplete",
+        failedJobIds: ["external:nhsStats"],
+        missingJobIds: [],
+        terminalFailures: {
+          "external:nhsStats": { failureKind: "network", errorName: "TypeError" },
+        },
+      },
+    });
+    expect(JSON.stringify(result)).not.toContain("private.internal");
+    expect(JSON.stringify(result)).not.toContain("token=secret");
+  });
+
   it("does not skip when ready health is backed by migration delivery", async () => {
     let now = 0;
     const fetchImpl = vi
