@@ -4,6 +4,7 @@ import type { MeasureCatalog } from "@/app/lib/measureCatalog";
 import type { MetricsSnapshot } from "@/app/lib/metricsSnapshot";
 
 export type EditionSummary = NonNullable<MetricsSnapshot["meta"]["editionSummary"]>;
+export type ListedEditionSummary = EditionSummary & { asOf?: string };
 export type ArchivedEdition = { edition: string; asOf: string; availability: "historical"; measureCatalog: MeasureCatalog; summary: EditionSummary };
 
 function safeEditionId(value: string) { return /^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/.test(value); }
@@ -55,7 +56,7 @@ function validSummaryCorrection(value: unknown, editionId: string, previousEditi
 
 function validEditionSummary(value: unknown, id?: string): value is EditionSummary {
   if (!object(value) || typeof value.id !== "string" || !safeEditionId(value.id) || (id && value.id !== id) ||
-    !validInstant(value.publishedAt) || !(value.previousEditionId === undefined || value.previousEditionId === null ||
+    !validInstant(value.publishedAt) || value.asOf !== undefined && !validInstant(value.asOf) || !(value.previousEditionId === undefined || value.previousEditionId === null ||
       typeof value.previousEditionId === "string" && safeEditionId(value.previousEditionId)) ||
     !validSummaryCorrection(value.summaryCorrection, value.id, value.previousEditionId) ||
     !Array.isArray(value.sourceEditionIds) || value.sourceEditionIds.length > 100 ||
@@ -103,7 +104,7 @@ function validArchivedEdition(value: unknown, id: string): value is ArchivedEdit
   return Object.keys(measures).length === Object.keys(value.measureCatalog.measures).length;
 }
 
-export async function readEditionSummaries(): Promise<EditionSummary[] | null> {
+export async function readEditionSummaries(): Promise<ListedEditionSummary[] | null> {
   try {
     const response = await fetch(new URL("/data/editions.json", SITE_DISCOVERY.origin), { cache: "no-store", signal: AbortSignal.timeout(8_000) });
     if (!response.ok) return null;
@@ -111,7 +112,9 @@ export async function readEditionSummaries(): Promise<EditionSummary[] | null> {
     if (!object(payload) || !Array.isArray(payload.editions) || typeof payload.retention !== "number" ||
       !Number.isInteger(payload.retention) || payload.retention !== payload.editions.length || payload.retention > 60 ||
       !payload.editions.every((edition) => validEditionSummary(edition))) return null;
-    return payload.editions as EditionSummary[];
+    return (payload.editions as ListedEditionSummary[]).toSorted((left, right) =>
+      (right.asOf ?? right.publishedAt).localeCompare(left.asOf ?? left.publishedAt) || right.id.localeCompare(left.id)
+    );
   } catch { return null; }
 }
 
