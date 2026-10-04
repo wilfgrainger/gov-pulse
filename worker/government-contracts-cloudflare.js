@@ -3,6 +3,7 @@ import {
   EVIDENCE_POLICY,
   FIND_A_TENDER_API,
   FIND_A_TENDER_DOCUMENTATION,
+  FIND_A_TENDER_USER_AGENT,
   OPEN_GOVERNMENT_LICENCE,
   DISPLAYED_AWARD_LIMIT,
   buildGovernmentContractsPayload,
@@ -28,7 +29,6 @@ const MAX_RETRIEVAL_DURATION_MS = 4 * 60 * 1000;
 // before writing so valid records are retained up to the actual store limit.
 const MAX_SHARD_BYTES = 25 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 20_000;
-const USER_AGENT = "public-data.org-cloudflare-contracts/1.0";
 
 function utcDay(value) {
   const date = value instanceof Date ? value : new Date(value);
@@ -317,7 +317,7 @@ async function fetchSlice(slice, fetchImpl = fetch, budget = createContractsRetr
     if (seenPages.has(url)) throw new Error("Find a Tender pagination repeated a page");
     seenPages.add(url);
     const response = await fetchImpl(url, {
-      headers: { Accept: "application/json", "User-Agent": USER_AGENT },
+      headers: { Accept: "application/json", "User-Agent": FIND_A_TENDER_USER_AGENT },
       signal: AbortSignal.timeout(Math.min(REQUEST_TIMEOUT_MS, remainingMs)),
     });
     if (!response.ok) {

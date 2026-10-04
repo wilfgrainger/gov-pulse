@@ -25,7 +25,13 @@ describe("public per-OCID Find a Tender history route", () => {
     expect(response.headers.get("cache-control")).toContain("max-age=300");
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(fetchMock.mock.calls[0][0]).toBe(`https://www.find-tender.service.gov.uk/api/1.0/ocdsRecordPackages/${ocid}`);
-    expect(fetchMock.mock.calls[0][1]).toMatchObject({ redirect: "error" });
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "public-data.org-cloudflare-contracts/1.0",
+      },
+      redirect: "error",
+    });
     expect(payload.releases).toHaveLength(2);
     expect(payload.releases[0].tags).toEqual(["planning"]);
   });
@@ -59,6 +65,25 @@ describe("public per-OCID Find a Tender history route", () => {
     );
     expect(rateLimited.status).toBe(503);
     expect(await rateLimited.text()).not.toMatch(/rate|limit|api|find-a-tender/i);
+  });
+
+  it("records private, bounded failure context without logging source response content", async () => {
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("upstream body must stay private", { status: 403 })));
+
+    const response = await publicDataWorker.fetch(
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
+    );
+
+    expect(response.status).toBe(503);
+    expect(await response.text()).toBe(JSON.stringify({ error: "Release history is temporarily unavailable" }));
+    expect(warning).toHaveBeenCalledWith("contract_history_unavailable", {
+      ocid,
+      stage: "upstream_response",
+      upstreamStatus: 403,
+      errorName: "Error",
+    });
+    expect(JSON.stringify(warning.mock.calls)).not.toContain("upstream body must stay private");
   });
 
   it("rejects an upstream redirect away from the approved host and caps package bytes", async () => {

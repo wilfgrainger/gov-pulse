@@ -4,6 +4,7 @@ const FIND_A_TENDER_DOCUMENTATION =
   "https://www.find-tender.service.gov.uk/apidocumentation/1.0/GET-ocdsReleasePackages";
 const FIND_A_TENDER_RECORD_PACKAGE_DOCUMENTATION =
   "https://www.find-tender.service.gov.uk/apidocumentation/1.0/GET-ocdsRecordPackages";
+const FIND_A_TENDER_USER_AGENT = "public-data.org-cloudflare-contracts/1.0";
 const OPEN_GOVERNMENT_LICENCE =
   "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/";
 const MAX_PUBLICATION_AGE_MS = 72 * 60 * 60 * 1000;
@@ -568,6 +569,7 @@ export {
   FIND_A_TENDER_API,
   FIND_A_TENDER_DOCUMENTATION,
   FIND_A_TENDER_RECORD_PACKAGE_DOCUMENTATION,
+  FIND_A_TENDER_USER_AGENT,
   MAX_PUBLICATION_AGE_MS,
   OPEN_GOVERNMENT_LICENCE,
   DISPLAYED_AWARD_LIMIT,
