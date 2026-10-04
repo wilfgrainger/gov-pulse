@@ -238,6 +238,21 @@ describe("government contracts contract", () => {
     expect(isCurrentGovernmentContractsPayload(legacy, NOW)).toBe(true);
   });
 
+  it("continues to read the immediately preceding six-caveat edition", () => {
+    const legacy = buildGovernmentContractsPayload(payloadInput(), NOW);
+    legacy.caveats = [
+      "Values are the amounts disclosed in Find a Tender award releases, not invoices or confirmed lifetime public expenditure.",
+      "Framework and multi-supplier awards can state maximum or estimated values that may never be fully spent.",
+      "The ranking covers comparable GBP awards updated in the stated window; missing, redacted and non-GBP values are excluded.",
+      "A large award is not evidence of waste, fraud or poor value. The source notice and procurement context must be examined.",
+      "Supplier value concentration is an equal-share scenario across named suppliers, not publisher attribution or supplier revenue.",
+      "Find a Tender is the central digital platform, but publication coverage and notice quality still depend on contracting authorities.",
+    ];
+
+    expect(() => normalizeGovernmentContractsPayload(legacy, NOW)).not.toThrow();
+    expect(isCurrentGovernmentContractsPayload(legacy, NOW)).toBe(true);
+  });
+
   it("rejects tampered values and provenance", () => {
     const valueTamper = buildGovernmentContractsPayload(payloadInput(), NOW);
     valueTamper.awards[0].amount += 1;
