@@ -24,7 +24,7 @@ function positiveInteger(value, label) {
   return number;
 }
 
-function bootstrapAttemptId(deploymentId, attempt) {
+function bootstrapAttemptId(deploymentId, attempt, executionId) {
   const normalized = required(deploymentId, "GITHUB_SHA").toLowerCase();
   if (!/^[0-9a-f]{40}$/.test(normalized)) {
     throw new Error("GITHUB_SHA must be a full Git commit SHA");
@@ -32,9 +32,16 @@ function bootstrapAttemptId(deploymentId, attempt) {
   if (!Number.isSafeInteger(attempt) || attempt < 0) {
     throw new Error("bootstrap attempt must be a non-negative integer");
   }
-  if (attempt === 0) return normalized;
+  const execution = executionId === undefined ? "" : required(executionId, "GITHUB_RUN_ID");
+  if (execution && !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(execution)) {
+    throw new Error("GITHUB_RUN_ID is invalid");
+  }
+  if (attempt === 0 && !execution) return normalized;
+  const attemptIdentity = execution
+    ? `github-run:${execution}:attempt:${attempt}`
+    : `bootstrap-recovery:${attempt}`;
   return createHash("sha256")
-    .update(`${normalized}:bootstrap-recovery:${attempt}`)
+    .update(`${normalized}:${attemptIdentity}`)
     .digest("hex")
     .slice(0, 40);
 }
@@ -350,7 +357,7 @@ async function bootstrapCloudflarePublication(options = {}) {
   const nowImpl = options.nowImpl ?? Date.now;
   const accountId = required(options.accountId, "CLOUDFLARE_ACCOUNT_ID");
   const apiToken = required(options.apiToken, "CLOUDFLARE_API_TOKEN");
-  const deploymentId = bootstrapAttemptId(options.deploymentId, 0);
+  const deploymentId = bootstrapAttemptId(options.deploymentId, 0, options.executionId);
   const queueName = required(
     options.queueName ?? DEFAULT_QUEUE_NAME,
     "QUEUE_NAME"
@@ -537,6 +544,9 @@ async function main() {
     timeoutMs: process.env.BOOTSTRAP_TIMEOUT_MS,
     comparisonTimeoutMs: process.env.COMPARISON_WAIT_TIMEOUT_MS,
     recoveryIntervalMs: process.env.BOOTSTRAP_RECOVERY_INTERVAL_MS,
+    executionId: process.env.GITHUB_RUN_ID && process.env.GITHUB_RUN_ATTEMPT
+      ? `${process.env.GITHUB_RUN_ID}.${process.env.GITHUB_RUN_ATTEMPT}`
+      : undefined,
     forceRefresh: process.env.FORCE_PUBLICATION_REFRESH === "true",
     forceComparison: process.env.FORCE_COMPARISON_REFRESH === "true",
   });
