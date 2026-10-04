@@ -560,14 +560,18 @@ async function refreshGovernmentContracts(env, options = {}) {
   const days = previousCompleteDays(now, 7);
   const shards = [];
   const missing = [];
-  for (const day of days) {
-    const shard = await readJson(env, `${SHARD_PREFIX}${day}`);
-    if (
-      shard?.complete &&
-      shard.schemaVersion === CONTRACT_SHARD_SCHEMA_VERSION &&
-      shard.day === day
-    ) shards.push(shard);
-    else missing.push(day);
+  if (options.force === true) {
+    missing.push(...days);
+  } else {
+    for (const day of days) {
+      const shard = await readJson(env, `${SHARD_PREFIX}${day}`);
+      if (
+        shard?.complete &&
+        shard.schemaVersion === CONTRACT_SHARD_SCHEMA_VERSION &&
+        shard.day === day
+      ) shards.push(shard);
+      else missing.push(day);
+    }
   }
 
   let requestsMade = 0;

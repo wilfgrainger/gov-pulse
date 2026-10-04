@@ -93,6 +93,18 @@ describe("Cloudflare deployment bootstrap", () => {
     expect(timeoutMinutes * 60_000).toBeGreaterThanOrEqual(
       nationalTimeoutMs + DEFAULT_COMPARISON_TIMEOUT_MS + 2 * 60_000,
     );
+
+    const contractsStepStart = recoveryJob.indexOf(
+      "      - name: Bootstrap national, comparison, and contracts evidence",
+    );
+    expect(contractsStepStart).toBeGreaterThanOrEqual(0);
+    const contractsStep = recoveryJob.slice(contractsStepStart);
+    const contractsTimeoutMs = Number(
+      contractsStep.match(/^\s+BOOTSTRAP_TIMEOUT_MS:\s*"?(\d+)"?/m)?.[1],
+    );
+    expect(timeoutMinutes * 60_000).toBeGreaterThanOrEqual(
+      contractsTimeoutMs + DEFAULT_COMPARISON_TIMEOUT_MS + 2 * 60_000,
+    );
   });
 
   it("keeps raw finaliser errors out of public bootstrap diagnostics", async () => {
@@ -638,6 +650,141 @@ describe("Cloudflare deployment bootstrap", () => {
     });
   });
 
+  it("opts into contracts recovery and waits for its successful publication run", async () => {
+    let now = Date.parse("2026-10-04T12:01:00.000Z");
+    let queuedMessage;
+    const snapshot = preparedSnapshot();
+    snapshot.governmentContracts = { summary: { awardCount: 0 }, awards: [] };
+    snapshot.meta.sources.governmentContracts = {
+      status: "ok",
+      cacheState: "fresh",
+      fetchedAt: new Date().toISOString(),
+    };
+    const run = {
+      status: "published",
+      createdAt: "2026-10-04T12:00:00.000Z",
+      finalisedAt: "2026-10-04T12:00:30.000Z",
+      successfulJobIds: ["contracts"],
+    };
+    const fetchImpl = vi.fn(async (input, init = {}) => {
+      const url = String(input);
+      if (url.endsWith("/data/health.json")) {
+        return jsonResponse({ status: "ready", ready: true });
+      }
+      if (url.endsWith("/queues?per_page=100")) {
+        return jsonResponse({
+          success: true,
+          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
+        });
+      }
+      if (url.endsWith("/queues/queue-id/messages")) {
+        queuedMessage = JSON.parse(init.body).body;
+        return jsonResponse({ success: true });
+      }
+      if (url.includes("/storage/kv/")) {
+        if (decodeURIComponent(url).endsWith(":terminal:contracts")) {
+          return jsonResponse({ status: "success", result: { requestsMade: 28 } });
+        }
+        return jsonResponse(run);
+      }
+      if (url.endsWith("/data/metrics-snapshot.json")) {
+        return new Response(JSON.stringify(snapshot), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Publication-Delivery": "cloudflare-kv",
+          },
+        });
+      }
+      throw new Error(`Unexpected request ${url}`);
+    });
+
+    const result = await bootstrapCloudflarePublication({
+      accountId: "account",
+      apiToken: "token",
+      deploymentId: SHA,
+      includeContracts: true,
+      fetchImpl,
+      nowImpl: () => now,
+      sleepImpl: async (milliseconds) => { now += milliseconds; },
+    });
+
+    expect(queuedMessage).toEqual({
+      type: "bootstrap-publication",
+      deploymentId: expect.stringMatching(/^[0-9a-f]{40}$/),
+      includeContracts: true,
+    });
+    expect(queuedMessage.deploymentId).not.toBe(SHA);
+    expect(result.contractsRefresh).toMatchObject({
+      status: "success",
+      sourceRequestsMade: 28,
+      published: true,
+    });
+  });
+
+  it("does not accept a fresh-looking contracts snapshot when the job made no source requests", async () => {
+    let now = 0;
+    const snapshot = preparedSnapshot(new Date("2026-10-04T12:01:00.000Z"));
+    snapshot.governmentContracts = { summary: { awardCount: 0 }, awards: [] };
+    snapshot.meta.sources.governmentContracts = {
+      status: "ok",
+      cacheState: "fresh",
+      fetchedAt: "2026-10-04T12:01:00.000Z",
+    };
+    const run = {
+      status: "published",
+      createdAt: "2026-10-04T12:00:00.000Z",
+      finalisedAt: "2026-10-04T12:00:30.000Z",
+      successfulJobIds: ["contracts"],
+    };
+    const fetchImpl = vi.fn(async (input) => {
+      const url = String(input);
+      if (url.endsWith("/data/health.json")) {
+        return jsonResponse({ status: "ready", ready: true });
+      }
+      if (url.endsWith("/queues?per_page=100")) {
+        return jsonResponse({
+          success: true,
+          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
+        });
+      }
+      if (url.endsWith("/queues/queue-id/messages")) return jsonResponse({ success: true });
+      if (url.endsWith("/data/metrics-snapshot.json")) {
+        return new Response(JSON.stringify(snapshot), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Publication-Delivery": "cloudflare-kv",
+          },
+        });
+      }
+      if (url.includes("/storage/kv/")) {
+        if (decodeURIComponent(url).endsWith(":terminal:contracts")) {
+          return jsonResponse({ status: "success", result: { requestsMade: 0 } });
+        }
+        return jsonResponse(run);
+      }
+      throw new Error(`Unexpected request ${url}`);
+    });
+
+    await expect(bootstrapCloudflarePublication({
+      accountId: "account",
+      apiToken: "token",
+      deploymentId: SHA,
+      includeContracts: true,
+      fetchImpl,
+      timeoutMs: 1,
+      pollIntervalMs: 1,
+      nowImpl: () => now,
+      sleepImpl: async (milliseconds) => { now += milliseconds; },
+    })).rejects.toThrow(/did not become ready or publish/i);
+
+    expect(fetchImpl).not.toHaveBeenCalledWith(
+      expect.stringContaining("/data/metrics-snapshot.json"),
+      expect.anything(),
+    );
+  });
+
   it("uses a fresh workflow identity so an earlier comparison success cannot satisfy a forced refresh", async () => {
     let now = Date.now();
     let queuedDeploymentId = null;
@@ -807,6 +954,10 @@ describe("Cloudflare deployment bootstrap", () => {
 
   it("derives deterministic but distinct recovery identifiers", () => {
     expect(bootstrapAttemptId(SHA, 0)).toBe(SHA);
+    expect(bootstrapAttemptId(SHA, 0, undefined, true)).not.toBe(SHA);
+    expect(bootstrapAttemptId(SHA, 0, undefined, true)).toBe(
+      bootstrapAttemptId(SHA, 0, undefined, true),
+    );
     expect(bootstrapAttemptId(SHA, 1)).toMatch(/^[0-9a-f]{40}$/);
     expect(bootstrapAttemptId(SHA, 1)).not.toBe(SHA);
     expect(bootstrapAttemptId(SHA, 1)).toBe(bootstrapAttemptId(SHA, 1));

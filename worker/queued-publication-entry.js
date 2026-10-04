@@ -59,6 +59,7 @@ const COMPARISON_FINALISE_TIMEOUT_SECONDS =
 // section failed. The deploy's BOOTSTRAP_TIMEOUT_MS must stay comfortably above
 // this so the finalise lands and is observed.
 const BOOTSTRAP_DEADLINE_SECONDS = 4 * 60;
+const BOOTSTRAP_CONTRACTS_DEADLINE_SECONDS = 8 * 60;
 // Keep the delayed finaliser for partial runs. Successful bootstrap jobs also
 // enqueue an immediate finaliser once every required job has finished.
 const BOOTSTRAP_FINALISE_DELAY_SECONDS = BOOTSTRAP_DEADLINE_SECONDS;
@@ -159,7 +160,7 @@ function sectionRefreshJobs(runId, sections, type) {
   }));
 }
 
-function refreshJobs(runId, scope = "daily") {
+function refreshJobs(runId, scope = "daily", options = {}) {
   if (scope === "betting") {
     return sectionRefreshJobs(runId, ["bettingOdds"], "refresh-external-section");
   }
@@ -177,11 +178,12 @@ function refreshJobs(runId, scope = "daily") {
     ...sectionRefreshJobs(runId, externalSections, "refresh-external-section"),
   ];
 
-  if (scope === "daily") {
+  if (scope === "daily" || (scope === "bootstrap" && options.includeContracts === true)) {
     jobs.push({
       type: "refresh-contracts",
       runId,
       jobId: "contracts",
+      ...(scope === "bootstrap" && options.includeContracts === true ? { force: true } : {}),
     });
   }
   return jobs;
@@ -397,6 +399,7 @@ async function processQueueJob(job, env, ctx, options = {}) {
     const result = await refreshGovernmentContracts(env, {
       fetchImpl: options.fetchImpl ?? fetch,
       now: options.now,
+      force: job.force === true,
     });
     return {
       type: job.type,
@@ -452,12 +455,14 @@ async function createRun(env, now, scope = "daily", options = {}) {
   if (isRecord(existing)) {
     return {
       run: existing,
-      jobs: refreshJobs(runId, existing.scope ?? scope),
+      jobs: refreshJobs(runId, existing.scope ?? scope, {
+        includeContracts: existing.contractsRefreshRequested === true,
+      }),
       existing: true,
     };
   }
 
-  const jobs = refreshJobs(runId, scope);
+  const jobs = refreshJobs(runId, scope, options);
   const deadlineSeconds =
     options.deadlineSeconds ?? FINALISE_DELAY_SECONDS + FINALISE_RETRY_SECONDS;
   const run = {
@@ -473,6 +478,7 @@ async function createRun(env, now, scope = "daily", options = {}) {
       ? {
           comparisonRefreshRequested: options.comparisonRefreshRequested === true,
           comparisonRefreshForce: options.comparisonRefreshForce === true,
+          contractsRefreshRequested: options.includeContracts === true,
         }
       : {}),
   };
@@ -830,17 +836,23 @@ const queuedPublicationWorker = {
         if (job?.type === "bootstrap-publication") {
           const deploymentId = String(job.deploymentId ?? "");
           const forceComparison = job.forceComparison === true;
+          const includeContracts = job.includeContracts === true;
           const result = await enqueuePublicationRun(
             env,
             new Date(),
             "bootstrap",
             {
               runId: bootstrapRunId(deploymentId),
-              finaliseDelaySeconds: BOOTSTRAP_FINALISE_DELAY_SECONDS,
-              deadlineSeconds: BOOTSTRAP_DEADLINE_SECONDS,
+              finaliseDelaySeconds: includeContracts
+                ? BOOTSTRAP_CONTRACTS_DEADLINE_SECONDS
+                : BOOTSTRAP_FINALISE_DELAY_SECONDS,
+              deadlineSeconds: includeContracts
+                ? BOOTSTRAP_CONTRACTS_DEADLINE_SECONDS
+                : BOOTSTRAP_DEADLINE_SECONDS,
               finaliseRetrySeconds: BOOTSTRAP_FINALISE_RETRY_SECONDS,
               comparisonRefreshRequested: true,
               comparisonRefreshForce: forceComparison,
+              includeContracts,
             }
           );
           if (!result.dispatched && forceComparison && !result.run.finalisedAt) {
@@ -1008,6 +1020,7 @@ const queuedPublicationWorker = {
 export {
   BETTING_CRON,
   BOOTSTRAP_DEADLINE_SECONDS,
+  BOOTSTRAP_CONTRACTS_DEADLINE_SECONDS,
   BOOTSTRAP_FINALISE_DELAY_SECONDS,
   BOOTSTRAP_FINALISE_RETRY_SECONDS,
   DAILY_CRON,

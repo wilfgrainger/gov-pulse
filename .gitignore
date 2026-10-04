@@ -48,6 +48,7 @@ __pycache__/
 # Generated Cloudflare adapter and build outputs
 .open-next/
 open-next.config.ts
+worker/.wrangler/
 worker/node_modules/
 public/social/
 build-output.log

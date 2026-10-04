@@ -96,6 +96,19 @@ describe("Cloudflare publication bootstrap", () => {
     expect(jobs.some((job) => job.type === "refresh-international-comparison")).toBe(false);
   });
 
+  it("includes the contracts collector only when bootstrap explicitly requests it", () => {
+    const jobs = refreshJobs("bootstrap-run", "bootstrap", { includeContracts: true });
+
+    expect(jobs).toHaveLength(11);
+    expect(jobs.at(-1)).toEqual({
+      type: "refresh-contracts",
+      runId: "bootstrap-run",
+      jobId: "contracts",
+      force: true,
+    });
+    expect(refreshJobs("bootstrap-run", "bootstrap")).toHaveLength(10);
+  });
+
   it("keeps comparison work out of the queue until national finalisation", async () => {
     const { env, store, sendBatch, send } = environment();
     const first = bootstrapMessage();
@@ -152,6 +165,33 @@ describe("Cloudflare publication bootstrap", () => {
       comparisonRefreshForce: true,
     });
     expect(message.ack).toHaveBeenCalledOnce();
+  });
+
+  it("tracks an opt-in contracts refresh as part of bootstrap completion", async () => {
+    const { env, store, sendBatch } = environment();
+    const message = {
+      body: { type: "bootstrap-publication", deploymentId: SHA, includeContracts: true },
+      ack: vi.fn(),
+      retry: vi.fn(),
+    };
+
+    await queuedWorker.queue({ messages: [message] }, env, {});
+
+    expect(message.ack).toHaveBeenCalledOnce();
+    expect(sendBatch).toHaveBeenCalledOnce();
+    expect(sendBatch.mock.calls[0][0]).toHaveLength(11);
+    expect(sendBatch.mock.calls[0][0]).toContainEqual({
+      body: {
+        type: "refresh-contracts",
+        runId: bootstrapRunId(SHA),
+        jobId: "contracts",
+        force: true,
+      },
+    });
+    expect(store.get(`${RUN_PREFIX}${bootstrapRunId(SHA)}`)).toMatchObject({
+      expectedJobIds: expect.arrayContaining(["contracts"]),
+      contractsRefreshRequested: true,
+    });
   });
 
   it("does not let a forced comparison request overtake an active national run", async () => {
