@@ -114,6 +114,25 @@ describe("RSS publication feed", () => {
     expect(edition?.querySelector("description")?.textContent).toMatch(expected);
   });
 
+  it("does not describe an edition as its own previous catalog", () => {
+    const snapshot = rssSnapshot();
+    snapshot.meta.editionSummary = {
+      ...snapshot.meta.editionSummary!,
+      id: "catalog-same",
+      previousEditionId: "catalog-same",
+      changes: [],
+    };
+    const xml = renderRssFeed(snapshot);
+    const document = new DOMParser().parseFromString(xml, "application/xml");
+    const edition = [...document.querySelectorAll("channel > item")]
+      .find((item) => item.querySelector("category")?.textContent === "Evidence edition");
+
+    expect(document.querySelector("parsererror")).toBeNull();
+    expect(edition?.querySelector("title")?.textContent).toContain("accepted edition is unchanged");
+    expect(edition?.querySelector("description")?.textContent).toContain("The accepted edition is unchanged; no evidence changes were recorded.");
+    expect(edition?.querySelector("description")?.textContent).not.toContain("previous catalog catalog-same");
+  });
+
   it("describes metadata-only changes with both dated publisher links and no numeric delta", () => {
     const snapshot = rssSnapshot();
     snapshot.meta.editionSummary = {
