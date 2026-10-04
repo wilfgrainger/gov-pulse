@@ -40,6 +40,23 @@ export function countryComparisonPreset(id: string): ComparisonCountryId[] | nul
   return COUNTRY_PRESETS[id] ? [...COUNTRY_PRESETS[id]] : null;
 }
 
+const EXCLUSION_REASON_LABELS: Record<string, string> = {
+  "not-covered-by-comparable-donor-series": "Not covered by the comparable donor series",
+  "not-covered-by-oecd-comparable-series": "Not covered by the OECD comparable series",
+  "publisher-reported-no-value": "The publisher reports no value",
+  "source-unavailable": "The source is unavailable",
+  "source-validity-expired": "The source edition has expired",
+};
+
+export function countryComparisonExclusionLabel(reason: string): string {
+  const knownLabel = EXCLUSION_REASON_LABELS[reason];
+  if (knownLabel) return knownLabel;
+  if (!reason.includes(" ") && reason.includes("-")) {
+    return reason.replaceAll("-", " ").replace(/^./, (first) => first.toUpperCase());
+  }
+  return reason;
+}
+
 export function parseCountryComparisonUrlState(
   search: string,
   availableYears: number[] = [],
@@ -125,7 +142,7 @@ export function buildCountryChartMetadata(
     `Visible denominator: ${result.denominator} of ${result.sourceCountryCount}; ${result.ranked ? `ranked within ${result.commonYear} ${result.commonValueType} observations` : "not ranked because year or evidence status differs"}`,
     ...sources.map((source) => `${source.publisher}${source.publicationDate ? `, published ${source.publicationDate}` : ""}: ${source.url}`),
   ].join(" · ");
-  const excludedCaveats = [...new Set(result.excluded.map(({ reason }) => reason))];
+  const excludedCaveats = [...new Set(result.excluded.map(({ reason }) => countryComparisonExclusionLabel(reason)))];
   const caveats = [
     measure.caveat,
     `Visible denominator is ${result.denominator} of ${result.sourceCountryCount} source-set countries; excluded or missing values are not zero.`,
