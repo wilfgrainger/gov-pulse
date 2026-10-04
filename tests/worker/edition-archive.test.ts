@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { archiveEdition, EDITION_CONTENT_PREFIX, EDITION_INDEX_KEY, EDITION_SUMMARY_PREFIX, listEditionSummaries, readEdition } from "../../worker/edition-archive.js";
+import { archiveEdition, EDITION_CONTENT_PREFIX, EDITION_INDEX_KEY, EDITION_SUMMARY_CORRECTION_PREFIX, EDITION_SUMMARY_PREFIX, listEditionSummaries, readEdition, reconcileEditionSummaryFromRetainedPrior } from "../../worker/edition-archive.js";
 import { catalogRevisionIdentity } from "../../worker/measure-catalog.js";
 import publicDataWorker, { editionResponse, editionsResponse } from "../../worker/public-data-entry.js";
 
@@ -38,6 +38,38 @@ function edition(index: number) {
   return { catalog, summary };
 }
 
+function misbasedEditionPair() {
+  const prior = edition(4);
+  const current = structuredClone(prior);
+  current.catalog.generatedAt = "2024-01-06T00:00:00.000Z";
+  current.catalog.measures.measure.sourceEditionId = "ons-edition-5";
+  current.catalog.measures.measure.publisher = "Office for National Statistics";
+  current.catalog.measures.measure.note = "Publisher metadata was normalised.";
+  current.catalog.measures.measure.publishedAt = current.catalog.generatedAt;
+  current.catalog.measures.measure.fetchedAt = current.catalog.generatedAt;
+  current.catalog.editionId = catalogRevisionIdentity(current.catalog.measures);
+  current.summary = {
+    ...current.summary,
+    id: current.catalog.editionId,
+    publishedAt: current.catalog.generatedAt,
+    previousEditionId: null,
+    sourceEditionIds: ["ons-edition-5"],
+    changes: [{
+      measureId: "measure",
+      kind: "new-observation",
+      observedAt: "2024-01-31",
+      period: "January 2024",
+      previousSourceEditionId: null,
+      nextSourceEditionId: "ons-edition-5",
+      previousRevisionId: null,
+      nextRevisionId: "edition-4",
+      previous: null,
+      next: 5,
+    }],
+  };
+  return { prior, current };
+}
+
 describe("content-addressed edition archive", () => {
   it("archives idempotently and returns a validated as-of edition", async () => {
     const kv = new MemoryKv();
@@ -68,6 +100,60 @@ describe("content-addressed edition archive", () => {
     expect(restored).toMatchObject({ catalog: first.catalog, summary: first.summary });
     expect(JSON.parse(kv.values.get(EDITION_INDEX_KEY)!.value)).toHaveLength(1);
     expect([...kv.values.keys()].filter((key) => key.startsWith(EDITION_CONTENT_PREFIX))).toHaveLength(1);
+  });
+
+  it("publishes an append-only correction when a retained predecessor proves the first summary missed its baseline", async () => {
+    const kv = new MemoryKv();
+    const { prior, current } = misbasedEditionPair();
+    await archiveEdition({ METRICS_CACHE: kv }, prior.catalog, prior.summary);
+    await archiveEdition({ METRICS_CACHE: kv }, current.catalog, current.summary);
+
+    const repaired = await reconcileEditionSummaryFromRetainedPrior(
+      { METRICS_CACHE: kv },
+      current.catalog.editionId,
+    );
+    const reread = await readEdition({ METRICS_CACHE: kv }, current.catalog.editionId);
+    const indexed = await listEditionSummaries({ METRICS_CACHE: kv });
+    const originalRecord = await kv.getWithMetadata(
+      `${EDITION_SUMMARY_PREFIX}${current.catalog.editionId}`,
+      "json",
+    );
+    const detailUrl = `https://public-data.org/data/edition.json?edition=${current.catalog.editionId}`;
+    const detailResponse = await editionResponse(
+      new Request(detailUrl),
+      { METRICS_CACHE: kv },
+      new URL(detailUrl),
+    );
+    const detail = await detailResponse.json();
+
+    expect(repaired).toMatchObject({
+      corrected: true,
+      summary: {
+        id: current.catalog.editionId,
+        previousEditionId: prior.catalog.editionId,
+        summaryCorrection: {
+          kind: "baseline-reconciliation",
+          baselineEditionId: prior.catalog.editionId,
+        },
+        changes: [{ kind: "metadata-change", previous: null, next: null }],
+      },
+    });
+    expect(reread?.summary).toEqual(repaired.summary);
+    expect(indexed[0]).toEqual(repaired.summary);
+    expect(detail.summary).toEqual(repaired.summary);
+    expect(detailResponse.headers.get("Cache-Control")).toBe("public, max-age=60, s-maxage=60");
+    expect(originalRecord.value.summary).toEqual(current.summary);
+
+    await expect(
+      reconcileEditionSummaryFromRetainedPrior(
+        { METRICS_CACHE: kv },
+        current.catalog.editionId,
+      ),
+    ).resolves.toMatchObject({ corrected: false, duplicate: true, summary: repaired.summary });
+    expect(await readEdition({ METRICS_CACHE: kv }, current.catalog.editionId)).toMatchObject({
+      catalog: current.catalog,
+      summary: repaired.summary,
+    });
   });
 
   it("archives source-linked value and metadata changes with their publication dates", async () => {
@@ -204,11 +290,16 @@ describe("content-addressed edition archive", () => {
     const kv = new MemoryKv();
     const editions = Array.from({ length: 61 }, (_, index) => edition(index));
     for (const item of editions) await archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary);
+    const expiring = editions[1];
+    await kv.put(`${EDITION_SUMMARY_CORRECTION_PREFIX}${expiring.catalog.editionId}`, JSON.stringify({ editionId: expiring.catalog.editionId }));
+    const updated = edition(61);
+    await archiveEdition({ METRICS_CACHE: kv }, updated.catalog, updated.summary);
     const summaries = await listEditionSummaries({ METRICS_CACHE: kv });
     expect(summaries).toHaveLength(60);
-    expect(summaries[0].id).toBe(editions.at(-1)!.catalog.editionId);
-    expect(await readEdition({ METRICS_CACHE: kv }, editions[0].catalog.editionId)).toBeNull();
-    expect(await readEdition({ METRICS_CACHE: kv }, editions.at(-1)!.catalog.editionId)).not.toBeNull();
+    expect(summaries[0].id).toBe(updated.catalog.editionId);
+    expect(await readEdition({ METRICS_CACHE: kv }, expiring.catalog.editionId)).toBeNull();
+    expect(await readEdition({ METRICS_CACHE: kv }, updated.catalog.editionId)).not.toBeNull();
+    expect(kv.values.has(`${EDITION_SUMMARY_CORRECTION_PREFIX}${expiring.catalog.editionId}`)).toBe(false);
     expect([...kv.values.keys()].filter((key) => key.startsWith(EDITION_SUMMARY_PREFIX))).toHaveLength(60);
   });
 

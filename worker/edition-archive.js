@@ -1,7 +1,9 @@
 import { validateMeasureRecord } from "../contracts/measure-record.js";
 import { catalogRevisionIdentity } from "./measure-catalog.js";
+import { buildEditionSummary } from "./edition-summary.js";
 
 const EDITION_SUMMARY_PREFIX = "v1:edition:summary:";
+const EDITION_SUMMARY_CORRECTION_PREFIX = "v1:edition:summary-correction:";
 const EDITION_CONTENT_PREFIX = "v1:edition:content:";
 const EDITION_INDEX_KEY = "v1:edition:index";
 const EDITION_SUMMARY_RETENTION = 60;
@@ -71,10 +73,22 @@ function validateSummary(input, editionId) {
       !(change.changedFields === undefined || Array.isArray(change.changedFields) && change.changedFields.length <= 20 && change.changedFields.every((field) => typeof field === "string" && /^[A-Za-z][A-Za-z0-9.]{0,79}$/.test(field)))) throw new Error("Edition summary change is invalid");
     return { ...change };
   });
+  const summaryCorrection = input.summaryCorrection;
+  if (summaryCorrection !== undefined && (
+    !summaryCorrection ||
+    summaryCorrection.kind !== "baseline-reconciliation" ||
+    !EDITION_ID.test(summaryCorrection.baselineEditionId) ||
+    summaryCorrection.baselineEditionId === editionId ||
+    typeof summaryCorrection.note !== "string" ||
+    !summaryCorrection.note.trim() ||
+    summaryCorrection.note.length > 500 ||
+    input.previousEditionId !== summaryCorrection.baselineEditionId
+  )) throw new Error("Edition summary correction is invalid");
   return {
     id: editionId,
     publishedAt: input.publishedAt,
     ...(input.previousEditionId === undefined ? {} : { previousEditionId: input.previousEditionId }),
+    ...(summaryCorrection === undefined ? {} : { summaryCorrection: { ...summaryCorrection } }),
     sourceEditionIds: [...new Set(sourceEditionIds)].sort(),
     changes,
   };
@@ -105,6 +119,7 @@ async function retainIndex(env, entries) {
   await writeIndex(env, retained);
   for (const expired of ordered.slice(EDITION_SUMMARY_RETENTION)) {
     await env.METRICS_CACHE.delete(`${EDITION_SUMMARY_PREFIX}${expired.id}`);
+    await env.METRICS_CACHE.delete(`${EDITION_SUMMARY_CORRECTION_PREFIX}${expired.id}`);
     if (!retainedHashes.has(expired.contentHash)) await env.METRICS_CACHE.delete(`${EDITION_CONTENT_PREFIX}${expired.contentHash}`);
   }
   return retained;
@@ -143,7 +158,7 @@ async function archiveEdition(env, catalogInput, summaryInput) {
   return { archived: true, duplicate: false, id, contentHash, retained: retained.length };
 }
 
-async function readEdition(env, id) {
+async function readEditionRaw(env, id) {
   validateEditionId(id);
   if (!env?.METRICS_CACHE?.getWithMetadata) return null;
   const record = await env.METRICS_CACHE.getWithMetadata(`${EDITION_SUMMARY_PREFIX}${id}`, "json");
@@ -159,6 +174,109 @@ async function readEdition(env, id) {
   } catch { return null; }
 }
 
+async function readSummaryCorrection(env, archived) {
+  if (!env?.METRICS_CACHE?.getWithMetadata) return null;
+  let stored;
+  try {
+    stored = await env.METRICS_CACHE.getWithMetadata(
+      `${EDITION_SUMMARY_CORRECTION_PREFIX}${archived.summary.id}`,
+      "json",
+    );
+  } catch {
+    return null;
+  }
+  const correction = stored?.value;
+  if (!correction || correction.schemaVersion !== 1 || correction.editionId !== archived.summary.id ||
+    correction.editionContentHash !== archived.contentHash ||
+    !/^[a-f0-9]{64}$/.test(correction.originalSummaryHash ?? "") ||
+    correction.originalSummaryHash !== await sha256(stableStringify(archived.summary)) ||
+    !EDITION_ID.test(correction.baselineEditionId ?? "") || correction.baselineEditionId === correction.editionId ||
+    !/^[a-f0-9]{64}$/.test(correction.baselineContentHash ?? "")) return null;
+  try {
+    const summary = validateSummary(correction.summary, archived.summary.id);
+    if (summary.previousEditionId !== correction.baselineEditionId ||
+      summary.summaryCorrection?.kind !== "baseline-reconciliation" ||
+      summary.summaryCorrection?.baselineEditionId !== correction.baselineEditionId) return null;
+    return summary;
+  } catch { return null; }
+}
+
+async function readEdition(env, id) {
+  const archived = await readEditionRaw(env, id);
+  if (!archived) return null;
+  if (archived.summary.previousEditionId || archived.summary.summaryCorrection) return archived;
+  const correctedSummary = await readSummaryCorrection(env, archived);
+  return correctedSummary ? { ...archived, summary: correctedSummary } : archived;
+}
+
+async function reconcileEditionSummaryFromRetainedPrior(env, id) {
+  validateEditionId(id);
+  if (!env?.METRICS_CACHE?.getWithMetadata || !env?.METRICS_CACHE?.get || !env?.METRICS_CACHE?.put) {
+    throw new Error("METRICS_CACHE summary reconciliation operations are required");
+  }
+
+  const archived = await readEditionRaw(env, id);
+  if (!archived) return { corrected: false, duplicate: false, summary: null };
+  if (archived.summary.previousEditionId || archived.summary.summaryCorrection) {
+    return { corrected: false, duplicate: Boolean(archived.summary.summaryCorrection), summary: archived.summary };
+  }
+  const existingCorrection = await readSummaryCorrection(env, archived);
+  if (existingCorrection) return { corrected: false, duplicate: true, summary: existingCorrection };
+  if (archived.summary.previousEditionId) {
+    return { corrected: false, duplicate: false, summary: archived.summary };
+  }
+
+  const index = await readIndex(env);
+  let prior = null;
+  for (const entry of index) {
+    if (entry.id === id) continue;
+    const candidate = await readEditionRaw(env, entry.id);
+    if (candidate && Date.parse(candidate.asOf) < Date.parse(archived.asOf) &&
+      (!prior || Date.parse(candidate.asOf) > Date.parse(prior.asOf))) {
+      prior = candidate;
+    }
+  }
+  if (!prior) return { corrected: false, duplicate: false, summary: archived.summary };
+
+  const originalSummaryHash = await sha256(stableStringify(archived.summary));
+  const correctedSummary = {
+    ...buildEditionSummary(prior.catalog, archived.catalog),
+    summaryCorrection: {
+      kind: "baseline-reconciliation",
+      baselineEditionId: prior.catalog.editionId,
+      note: "The change summary was reconciled against an earlier retained edition; archived observations were not changed.",
+    },
+  };
+  const summary = validateSummary(correctedSummary, id);
+  const correction = {
+    schemaVersion: 1,
+    editionId: id,
+    editionContentHash: archived.contentHash,
+    originalSummaryHash,
+    baselineEditionId: prior.catalog.editionId,
+    baselineContentHash: prior.contentHash,
+    summary,
+  };
+  const correctionKey = `${EDITION_SUMMARY_CORRECTION_PREFIX}${id}`;
+  const existing = await env.METRICS_CACHE.getWithMetadata(correctionKey, "json");
+  if (existing?.value) {
+    const existingSummary = await readSummaryCorrection(env, archived);
+    if (existingSummary && stableStringify(existingSummary) === stableStringify(summary)) {
+      return { corrected: false, duplicate: true, summary: existingSummary };
+    }
+    throw new Error("A corrected edition summary cannot be rewritten");
+  }
+  await env.METRICS_CACHE.put(correctionKey, JSON.stringify(correction), {
+    metadata: {
+      editionId: id,
+      baselineEditionId: prior.catalog.editionId,
+      editionContentHash: archived.contentHash,
+      schemaVersion: 1,
+    },
+  });
+  return { corrected: true, duplicate: false, summary };
+}
+
 async function listEditionSummaries(env, limit = EDITION_SUMMARY_RETENTION) {
   if (!env?.METRICS_CACHE?.get) return [];
   if (!Number.isInteger(limit) || limit < 1 || limit > EDITION_SUMMARY_RETENTION) throw new Error("Edition summary limit is invalid");
@@ -167,9 +285,10 @@ async function listEditionSummaries(env, limit = EDITION_SUMMARY_RETENTION) {
     try {
       const id = validateEditionId(entry.id);
       const summary = validateSummary(entry.summary, id);
-      const archived = await readEdition(env, id);
+      const archived = await readEditionRaw(env, id);
       if (!archived || archived.contentHash !== entry.contentHash || stableStringify(archived.summary) !== stableStringify(summary)) return null;
-      return summary;
+      if (archived.summary.previousEditionId || archived.summary.summaryCorrection) return archived.summary;
+      return await readSummaryCorrection(env, archived) ?? summary;
     } catch {
       return null;
     }
@@ -182,10 +301,12 @@ export {
   EDITION_INDEX_KEY,
   EDITION_ID,
   EDITION_SUMMARY_PREFIX,
+  EDITION_SUMMARY_CORRECTION_PREFIX,
   EDITION_SUMMARY_RETENTION,
   archiveEdition,
   listEditionSummaries,
   readEdition,
+  reconcileEditionSummaryFromRetainedPrior,
   validateCatalog,
   validateEditionId,
   validateSummary,

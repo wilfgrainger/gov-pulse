@@ -37,7 +37,7 @@ import {
   refreshInternationalComparison,
   sourcesDue as comparisonSourcesDue,
 } from "./international-comparison-publication.js";
-import { archiveEdition } from "./edition-archive.js";
+import { archiveEdition, reconcileEditionSummaryFromRetainedPrior } from "./edition-archive.js";
 
 const PUBLICATION_SECTION_PREFIX = "v12:publication:section:";
 const PUBLICATION_HISTORY_TTL_SECONDS = 14 * 24 * 60 * 60;
@@ -284,6 +284,18 @@ async function publishFromCaches(env, options = {}) {
     try {
       await archiveEdition(env, publication.meta.measureCatalog, publication.meta.editionSummary);
       publication.meta.editionArchiveStatus = "ready";
+      try {
+        const reconciled = await reconcileEditionSummaryFromRetainedPrior(
+          env,
+          publication.meta.measureCatalog.editionId,
+        );
+        if (reconciled.summary) publication.meta.editionSummary = reconciled.summary;
+      } catch (error) {
+        console.error("Publication edition summary reconciliation failed", {
+          editionId: publication.meta.measureCatalog.editionId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     } catch (error) {
       publication.meta.editionArchiveStatus = "unavailable";
       console.error("Publication edition archive failed", {

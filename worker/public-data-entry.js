@@ -334,7 +334,7 @@ async function editionResponse(request, env, url) {
   }
   const result = await readEdition(env, values[0]);
   if (!result) return json({ error: "Edition not found" }, { status: 404, head: request.method === "HEAD" });
-  return json({ edition: result.summary.id, asOf: result.asOf, availability: "historical", measureCatalog: result.catalog, summary: result.summary }, { head: request.method === "HEAD", cacheControl: "public, max-age=31536000, s-maxage=31536000, immutable" });
+  return json({ edition: result.summary.id, asOf: result.asOf, availability: "historical", measureCatalog: result.catalog, summary: result.summary }, { head: request.method === "HEAD", cacheControl: "public, max-age=60, s-maxage=60" });
 }
 
 async function contractHistoryResponse(request, url) {
