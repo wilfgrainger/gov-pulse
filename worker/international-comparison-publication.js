@@ -708,7 +708,9 @@ async function refreshInternationalComparison(env, options = {}) {
 function mergeInternationalComparisonBatchResults(basePublication, batchResults, now = new Date()) {
   const measures = { ...basePublication.measures };
   const attemptedSources = new Set();
-  const sourceFailures = new Set(basePublication.meta.sourceFailures ?? []);
+  const sourceFailures = new Set(
+    (basePublication.meta.sourceFailures ?? []).filter((sourceId) => INTERNATIONAL_SOURCES.includes(sourceId))
+  );
   const generatedAtValues = [basePublication.meta.generatedAt];
   const checkedAtValues = [basePublication.meta.checkedAt];
 

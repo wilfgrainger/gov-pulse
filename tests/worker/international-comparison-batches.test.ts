@@ -264,6 +264,26 @@ describe("bounded international comparison Queue batches", () => {
     expect(merged.meta.sourceFailures).toEqual(["oecd-tax-2024"]);
   });
 
+  it("drops failures for source ids no longer registered", () => {
+    const now = new Date("2026-10-03T12:00:00.000Z");
+    const base = freshPublication(now);
+    base.meta.sourceFailures = ["imf-gdp-2023", "imf-gdp-2024"];
+    const fragment = {
+      batchId: "healthcare",
+      meta: {
+        generatedAt: base.meta.generatedAt,
+        checkedAt: now.toISOString(),
+        attemptedSources: ["world-bank-health-2024"],
+        sourceFailures: [],
+      },
+      measures: { healthcareSpending: base.measures.healthcareSpending },
+    };
+
+    const merged = mergeInternationalComparisonBatchResults(base, [fragment], now);
+
+    expect(merged.meta.sourceFailures).toEqual([]);
+  });
+
   it("finalises a single due batch from its queued ids and retries stale terminal reads", async () => {
     const { env, store } = environment();
     const now = new Date("2026-10-03T12:00:00.000Z");
