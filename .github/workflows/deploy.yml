@@ -22,6 +22,10 @@ on:
         description: "Force national publication and country-comparison refresh (up to ~9 minutes)"
         type: boolean
         default: false
+      refresh_contracts:
+        description: "Also refresh the bounded Find a Tender contracts edition (requires refresh_evidence)"
+        type: boolean
+        default: false
       refresh_pages_seed:
         description: "Rebuild and publish the secondary Pages fallback"
         type: boolean
@@ -178,7 +182,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.refresh_evidence
     needs: deploy-production
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 16
     environment:
       name: cloudflare-internal-worker
       url: https://public-data.org/data/health.json
@@ -192,6 +196,7 @@ jobs:
           node-version-file: .nvmrc
 
       - name: Bootstrap national evidence and force the independent comparison refresh
+        if: inputs.refresh_contracts != true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -199,4 +204,16 @@ jobs:
           BOOTSTRAP_TIMEOUT_MS: "420000"
           FORCE_PUBLICATION_REFRESH: "true"
           FORCE_COMPARISON_REFRESH: "true"
+        run: node scripts/bootstrap-cloudflare-publication.mjs
+
+      - name: Bootstrap national, comparison, and contracts evidence
+        if: inputs.refresh_contracts == true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          HEALTH_URL: https://public-data.org/data/health.json
+          BOOTSTRAP_TIMEOUT_MS: "660000"
+          FORCE_PUBLICATION_REFRESH: "true"
+          FORCE_COMPARISON_REFRESH: "true"
+          FORCE_CONTRACTS_REFRESH: "true"
         run: node scripts/bootstrap-cloudflare-publication.mjs

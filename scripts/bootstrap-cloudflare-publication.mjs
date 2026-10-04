@@ -24,7 +24,7 @@ function positiveInteger(value, label) {
   return number;
 }
 
-function bootstrapAttemptId(deploymentId, attempt, executionId) {
+function bootstrapAttemptId(deploymentId, attempt, executionId, includeContracts = false) {
   const normalized = required(deploymentId, "GITHUB_SHA").toLowerCase();
   if (!/^[0-9a-f]{40}$/.test(normalized)) {
     throw new Error("GITHUB_SHA must be a full Git commit SHA");
@@ -36,12 +36,12 @@ function bootstrapAttemptId(deploymentId, attempt, executionId) {
   if (execution && !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(execution)) {
     throw new Error("GITHUB_RUN_ID is invalid");
   }
-  if (attempt === 0 && !execution) return normalized;
+  if (attempt === 0 && !execution && !includeContracts) return normalized;
   const attemptIdentity = execution
     ? `github-run:${execution}:attempt:${attempt}`
     : `bootstrap-recovery:${attempt}`;
   return createHash("sha256")
-    .update(`${normalized}:${attemptIdentity}`)
+    .update(`${normalized}:${attemptIdentity}${includeContracts ? ":contracts" : ""}`)
     .digest("hex")
     .slice(0, 40);
 }
@@ -115,6 +115,32 @@ async function hasPreparedPublication(fetchImpl, healthUrl, health) {
       JSON.stringify(actualMissing) === JSON.stringify(expectedMissing) &&
       meta.publicationState === (expectedMissing.length ? "degraded" : "ready")
     );
+  } catch {
+    return false;
+  }
+}
+
+async function hasContractsPublication(fetchImpl, healthUrl, run) {
+  const snapshotUrl = new URL("/data/metrics-snapshot.json", healthUrl).toString();
+  try {
+    const response = await fetchImpl(snapshotUrl, {
+      headers: { Accept: "application/json", "Cache-Control": "no-cache" },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (
+      !response.ok ||
+      response.headers.get("X-Publication-Delivery") !== "cloudflare-kv"
+    ) return false;
+    const snapshot = await response.json();
+    const source = snapshot?.meta?.sources?.governmentContracts;
+    const fetchedAt = Date.parse(source?.fetchedAt ?? "");
+    const runStartedAt = Date.parse(run?.createdAt ?? "");
+    return Number.isFinite(fetchedAt) &&
+      Number.isFinite(runStartedAt) &&
+      fetchedAt >= runStartedAt &&
+      Array.isArray(snapshot?.governmentContracts?.awards) &&
+      source?.status === "ok" &&
+      source?.cacheState === "fresh";
   } catch {
     return false;
   }
@@ -295,7 +321,8 @@ async function pushBootstrapMessage(
   apiToken,
   queueId,
   deploymentId,
-  forceComparison = false
+  forceComparison = false,
+  includeContracts = false
 ) {
   const response = await fetchImpl(
     `https://api.cloudflare.com/client/v4/accounts/${accountId}/queues/${queueId}/messages`,
@@ -311,6 +338,7 @@ async function pushBootstrapMessage(
           type: "bootstrap-publication",
           deploymentId,
           ...(forceComparison ? { forceComparison: true } : {}),
+          ...(includeContracts ? { includeContracts: true } : {}),
         },
       }),
       signal: AbortSignal.timeout(15_000),
@@ -357,7 +385,13 @@ async function bootstrapCloudflarePublication(options = {}) {
   const nowImpl = options.nowImpl ?? Date.now;
   const accountId = required(options.accountId, "CLOUDFLARE_ACCOUNT_ID");
   const apiToken = required(options.apiToken, "CLOUDFLARE_API_TOKEN");
-  const deploymentId = bootstrapAttemptId(options.deploymentId, 0, options.executionId);
+  const includeContracts = options.includeContracts === true;
+  const deploymentId = bootstrapAttemptId(
+    options.deploymentId,
+    0,
+    options.executionId,
+    includeContracts,
+  );
   const queueName = required(
     options.queueName ?? DEFAULT_QUEUE_NAME,
     "QUEUE_NAME"
@@ -386,7 +420,7 @@ async function bootstrapCloudflarePublication(options = {}) {
     options.recoveryIntervalMs ?? DEFAULT_RECOVERY_INTERVAL_MS,
     "BOOTSTRAP_RECOVERY_INTERVAL_MS"
   );
-  const forceRefresh = options.forceRefresh === true;
+  const forceRefresh = options.forceRefresh === true || includeContracts;
   const forceComparison = options.forceComparison === true;
 
   const initialHealth = await readHealth(fetchImpl, healthUrl);
@@ -406,8 +440,14 @@ async function bootstrapCloudflarePublication(options = {}) {
   let latestRunActive = false;
   let nextAttemptAt = nowImpl();
   let lastHealth = initialHealth;
-  const completedResult = async (health) => {
+  const completedResult = async (health, run) => {
     const result = { triggered: true, attempts: attempt, health };
+    if (includeContracts) {
+      result.contractsRefresh = {
+        status: "success",
+        published: await hasContractsPublication(fetchImpl, healthUrl, run),
+      };
+    }
     if (forceComparison && latestAttemptId) {
       const runId = `bootstrap-${latestAttemptId.toLowerCase()}`;
       result.comparisonRefresh = await waitForComparisonRefresh(
@@ -432,7 +472,8 @@ async function bootstrapCloudflarePublication(options = {}) {
       apiToken,
       queueId,
       attemptId,
-      forceComparison
+      forceComparison,
+      includeContracts
     );
     latestAttemptId = attemptId;
     latestRunActive = true;
@@ -452,10 +493,16 @@ async function bootstrapCloudflarePublication(options = {}) {
       latestRunActive = Boolean(run && !run.finalisedAt);
       // A previously serveable edition cannot prove that this deployment's
       // collectors ran. Forced refresh requires the active run to finalise.
-      if (run?.finalisedAt && ["published", "no-change", "incomplete"].includes(run.status)) {
+      const contractsJobSucceeded = !includeContracts ||
+        run?.successfulJobIds?.includes("contracts") === true;
+      if (
+        run?.finalisedAt &&
+        ["published", "no-change", "incomplete"].includes(run.status) &&
+        contractsJobSucceeded
+      ) {
         lastHealth = await readHealth(fetchImpl, healthUrl);
         if (lastHealth?.ready === true && await hasPreparedPublication(fetchImpl, healthUrl, lastHealth)) {
-          return completedResult(lastHealth);
+          return completedResult(lastHealth, run);
         }
         // A STABLE degraded publication (ready:false + non-empty
         // missingRequiredSections) is an accepted terminal state once the
@@ -464,7 +511,7 @@ async function bootstrapCloudflarePublication(options = {}) {
           isDegradedPublicationHealth(lastHealth) &&
           (await hasPreparedPublication(fetchImpl, healthUrl, lastHealth))
         ) {
-          return completedResult(lastHealth);
+          return completedResult(lastHealth, run);
         }
       }
     }
@@ -549,10 +596,11 @@ async function main() {
       : undefined,
     forceRefresh: process.env.FORCE_PUBLICATION_REFRESH === "true",
     forceComparison: process.env.FORCE_COMPARISON_REFRESH === "true",
+    includeContracts: process.env.FORCE_CONTRACTS_REFRESH === "true",
   });
   console.log(
     result.triggered
-      ? `Cloudflare publication bootstrap completed after ${result.attempts} attempt${result.attempts === 1 ? "" : "s"}.${result.comparisonRefresh ? ` Comparison refresh status=${result.comparisonRefresh.status}${result.comparisonRefresh.completedAt ? ` completedAt=${result.comparisonRefresh.completedAt}` : ""}.` : ""}`
+      ? `Cloudflare publication bootstrap completed after ${result.attempts} attempt${result.attempts === 1 ? "" : "s"}.${result.comparisonRefresh ? ` Comparison refresh status=${result.comparisonRefresh.status}${result.comparisonRefresh.completedAt ? ` completedAt=${result.comparisonRefresh.completedAt}` : ""}.` : ""}${result.contractsRefresh ? ` Contracts refresh job=${result.contractsRefresh.status}, published=${result.contractsRefresh.published}.` : ""}`
       : "Cloudflare prepared publication was already deployable; bootstrap skipped."
   );
 }
