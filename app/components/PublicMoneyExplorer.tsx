@@ -9,6 +9,7 @@ import {
   parsePublicMoneyUrlState,
   serializePublicAwardsCsv,
   serializePublicMoneyUrlState,
+  valueBasisDescription,
   type AwardDossier,
   type DossierSelection,
   type PublicAward,
@@ -49,6 +50,7 @@ export default function PublicMoneyExplorer({
   caveats: string[];
   windowLabel?: string;
 }) {
+  const valueBasis = awards[0]?.valueBasis ?? "award-value";
   const [query, setQuery] = useState("");
   const [buyer, setBuyer] = useState("all");
   const [nation, setNation] = useState("all");
@@ -207,12 +209,13 @@ export default function PublicMoneyExplorer({
     <div className="grid gap-8 xl:grid-cols-[minmax(0,1.4fr)_minmax(19rem,0.6fr)]">
       <section aria-labelledby="public-money-results" className="min-w-0">
         <div className="min-w-0 border-y-2 border-foreground bg-white p-4 md:p-6">
-          <p className="eyebrow">Find a Tender · disclosed GBP awards</p>
+          <p className="eyebrow">Find a Tender · GBP award notices</p>
           <h2 id="public-money-results" className="mt-2 text-3xl font-black">Award notices and buyer/supplier dossiers</h2>
           <p className="mt-3 text-sm leading-6 text-gray-700">
             Open a notice or inspect records grouped by the publisher&apos;s identifier. Where no identifier is disclosed,
             records are matched by the exact name shown; neither grouping proves legal identity.
           </p>
+          <p className="mt-2 text-sm font-semibold">Current value basis: {valueBasisDescription(valueBasis)}.</p>
           <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
             <label className="grid min-w-0 gap-1 text-xs font-bold">
               Search notices
@@ -261,7 +264,8 @@ export default function PublicMoneyExplorer({
                   </div>
                   <div>
                     <p className="font-mono text-xl font-black tabular-nums">{pounds(award.amount)}</p>
-                    <div className="mt-3 h-3 border border-black/25 bg-white" role="img" aria-label={`Disclosed award value ${pounds(award.amount)} on a zero-based scale`}>
+                    <p className="mt-1 text-xs text-gray-600">{valueBasisDescription(award.valueBasis)}</p>
+                    <div className="mt-3 h-3 border border-black/25 bg-white" role="img" aria-label={`${valueBasisDescription(award.valueBasis)} ${pounds(award.amount)} on a zero-based scale`}>
                       <div className="h-full bg-[#ef5124]" style={{ width: `${barWidthPercent(award.amount, maximum)}%` }} />
                     </div>
                     <p className="mt-2 text-xs text-gray-600">Zero-based magnitude</p>
@@ -299,7 +303,7 @@ export default function PublicMoneyExplorer({
           <div className="mt-5">
             <h3 className="text-lg font-bold">{selected.label}</h3>
             <p className="mt-3 text-sm">
-              Full disclosed award value for matched notices, not supplier revenue: <strong>{pounds(selected.disclosedTotal)}</strong>
+              Total {valueBasisDescription(selected.award.valueBasis)} for matched notices, not supplier revenue: <strong>{pounds(selected.disclosedTotal)}</strong>
             </p>
             <p className="mt-2 text-xs text-gray-600">{selected.noticeCount} matched {selected.noticeCount === 1 ? "notice" : "notices"} · {selected.filteredDenominator} award records in filtered denominator</p>
             {selected.entityId && <p className="mt-2 text-xs font-mono text-gray-700">Publisher {selected.kind} ID: {selected.entityId}</p>}

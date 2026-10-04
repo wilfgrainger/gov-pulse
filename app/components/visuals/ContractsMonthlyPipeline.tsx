@@ -18,6 +18,7 @@ export type PipelineAward = {
 interface MonthlyPipelineProps {
   awards: PipelineAward[];
   totalValue: number;
+  valueBasisLabel: string;
 }
 
 interface MonthBucket {
@@ -42,7 +43,7 @@ function formatCurrency(amount: number, compact = false) {
   }).format(amount);
 }
 
-export default function ContractsMonthlyPipeline({ awards, totalValue }: MonthlyPipelineProps) {
+export default function ContractsMonthlyPipeline({ awards, totalValue, valueBasisLabel }: MonthlyPipelineProps) {
   const chartId = useId();
   const [selectedMonthKey, setSelectedMonthKey] = useState<string | null>(null);
   const [showTable, setShowTable] = useState(false);
@@ -133,10 +134,10 @@ export default function ContractsMonthlyPipeline({ awards, totalValue }: Monthly
             Visual 1 · Procurement Timeline
           </span>
           <h4 id={`${chartId}-title`} className="mt-2 text-xl font-bold tracking-tight text-gray-950 md:text-2xl">
-            Government Contract Commitments by Month
+            Recorded contract values by month
           </h4>
           <p className="mt-1 text-xs text-gray-600 md:text-sm">
-            Disclosed award totals across {awards.length} major UK public contracts, grouped by official notice award month.
+            {valueBasisLabel} across {awards.length} UK public contracts, grouped by official notice award month.
           </p>
         </div>
         <div className="flex items-center gap-3 self-start md:self-auto">

@@ -6,6 +6,7 @@ import {
   buildSummary,
   buildSupplierConcentration,
   isCurrentGovernmentContractsPayload,
+  normalizeGovernmentContractsPayload,
   ukNationFromCountryName,
   ukNationFromPostcode,
 } from "../../contracts/government-contracts.js";
@@ -38,6 +39,7 @@ function canonicalAward(index: number) {
     publishedAt: `2026-07-${String((index % 17) + 1).padStart(2, "0")}T12:00:00.000Z`,
     amount: 1_000_000_000 - index * 1_000_000,
     currency: "GBP" as const,
+    valueBasis: "award-value" as const,
     procurementMethod: index % 10 === 0 ? "direct" : "open",
     procurementMethodDetails: index % 10 === 0 ? "Direct award" : "Open procedure",
     mainProcurementCategory: "services",
@@ -144,6 +146,27 @@ describe("government contracts contract", () => {
     expect(isCurrentGovernmentContractsPayload(payload, NOW)).toBe(true);
   });
 
+  it("rejects rankings that combine award and signed-contract value bases", () => {
+    const input = payloadInput(2);
+    const awardValueSummary = input.summary;
+    input.awards[1].valueBasis = "contract-value";
+    input.summary = awardValueSummary;
+
+    expect(() => buildGovernmentContractsPayload(input, NOW)).toThrow(/cannot mix value bases/i);
+  });
+
+  it("publishes a contract-value basis through the currentness contract", () => {
+    const input = payloadInput(1);
+    input.awards[0].valueBasis = "contract-value";
+    input.summary = buildSummary(input.awards);
+
+    const payload = buildGovernmentContractsPayload(input, NOW);
+
+    expect(payload.summary.valueBasis).toBe("contract-value");
+    expect(payload.awards[0].valueBasis).toBe("contract-value");
+    expect(isCurrentGovernmentContractsPayload(payload, NOW)).toBe(true);
+  });
+
   it("accepts every named supplier on a valid multi-supplier award", () => {
     const input = payloadInput(1);
     input.awards[0].suppliers = Array.from({ length: 101 }, (_, index) => `Supplier ${index + 1}`);
@@ -190,6 +213,28 @@ describe("government contracts contract", () => {
     } as typeof legacy.evidencePolicy;
     delete (legacy.evidencePolicy as { displayedAwardLimit?: number }).displayedAwardLimit;
 
+    expect(() => normalizeGovernmentContractsPayload(legacy, NOW)).not.toThrow();
+    expect(isCurrentGovernmentContractsPayload(legacy, NOW)).toBe(true);
+  });
+
+  it("continues to read current pre-basis editions as award-value records", () => {
+    const legacy = buildGovernmentContractsPayload(payloadInput(), NOW);
+    for (const award of legacy.awards) delete (award as { valueBasis?: string }).valueBasis;
+    delete (legacy.summary as { valueBasis?: string }).valueBasis;
+    delete (legacy.dataQuality as { excludedAmbiguousContractValue?: number }).excludedAmbiguousContractValue;
+    legacy.caveats = [
+      "Values are the amounts disclosed in Find a Tender award releases, not invoices or confirmed lifetime public expenditure.",
+      "Framework and multi-supplier awards can state maximum or estimated values that may never be fully spent.",
+      "The ranking covers comparable GBP awards updated in the stated window; missing, redacted and non-GBP values are excluded.",
+      "A large award is not evidence of waste, fraud or poor value. The source notice and procurement context must be examined.",
+      "Find a Tender is the central digital platform, but publication coverage and notice quality still depend on contracting authorities.",
+    ];
+    legacy.evidencePolicy = {
+      ...legacy.evidencePolicy,
+      rankingMeasure: "disclosed award value excluding VAT where supplied",
+    };
+
+    expect(() => normalizeGovernmentContractsPayload(legacy, NOW)).not.toThrow();
     expect(isCurrentGovernmentContractsPayload(legacy, NOW)).toBe(true);
   });
 

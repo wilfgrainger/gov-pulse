@@ -16,6 +16,7 @@ interface SupplierMarketConcentrationProps {
   suppliers: SupplierConcentrationItem[];
   totalDisclosedValue: number;
   top10Share: number;
+  valueBasisLabel: string;
 }
 
 function formatCurrency(amount: number, compact = false) {
@@ -39,6 +40,7 @@ export default function SupplierMarketConcentration({
   suppliers,
   totalDisclosedValue,
   top10Share,
+  valueBasisLabel,
 }: SupplierMarketConcentrationProps) {
   const chartId = useId();
   const [selectedNation, setSelectedNation] = useState<string>("all");
@@ -76,13 +78,13 @@ export default function SupplierMarketConcentration({
       <div className="flex flex-col gap-2 border-b border-black/15 pb-4 md:flex-row md:items-baseline md:justify-between">
         <div>
           <span className="inline-block rounded-xs bg-[#0f172a] px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-white">
-            Equal-share scenario · disclosed awards
+            Equal-share scenario · {valueBasisLabel}
           </span>
           <h4 id={`${chartId}-title`} className="mt-2 text-xl font-bold tracking-tight text-gray-950 md:text-2xl">
-            Supplier award-value scenario
+            Supplier equal-share scenario
           </h4>
           <p className="mt-1 text-xs text-gray-600 md:text-sm">
-            The latest disclosed award values grouped by publisher ID where available and split equally across named suppliers. This scenario is not supplier revenue or confirmed spending.
+            The latest {valueBasisLabel} grouped by publisher ID where available and split equally across named suppliers. This scenario is not supplier revenue or confirmed spending.
           </p>
         </div>
 
@@ -112,7 +114,7 @@ export default function SupplierMarketConcentration({
       {/* Segmented Share Distribution Bar */}
       <div className="mt-5 rounded-xs bg-slate-50 p-4">
         <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
-          <span>Top-award share of the disclosed award window</span>
+          <span>Top-award share of the ranked value window</span>
           <span className="font-mono text-slate-900">Top 10 awards: {top10Share.toFixed(1)}%</span>
         </div>
 

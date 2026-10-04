@@ -22,6 +22,7 @@ export function buildSupplierConcentrationMetadata(input: {
   updateWindow: { updatedFrom: string; updatedTo: string };
   sourceUrl: string;
   sourceLabel: string;
+  valueBasisLabel: string;
   caveats: string[];
 }): ChartMetadata {
   const start = calendarDate(input.updateWindow.updatedFrom);
@@ -31,7 +32,7 @@ export function buildSupplierConcentrationMetadata(input: {
   return {
     schemaVersion: 2,
     title: input.title,
-    sourceCitation: `${input.sourceLabel}: ${sourceUrl} · Equal-share scenario, not supplier revenue · Plot shows ${plotted} of ${input.filteredSupplierCount} filtered supplier groups (${input.fullSupplierCount} in the full publication) · Complete update window ${start ?? "date unavailable"} to ${end ?? "date unavailable"}`,
+    sourceCitation: `${input.sourceLabel}: ${sourceUrl} · Value basis: ${input.valueBasisLabel} · Equal-share scenario, not supplier revenue · Plot shows ${plotted} of ${input.filteredSupplierCount} filtered supplier groups (${input.fullSupplierCount} in the full publication) · Complete update window ${start ?? "date unavailable"} to ${end ?? "date unavailable"}`,
     observationWindow: start && end
       ? { start: { period: start, observedAt: start }, end: { period: end, observedAt: end } }
       : { start: null, end: null },
@@ -47,7 +48,7 @@ export function buildSupplierConcentrationMetadata(input: {
     })),
     caveats: [...new Set([
       ...input.caveats,
-      "Multi-supplier award values are split equally for a comparison scenario; they are not attributed supplier revenue or confirmed expenditure.",
+      `Values use ${input.valueBasisLabel}. Multi-supplier amounts are split equally for a comparison scenario; they are not attributed supplier revenue or confirmed expenditure.`,
       `Only the first ${plotted} supplier-group rows are included in the image; ${input.filteredSupplierCount} groups match the current filter.`,
     ])],
   };

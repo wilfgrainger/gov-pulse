@@ -10,6 +10,7 @@ const OPEN_GOVERNMENT_LICENCE =
 const MAX_PUBLICATION_AGE_MS = 72 * 60 * 60 * 1000;
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
 const DISPLAYED_AWARD_LIMIT = 100;
+const VALUE_BASES = Object.freeze(["award-value", "contract-value"]);
 
 const SOURCE = Object.freeze({
   publisher: "Cabinet Office",
@@ -21,16 +22,16 @@ const SOURCE = Object.freeze({
 });
 
 const CAVEATS = Object.freeze([
-  "Values are the amounts disclosed in Find a Tender award releases, not invoices or confirmed lifetime public expenditure.",
+  "Values are disclosed award values or, when absent, the value in one uniquely linked contract; each notice and publication states its value basis. They are not invoices or confirmed lifetime public expenditure.",
   "Framework and multi-supplier awards can state maximum or estimated values that may never be fully spent.",
-  "The ranking covers comparable GBP awards updated in the stated window; missing, redacted and non-GBP values are excluded.",
+  "Each ranking uses one value basis across the complete source window. Missing, redacted, ambiguous, multiple-contract and non-GBP values are excluded.",
   "A large award is not evidence of waste, fraud or poor value. The source notice and procurement context must be examined.",
   "Supplier value concentration is an equal-share scenario across named suppliers, not publisher attribution or supplier revenue.",
   "Find a Tender is the central digital platform, but publication coverage and notice quality still depend on contracting authorities.",
 ]);
 
 const EVIDENCE_POLICY = Object.freeze({
-  rankingMeasure: "disclosed award value excluding VAT where supplied",
+  rankingMeasure: "reported GBP value from an award or one uniquely linked contract; one value basis per publication",
   actualSpendClaim: false,
   wasteClaim: false,
   fraudClaim: false,
@@ -40,12 +41,21 @@ const EVIDENCE_POLICY = Object.freeze({
   comparisonCurrency: "GBP",
   displayedAwardLimit: DISPLAYED_AWARD_LIMIT,
 });
+const LEGACY_EVIDENCE_POLICY = {
+  ...EVIDENCE_POLICY,
+  rankingMeasure: "disclosed award value excluding VAT where supplied",
+};
+Object.freeze(LEGACY_EVIDENCE_POLICY);
 const LEGACY_COUNT_EVIDENCE_POLICY = { ...EVIDENCE_POLICY };
 delete LEGACY_COUNT_EVIDENCE_POLICY.displayedAwardLimit;
 LEGACY_COUNT_EVIDENCE_POLICY.requiredAwardCount = DISPLAYED_AWARD_LIMIT;
 Object.freeze(LEGACY_COUNT_EVIDENCE_POLICY);
+const LEGACY_RANKING_COUNT_EVIDENCE_POLICY = { ...LEGACY_EVIDENCE_POLICY };
+delete LEGACY_RANKING_COUNT_EVIDENCE_POLICY.displayedAwardLimit;
+LEGACY_RANKING_COUNT_EVIDENCE_POLICY.requiredAwardCount = DISPLAYED_AWARD_LIMIT;
+Object.freeze(LEGACY_RANKING_COUNT_EVIDENCE_POLICY);
 const LEGACY_ALLOCATION_EVIDENCE_POLICY = {
-  ...LEGACY_COUNT_EVIDENCE_POLICY,
+  ...LEGACY_RANKING_COUNT_EVIDENCE_POLICY,
   supplierAllocationMethod: "equal allocation across named suppliers for concentration analysis only",
 };
 Object.freeze(LEGACY_ALLOCATION_EVIDENCE_POLICY);
@@ -211,6 +221,8 @@ function normalizeAward(value, index) {
     throw new Error(`${label} amount must be a positive number`);
   }
   if (value.currency !== "GBP") throw new Error(`${label} currency must be GBP`);
+  const valueBasis = value.valueBasis ?? "award-value";
+  if (!VALUE_BASES.includes(valueBasis)) throw new Error(`${label} value basis is invalid`);
 
   const awardDate = isoTimestamp(value.awardDate, `${label} award date`).text;
   const publishedAt = isoTimestamp(value.publishedAt, `${label} publication date`).text;
@@ -239,6 +251,7 @@ function normalizeAward(value, index) {
     publishedAt,
     amount: round(value.amount, 2),
     currency: "GBP",
+    valueBasis,
     procurementMethod: optionalText(value.procurementMethod, 80),
     procurementMethodDetails: optionalText(value.procurementMethodDetails, 300),
     mainProcurementCategory: optionalText(value.mainProcurementCategory, 80),
@@ -326,6 +339,8 @@ function buildSupplierConcentration(awards) {
 }
 
 function buildSummary(awards) {
+  const valueBases = new Set(awards.map((award) => award.valueBasis ?? "award-value"));
+  if (valueBases.size > 1) throw new Error("Government contracts summary cannot mix value bases");
   const total = round(awards.reduce((sum, award) => sum + award.amount, 0), 2);
   const top10 = awards.slice(0, 10).reduce((sum, award) => sum + award.amount, 0);
   const buyers = aggregate(awards, "buyer");
@@ -352,6 +367,7 @@ function buildSummary(awards) {
       awardCount: 0,
       disclosedValue: 0,
     },
+    valueBasis: valueBases.values().next().value ?? "award-value",
   };
 }
 
@@ -367,16 +383,20 @@ function normalizeDataQuality(value) {
     "awardsSeen",
     "validComparableAwards",
     "excludedMissingValue",
+    "excludedAmbiguousContractValue",
     "excludedNonGbp",
     "excludedMissingBuyer",
     "excludedMissingSupplier",
     "excludedMalformed",
     "duplicatesRemoved",
   ]) {
-    if (!Number.isInteger(value[field]) || value[field] < 0) {
+    const fieldValue = field === "excludedAmbiguousContractValue" && value[field] === undefined
+      ? 0
+      : value[field];
+    if (!Number.isInteger(fieldValue) || fieldValue < 0) {
       throw new Error(`Government contracts data quality field '${field}' is invalid`);
     }
-    result[field] = value[field];
+    result[field] = fieldValue;
   }
   return result;
 }
@@ -487,13 +507,21 @@ function normalizeGovernmentContractsPayload(data, now = new Date()) {
       throw new Error("Government contracts awards must be sorted by disclosed value");
     }
   }
+  const valueBases = new Set(awards.map((award) => award.valueBasis));
+  if (valueBases.size !== 1) throw new Error("Government contracts publication cannot mix value bases");
 
   const dataQuality = normalizeDataQuality(data.dataQuality);
   if (dataQuality.validComparableAwards < awards.length) {
     throw new Error("Displayed contract awards exceed the complete-window comparable count");
   }
   const summary = buildSummary(awards);
-  if (JSON.stringify(data.summary) !== JSON.stringify(summary)) {
+  const legacyAwardValueSummary = { ...summary };
+  delete legacyAwardValueSummary.valueBasis;
+  const summaryMatches = JSON.stringify(data.summary) === JSON.stringify(summary) ||
+    (summary.valueBasis === "award-value" &&
+      data.summary?.valueBasis === undefined &&
+      JSON.stringify(data.summary) === JSON.stringify(legacyAwardValueSummary));
+  if (!summaryMatches) {
     throw new Error("Government contracts summary does not reconcile to the awards");
   }
   if (JSON.stringify(data.caveats) !== JSON.stringify(CAVEATS) &&
@@ -502,7 +530,9 @@ function normalizeGovernmentContractsPayload(data, now = new Date()) {
   }
   if (
     JSON.stringify(data.evidencePolicy) !== JSON.stringify(EVIDENCE_POLICY) &&
+    JSON.stringify(data.evidencePolicy) !== JSON.stringify(LEGACY_EVIDENCE_POLICY) &&
     JSON.stringify(data.evidencePolicy) !== JSON.stringify(LEGACY_COUNT_EVIDENCE_POLICY) &&
+    JSON.stringify(data.evidencePolicy) !== JSON.stringify(LEGACY_RANKING_COUNT_EVIDENCE_POLICY) &&
     JSON.stringify(data.evidencePolicy) !== JSON.stringify(LEGACY_ALLOCATION_EVIDENCE_POLICY)
   ) {
     throw new Error("Government contracts evidence policy is not canonical");
@@ -543,6 +573,17 @@ function buildGovernmentContractsPayload(data, now = new Date()) {
   return { ...normalized, __observation: observationFor(normalized, now) };
 }
 
+function alignLegacyFields(value, canonical, defaults = {}) {
+  const aligned = {};
+  for (const key of Object.keys(canonical)) {
+    aligned[key] = value[key] === undefined ? defaults[key] : value[key];
+  }
+  for (const key of Object.keys(value)) {
+    if (!Object.hasOwn(canonical, key)) aligned[key] = value[key];
+  }
+  return aligned;
+}
+
 function isCurrentGovernmentContractsPayload(data, now = new Date()) {
   try {
     const canonical = normalizeGovernmentContractsPayload(data, now);
@@ -552,6 +593,17 @@ function isCurrentGovernmentContractsPayload(data, now = new Date()) {
     void ignored;
     const normalizedPublished = {
       ...published,
+      awards: published.awards.map((award, index) => alignLegacyFields(
+        award,
+        canonical.awards[index],
+        { valueBasis: "award-value" },
+      )),
+      summary: alignLegacyFields(published.summary, canonical.summary, {
+        valueBasis: "award-value",
+      }),
+      dataQuality: alignLegacyFields(published.dataQuality, canonical.dataQuality, {
+        excludedAmbiguousContractValue: 0,
+      }),
       evidencePolicy: canonical.evidencePolicy,
       caveats: canonical.caveats,
     };
