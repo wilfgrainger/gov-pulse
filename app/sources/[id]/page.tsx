@@ -42,6 +42,26 @@ function sourceTitle(id: string, measures: Awaited<ReturnType<typeof sourceData>
   return feed?.title ?? publication?.title ?? `${id} source collection`;
 }
 
+function formatEvidenceClass(value: string) {
+  const label = value.replaceAll("-", " ");
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function displayEvidenceClass(
+  measures: Awaited<ReturnType<typeof sourceData>>["measures"],
+  provenance: unknown,
+) {
+  const labels = [...new Set(measures.map((measure) => measure.evidenceClass).filter(Boolean))]
+    .sort()
+    .map(formatEvidenceClass);
+  if (labels.length === 1) return labels[0];
+  if (labels.length > 1) return `Mixed: ${labels.join(", ")}`;
+  if (provenance && typeof provenance === "object" && "evidenceClass" in provenance && typeof provenance.evidenceClass === "string") {
+    return formatEvidenceClass(provenance.evidenceClass);
+  }
+  return "Not recorded";
+}
+
 export async function generateMetadata({ params, searchParams }: SourcePageProps): Promise<Metadata> {
   const [{ id }, query] = await Promise.all([params, searchParams]);
   if (!/^[A-Za-z0-9._-]{1,160}$/.test(id)) return {};
@@ -68,9 +88,7 @@ export default async function SourceDetailPage({ params, searchParams }: SourceP
   const measureIds = measures.map((measure) => measure.id);
   const sourceUrl = sourceMeasure?.sourceUrl;
   const provenance = !sourceMeasure && status && typeof status === "object" && "provenance" in status ? status.provenance : null;
-  const evidenceClass = provenance && typeof provenance === "object" && "evidenceClass" in provenance && typeof provenance.evidenceClass === "string"
-    ? provenance.evidenceClass.replaceAll("-", " ")
-    : "Not recorded";
+  const evidenceClass = displayEvidenceClass(measures, provenance);
   const description = sourceMeasure
     ? `Source lineage for ${sourceMeasure.label}. The section check is shared with the containing collection; publisher and edition links below are specific to this measure.`
     : "This source collection may contain multiple publisher series. Each measure below keeps its own primary source and observation dates.";
