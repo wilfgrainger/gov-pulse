@@ -6,6 +6,7 @@ type ArchivedMeasure = {
   id: string;
   label: string;
   value: number | null;
+  availability: string;
   unit: string;
   comparisonKey: string;
   basis: string;
@@ -72,6 +73,7 @@ test("archive lineage compares observation identity rather than measure presence
     id: "housePriceAverage",
     label: "UK house price average",
     value: 273000,
+    availability: "current",
     unit: "GBP",
     comparisonKey: "average-house-price",
     basis: "nominal-price-level",
@@ -162,7 +164,8 @@ test("deployed source history opens its immutable edition and primary publicatio
   await expect(page.getByRole("heading", { name: "Revision ledger" })).toBeVisible();
   await expect(page.locator(`a[href="${measure.sourceUrl}"]`).first()).toBeVisible();
 
-  const archiveLink = page.getByRole("link", { name: "Open historical edition →" }).first();
+  const archiveLink = page.locator(`a[href="/editions/${encodeURIComponent(id)}/"]`);
+  await expect(archiveLink).toHaveText("Open historical edition →");
   await expect(archiveLink).toHaveAttribute("href", new RegExp(`/editions/${id}/?$`));
   await archiveLink.click();
   await expect(page).toHaveURL(new RegExp(`/editions/${id}/?$`));
@@ -175,7 +178,7 @@ test("deployed source history opens its immutable edition and primary publicatio
     .toHaveAttribute("href", change.nextSourceUrl!);
   await expect(page.getByText(`As-of observation: ${measure.observationPeriod.label}`).first()).toBeVisible();
   await expect(page.locator(`a[href="${measure.sourceUrl}"]`).first()).toBeVisible();
-  await expect(page.getByText(`Archived value: ${measure.value} ${measure.unit} · current at capture · source edition ${measure.sourceEditionId}`)).toBeVisible();
+  await expect(page.getByText(`Archived value: ${measure.value} ${measure.unit} · ${measure.availability} at capture · source edition ${measure.sourceEditionId}`)).toBeVisible();
 
   await page.goto(new URL("editions/", base).toString(), { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { level: 1, name: "Editions and revisions" })).toBeVisible();
