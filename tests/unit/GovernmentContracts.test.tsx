@@ -63,6 +63,7 @@ function awardWithNation(index: number, nation: string) {
     publishedAt: "2026-07-10T12:00:00.000Z",
     amount: 500_000_000 - index * 1_000_000,
     currency: "GBP" as const,
+    valueBasis: "award-value" as const,
     procurementMethod: "open",
     procurementMethodDetails: "Open procedure",
     mainProcurementCategory: "services",
@@ -97,6 +98,7 @@ function currentPayload({ withNations = false } = {}) {
         awardsSeen: 100,
         validComparableAwards: 100,
         excludedMissingValue: 0,
+        excludedAmbiguousContractValue: 0,
         excludedNonGbp: 0,
         excludedMissingBuyer: 0,
         excludedMissingSupplier: 0,
@@ -142,17 +144,17 @@ describe("GovernmentContracts nation breakdown and supplier concentration", () =
     render(<GovernmentContracts />);
 
     expect(
-      screen.getByRole("heading", { name: "Disclosed awards under an equal-share scenario" })
+      screen.getByRole("heading", { name: "disclosed award value under an equal-share scenario" })
     ).toBeInTheDocument();
     expect(screen.getByText("Showing the first 20 of 100 filtered supplier groups (100 in the full publication)."))
       .toBeInTheDocument();
-    expect(screen.getByRole("img", { name: /equal-share supplier award-value scenario in pounds/i })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /equal-share supplier disclosed award value scenario in pounds/i })).toBeInTheDocument();
     expect(screen.getByRole("table", { name: "Supplier equal-share scenario rows shown in the chart" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "SVG" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "SVG" }));
     expect(exportSpy).toHaveBeenCalledOnce();
     const chartMetadata = exportSpy.mock.calls[0][2]?.chartMetadata;
-    expect(chartMetadata?.title).toBe("Supplier equal-share award-value scenario");
+    expect(chartMetadata?.title).toBe("Supplier equal-share disclosed award value scenario");
     expect(chartMetadata?.series[0]).toMatchObject({
       key: "id:supplier-1",
       label: expect.stringContaining("£500,000,000"),

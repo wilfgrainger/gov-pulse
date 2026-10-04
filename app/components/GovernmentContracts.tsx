@@ -9,6 +9,7 @@ import SupplierMarketConcentration from "@/app/components/visuals/SupplierMarket
 import { useMetrics } from "@/app/lib/useMetrics";
 import { barWidthPercent } from "@/app/lib/chartModel";
 import { buildSupplierConcentrationMetadata } from "@/app/lib/governmentContractsChart";
+import { valueBasisDescription } from "@/app/lib/publicMoney";
 import { isCurrentGovernmentContractsPayload } from "@/contracts/government-contracts";
 
 const FALLBACK = {
@@ -26,6 +27,7 @@ const FALLBACK = {
   summary: {
     awardCount: 0,
     disclosedValueTotal: 0,
+    valueBasis: "award-value" as "award-value" | "contract-value",
     largestAwardValue: 0,
     top10Share: 0,
     distinctBuyers: 0,
@@ -44,6 +46,7 @@ const FALLBACK = {
     awardsSeen: 0,
     validComparableAwards: 0,
     excludedMissingValue: 0,
+    excludedAmbiguousContractValue: 0,
     excludedNonGbp: 0,
     excludedMissingBuyer: 0,
     excludedMissingSupplier: 0,
@@ -78,6 +81,7 @@ type Award = {
   publishedAt: string;
   amount: number;
   currency: "GBP";
+  valueBasis: "award-value" | "contract-value";
   procurementMethod: string | null;
   procurementMethodDetails: string | null;
   mainProcurementCategory: string | null;
@@ -135,7 +139,10 @@ function AwardCard({ award }: { award: Award }) {
     <article className="border-t border-black/20 py-5 first:border-t-0">
       <div className="flex items-start justify-between gap-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Rank {award.rank}</p>
-        <p className="font-mono text-lg font-semibold tabular-nums">{formatCurrency(award.amount)}</p>
+        <div className="text-right">
+          <p className="font-mono text-lg font-semibold tabular-nums">{formatCurrency(award.amount)}</p>
+          <p className="mt-1 text-xs text-gray-600">{valueBasisDescription(award.valueBasis)}</p>
+        </div>
       </div>
       <h4 className="mt-3 text-lg font-semibold leading-6">{award.title}</h4>
       <dl className="mt-4 grid gap-3 text-sm">
@@ -237,13 +244,14 @@ export default function GovernmentContracts() {
   const fullSupplierCount = Array.isArray(data.supplierConcentration) ? data.supplierConcentration.length : 0;
   const supplierChartRef = useRef<SVGSVGElement | null>(null);
   const supplierChartMetadata = useMemo(() => buildSupplierConcentrationMetadata({
-    title: "Supplier equal-share award-value scenario",
+    title: `Supplier equal-share ${valueBasisDescription(data.summary?.valueBasis ?? "award-value")} scenario`,
     suppliers: supplierChartRows,
     filteredSupplierCount: supplierConcentration.length,
     fullSupplierCount,
     updateWindow: { updatedFrom: data.window?.updatedFrom ?? "", updatedTo: data.window?.updatedTo ?? "" },
     sourceUrl: data.source?.apiUrl ?? "",
     sourceLabel: "Cabinet Office Find a Tender OCDS API",
+    valueBasisLabel: valueBasisDescription(data.summary?.valueBasis ?? "award-value"),
     caveats: data.caveats ?? [],
   }), [data, supplierChartRows, supplierConcentration.length, fullSupplierCount]);
   const supplierChartMax = data.supplierConcentration?.[0]?.disclosedValue ?? 0;
@@ -269,10 +277,10 @@ export default function GovernmentContracts() {
       <section aria-labelledby="contracts-briefing-title" className="border-y border-foreground py-6">
         <p className="text-sm font-semibold text-accent">Official procurement notices</p>
         <h3 id="contracts-briefing-title" className="mt-2 max-w-5xl text-3xl font-semibold leading-tight tracking-[-0.03em] md:text-5xl">
-          The largest {data.summary.awardCount} disclosed government contract award{data.summary.awardCount === 1 ? "" : "s"} in the latest complete window.
+          The {data.summary.awardCount} highest-ranked government contract notice{data.summary.awardCount === 1 ? "" : "s"} in the latest complete window.
         </h3>
         <p className="mt-4 max-w-4xl text-lg leading-8 text-gray-700">
-          Ranked from Cabinet Office Find a Tender award releases updated between {data.window.label}. Values are disclosure figures, not a claim about cash already spent or value for money.
+          Ranked from Cabinet Office Find a Tender award releases updated between {data.window.label}. Values use {valueBasisDescription(data.summary.valueBasis)}; they are not confirmed expenditure or a value-for-money assessment.
         </p>
         <p className="mt-3 text-sm leading-6 text-gray-600">
           {data.window.basis}. Refreshed {formatDate(data.generatedAt)} using {data.source.standard}.
@@ -281,14 +289,14 @@ export default function GovernmentContracts() {
 
       <section aria-label="Government contracts summary" className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryFigure
-          label="Disclosed value"
+          label="Value in ranked notices"
           value={formatCurrency(data.summary.disclosedValueTotal, true)}
-          note="Sum of the displayed ranked awards; not confirmed expenditure."
+          note={`Sum of displayed notices using ${valueBasisDescription(data.summary.valueBasis)}; not confirmed expenditure.`}
         />
         <SummaryFigure
           label="Top ten share"
           value={`${data.summary.top10Share.toFixed(1)}%`}
-          note="Share of the ranked disclosed value held by the ten largest awards."
+          note="Share of the ranked value held by the ten largest notices."
         />
         <SummaryFigure
           label="Named suppliers"
@@ -306,6 +314,7 @@ export default function GovernmentContracts() {
       <ContractsMonthlyPipeline
         awards={data.awards}
         totalValue={data.summary.disclosedValueTotal}
+        valueBasisLabel={valueBasisDescription(data.summary.valueBasis)}
       />
 
       <section id="uk-doge" aria-labelledby="uk-doge-title" className="border border-black bg-[#14243b] p-6 text-white md:p-8">
@@ -318,7 +327,7 @@ export default function GovernmentContracts() {
         </p>
         <dl className="mt-7 grid gap-6 md:grid-cols-3">
           <div className="border-t border-white/30 pt-4">
-            <dt className="text-xs font-semibold uppercase tracking-wider text-gray-300">Largest disclosed award</dt>
+            <dt className="text-xs font-semibold uppercase tracking-wider text-gray-300">Largest listed value</dt>
             <dd className="mt-2 text-2xl font-semibold">{formatCurrency(data.summary.largestAwardValue, true)}</dd>
             <dd className="mt-2 text-sm leading-6 text-gray-300">Open the notice to distinguish a firm award from a framework ceiling or multi-lot disclosure.</dd>
           </div>
@@ -330,7 +339,7 @@ export default function GovernmentContracts() {
           <div className="border-t border-white/30 pt-4">
             <dt className="text-xs font-semibold uppercase tracking-wider text-gray-300">Leading supplier equal-share scenario</dt>
             <dd className="mt-2 text-xl font-semibold">{data.summary.topSupplier.name}</dd>
-            <dd className="mt-2 text-sm leading-6 text-gray-300">{formatCurrency(data.summary.topSupplier.disclosedValue, true)} of disclosed award value under an equal-share scenario; this is not attributed supplier revenue.{data.summary.topSupplier.entityId ? ` Find a Tender ID: ${data.summary.topSupplier.entityId}.` : ""}</dd>
+            <dd className="mt-2 text-sm leading-6 text-gray-300">{formatCurrency(data.summary.topSupplier.disclosedValue, true)} of {valueBasisDescription(data.summary.valueBasis)} under an equal-share scenario; this is not attributed supplier revenue.{data.summary.topSupplier.entityId ? ` Find a Tender ID: ${data.summary.topSupplier.entityId}.` : ""}</dd>
           </div>
         </dl>
       </section>
@@ -340,13 +349,14 @@ export default function GovernmentContracts() {
         suppliers={data.supplierConcentration}
         totalDisclosedValue={data.summary.disclosedValueTotal}
         top10Share={data.summary.top10Share}
+        valueBasisLabel={valueBasisDescription(data.summary.valueBasis)}
       />
 
       <section aria-labelledby="supplier-concentration-title">
         <div className="border-b border-black/20 pb-5">
-          <p className="text-sm font-semibold text-accent">Supplier award-value scenario</p>
+          <p className="text-sm font-semibold text-accent">Supplier value scenario</p>
           <h3 id="supplier-concentration-title" className="mt-1 text-2xl font-semibold md:text-3xl">
-            Disclosed awards under an equal-share scenario
+            {valueBasisDescription(data.summary.valueBasis)} under an equal-share scenario
           </h3>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">
             Groups by publisher supplier ID where available, then exact name as a fallback. Multi-supplier awards are
@@ -380,7 +390,7 @@ export default function GovernmentContracts() {
               ref={supplierChartRef}
               viewBox={`0 0 940 ${supplierChartHeight}`}
               role="img"
-              aria-label={`Equal-share supplier award-value scenario in pounds. First ${visibleSupplierCount} of ${supplierConcentration.length} filtered supplier groups; scale begins at zero and ends at ${formatCurrency(supplierChartMax)}.`}
+              aria-label={`Equal-share supplier ${valueBasisDescription(data.summary.valueBasis)} scenario in pounds. First ${visibleSupplierCount} of ${supplierConcentration.length} filtered supplier groups; scale begins at zero and ends at ${formatCurrency(supplierChartMax)}.`}
               className="h-auto min-w-[52rem] w-full"
             >
               <rect x="0" y="0" width="940" height={supplierChartHeight} fill="#ffffff" />
@@ -411,7 +421,7 @@ export default function GovernmentContracts() {
             </table>
           </div>
           <figcaption className="mt-2 flex flex-wrap items-start justify-between gap-3">
-            <p className="max-w-3xl text-xs leading-5 text-gray-600">Zero-based axis uses the largest supplier scenario value in the full publication as its maximum. Multi-supplier award values are split equally for comparison; these scenario values are not supplier revenue or confirmed expenditure.</p>
+            <p className="max-w-3xl text-xs leading-5 text-gray-600">Zero-based axis uses the largest supplier scenario value in the full publication as its maximum. Multi-supplier values are split equally for comparison; these scenario values are not supplier revenue or confirmed expenditure.</p>
             <ChartExportButtons containerRef={supplierChartRef} chartMetadata={supplierChartMetadata} />
           </figcaption>
         </figure>
@@ -474,7 +484,7 @@ export default function GovernmentContracts() {
                 <th scope="col" className="px-4 py-3">Buyer and supplier</th>
                 <th scope="col" className="px-4 py-3">Nation</th>
                 <th scope="col" className="px-4 py-3">Date</th>
-                <th scope="col" className="px-4 py-3 text-right">Disclosed value</th>
+                <th scope="col" className="px-4 py-3 text-right">Value ({valueBasisDescription(data.summary.valueBasis)})</th>
                 <th scope="col" className="px-4 py-3">Source</th>
               </tr>
             </thead>
@@ -491,7 +501,7 @@ export default function GovernmentContracts() {
                     {[...new Set(award.supplierNations)].join(", ")}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 align-top">{formatDate(award.awardDate)}</td>
-                  <td className="whitespace-nowrap px-4 py-4 text-right align-top font-mono font-semibold tabular-nums">{formatCurrency(award.amount)}</td>
+                  <td className="whitespace-nowrap px-4 py-4 text-right align-top font-mono font-semibold tabular-nums">{formatCurrency(award.amount)}<span className="mt-1 block whitespace-normal font-sans text-xs font-normal text-gray-600">{valueBasisDescription(award.valueBasis)}</span></td>
                   <td className="px-4 py-4 align-top">
                     <a className="font-semibold underline decoration-black/30 underline-offset-4 hover:decoration-black" href={award.noticeUrl} target="_blank" rel="noopener noreferrer">Notice</a>
                     <a className="mt-2 block text-xs underline decoration-black/20 underline-offset-4 hover:decoration-black" href={award.procurementUrl} target="_blank" rel="noopener noreferrer">History</a>
@@ -512,10 +522,10 @@ export default function GovernmentContracts() {
         }
         definition={
           <p>
-            {data.evidencePolicy.rankingMeasure}. Only comparable GBP awards in the complete update window are eligible, drawn from Cabinet Office Find a Tender award releases.
+            {data.evidencePolicy.rankingMeasure}. This publication uses {valueBasisDescription(data.summary.valueBasis)} throughout. Only comparable GBP awards in the complete update window are eligible, drawn from Cabinet Office Find a Tender award releases.
           </p>
         }
-        unit="Disclosed award value (GBP)"
+        unit={`${valueBasisDescription(data.summary.valueBasis)} (GBP)`}
         geography="United Kingdom (Find a Tender central government procurement)"
         interpretation={
           <p>
@@ -524,7 +534,7 @@ export default function GovernmentContracts() {
         }
         caveat={
           <p>
-            {data.caveats[0] ?? "See the method and coverage details below for full limitations."} The collector examined {data.dataQuality.releasesSeen.toLocaleString("en-GB")} releases and found {data.dataQuality.validComparableAwards.toLocaleString("en-GB")} comparable awards in the complete window; this display retains the highest-valued awards.
+            {data.caveats[0] ?? "See the method and coverage details below for full limitations."} This publication uses {valueBasisDescription(data.summary.valueBasis)} throughout. The collector examined {data.dataQuality.releasesSeen.toLocaleString("en-GB")} releases and found {data.dataQuality.validComparableAwards.toLocaleString("en-GB")} comparable awards in the complete window; this display retains the highest-valued awards.
           </p>
         }
         sourceLabel="Find a Tender OCDS API"
@@ -542,8 +552,9 @@ export default function GovernmentContracts() {
         <div className="mt-4 grid gap-6 text-sm leading-6 text-gray-700 md:grid-cols-2">
           <div>
             <h4 className="font-semibold text-black">What was ranked</h4>
-            <p className="mt-2">{data.evidencePolicy.rankingMeasure}. Only comparable GBP awards in the complete update window are eligible.</p>
+            <p className="mt-2">{data.evidencePolicy.rankingMeasure}. This publication uses {valueBasisDescription(data.summary.valueBasis)} throughout.</p>
             <p className="mt-3">The collector examined {data.dataQuality.releasesSeen.toLocaleString("en-GB")} releases across {data.dataQuality.pagesFetched.toLocaleString("en-GB")} complete API pages and found {data.dataQuality.validComparableAwards.toLocaleString("en-GB")} comparable awards. The display retains up to {displayedAwardLimit} highest-valued records from that complete window.</p>
+            <p className="mt-3">{data.dataQuality.excludedAmbiguousContractValue.toLocaleString("en-GB")} awards were excluded because multiple linked contracts made their value basis ambiguous.</p>
           </div>
           <div>
             <h4 className="font-semibold text-black">Important limitations</h4>

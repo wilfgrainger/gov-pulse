@@ -1,6 +1,14 @@
+export type PublicMoneyValueBasis = "award-value" | "contract-value";
+
+export function valueBasisDescription(valueBasis: PublicMoneyValueBasis): string {
+  return valueBasis === "contract-value"
+    ? "value in one uniquely linked contract"
+    : "disclosed award value";
+}
+
 export type PublicAward = {
   rank: number; key: string; ocid: string; releaseId: string; awardId: string; title: string; buyer: string; buyerId?: string | null; suppliers: string[]; supplierIds?: Array<string | null>; supplierNations: string[];
-  awardDate: string; publishedAt: string; amount: number; currency: "GBP"; procurementMethod: string | null; procurementMethodDetails: string | null; mainProcurementCategory: string | null; framework: boolean; noticeUrl: string; procurementUrl: string;
+  awardDate: string; publishedAt: string; amount: number; currency: "GBP"; valueBasis: PublicMoneyValueBasis; procurementMethod: string | null; procurementMethodDetails: string | null; mainProcurementCategory: string | null; framework: boolean; noticeUrl: string; procurementUrl: string;
 };
 
 export type AwardDossier = {
@@ -100,8 +108,8 @@ export function buildDossier(
           ? `These records share the exact Find a Tender ${kind} identifier ${identity}; the disclosed name may change across notices.`
           : `These records are grouped by the exact disclosed ${kind} string only; the name does not prove a shared legal entity and name collisions may combine unrelated parties.`,
       "The publisher window keeps its latest selected notice revision; it is not a complete release history.",
-      ...(kind === "supplier" ? ["Matched disclosed award values describe notices naming this supplier; they are not attributed supplier revenue. Multi-supplier awards are not allocated between suppliers."] : []),
-      "Disclosed award value is not an invoice or confirmed public expenditure; framework values may not be fully spent.",
+      ...(kind === "supplier" ? [`Matched ${valueBasisDescription(award.valueBasis)} amounts describe notices naming this supplier; they are not attributed supplier revenue. Multi-supplier notices are not allocated between suppliers.`] : []),
+      `${valueBasisDescription(award.valueBasis)} is not an invoice or confirmed public expenditure; framework values may not be fully spent.`,
       `This record set contains ${matchingAwards.length} of ${awards.length} comparable GBP awards in the current filtered publication window.`,
     ],
   };
@@ -172,7 +180,7 @@ export function serializePublicAwardsCsv(
 ): string {
   const columns = [
     "Notice ID", "Title", "Buyer", "Buyer ID", "Suppliers", "Supplier IDs", "Supplier nations", "Award date", "Publication date",
-    "Disclosed award value", "Currency", "Procedure", "Framework", "Notice URL", "Procurement history URL",
+    "Recorded value", "Value basis", "Currency", "Procedure", "Framework", "Notice URL", "Procurement history URL",
     "Source window", "Filtered row count", "Full source-window award count", "Window coverage", "Currency basis note",
   ];
   const rows = awards.map((award) => [
@@ -186,6 +194,7 @@ export function serializePublicAwardsCsv(
     award.awardDate,
     award.publishedAt,
     award.amount,
+    valueBasisDescription(award.valueBasis),
     award.currency,
     award.procurementMethodDetails ?? award.procurementMethod ?? "Not disclosed",
     award.framework,
@@ -199,7 +208,7 @@ export function serializePublicAwardsCsv(
     Number.isFinite(context.filteredCoverage)
       ? `${(Math.max(0, Math.min(1, context.filteredCoverage!)) * 100).toFixed(1)}%`
       : "Not stated",
-    "GBP only; award values are publisher-disclosed, not confirmed expenditure",
+    `GBP only; ${valueBasisDescription(award.valueBasis)} is not confirmed expenditure`,
   ].map(csvCell));
   return [columns.map(csvCell).join(","), ...rows.map((row) => row.join(","))].join("\n");
 }

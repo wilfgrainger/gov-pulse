@@ -3,7 +3,7 @@ import { buildDossier, filteredAwardCoverage, parsePublicMoneyUrlState, serializ
 
 const award = (key: string, amount: number, supplier = "Example Ltd"): PublicAward => ({
   rank: 1, key, ocid: `ocds-h6vhtk-${key}`, releaseId: "123456-2026", awardId: key, title: `Award ${key}`, buyer: "Department A", suppliers: [supplier], supplierNations: ["Other/Unknown"],
-  awardDate: "2026-08-01T00:00:00.000Z", publishedAt: "2026-08-02T00:00:00.000Z", amount, currency: "GBP", procurementMethod: "open", procurementMethodDetails: null, mainProcurementCategory: "services", framework: false,
+  awardDate: "2026-08-01T00:00:00.000Z", publishedAt: "2026-08-02T00:00:00.000Z", amount, currency: "GBP", valueBasis: "award-value", procurementMethod: "open", procurementMethodDetails: null, mainProcurementCategory: "services", framework: false,
   noticeUrl: `https://www.find-tender.service.gov.uk/Notice/123456-2026`, procurementUrl: `https://www.find-tender.service.gov.uk/procurement/${`ocds-h6vhtk-${key}`}`,
 });
 
@@ -35,7 +35,7 @@ describe("notice-level public-money dossiers", () => {
     expect(csv).toContain('"Support, ""phase two"""');
     expect(csv).toContain('"Department, Alpha"');
     expect(csv).toContain('"Supplier ""Quoted"", Partner Ltd"');
-    expect(csv).toContain("100,GBP,open,false");
+    expect(csv).toContain("100,disclosed award value,GBP,open,false");
     expect(csv).toContain(selected.noticeUrl);
     expect(csv).toContain(selected.procurementUrl);
   });
@@ -53,7 +53,7 @@ describe("notice-level public-money dossiers", () => {
     expect(buyer.noticeLinks.map((notice) => notice.releaseId)).toHaveLength(2);
     expect(buyer.caveats.join(" ")).toMatch(/does not prove a shared legal entity/i);
     expect(supplier).toMatchObject({ identityBasis: "exact-supplier-string", disclosedTotal: 350, noticeCount: 2 });
-    expect(supplier.caveats.join(" ")).toMatch(/multi-supplier awards are not allocated/i);
+    expect(supplier.caveats.join(" ")).toMatch(/multi-supplier notices are not allocated/i);
     expect(supplier.caveats.join(" ")).toMatch(/not a complete release history/i);
   });
 
@@ -124,6 +124,16 @@ describe("notice-level public-money dossiers", () => {
 
     expect(csv.split("\n")).toHaveLength(2);
     expect(csv).toContain("Source window,Filtered row count,Full source-window award count,Window coverage,Currency basis note");
-    expect(csv).toContain("1–7 August 2026,1,4,25.0%,\"GBP only; award values are publisher-disclosed, not confirmed expenditure\"");
+    expect(csv).toContain("1–7 August 2026,1,4,25.0%,GBP only; disclosed award value is not confirmed expenditure");
+  });
+
+  it("exports the signed-contract basis explicitly when that value is used", () => {
+    const contractValue = { ...award("ocds-h6vhtk-a1", 100), valueBasis: "contract-value" as const };
+    const csv = serializePublicAwardsCsv([contractValue]);
+
+    expect(csv).toContain("100,value in one uniquely linked contract,GBP");
+    expect(csv).toContain("GBP only; value in one uniquely linked contract is not confirmed expenditure");
+    expect(buildDossier([contractValue], contractValue.key)?.caveats.join(" "))
+      .toMatch(/value in one uniquely linked contract is not an invoice/i);
   });
 });

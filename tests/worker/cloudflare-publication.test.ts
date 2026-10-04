@@ -151,6 +151,7 @@ function quality(validComparableAwards: number) {
     awardsSeen: validComparableAwards,
     validComparableAwards,
     excludedMissingValue: 0,
+    excludedAmbiguousContractValue: 0,
     excludedNonGbp: 0,
     excludedMissingBuyer: 0,
     excludedMissingSupplier: 0,
@@ -175,6 +176,7 @@ function award(index: number, day: string) {
     publishedAt: `${day}T13:00:00.000Z`,
     amount: 10_000_000 - index * 10_000,
     currency: "GBP",
+    valueBasis: "award-value",
     procurementMethod: "open",
     procurementMethodDetails: "Open procedure",
     mainProcurementCategory: "services",
@@ -199,6 +201,7 @@ function rawRelease(
     buyer: { name: "Buyer" },
     tender: { title: "Contract", procurementMethod: "open", mainProcurementCategory: "services" },
     awards: [{ id, title: "Award", date: `${day}T12:00:00.000Z`, value: { amount, currency: "GBP" }, suppliers: [{ name: "Supplier", id: "supplier-1" }] }],
+    contracts: [],
     parties: [{ id: "supplier-1", address: { postalCode: "SY1 1AA" } }],
   };
 }
@@ -460,7 +463,7 @@ describe("Cloudflare data publication", () => {
     const shards = days.map((day) => {
       const awards = Array.from({ length: 20 }, () => award(cursor++, day));
       return {
-        schemaVersion: 1,
+        schemaVersion: 2,
         day,
         complete: true,
         collectedAt: now.toISOString(),
@@ -476,6 +479,132 @@ describe("Cloudflare data publication", () => {
     expect(payload?.dataQuality.validComparableAwards).toBe(140);
     expect(payload?.window.updatedFrom).toBe(`${days[0]}T00:00:00.000Z`);
     expect(payload?.window.updatedTo).toBe(`${days[6]}T23:59:59.999Z`);
+  });
+
+  it("uses a single linked contract value when the award value is absent", () => {
+    const now = new Date("2026-10-04T12:00:00.000Z");
+    const day = previousCompleteDays(now, 7)[0];
+    const release = rawRelease(7, day, 395_884);
+    const award = release.awards[0];
+    delete award.value;
+    release.contracts = [{
+      id: award.id,
+      awardID: award.id,
+      status: "active",
+      value: { amount: 395_884, currency: "GBP" },
+      dateSigned: `${day}T12:00:00.000Z`,
+    }];
+
+    const shard = rankDailyAwards([release], day, now);
+
+    expect(shard.awards).toHaveLength(1);
+    expect(shard.awards[0]).toMatchObject({
+      amount: 395_884,
+      valueBasis: "contract-value",
+      currency: "GBP",
+    });
+    expect(shard.dataQuality).toMatchObject({
+      validComparableAwards: 1,
+      excludedMissingValue: 0,
+      excludedAmbiguousContractValue: 0,
+    });
+  });
+
+  it("does not use a contract value unless its awardID matches exactly", () => {
+    const now = new Date("2026-10-04T12:00:00.000Z");
+    const day = previousCompleteDays(now, 7)[0];
+    const release = rawRelease(11, day, 0);
+    const award = release.awards[0];
+    delete award.value;
+    release.contracts = [{
+      id: "contract-for-another-award",
+      awardID: "a-different-award-id",
+      value: { amount: 900_000, currency: "GBP" },
+    }];
+
+    const shard = rankDailyAwards([release], day, now);
+
+    expect(shard.awards).toEqual([]);
+    expect(shard.dataQuality).toMatchObject({
+      excludedMissingValue: 1,
+      excludedAmbiguousContractValue: 0,
+    });
+  });
+
+  it("excludes an award when multiple linked contracts make its value ambiguous", () => {
+    const now = new Date("2026-10-04T12:00:00.000Z");
+    const day = previousCompleteDays(now, 7)[0];
+    const release = rawRelease(8, day, 0);
+    const award = release.awards[0];
+    delete award.value;
+    release.contracts = [1, 2].map((index) => ({
+      id: `${award.id}-${index}`,
+      awardID: award.id,
+      status: "active",
+      value: { amount: index * 100_000, currency: "GBP" },
+    }));
+
+    const shard = rankDailyAwards([release], day, now);
+
+    expect(shard.awards).toEqual([]);
+    expect(shard.dataQuality).toMatchObject({
+      validComparableAwards: 0,
+      excludedMissingValue: 0,
+      excludedAmbiguousContractValue: 1,
+    });
+  });
+
+  it("withholds a complete window that mixes award and contract value bases", () => {
+    const now = new Date("2026-10-04T12:00:00.000Z");
+    const days = previousCompleteDays(now, 7);
+    const awardValueRelease = rawRelease(9, days[0], 100_000);
+    const contractValueRelease = rawRelease(10, days[1], 200_000);
+    delete contractValueRelease.awards[0].value;
+    contractValueRelease.contracts = [{
+      id: contractValueRelease.awards[0].id,
+      awardID: contractValueRelease.awards[0].id,
+      value: { amount: 200_000, currency: "GBP" },
+    }];
+    const shards = [
+      rankDailyAwards([awardValueRelease], days[0], now),
+      rankDailyAwards([contractValueRelease], days[1], now),
+      ...days.slice(2).map((day) => ({
+        schemaVersion: 2,
+        day,
+        complete: true,
+        collectedAt: now.toISOString(),
+        awards: [],
+        dataQuality: quality(0),
+      })),
+    ];
+
+    expect(buildContractsFromShards(shards, now)).toBeNull();
+  });
+
+  it("does not reuse daily shards from the previous value-basis schema", async () => {
+    const now = new Date("2026-10-04T12:00:00.000Z");
+    const days = previousCompleteDays(now, 7);
+    const legacyShards = Object.fromEntries(days.map((day) => [
+      `v12:contracts:day:${day}`,
+      {
+        schemaVersion: 1,
+        day,
+        complete: true,
+        collectedAt: now.toISOString(),
+        awards: [],
+        dataQuality: quality(0),
+      },
+    ]));
+    const { env } = kvEnv(legacyShards);
+    const fetchImpl = vi.fn(async () => new Response(
+      JSON.stringify({ publisher: { name: "Cabinet Office" }, version: "1.1", releases: [] }),
+      { headers: { "content-type": "application/json" } },
+    ));
+
+    const result = await refreshGovernmentContracts(env, { now, fetchImpl });
+
+    expect(result.collected).toEqual(days);
+    expect(fetchImpl).toHaveBeenCalledTimes(28);
   });
 
   it("follows Find a Tender cursors until every result page is read", async () => {
@@ -707,7 +836,7 @@ describe("Cloudflare data publication", () => {
       rawRelease(1, days[1], amendment.revision.amount, amendment.awardId, amendment.revision.releaseId, amendment.ocid),
     ], days[1], now);
     const shards = [daily, revision, ...days.slice(2).map((day) => ({
-      schemaVersion: 1,
+      schemaVersion: 2,
       day,
       complete: true,
       collectedAt: now.toISOString(),
@@ -749,7 +878,7 @@ describe("Cloudflare data publication", () => {
       rawRelease(index + 2, days[0], 2_000, `award-${index + 2}`))], days[0], now);
     const second = rankDailyAwards([cancelled], days[1], now);
     const rest = days.slice(2).map((day) => ({
-      schemaVersion: 1, day, complete: true, collectedAt: now.toISOString(), awards: [], dataQuality: quality(0),
+      schemaVersion: 2, day, complete: true, collectedAt: now.toISOString(), awards: [], dataQuality: quality(0),
     }));
 
     expect(buildContractsFromShards([first, second, ...rest], now)?.awards).toHaveLength(100);
@@ -771,7 +900,7 @@ describe("Cloudflare data publication", () => {
     const now = new Date("2026-07-18T12:00:00.000Z");
     const days = previousCompleteDays(now, 7);
     const shards = days.map((day) => ({
-      schemaVersion: 1, day, complete: true, collectedAt: now.toISOString(), awards: [], dataQuality: quality(0),
+      schemaVersion: 2, day, complete: true, collectedAt: now.toISOString(), awards: [], dataQuality: quality(0),
     }));
     shards[0].complete = false;
     expect(buildContractsFromShards(shards, now)).toBeNull();

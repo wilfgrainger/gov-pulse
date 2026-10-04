@@ -25,6 +25,7 @@ function award(key: string, amount: number, buyer: string, supplier: string): Pu
     publishedAt: "2026-08-02T00:00:00.000Z",
     amount,
     currency: "GBP",
+    valueBasis: "award-value",
     procurementMethod: "open",
     procurementMethodDetails: null,
     mainProcurementCategory: "services",
@@ -37,6 +38,7 @@ function award(key: string, amount: number, buyer: string, supplier: string): Pu
 describe("PublicMoneyExplorer name-matched dossiers", () => {
   it("loads and displays the source release sequence on demand for the selected OCID", async () => {
     const selected = award("ocds-h6vhtk-111111", 100, "Department A", "Example Ltd");
+    selected.valueBasis = "contract-value";
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({
       ocid: selected.ocid,
       source: {
@@ -56,6 +58,7 @@ describe("PublicMoneyExplorer name-matched dossiers", () => {
     }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
     render(<PublicMoneyExplorer awards={[selected]} caveats={[]} />);
+    expect(screen.getByText("value in one uniquely linked contract")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Open notice dossier" }));
     expect(fetchMock).not.toHaveBeenCalled();

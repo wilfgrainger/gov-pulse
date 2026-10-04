@@ -16,6 +16,7 @@ import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const SHARD_PREFIX = "v12:contracts:day:";
 const CURRENT_RECORD_KEY = "v12:section:governmentContracts";
+const CONTRACT_SHARD_SCHEMA_VERSION = 2;
 const SHARD_TTL_SECONDS = 10 * 24 * 60 * 60;
 const SLICES_PER_DAY = 4;
 const PAGE_LIMIT = 100;
@@ -154,8 +155,22 @@ function extractComparableAwards(release, counters) {
       }
       continue;
     }
-    const amount = finiteAmount(award?.value?.amount);
-    const currency = text(award?.value?.currency).toUpperCase();
+    let rawValue = award?.value;
+    let valueBasis = "award-value";
+    if (rawValue === null || rawValue === undefined) {
+      const linkedContracts = (Array.isArray(release?.contracts) ? release.contracts : [])
+        .filter((contract) => text(contract?.awardID) === text(award?.id));
+      if (linkedContracts.length > 1) {
+        counters.excludedAmbiguousContractValue += 1;
+        continue;
+      }
+      if (linkedContracts.length === 1) {
+        rawValue = linkedContracts[0]?.value;
+        valueBasis = "contract-value";
+      }
+    }
+    const amount = finiteAmount(rawValue?.amount);
+    const currency = text(rawValue?.currency).toUpperCase();
     const buyer = text(release?.buyer?.name);
     const suppliers = supplierNames(award);
     if (amount === null) {
@@ -209,6 +224,7 @@ function extractComparableAwards(release, counters) {
       publishedAt: new Date(publishedAt).toISOString(),
       amount,
       currency: "GBP",
+      valueBasis,
       procurementMethod: text(release?.tender?.procurementMethod) || null,
       procurementMethodDetails: text(release?.tender?.procurementMethodDetails) || null,
       mainProcurementCategory: text(release?.tender?.mainProcurementCategory) || null,
@@ -370,6 +386,7 @@ function rankDailyAwards(releases, day, collectedAt = new Date(), retrieval = {}
     awardsSeen: 0,
     validComparableAwards: 0,
     excludedMissingValue: 0,
+    excludedAmbiguousContractValue: 0,
     excludedNonGbp: 0,
     excludedMissingBuyer: 0,
     excludedMissingSupplier: 0,
@@ -398,7 +415,7 @@ function rankDailyAwards(releases, day, collectedAt = new Date(), retrieval = {}
     );
   counters.validComparableAwards = [...byKey.values()].filter((award) => !award.cancelled).length;
   const shard = {
-    schemaVersion: 1,
+    schemaVersion: CONTRACT_SHARD_SCHEMA_VERSION,
     day,
     complete: true,
     collectedAt: collectedAt.toISOString(),
@@ -451,6 +468,7 @@ function combineQuality(shards, duplicatesRemoved) {
     "releasesSeen",
     "awardsSeen",
     "excludedMissingValue",
+    "excludedAmbiguousContractValue",
     "excludedNonGbp",
     "excludedMissingBuyer",
     "excludedMissingSupplier",
@@ -468,7 +486,9 @@ function combineQuality(shards, duplicatesRemoved) {
 }
 
 function buildContractsFromShards(shards, now = new Date()) {
-  if (!Array.isArray(shards) || shards.length !== 7 || shards.some((shard) => !shard?.complete)) {
+  if (!Array.isArray(shards) || shards.length !== 7 || shards.some((shard) =>
+    !shard?.complete || shard.schemaVersion !== CONTRACT_SHARD_SCHEMA_VERSION
+  )) {
     return null;
   }
   const days = shards.map((shard) => shard.day).sort();
@@ -495,6 +515,7 @@ function buildContractsFromShards(shards, now = new Date()) {
       left.key.localeCompare(right.key, "en-GB")
   );
   if (comparable.length === 0) return null;
+  if (new Set(comparable.map((award) => award.valueBasis ?? "award-value")).size !== 1) return null;
   const awards = comparable.slice(0, DISPLAYED_AWARD_LIMIT).map((award, index) => ({
     ...award,
     rank: index + 1,
@@ -541,7 +562,11 @@ async function refreshGovernmentContracts(env, options = {}) {
   const missing = [];
   for (const day of days) {
     const shard = await readJson(env, `${SHARD_PREFIX}${day}`);
-    if (shard?.complete && shard.day === day) shards.push(shard);
+    if (
+      shard?.complete &&
+      shard.schemaVersion === CONTRACT_SHARD_SCHEMA_VERSION &&
+      shard.day === day
+    ) shards.push(shard);
     else missing.push(day);
   }
 
