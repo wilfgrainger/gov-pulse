@@ -26,6 +26,7 @@ const COMPARISON_MEASURES = Object.freeze([
     definition: "General-government gross debt expressed in current US dollars per resident.",
     unit: UNIT_USD_PER_RESIDENT,
     rankDirection: "highest-first",
+    caveat: "The per-resident projection is calculated by multiplying the IMF debt-to-GDP ratio by IMF GDP per capita in current US dollars; it is not an observed individual liability.",
   }),
   Object.freeze({
     id: "officialDevelopmentAssistance",
@@ -47,7 +48,7 @@ const COMPARISON_MEASURES = Object.freeze([
     definition: "Public social expenditure expressed in current US dollars per resident.",
     unit: UNIT_USD_PER_RESIDENT,
     rankDirection: "highest-first",
-    caveat: "Public social expenditure includes areas such as pensions, health, family support and unemployment programmes, so it overlaps conceptually with healthcare expenditure and must not be added to it as a non-overlapping category.",
+    caveat: "The per-resident value is calculated by multiplying the OECD social-expenditure share of GDP by World Bank GDP per capita in current US dollars. Public social expenditure includes pensions, health, family support and unemployment programmes, so it overlaps conceptually with healthcare expenditure and must not be added to it as a non-overlapping category.",
   }),
   Object.freeze({
     id: "healthcareSpending",
@@ -63,7 +64,7 @@ const COMPARISON_MEASURES = Object.freeze([
     definition: "Economy-wide general-government tax revenue expressed in current US dollars per resident.",
     unit: UNIT_USD_PER_RESIDENT,
     rankDirection: "highest-first",
-    caveat: "This is total tax revenue divided by population, not the tax bill of an average individual.",
+    caveat: "The per-resident value is calculated by multiplying the OECD tax-revenue share of GDP by World Bank GDP per capita in current US dollars; it is not the tax bill of an average individual.",
   }),
   Object.freeze({
     id: "debtInterest",
@@ -71,6 +72,7 @@ const COMPARISON_MEASURES = Object.freeze([
     definition: "Interest paid on public debt expressed in current US dollars per resident.",
     unit: UNIT_USD_PER_RESIDENT,
     rankDirection: "highest-first",
+    caveat: "The per-resident value is calculated by multiplying the IMF interest-paid share of GDP by World Bank GDP per capita in current US dollars.",
   }),
 ]);
 

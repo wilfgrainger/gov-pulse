@@ -38,6 +38,8 @@ describe("international comparison source transforms", () => {
     expect(SOURCE_QUERIES.oecdOda2025).toContain("endPeriod=2025");
     expect(SOURCE_QUERIES.oecdSocx2023).toContain(".A..PT_B1GQ.ES10._T._T.?");
     expect(SOURCE_QUERIES.oecdSocx2023).toContain("endPeriod=2023");
+    expect(SOURCE_QUERIES.worldBankGdpPerCapita2023).toContain("NY.GDP.PCAP.CD?date=2023");
+    expect(SOURCE_QUERIES.worldBankGdpPerCapita2024).toContain("NY.GDP.PCAP.CD?date=2024");
     expect(SIPRI_MILEX_2025_WORKBOOK_URL).toMatch(/SIPRI-Milex-data-1949-2025.*\.xlsx/i);
   });
 

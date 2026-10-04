@@ -14,7 +14,7 @@ import {
   type InternationalComparisonPublication,
 } from "@/app/lib/internationalComparison";
 
-function sourceLine(observation: ComparisonObservation | null) {
+export function ComparisonSourceAttribution({ observation }: { observation: ComparisonObservation | null }) {
   if (!observation?.source) return null;
   return (
     <p className="mt-3 text-xs leading-5 text-gray-600">
@@ -31,7 +31,21 @@ function sourceLine(observation: ComparisonObservation | null) {
       {observation.source.publicationDate
         ? `, published ${observation.source.publicationDate}`
         : ""}
-      .
+      .{(observation.source.additionalSources ?? []).map((source) => (
+        <span key={`${source.url}-${source.series}`}>
+          {" Supporting source: "}
+          <a
+            href={source.url}
+            className="font-semibold underline decoration-black/20 underline-offset-4 hover:text-accent"
+            target="_blank"
+            rel="noreferrer"
+          >
+            {source.publisher}
+          </a>
+          {source.series ? `, ${source.series}` : ""}
+          {source.publicationDate ? `, published ${source.publicationDate}` : ""}.
+        </span>
+      ))}
     </p>
   );
 }
@@ -148,7 +162,7 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
               {valueTypeLabel(uk.valueType)} for {uk.observationYear}. Rankings are highest amount per resident first.
             </p>
           ) : null}
-          {sourceLine(uk)}
+          <ComparisonSourceAttribution observation={uk} />
         </aside>
       </div>
 

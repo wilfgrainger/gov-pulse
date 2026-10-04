@@ -161,12 +161,22 @@ export function buildCountryChartMetadata(
       key: row.country,
       label: `${COMPARISON_COUNTRY_NAMES[row.country]} · ${row.value} ${measure.unit} · ${row.observationYear} · ${row.valueType} · ${row.rank === null ? "not ranked" : `rank ${row.rank}`}`,
     })),
-    observations: result.rows.map((row) => ({
-      period: String(row.observationYear),
-      observedAt: `${row.observationYear}-12-31`,
-      values: { [row.country]: row.value },
-      details: { country: row.country, evidenceStatus: row.valueType, rank: row.rank },
-    })),
+    observations: result.rows.map((row) => {
+      const details: Record<string, string | number | null> = {
+        country: row.country,
+        evidenceStatus: row.valueType,
+        rank: row.rank,
+      };
+      for (const [name, input] of Object.entries(row.calculationInputs ?? {})) {
+        details[`input_${name}`] = input;
+      }
+      return {
+        period: String(row.observationYear),
+        observedAt: `${row.observationYear}-12-31`,
+        values: { [row.country]: row.value },
+        details,
+      };
+    }),
     caveats,
   };
 }

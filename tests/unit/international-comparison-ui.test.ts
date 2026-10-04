@@ -1,5 +1,8 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { ComparisonSourceAttribution } from "@/app/components/InternationalComparison";
 import {
   comparisonSummary,
   formatUsdPerResident,
@@ -79,6 +82,29 @@ describe("UK in context presentation", () => {
     expect(component).toContain("valid through");
     expect(component).toContain("Source-specific validity was not recorded");
     expect(component).not.toMatch(/valid(?:ity)?\s+.*generatedAt/i);
+  });
+
+  it("links the supporting denominator source beside the primary publisher", () => {
+    const markup = renderToStaticMarkup(createElement(ComparisonSourceAttribution, {
+      observation: {
+        ...observation("GBR", 12_000, 1),
+        source: {
+          publisher: "OECD",
+          url: "https://example.test/oecd",
+          series: "Public social spending, percent of GDP",
+          additionalSources: [{
+            publisher: "World Bank World Development Indicators",
+            url: "https://api.worldbank.org/v2/country/GBR/indicator/NY.GDP.PCAP.CD?date=2023",
+            series: "GDP per capita (current US$), 2023",
+          }],
+        },
+      },
+    }));
+
+    expect(markup).toContain('href="https://example.test/oecd"');
+    expect(markup).toContain('href="https://api.worldbank.org/v2/country/GBR/indicator/NY.GDP.PCAP.CD?date=2023"');
+    expect(markup).toContain("Supporting source");
+    expect(markup).toContain("World Bank World Development Indicators");
   });
 
   it("derives the memorable comparison from the actual countries above the UK", () => {

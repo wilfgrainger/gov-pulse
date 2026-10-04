@@ -112,6 +112,14 @@ describe("bounded international comparison Queue batches", () => {
     expect(covered.sort()).toEqual([...INTERNATIONAL_SOURCES].sort());
     expect(new Set(mappedMeasures).size).toBe(mappedMeasures.length);
     expect(mappedMeasures.sort()).toEqual(publicationMeasures.sort());
+    expect(INTERNATIONAL_SOURCES).not.toContain("imf-gdp-2023");
+    expect(INTERNATIONAL_SOURCES).not.toContain("imf-gdp-2024");
+    expect(INTERNATIONAL_COMPARISON_REFRESH_BATCHES.find(({ id }) => id === "social-spending")?.sourceIds)
+      .toEqual(["world-bank-gdp-per-capita-2023", "oecd-socx-2023"]);
+    expect(INTERNATIONAL_COMPARISON_REFRESH_BATCHES.find(({ id }) => id === "tax-revenue")?.sourceIds)
+      .toEqual(["world-bank-gdp-per-capita-2024", "oecd-tax-2024"]);
+    expect(INTERNATIONAL_COMPARISON_REFRESH_BATCHES.find(({ id }) => id === "debt-interest")?.sourceIds)
+      .toEqual(["world-bank-gdp-per-capita-2024", "imf-interest-2024"]);
   });
 
   it("queues only the due dependency batch for a routine measure retry", async () => {

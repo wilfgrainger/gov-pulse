@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { serializeChartMetadataCsv } from "@/app/lib/chartExport";
 import { buildCountryChartMetadata, canShareCountryAxis, countryComparisonPreset, defaultCountryComparisonMeasureId, parseCountryComparisonUrlState, selectCountryFigure, serializeCountryComparisonUrlState } from "@/app/lib/countryComparison";
 import type { ComparisonMeasure } from "@/app/lib/internationalComparison";
 
@@ -20,7 +21,7 @@ describe("interactive country comparison", () => {
     const data = measure({
       caveat: "Purchasing power adjusted; estimates may be revised.",
       countries: [
-        { country: "GBR", value: 100, rank: 1, observationYear: 2024, valueType: "estimate", source: { publisher: "OECD", url: "https://example.org/uk", series: "Revenue" , publicationDate: "2025-01-20" } },
+        { country: "GBR", value: 100, rank: 1, observationYear: 2024, valueType: "estimate", source: { publisher: "OECD", url: "https://example.org/uk", series: "Revenue" , publicationDate: "2025-01-20" }, calculationInputs: { percentGdp: 23, gdpPerResidentUsd: 48_000 } },
         { country: "DEU", value: 75, rank: 2, observationYear: 2024, valueType: "estimate", source: { publisher: "OECD", url: "https://example.org/de", series: "Revenue", publicationDate: "2025-01-20" } },
         { country: "FRA", value: null, rank: null, observationYear: 2024, valueType: "estimate", source: null, exclusionReason: "Publisher reports no value" },
       ],
@@ -37,6 +38,9 @@ describe("interactive country comparison", () => {
       { key: "DEU", label: "Germany · 75 USD per resident · 2024 · estimate · rank 2" },
     ]);
     expect(metadata.caveats).toEqual(expect.arrayContaining(["Purchasing power adjusted; estimates may be revised.", "Publisher reports no value"]));
+    expect(metadata.observations[0].details).toMatchObject({ input_percentGdp: 23, input_gdpPerResidentUsd: 48_000 });
+    expect(serializeChartMetadataCsv(metadata)).toContain('""input_percentGdp"":23');
+    expect(serializeChartMetadataCsv(metadata)).toContain('""input_gdpPerResidentUsd"":48000');
   });
 
   it("omits missing countries from the denominator and shares tied ranks", () => {
