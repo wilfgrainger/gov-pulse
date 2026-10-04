@@ -31,6 +31,23 @@ describe("comparison workspace", () => {
     expect(parseWorkspace("?start=2024-01-01&end=2024-02-01&mode=panels", catalog).measureIds).toEqual([]);
   });
 
+  it("starts with populated cost-of-living measures in separate panels when that evidence is available", () => {
+    const costOfLivingCatalog = {
+      ...catalog,
+      measures: {
+        bankRate: record("bankRate", "policy-rate"),
+        csewComputerMisuse: record("csewComputerMisuse", "computer-misuse-offences"),
+        inflation: record("inflation", "consumer-price-inflation"),
+        privateRentAnnualChange: record("privateRentAnnualChange", "private-rent-annual-change"),
+      },
+    } as unknown as MeasureCatalog;
+
+    const workspace = parseWorkspace("", costOfLivingCatalog);
+
+    expect(workspace.measureIds).toEqual(["inflation", "privateRentAnnualChange"]);
+    expect(workspace.mode).toBe("panels");
+  });
+
   it("uses the catalog's observation window when no measures are selected", () => {
     expect(parseWorkspace("?measure=", catalog).window).toEqual({ start: "2024-01-01", end: "2024-02-01" });
   });
