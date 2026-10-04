@@ -10,6 +10,13 @@ function packageResponse() {
   ] }] }), { status: 200, headers: { "content-type": "application/json" } });
 }
 
+function releasePackageResponse() {
+  return new Response(JSON.stringify({ releases: [
+    { ocid, id: "019679-2024", date: "2024-06-27T10:00:00Z", tag: ["planning"], tender: { title: "eDiscovery project" } },
+    { ocid, id: "003183-2025", date: "2025-01-30T10:00:00Z", tag: ["tender"], tender: { title: "eDiscovery solution" } },
+  ] }), { status: 200, headers: { "content-type": "application/json" } });
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -37,6 +44,27 @@ describe("public per-OCID Find a Tender history route", () => {
     });
     expect(payload.releases).toHaveLength(2);
     expect(payload.releases[0].tags).toEqual(["planning"]);
+  });
+
+  it("falls back to the publisher's release package after record-package transport failure", async () => {
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new TypeError("fetch failed"))
+      .mockResolvedValueOnce(releasePackageResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await publicDataWorker.fetch(
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      `https://www.find-tender.service.gov.uk/api/1.0/ocdsRecordPackages/${ocid}`,
+      `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages/${ocid}`,
+    ]);
+    expect(payload.source.packageUrl).toBe(`https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages/${ocid}`);
+    expect(payload.releases).toHaveLength(2);
   });
 
   it("rejects missing, malformed, repeated and extra query parameters before fetching", async () => {

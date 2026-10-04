@@ -38,6 +38,8 @@ const CONTRACT_HISTORY_CACHE_SECONDS = 300;
 const CONTRACT_HISTORY_MAX_BYTES = 512 * 1024;
 const FIND_A_TENDER_RECORD_PACKAGE_BASE =
   "https://www.find-tender.service.gov.uk/api/1.0/ocdsRecordPackages/";
+const FIND_A_TENDER_RELEASE_PACKAGE_BASE =
+  "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages/";
 
 function cacheControlFor(validUntil, now = new Date(), maxFreshSeconds = PUBLIC_CACHE_FRESH_SECONDS) {
   const remaining = cacheLifetime(validUntil, now);
@@ -343,29 +345,41 @@ async function contractHistoryResponse(request, url) {
     return json({ error: "A single valid procurement identifier is required" }, { status: 400, head: request.method === "HEAD" });
   }
 
-  const upstreamUrl = `${FIND_A_TENDER_RECORD_PACKAGE_BASE}${values[0]}`;
+  let upstreamUrl = `${FIND_A_TENDER_RECORD_PACKAGE_BASE}${values[0]}`;
   let stage = "upstream_fetch";
   let upstreamStatus = null;
   try {
-    const response = await fetch(upstreamUrl, {
+    const requestDeadline = Date.now() + 8000;
+    const fetchOptions = () => ({
       headers: {
         Accept: "application/json",
         "User-Agent": FIND_A_TENDER_USER_AGENT,
       },
       redirect: "error",
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(Math.max(1, requestDeadline - Date.now())),
     });
+    let response;
+    try {
+      response = await fetch(upstreamUrl, fetchOptions());
+    } catch (error) {
+      if (!(error instanceof TypeError)) throw error;
+      upstreamUrl = `${FIND_A_TENDER_RELEASE_PACKAGE_BASE}${values[0]}`;
+      response = await fetch(upstreamUrl, fetchOptions());
+    }
     upstreamStatus = response.status;
     if (response.status === 404) {
       return json({ error: "No public release history is available for this procurement record" }, { status: 404, head: request.method === "HEAD" });
     }
     stage = "upstream_response";
-    if (!response.ok) throw new Error("Find a Tender record package is unavailable");
-    assertSameHttpsHost(response, upstreamUrl, "Find a Tender record package");
+    const packageLabel = upstreamUrl.startsWith(FIND_A_TENDER_RELEASE_PACKAGE_BASE)
+      ? "Find a Tender release package"
+      : "Find a Tender record package";
+    if (!response.ok) throw new Error(`${packageLabel} is unavailable`);
+    assertSameHttpsHost(response, upstreamUrl, packageLabel);
     stage = "response_parse";
     const packageValue = await readResponseJson(response, {
       limit: CONTRACT_HISTORY_MAX_BYTES,
-      label: "Find a Tender record package",
+      label: packageLabel,
     });
     stage = "response_validation";
     const history = normalizeContractReleaseHistory(packageValue, values[0]);
