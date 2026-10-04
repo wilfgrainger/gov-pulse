@@ -76,6 +76,8 @@ export interface ComparisonMeasure {
   observationYear: number;
   comparableCountryCount: number;
   caveat?: string;
+  /** Public publisher series used by this measure, retained even when retrieval yields no observations. */
+  sourceReferences?: ComparisonSource[];
   lifecycle?: {
     sourceEditionId: string | null;
     validUntil: string | null;
@@ -150,6 +152,8 @@ export function isInternationalComparisonPublication(
     if (!isRecord(measure) || measure.id !== id || measure.unit !== "USD per resident") return false;
     if (!Array.isArray(measure.countries) || measure.countries.length !== COUNTRY_IDS.length) return false;
     if (!Number.isInteger(measure.observationYear) || !Number.isInteger(measure.comparableCountryCount)) return false;
+    if (measure.sourceReferences !== undefined && (!Array.isArray(measure.sourceReferences) || measure.sourceReferences.length > 12 ||
+      measure.sourceReferences.some((source) => !isComparisonSource(source)))) return false;
 
     for (const observation of measure.countries) {
       if (!isRecord(observation) || !COUNTRY_IDS.includes(observation.country as ComparisonCountryId)) return false;

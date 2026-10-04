@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { isInternationalComparisonPublication } from "@/app/lib/internationalComparison";
 import {
   COMPARISON_COUNTRIES,
   COMPARISON_MEASURES,
@@ -133,7 +134,7 @@ describe("international comparison evidence contract", () => {
     const measures = Object.fromEntries(
       COMPARISON_MEASURES.map(({ id, definition }) => [
         id,
-        buildComparisonMeasure({ id, definition, observationYear: 2024, observations }),
+        buildComparisonMeasure({ id, definition, observationYear: 2024, observations, sourceReferences: id === "governmentDebt" ? [source] : undefined }),
       ])
     );
     const publication = {
@@ -147,7 +148,13 @@ describe("international comparison evidence contract", () => {
     };
 
     expect(validateInternationalComparisonPublication(publication)).toBe(publication);
+    expect(isInternationalComparisonPublication(publication)).toBe(true);
     expect(publication).not.toHaveProperty("overallScore");
     expect(publication.meta).not.toHaveProperty("overallScore");
+
+    const invalidReference = structuredClone(publication);
+    invalidReference.measures.governmentDebt.sourceReferences = [{ ...source, url: "http://example.test/insecure" }];
+    expect(isInternationalComparisonPublication(invalidReference)).toBe(false);
+    expect(() => validateInternationalComparisonPublication(invalidReference)).toThrow(/HTTPS/);
   });
 });

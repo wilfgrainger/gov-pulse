@@ -236,7 +236,7 @@ function rankComparisonObservations(observations) {
   return validated.map((observation) => byCountry.get(observation.country) ?? observation);
 }
 
-function buildComparisonMeasure({ id, definition, observationYear, observations, countryHistory }) {
+function buildComparisonMeasure({ id, definition, observationYear, observations, countryHistory, sourceReferences }) {
   const descriptor = MEASURE_BY_ID.get(id);
   if (!descriptor) throw new Error(`Unknown comparison measure '${id}'`);
   if (typeof definition !== "string" || !definition.trim()) {
@@ -262,6 +262,12 @@ function buildComparisonMeasure({ id, definition, observationYear, observations,
     ...(descriptor.caveat ? { caveat: descriptor.caveat } : {}),
     countries: ranked,
   };
+  if (sourceReferences !== undefined) {
+    if (!Array.isArray(sourceReferences) || sourceReferences.length > 12) {
+      throw new Error(`Comparison measure '${id}' sourceReferences are invalid`);
+    }
+    result.sourceReferences = sourceReferences.map((source) => validateSource(source));
+  }
   if (countryHistory !== undefined) {
     if (!Array.isArray(countryHistory) || countryHistory.length > 2_600) {
       throw new Error(`Comparison measure '${id}' countryHistory is invalid`);
@@ -326,6 +332,12 @@ function validateInternationalComparisonPublication(publication) {
     }
     if (!Array.isArray(measure.countries)) {
       throw new Error(`International comparison measure '${id}' has no country observations`);
+    }
+    if (measure.sourceReferences !== undefined) {
+      if (!Array.isArray(measure.sourceReferences) || measure.sourceReferences.length > 12) {
+        throw new Error(`International comparison measure '${id}' sourceReferences are invalid`);
+      }
+      for (const source of measure.sourceReferences) validateSource(source);
     }
     if (measure.lifecycle !== undefined) validateMeasureLifecycle(measure.lifecycle, id);
     const measureCountries = measure.countries.map(({ country }) => country);
