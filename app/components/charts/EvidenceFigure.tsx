@@ -5,6 +5,7 @@ import ChartExportButtons from "@/app/components/ChartExportButtons";
 import ObservationTable from "./ObservationTable";
 import { buildExportPackage, clipPoints, segmentPoints, timePosition, type DateWindow } from "@/app/lib/chartModel";
 import { validateMeasureRecord, type MeasureRecord } from "@/app/lib/measureCatalog";
+import { sourceHistoryHref } from "@/app/lib/sourceHistory";
 import Link from "next/link";
 
 type Variant = "line" | "step" | "bar" | "dot";
@@ -134,7 +135,7 @@ export default function EvidenceFigure({
         </svg>
       </div>
       <p className="mt-2 px-1 text-xs leading-5 text-gray-600">
-        Source: {description.replace(/[.]$/, "")} · <Link href={`/sources/${encodeURIComponent(measure.sourceId)}`} className="underline">{measure.publisher ?? measure.sourceId}</Link> · edition {measure.sourceEditionId} · published {measure.publishedAt.slice(0, 10)} · <a href={measure.sourceUrl} className="break-all underline">Primary publication</a>
+        Source: {description.replace(/[.]$/, "")} · <Link href={sourceHistoryHref(measure)} className="underline">{measure.publisher ?? measure.sourceId}</Link> · edition {measure.sourceEditionId} · published {measure.publishedAt.slice(0, 10)} · <a href={measure.sourceUrl} className="break-all underline">Primary publication</a>
       </p>
       <p className="mt-1 px-1 text-xs leading-5 text-gray-600">{measure.caveats.join(" ")}</p>
       <p className="mt-1 px-1 text-xs leading-5 text-gray-600">Vertical axis: {niceBound(minValue, measure.unit)} to {niceBound(maxValue, measure.unit)}{includeZero ? "; zero baseline shown" : "; bounds fitted to the selected observations"}.</p>
