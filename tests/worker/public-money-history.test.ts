@@ -10,7 +10,10 @@ function packageResponse() {
   ] }] }), { status: 200, headers: { "content-type": "application/json" } });
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 describe("public per-OCID Find a Tender history route", () => {
   it("fetches one validated OCID from the fixed publisher and returns compact source history", async () => {
@@ -84,6 +87,29 @@ describe("public per-OCID Find a Tender history route", () => {
       errorName: "Error",
     });
     expect(JSON.stringify(warning.mock.calls)).not.toContain("upstream body must stay private");
+  });
+
+  it("records a safe transport error code without exposing its message", async () => {
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const cause = Object.assign(new Error("private upstream detail"), { code: "ECONNRESET" });
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      throw new TypeError("fetch failed", { cause });
+    }));
+
+    const response = await publicDataWorker.fetch(
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
+    );
+
+    expect(response.status).toBe(503);
+    expect(await response.text()).toBe(JSON.stringify({ error: "Release history is temporarily unavailable" }));
+    expect(warning).toHaveBeenCalledWith("contract_history_unavailable", {
+      ocid,
+      stage: "upstream_fetch",
+      upstreamStatus: null,
+      errorName: "TypeError",
+      errorCauseCode: "ECONNRESET",
+    });
+    expect(JSON.stringify(warning.mock.calls)).not.toContain("private upstream detail");
   });
 
   it("rejects an upstream redirect away from the approved host and caps package bytes", async () => {

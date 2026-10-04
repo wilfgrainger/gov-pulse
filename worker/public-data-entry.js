@@ -374,11 +374,16 @@ async function contractHistoryResponse(request, url) {
       cacheControl: `public, max-age=${CONTRACT_HISTORY_CACHE_SECONDS}, s-maxage=${CONTRACT_HISTORY_CACHE_SECONDS}`,
     });
   } catch (error) {
+    const causeCode = error && typeof error === "object" ? error.cause?.code : null;
+    const errorCauseCode = typeof causeCode === "string" && /^[A-Z0-9_-]{2,64}$/.test(causeCode)
+      ? causeCode
+      : null;
     console.warn("contract_history_unavailable", {
       ocid: values[0],
       stage,
       upstreamStatus,
       errorName: error instanceof Error ? error.name : "UnknownError",
+      ...(errorCauseCode ? { errorCauseCode } : {}),
     });
     return json({ error: "Release history is temporarily unavailable" }, { status: 503, head: request.method === "HEAD" });
   }
