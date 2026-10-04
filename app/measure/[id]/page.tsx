@@ -12,6 +12,7 @@ import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
 import { SECTIONS } from "@/app/lib/sections";
 import { workspaceUrl } from "@/app/lib/comparisonWorkspace";
 import { segmentPoints } from "@/app/lib/chartModel";
+import { sourceHistoryHref } from "@/app/lib/sourceHistory";
 
 async function findMeasure(id: string) {
   const definition = MEASURES.find((item) => item.id === id) ?? null;
@@ -116,7 +117,7 @@ export default async function MeasureDetailPage({ params }: { params: Promise<{ 
             <MethodFacts measure={measure} />
           </section>
           <p className="mt-8 text-sm">Primary publisher source: <a className="font-semibold underline" href={measure.sourceUrl} target="_blank" rel="noreferrer">{measure.publisher ?? measure.sourceId} · edition {measure.sourceEditionId}</a></p>
-          <p className="mt-2 text-sm">Source history: <Link className="font-semibold underline" href={`/sources/${encodeURIComponent(measure.sourceId)}`}>source record and retained changes</Link> · <Link className="font-semibold underline" href="/editions/">browse historical editions</Link></p>
+          <p className="mt-2 text-sm">Source history: <Link className="font-semibold underline" href={sourceHistoryHref(measure)}>source record and retained changes</Link> · <Link className="font-semibold underline" href="/editions/">browse historical editions</Link></p>
           {measure.caveats.length ? <section aria-labelledby="measure-caveats" className="mt-8 border-t border-line-strong pt-5"><h2 id="measure-caveats" className="text-xl font-bold">Caveats</h2><ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6">{measure.caveats.map((caveat) => <li key={caveat}>{caveat}</li>)}</ul></section> : null}
         </> : <section role="status" className="border-y-2 border-foreground bg-surface-warm p-6 md:p-8">
           <p className="eyebrow">{definition.topic} · unavailable</p>
