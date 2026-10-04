@@ -124,10 +124,11 @@ async function archiveEdition(env, catalogInput, summaryInput) {
   const existing = await env.METRICS_CACHE.getWithMetadata(summaryKey, "json");
   const index = await readIndex(env);
   if (existing?.value) {
-    if (existing.metadata?.fingerprint === fingerprint && stableStringify(existing.value.summary) === stableStringify(summary)) {
+    if (existing.metadata?.fingerprint === fingerprint) {
       const archivedHash = existing.metadata.contentHash;
-      if (!index.some((entry) => entry.id === id && entry.contentHash === archivedHash)) {
-        const fixed = await retainIndex(env, [...index.filter((entry) => entry.id !== id), { id, contentHash: archivedHash, summary }]);
+      const archivedSummary = validateSummary(existing.value.summary, id);
+      if (!index.some((entry) => entry.id === id && entry.contentHash === archivedHash && stableStringify(entry.summary) === stableStringify(archivedSummary))) {
+        const fixed = await retainIndex(env, [...index.filter((entry) => entry.id !== id), { id, contentHash: archivedHash, summary: archivedSummary }]);
         return { archived: false, duplicate: true, id, contentHash: archivedHash, retained: fixed.length };
       }
       return { archived: false, duplicate: true, id, contentHash: archivedHash, retained: index.length };
