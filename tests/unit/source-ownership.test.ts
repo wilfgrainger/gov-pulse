@@ -2,6 +2,8 @@ import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 import { DATA_SOURCES } from "@/app/lib/config";
 import { WITHDRAWN_SECTION_IDS } from "@/app/lib/sections";
+import { PUBLICATION_SOURCE_REGISTRY } from "@/worker/feed-registry";
+import { INTERNATIONAL_SOURCES } from "@/worker/international-comparison-publication";
 import {
   validateSourceOwnership,
 } from "@/scripts/check-source-ownership.mjs";
@@ -11,6 +13,30 @@ const inventory = JSON.parse(
 );
 
 describe("source ownership inventory", () => {
+  it("registers comparison input membership in both runtime and architecture inventories", () => {
+    const comparison = (PUBLICATION_SOURCE_REGISTRY as unknown as Record<string, { sourceIds?: string[] }>)
+      .internationalComparison;
+
+    expect(comparison?.sourceIds).toEqual(INTERNATIONAL_SOURCES);
+    expect(inventory.publicationSources.map((source: { section: string }) => source.section))
+      .toContain("internationalComparison");
+  });
+
+  it("rejects publication ownership drift from the runtime registry", () => {
+    const missingPublication = structuredClone(inventory);
+    missingPublication.publicationSources = missingPublication.publicationSources
+      .filter((source: { section: string }) => source.section !== "internationalComparison");
+    expect(validateSourceOwnership(missingPublication).join(" "))
+      .toMatch(/publicationSources missing sections: internationalComparison/i);
+
+    const missingInput = structuredClone(inventory);
+    const comparison = missingInput.publicationSources
+      .find((source: { section: string }) => source.section === "internationalComparison");
+    comparison.sourceIds = comparison.sourceIds.slice(1);
+    expect(validateSourceOwnership(missingInput).join(" "))
+      .toMatch(/sourceIds must match the runtime publication source registry/i);
+  });
+
   it("covers every active feed with existing collector, normalizer and entrypoint owners", () => {
     expect(validateSourceOwnership(inventory)).toEqual([]);
   });

@@ -1,4 +1,4 @@
-import { COMPARISON_COUNTRY_NAMES, COMPARISON_MEASURE_ORDER, type ComparisonMeasure, type ComparisonMeasureId, type ComparisonCountryId, type ComparisonValueType } from "@/app/lib/internationalComparison";
+import { COMPARISON_COUNTRY_NAMES, COMPARISON_MEASURE_ORDER, sourceUpdateAttribution, type ComparisonMeasure, type ComparisonMeasureId, type ComparisonCountryId, type ComparisonValueType } from "@/app/lib/internationalComparison";
 import type { ChartMetadata } from "@/app/lib/chartExport";
 
 export type CountryComparisonUrlState = {
@@ -140,7 +140,7 @@ export function buildCountryChartMetadata(
   const sourceCitation = [
     `${measure.label}: ${measure.definition}`,
     `Visible denominator: ${result.denominator} of ${result.sourceCountryCount}; ${result.ranked ? `ranked within ${result.commonYear} ${result.commonValueType} observations` : "not ranked because year or evidence status differs"}`,
-    ...sources.map((source) => `${source.publisher}${source.publicationDate ? `, published ${source.publicationDate}` : ""}: ${source.url}`),
+    ...sources.map((source) => `${source.publisher}${source.publicationDate ? `, published ${source.publicationDate}` : ""}${sourceUpdateAttribution(source) ? `, ${sourceUpdateAttribution(source)}` : ""}: ${source.url}`),
   ].join(" · ");
   const excludedCaveats = [...new Set(result.excluded.map(({ reason }) => countryComparisonExclusionLabel(reason)))];
   const caveats = [
@@ -161,12 +161,22 @@ export function buildCountryChartMetadata(
       key: row.country,
       label: `${COMPARISON_COUNTRY_NAMES[row.country]} · ${row.value} ${measure.unit} · ${row.observationYear} · ${row.valueType} · ${row.rank === null ? "not ranked" : `rank ${row.rank}`}`,
     })),
-    observations: result.rows.map((row) => ({
-      period: String(row.observationYear),
-      observedAt: `${row.observationYear}-12-31`,
-      values: { [row.country]: row.value },
-      details: { country: row.country, evidenceStatus: row.valueType, rank: row.rank },
-    })),
+    observations: result.rows.map((row) => {
+      const details: Record<string, string | number | null> = {
+        country: row.country,
+        evidenceStatus: row.valueType,
+        rank: row.rank,
+      };
+      for (const [name, input] of Object.entries(row.calculationInputs ?? {})) {
+        details[`input_${name}`] = input;
+      }
+      return {
+        period: String(row.observationYear),
+        observedAt: `${row.observationYear}-12-31`,
+        values: { [row.country]: row.value },
+        details,
+      };
+    }),
     caveats,
   };
 }

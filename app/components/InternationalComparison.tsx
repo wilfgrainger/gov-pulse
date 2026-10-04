@@ -7,6 +7,7 @@ import {
   exclusionLabel,
   formatUsdPerResident,
   rankLabel,
+  sourceUpdateAttribution,
   ukObservation,
   valueTypeLabel,
   type ComparisonMeasure,
@@ -14,8 +15,9 @@ import {
   type InternationalComparisonPublication,
 } from "@/app/lib/internationalComparison";
 
-function sourceLine(observation: ComparisonObservation | null) {
+export function ComparisonSourceAttribution({ observation }: { observation: ComparisonObservation | null }) {
   if (!observation?.source) return null;
+  const sourceUpdate = sourceUpdateAttribution(observation.source);
   return (
     <p className="mt-3 text-xs leading-5 text-gray-600">
       Source: {" "}
@@ -31,7 +33,26 @@ function sourceLine(observation: ComparisonObservation | null) {
       {observation.source.publicationDate
         ? `, published ${observation.source.publicationDate}`
         : ""}
-      .
+      {sourceUpdate ? `, ${sourceUpdate}` : ""}.
+      {(observation.source.additionalSources ?? []).map((source) => {
+        const supportingSourceUpdate = sourceUpdateAttribution(source);
+        return (
+          <span key={`${source.url}-${source.series}`}>
+            {" Supporting source: "}
+            <a
+              href={source.url}
+              className="font-semibold underline decoration-black/20 underline-offset-4 hover:text-accent"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {source.publisher}
+            </a>
+            {source.series ? `, ${source.series}` : ""}
+            {source.publicationDate ? `, published ${source.publicationDate}` : ""}
+            {supportingSourceUpdate ? `, ${supportingSourceUpdate}` : ""}.
+          </span>
+        );
+      })}
     </p>
   );
 }
@@ -148,7 +169,7 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
               {valueTypeLabel(uk.valueType)} for {uk.observationYear}. Rankings are highest amount per resident first.
             </p>
           ) : null}
-          {sourceLine(uk)}
+          <ComparisonSourceAttribution observation={uk} />
         </aside>
       </div>
 

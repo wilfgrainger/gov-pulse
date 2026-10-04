@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { COMPARISON_COUNTRIES } from "@/worker/international-comparison";
 import {
   buildInternationalComparisonPublication,
+  collectInternationalComparison,
   comparisonSourceBundle,
 } from "@/worker/international-comparison-publication";
 
@@ -13,6 +14,118 @@ const oecdIds = ["GBR", "USA", "DEU", "FRA", "ITA", "ESP", "IRL", "NLD", "CHE", 
 const mapOecd = (value: number) => new Map(oecdIds.map((id) => [id, value]));
 
 describe("international comparison publication", () => {
+  it("publishes OECD measures from World Bank denominators without relying on IMF GDP routes", async () => {
+    const requestedUrls: string[] = [];
+    const fetchImpl = async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      requestedUrls.push(url.toString());
+      if (url.hostname === "api.worldbank.org" && url.pathname.includes("NY.GDP.PCAP.CD")) {
+        const year = Number(url.searchParams.get("date"));
+        const gdpPerResident = year === 2023 ? 48_000 : 50_000;
+        return new Response(JSON.stringify([{ lastupdated: "2026-07-13" }, ids.map((countryiso3code) => ({
+          countryiso3code,
+          date: String(year),
+          value: gdpPerResident,
+        }))]), { headers: { "Content-Type": "application/json" } });
+      }
+      if (url.hostname === "www.imf.org" && url.pathname.includes("/ie/")) {
+        return new Response(JSON.stringify({ values: { ie: Object.fromEntries(ids.map((country) => [country, { 2024: 2 }])) } }), {
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (url.hostname === "sdmx.oecd.org") {
+        const year = Number(url.searchParams.get("startPeriod"));
+        const percentGdp = year === 2023 ? 25 : 30;
+        const csv = [
+          "REF_AREA,TIME_PERIOD,UNIT_MULT,OBS_VALUE",
+          ...oecdIds.map((country) => `${country},${year},0,${percentGdp}`),
+        ].join("\n");
+        return new Response(csv, { headers: {
+          "Content-Type": "text/csv",
+          "Last-Modified": "Mon, 06 Oct 2025 00:00:00 GMT",
+        } });
+      }
+      throw new Error(`Unexpected comparison source request: ${url}`);
+    };
+
+    const publication = await collectInternationalComparison(
+      fetchImpl as typeof fetch,
+      new Date("2026-10-04T10:00:00.000Z"),
+      { sourceIds: [
+        "world-bank-gdp-per-capita-2023",
+        "oecd-socx-2023",
+        "world-bank-gdp-per-capita-2024",
+        "oecd-tax-2024",
+        "imf-interest-2024",
+      ] },
+    );
+
+    const social = publication.measures.publicSocialExpenditure;
+    const ukSocial = social.countries.find((item) => item.country === "GBR");
+    expect(social.caveat).toContain("World Bank GDP per capita");
+    expect(social.comparableCountryCount).toBe(10);
+    expect(ukSocial).toMatchObject({
+      value: 12_000,
+      observationYear: 2023,
+      valueType: "historical",
+      calculationInputs: { percentGdp: 25, gdpPerResidentUsd: 48_000 },
+      source: {
+        publisher: "OECD",
+        sourceUpdatedAt: "2025-10-06",
+        sourceUpdatedAtBasis: "http-last-modified",
+        additionalSources: [{
+          publisher: "World Bank World Development Indicators",
+          series: expect.stringContaining("NY.GDP.PCAP.CD"),
+          sourceUpdatedAt: "2026-07-13",
+          sourceUpdatedAtBasis: "publisher-metadata",
+        }],
+      },
+    });
+    expect(social.countries.find((item) => item.country === "CHN")).toMatchObject({
+      value: null,
+      exclusionReason: "not-covered-by-oecd-comparable-series",
+    });
+
+    const tax = publication.measures.taxRevenue;
+    const ukTax = tax.countries.find((item) => item.country === "GBR");
+    expect(tax.caveat).toContain("World Bank GDP per capita");
+    expect(tax.comparableCountryCount).toBe(10);
+    expect(ukTax).toMatchObject({
+      value: 15_000,
+      observationYear: 2024,
+      valueType: "historical",
+      calculationInputs: { percentGdp: 30, gdpPerResidentUsd: 50_000 },
+      source: {
+        publisher: "OECD",
+        sourceUpdatedAt: "2025-10-06",
+        sourceUpdatedAtBasis: "http-last-modified",
+        additionalSources: [{
+          publisher: "World Bank World Development Indicators",
+          series: expect.stringContaining("NY.GDP.PCAP.CD"),
+          sourceUpdatedAt: "2026-07-13",
+          sourceUpdatedAtBasis: "publisher-metadata",
+        }],
+      },
+    });
+    expect(tax.countries.find((item) => item.country === "CHN")).toMatchObject({
+      value: null,
+      exclusionReason: "not-covered-by-oecd-comparable-series",
+    });
+    expect(publication.measures.debtInterest.countries.find((item) => item.country === "GBR")).toMatchObject({
+      source: {
+        publisher: "International Monetary Fund",
+        additionalSources: [{
+          publisher: "World Bank World Development Indicators",
+          sourceUpdatedAt: "2026-07-13",
+          sourceUpdatedAtBasis: "publisher-metadata",
+        }],
+      },
+    });
+    expect(publication.meta.sourceFailures).toEqual([]);
+    expect(requestedUrls.filter((url) => url.includes("NY.GDP.PCAP.CD"))).toHaveLength(2);
+    expect(requestedUrls.some((url) => url.includes("imf.org/external/datamapper/NGDPDPC"))).toBe(false);
+  });
+
   it("builds seven isolated measures with truthful denominators and derivation inputs", () => {
     const bundle = comparisonSourceBundle({
       gdpPerCapita2023: mapAll(48_000),
@@ -70,6 +183,25 @@ describe("international comparison publication", () => {
     expect(publication.measures.healthcareSpending.lifecycle.sourceEditionId).toMatch(/^healthcareSpending-2024-/);
     expect(publication.measures.healthcareSpending.lifecycle.sourceEditionId).not.toBe(publication.meta.generatedAt);
     expect(publication.measures.debtInterest.countries.find((item) => item.country === "GBR")?.value).toBeCloseTo(1_420, 4);
+  });
+
+  it("creates a new source edition when the publisher reports an updated source date", () => {
+    const build = (sourceUpdatedAt: string) => buildInternationalComparisonPublication(
+      comparisonSourceBundle({
+        gdpPerCapita2023: mapAll(48_000),
+        socialPctGdp2023: mapOecd(25),
+        sourceUpdates: {
+          "oecd-socx-2023": { sourceUpdatedAt, sourceUpdatedAtBasis: "http-last-modified" },
+          "world-bank-gdp-per-capita-2023": { sourceUpdatedAt: "2026-07-13", sourceUpdatedAtBasis: "publisher-metadata" },
+        },
+      }),
+      new Date("2026-10-04T10:00:00.000Z"),
+    );
+    const original = build("2025-10-06");
+    const revised = build("2025-11-06");
+
+    expect(original.measures.publicSocialExpenditure.lifecycle?.sourceEditionId)
+      .not.toBe(revised.measures.publicSocialExpenditure.lifecycle?.sourceEditionId);
   });
 
   it("marks only the failed metric unavailable when one source family is missing", () => {

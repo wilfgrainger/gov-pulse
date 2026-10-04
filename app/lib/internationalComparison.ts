@@ -28,18 +28,32 @@ export const COMPARISON_MEASURE_ORDER = [
 ] as const;
 
 export type ComparisonMeasureId = (typeof COMPARISON_MEASURE_ORDER)[number];
+export type ComparisonSourceUpdateBasis = "publisher-metadata" | "http-last-modified";
 
 export interface ComparisonSource {
   publisher: string;
   url: string;
   series: string;
   publicationDate?: string;
+  sourceUpdatedAt?: string;
+  sourceUpdatedAtBasis?: ComparisonSourceUpdateBasis;
   additionalSources?: Array<{
     publisher: string;
     url: string;
     series: string;
     publicationDate?: string;
+    sourceUpdatedAt?: string;
+    sourceUpdatedAtBasis?: ComparisonSourceUpdateBasis;
   }>;
+}
+
+export function sourceUpdateAttribution(
+  source: Pick<ComparisonSource, "sourceUpdatedAt" | "sourceUpdatedAtBasis">,
+): string {
+  if (!source.sourceUpdatedAt || !source.sourceUpdatedAtBasis) return "";
+  return source.sourceUpdatedAtBasis === "publisher-metadata"
+    ? `publisher data last updated ${source.sourceUpdatedAt}`
+    : `source resource last modified ${source.sourceUpdatedAt}`;
 }
 
 export interface ComparisonObservation {
@@ -92,6 +106,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+function hasValidSourceUpdate(value: Record<string, unknown>): boolean {
+  const hasDate = value.sourceUpdatedAt !== undefined;
+  const hasBasis = value.sourceUpdatedAtBasis !== undefined;
+  if (!hasDate && !hasBasis) return true;
+  return hasDate && hasBasis && typeof value.sourceUpdatedAt === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(value.sourceUpdatedAt) &&
+    (value.sourceUpdatedAtBasis === "publisher-metadata" || value.sourceUpdatedAtBasis === "http-last-modified");
+}
+
 function isComparisonSource(value: unknown): value is ComparisonSource {
   if (!isRecord(value) || typeof value.publisher !== "string" || !value.publisher.trim() ||
     typeof value.series !== "string" || !value.series.trim() || typeof value.url !== "string") return false;
@@ -101,12 +124,14 @@ function isComparisonSource(value: unknown): value is ComparisonSource {
     return false;
   }
   if (value.publicationDate !== undefined && (typeof value.publicationDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value.publicationDate))) return false;
+  if (!hasValidSourceUpdate(value)) return false;
   if (value.additionalSources !== undefined) {
     if (!Array.isArray(value.additionalSources) || value.additionalSources.length > 4) return false;
     if (value.additionalSources.some((source) => !isRecord(source) || source.additionalSources !== undefined ||
       typeof source.publisher !== "string" || !source.publisher.trim() || typeof source.series !== "string" || !source.series.trim() ||
       typeof source.url !== "string" || !/^https:\/\//.test(source.url) ||
-      (source.publicationDate !== undefined && (typeof source.publicationDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(source.publicationDate))))) return false;
+      (source.publicationDate !== undefined && (typeof source.publicationDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(source.publicationDate))) ||
+      !hasValidSourceUpdate(source))) return false;
   }
   return true;
 }

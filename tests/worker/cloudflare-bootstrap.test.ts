@@ -232,7 +232,7 @@ describe("Cloudflare publication bootstrap", () => {
     expect(send).toHaveBeenNthCalledWith(4, expect.objectContaining({
       jobId: `comparison:${runId}:social-spending`,
       batchId: "social-spending",
-      sourceIds: ["imf-gdp-2023", "oecd-socx-2023"],
+      sourceIds: ["world-bank-gdp-per-capita-2023", "oecd-socx-2023"],
     }));
     expect(send).toHaveBeenNthCalledWith(5, expect.objectContaining({
       jobId: `comparison:${runId}:healthcare`,
@@ -242,12 +242,12 @@ describe("Cloudflare publication bootstrap", () => {
     expect(send).toHaveBeenNthCalledWith(6, expect.objectContaining({
       jobId: `comparison:${runId}:tax-revenue`,
       batchId: "tax-revenue",
-      sourceIds: ["imf-gdp-2024", "oecd-tax-2024"],
+      sourceIds: ["world-bank-gdp-per-capita-2024", "oecd-tax-2024"],
     }));
     expect(send).toHaveBeenNthCalledWith(7, expect.objectContaining({
       jobId: `comparison:${runId}:debt-interest`,
       batchId: "debt-interest",
-      sourceIds: ["imf-gdp-2024", "imf-interest-2024"],
+      sourceIds: ["world-bank-gdp-per-capita-2024", "imf-interest-2024"],
     }));
     expect(send).toHaveBeenNthCalledWith(8, expect.objectContaining({
       type: "finalise-international-comparison",

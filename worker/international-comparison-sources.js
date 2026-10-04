@@ -26,14 +26,14 @@ const WORLD_BANK_COUNTRIES = COMPARISON_IDS.join(";");
 const OECD_COUNTRIES = OECD_COMPARABLE_IDS.join("+");
 
 const SOURCE_QUERIES = Object.freeze({
-  imfGdpPerCapita2023: `${IMF_DATAMAPPER}/NGDPDPC/${COUNTRY_PATH}?periods=2023`,
-  imfGdpPerCapita2024: `${IMF_DATAMAPPER}/NGDPDPC/${COUNTRY_PATH}?periods=2024`,
   imfGdpPerCapita2026: `${IMF_DATAMAPPER}/NGDPDPC/${COUNTRY_PATH}?periods=2026`,
   imfDebtPctGdp2026: `${IMF_DATAMAPPER}/GGXWDG_NGDP/${COUNTRY_PATH}?periods=2026`,
   imfInterestPctGdp2024: `${IMF_DATAMAPPER}/ie/${COUNTRY_PATH}?periods=2024`,
   oecdOda2025: `${OECD_SDMX}/OECD.DCD.FSD,DSD_DAC1@DF_DAC1,1.7/${OECD_COUNTRIES}._Z.11010..1160.USD.V?startPeriod=2025&endPeriod=2025&dimensionAtObservation=AllDimensions`,
   oecdSocx2023: `${OECD_SDMX}/OECD.ELS.SPD,DSD_SOCX_AGG@DF_SOCX_AGG,1.0/${OECD_COUNTRIES}.A..PT_B1GQ.ES10._T._T.?startPeriod=2023&endPeriod=2023&dimensionAtObservation=AllDimensions`,
   oecdTax2024: `${OECD_SDMX}/OECD.CTP.TPS,DSD_REV_COMP_OECD@DF_RSOECD,/${OECD_COUNTRIES}..S13._T..PT_B1GQ.A?startPeriod=2024&endPeriod=2024&dimensionAtObservation=AllDimensions`,
+  worldBankGdpPerCapita2023: `${WORLD_BANK_API}/country/${WORLD_BANK_COUNTRIES}/indicator/NY.GDP.PCAP.CD?date=2023&format=json&per_page=100`,
+  worldBankGdpPerCapita2024: `${WORLD_BANK_API}/country/${WORLD_BANK_COUNTRIES}/indicator/NY.GDP.PCAP.CD?date=2024&format=json&per_page=100`,
   worldBankHealth2024: `${WORLD_BANK_API}/country/${WORLD_BANK_COUNTRIES}/indicator/SH.XPD.CHEX.PC.CD?date=2024&format=json&per_page=100`,
   sipriMilitary2025: SIPRI_MILEX_2025_WORKBOOK_URL,
 });
@@ -287,14 +287,27 @@ function calculatePerResidentFromTotal(totalUsd, population) {
   return total / people;
 }
 
-async function fetchJson(url, fetchImpl = fetch) {
+async function fetchJsonDocument(url, fetchImpl = fetch) {
   const response = await fetchResponse(url, fetchImpl, "application/json");
   const text = await readResponseText(response, { label: `${new URL(url).hostname} JSON` });
   try {
-    return JSON.parse(text);
+    return { payload: JSON.parse(text), response };
   } catch {
     throw new Error(`${new URL(url).hostname} returned invalid JSON`);
   }
+}
+
+async function fetchJson(url, fetchImpl = fetch) {
+  return (await fetchJsonDocument(url, fetchImpl)).payload;
+}
+
+function sourceUpdateMetadata(value, basis) {
+  if (typeof value !== "string" || !value.trim()) return {};
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) return {};
+  const sourceUpdatedAt = new Date(timestamp).toISOString().slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value) && sourceUpdatedAt !== value) return {};
+  return { sourceUpdatedAt, sourceUpdatedAtBasis: basis };
 }
 
 async function fetchText(url, fetchImpl = fetch, accept = "text/csv,text/plain;q=0.9") {
@@ -309,7 +322,11 @@ async function fetchImfSeries(indicator, year, fetchImpl = fetch) {
 
 async function fetchWorldBankSeries(indicator, year, fetchImpl = fetch) {
   const url = `${WORLD_BANK_API}/country/${WORLD_BANK_COUNTRIES}/indicator/${indicator}?date=${year}&format=json&per_page=100`;
-  return parseWorldBankSeries(await fetchJson(url, fetchImpl), year);
+  const { payload } = await fetchJsonDocument(url, fetchImpl);
+  return {
+    values: parseWorldBankSeries(payload, year),
+    ...sourceUpdateMetadata(payload?.[0]?.lastupdated, "publisher-metadata"),
+  };
 }
 
 async function fetchWorldBankSeriesHistory(indicator, startYear, endYear, fetchImpl = fetch) {
@@ -318,7 +335,12 @@ async function fetchWorldBankSeriesHistory(indicator, startYear, endYear, fetchI
 }
 
 async function fetchOecdSeries(url, year, fetchImpl = fetch) {
-  return parseOecdCsvSeries(await fetchText(url, fetchImpl), year);
+  const response = await fetchResponse(url, fetchImpl, "text/csv,text/plain;q=0.9");
+  const text = await readResponseText(response, { label: `${new URL(url).hostname} data` });
+  return {
+    values: parseOecdCsvSeries(text, year),
+    ...sourceUpdateMetadata(response.headers.get("last-modified"), "http-last-modified"),
+  };
 }
 
 async function fetchSipri2025Series(fetchImpl = fetch) {

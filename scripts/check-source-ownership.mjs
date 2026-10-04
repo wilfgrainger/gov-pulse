@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
-import { FEED_REGISTRY } from "../worker/feed-registry.js";
+import { FEED_REGISTRY, PUBLICATION_SOURCE_REGISTRY } from "../worker/feed-registry.js";
 
 const INVENTORY_PATH = "docs/architecture/source-ownership.json";
 const ACTIVE_REQUIRED_FIELDS = ["collector", "normalizer", "entrypoint", "schedule", "storage", "fallback"];
@@ -78,7 +78,12 @@ function validateAdditionalSources(sources, label, projectRoot, failures) {
     failures.push(`${label} must be an array`);
     return;
   }
-  uniqueValues(sources, "section", label, failures);
+  const expectedSections = Object.keys(PUBLICATION_SOURCE_REGISTRY).sort();
+  const actualSections = uniqueValues(sources, "section", label, failures).sort();
+  const missing = expectedSections.filter((section) => !actualSections.includes(section));
+  const unexpected = actualSections.filter((section) => !expectedSections.includes(section));
+  if (missing.length > 0) failures.push(`${label} missing sections: ${missing.join(", ")}`);
+  if (unexpected.length > 0) failures.push(`${label} has unregistered sections: ${unexpected.join(", ")}`);
   for (const source of sources) {
     const sourceLabel = source?.section ?? `unknown ${label}`;
     for (const field of ACTIVE_REQUIRED_FIELDS) {
@@ -86,6 +91,17 @@ function validateAdditionalSources(sources, label, projectRoot, failures) {
     }
     for (const field of IMPLEMENTATION_FIELDS) {
       validateImplementationOwners(source?.[field], sourceLabel, field, projectRoot, failures);
+    }
+    const registeredIds = PUBLICATION_SOURCE_REGISTRY[sourceLabel]?.sourceIds;
+    if (registeredIds !== undefined) {
+      const recordedIds = source?.sourceIds;
+      if (!Array.isArray(recordedIds) || recordedIds.some((id) => !nonEmptyString(id)) ||
+        new Set(recordedIds).size !== recordedIds.length ||
+        JSON.stringify([...recordedIds].sort()) !== JSON.stringify([...registeredIds].sort())) {
+        failures.push(`${sourceLabel}: sourceIds must match the runtime publication source registry`);
+      }
+    } else if (source?.sourceIds !== undefined) {
+      failures.push(`${sourceLabel}: sourceIds are not declared in the runtime publication source registry`);
     }
   }
 }

@@ -2,6 +2,7 @@ const COMPARISON_SET_ID = "uk-context-13-v2";
 const COMPARISON_SCHEMA_VERSION = 1;
 const UNIT_USD_PER_RESIDENT = "USD per resident";
 const LIFECYCLE_STATUSES = new Set(["current", "historical", "unavailable"]);
+const SOURCE_UPDATE_BASES = new Set(["publisher-metadata", "http-last-modified"]);
 
 const COMPARISON_COUNTRIES = Object.freeze([
   Object.freeze({ id: "GBR", name: "United Kingdom" }),
@@ -26,6 +27,7 @@ const COMPARISON_MEASURES = Object.freeze([
     definition: "General-government gross debt expressed in current US dollars per resident.",
     unit: UNIT_USD_PER_RESIDENT,
     rankDirection: "highest-first",
+    caveat: "The per-resident projection is calculated by multiplying the IMF debt-to-GDP ratio by IMF GDP per capita in current US dollars; it is not an observed individual liability.",
   }),
   Object.freeze({
     id: "officialDevelopmentAssistance",
@@ -47,7 +49,7 @@ const COMPARISON_MEASURES = Object.freeze([
     definition: "Public social expenditure expressed in current US dollars per resident.",
     unit: UNIT_USD_PER_RESIDENT,
     rankDirection: "highest-first",
-    caveat: "Public social expenditure includes areas such as pensions, health, family support and unemployment programmes, so it overlaps conceptually with healthcare expenditure and must not be added to it as a non-overlapping category.",
+    caveat: "The per-resident value is calculated by multiplying the OECD social-expenditure share of GDP by World Bank GDP per capita in current US dollars. Public social expenditure includes pensions, health, family support and unemployment programmes, so it overlaps conceptually with healthcare expenditure and must not be added to it as a non-overlapping category.",
   }),
   Object.freeze({
     id: "healthcareSpending",
@@ -63,7 +65,7 @@ const COMPARISON_MEASURES = Object.freeze([
     definition: "Economy-wide general-government tax revenue expressed in current US dollars per resident.",
     unit: UNIT_USD_PER_RESIDENT,
     rankDirection: "highest-first",
-    caveat: "This is total tax revenue divided by population, not the tax bill of an average individual.",
+    caveat: "The per-resident value is calculated by multiplying the OECD tax-revenue share of GDP by World Bank GDP per capita in current US dollars; it is not the tax bill of an average individual.",
   }),
   Object.freeze({
     id: "debtInterest",
@@ -71,6 +73,7 @@ const COMPARISON_MEASURES = Object.freeze([
     definition: "Interest paid on public debt expressed in current US dollars per resident.",
     unit: UNIT_USD_PER_RESIDENT,
     rankDirection: "highest-first",
+    caveat: "The per-resident value is calculated by multiplying the IMF interest-paid share of GDP by World Bank GDP per capita in current US dollars.",
   }),
 ]);
 
@@ -109,6 +112,7 @@ function validateSource(source) {
   ) {
     throw new Error("Comparison value source publicationDate must be YYYY-MM-DD");
   }
+  validateSourceUpdate(source);
   if (source.additionalSources !== undefined) {
     if (!Array.isArray(source.additionalSources) || source.additionalSources.length > 4) {
       throw new Error("Comparison value additionalSources are invalid");
@@ -119,9 +123,21 @@ function validateSource(source) {
         (item.publicationDate !== undefined && (typeof item.publicationDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(item.publicationDate)))) {
         throw new Error("Comparison value additional source is invalid");
       }
+      validateSourceUpdate(item);
     }
   }
   return source;
+}
+
+function validateSourceUpdate(source) {
+  const hasDate = source.sourceUpdatedAt !== undefined;
+  const hasBasis = source.sourceUpdatedAtBasis !== undefined;
+  if (!hasDate && !hasBasis) return;
+  if (!hasDate || !hasBasis || typeof source.sourceUpdatedAt !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(source.sourceUpdatedAt) ||
+    !SOURCE_UPDATE_BASES.has(source.sourceUpdatedAtBasis)) {
+    throw new Error("Comparison source update metadata is invalid");
+  }
 }
 
 function validateObservation(observation) {

@@ -6,6 +6,7 @@ import {
   buildComparisonMeasure,
   validateInternationalComparisonPublication,
 } from "./international-comparison.js";
+import { PUBLICATION_SOURCE_REGISTRY } from "./feed-registry.js";
 import {
   OECD_COMPARABLE_IDS,
   SOURCE_QUERIES,
@@ -25,32 +26,20 @@ const MEASURE_SOURCE_DEPENDENCIES = Object.freeze({
   governmentDebt: ["imf-gdp-2026", "imf-debt-2026"],
   officialDevelopmentAssistance: ["world-bank-population-2025", "oecd-oda-2025"],
   defenceSpending: ["world-bank-population-2025", "sipri-2025"],
-  publicSocialExpenditure: ["imf-gdp-2023", "oecd-socx-2023"],
+  publicSocialExpenditure: ["world-bank-gdp-per-capita-2023", "oecd-socx-2023"],
   healthcareSpending: ["world-bank-health-2024"],
-  taxRevenue: ["imf-gdp-2024", "oecd-tax-2024"],
-  debtInterest: ["imf-gdp-2024", "imf-interest-2024"],
+  taxRevenue: ["world-bank-gdp-per-capita-2024", "oecd-tax-2024"],
+  debtInterest: ["world-bank-gdp-per-capita-2024", "imf-interest-2024"],
 });
-const INTERNATIONAL_SOURCES = Object.freeze([
-  "imf-gdp-2023",
-  "imf-gdp-2024",
-  "imf-gdp-2026",
-  "world-bank-population-2025",
-  "imf-debt-2026",
-  "imf-interest-2024",
-  "oecd-oda-2025",
-  "sipri-2025",
-  "oecd-socx-2023",
-  "world-bank-health-2024",
-  "oecd-tax-2024",
-]);
+const INTERNATIONAL_SOURCES = PUBLICATION_SOURCE_REGISTRY.internationalComparison.sourceIds;
 const INTERNATIONAL_COMPARISON_REFRESH_BATCHES = Object.freeze([
   Object.freeze({ id: "government-debt", sourceIds: Object.freeze(["imf-gdp-2026", "imf-debt-2026"]), measureIds: Object.freeze(["governmentDebt"]) }),
   Object.freeze({ id: "oda", sourceIds: Object.freeze(["world-bank-population-2025", "oecd-oda-2025"]), measureIds: Object.freeze(["officialDevelopmentAssistance"]) }),
   Object.freeze({ id: "defence", sourceIds: Object.freeze(["world-bank-population-2025", "sipri-2025"]), measureIds: Object.freeze(["defenceSpending"]) }),
-  Object.freeze({ id: "social-spending", sourceIds: Object.freeze(["imf-gdp-2023", "oecd-socx-2023"]), measureIds: Object.freeze(["publicSocialExpenditure"]) }),
+  Object.freeze({ id: "social-spending", sourceIds: Object.freeze(["world-bank-gdp-per-capita-2023", "oecd-socx-2023"]), measureIds: Object.freeze(["publicSocialExpenditure"]) }),
   Object.freeze({ id: "healthcare", sourceIds: Object.freeze(["world-bank-health-2024"]), measureIds: Object.freeze(["healthcareSpending"]) }),
-  Object.freeze({ id: "tax-revenue", sourceIds: Object.freeze(["imf-gdp-2024", "oecd-tax-2024"]), measureIds: Object.freeze(["taxRevenue"]) }),
-  Object.freeze({ id: "debt-interest", sourceIds: Object.freeze(["imf-gdp-2024", "imf-interest-2024"]), measureIds: Object.freeze(["debtInterest"]) }),
+  Object.freeze({ id: "tax-revenue", sourceIds: Object.freeze(["world-bank-gdp-per-capita-2024", "oecd-tax-2024"]), measureIds: Object.freeze(["taxRevenue"]) }),
+  Object.freeze({ id: "debt-interest", sourceIds: Object.freeze(["world-bank-gdp-per-capita-2024", "imf-interest-2024"]), measureIds: Object.freeze(["debtInterest"]) }),
 ]);
 const COMPARISON_VALIDITY_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -58,12 +47,22 @@ const SOURCES = Object.freeze({
   imfWEO2026: Object.freeze({
     publisher: "International Monetary Fund",
     url: SOURCE_QUERIES.imfDebtPctGdp2026,
-    series: "World Economic Outlook April 2026: 2026 NGDPDPC and GGXWDG_NGDP projections",
+    series: "World Economic Outlook April 2026: gross general government debt (% GDP)",
+    additionalSources: [Object.freeze({
+      publisher: "International Monetary Fund",
+      url: SOURCE_QUERIES.imfGdpPerCapita2026,
+      series: "World Economic Outlook April 2026: GDP per capita (current USD), 2026 projection",
+    })],
   }),
   imfInterest2024: Object.freeze({
     publisher: "International Monetary Fund",
     url: SOURCE_QUERIES.imfInterestPctGdp2024,
     series: "Public Finances in Modern History: interest paid (% GDP)",
+    additionalSources: [Object.freeze({
+      publisher: "World Bank World Development Indicators",
+      url: SOURCE_QUERIES.worldBankGdpPerCapita2024,
+      series: "NY.GDP.PCAP.CD: GDP per capita (current US$), 2024",
+    })],
   }),
   oecdOda2025: Object.freeze({
     publisher: "OECD",
@@ -79,6 +78,16 @@ const SOURCES = Object.freeze({
     publisher: "OECD",
     url: SOURCE_QUERIES.oecdTax2024,
     series: "Revenue Statistics: total general-government tax revenue, % GDP",
+  }),
+  worldBankGdpPerCapita2023: Object.freeze({
+    publisher: "World Bank World Development Indicators",
+    url: SOURCE_QUERIES.worldBankGdpPerCapita2023,
+    series: "NY.GDP.PCAP.CD: GDP per capita (current US$), 2023",
+  }),
+  worldBankGdpPerCapita2024: Object.freeze({
+    publisher: "World Bank World Development Indicators",
+    url: SOURCE_QUERIES.worldBankGdpPerCapita2024,
+    series: "NY.GDP.PCAP.CD: GDP per capita (current US$), 2024",
   }),
   sipri2025: Object.freeze({
     publisher: "SIPRI",
@@ -112,6 +121,7 @@ function comparisonSourceBundle(values = {}) {
     socialPctGdp2023: values.socialPctGdp2023 ?? null,
     healthPerCapita2024: values.healthPerCapita2024 ?? null,
     taxPctGdp2024: values.taxPctGdp2024 ?? null,
+    sourceUpdates: values.sourceUpdates ?? {},
     sourceFailures: Array.isArray(values.sourceFailures) ? values.sourceFailures : [],
     attemptedSources: Array.isArray(values.attemptedSources) ? values.attemptedSources : [...INTERNATIONAL_SOURCES],
   };
@@ -139,19 +149,37 @@ function lifecycleFor(id, comparisonMeasure, now, sourceFailures) {
       status: "unavailable",
     };
   }
-  const sourceEdition = comparisonMeasure.countries.map(({ country, value, source }) => [
+  const sourceDetails = (source) => source ? {
+    publisher: source.publisher,
+    url: source.url,
+    series: source.series,
+    publicationDate: source.publicationDate ?? null,
+    ...(source.sourceUpdatedAt && source.sourceUpdatedAtBasis
+      ? { sourceUpdatedAt: source.sourceUpdatedAt, sourceUpdatedAtBasis: source.sourceUpdatedAtBasis }
+      : {}),
+    additionalSources: (source.additionalSources ?? []).map(({ publisher, url, series, publicationDate, sourceUpdatedAt, sourceUpdatedAtBasis }) => ({
+      publisher,
+      url,
+      series,
+      publicationDate: publicationDate ?? null,
+      ...(sourceUpdatedAt && sourceUpdatedAtBasis
+        ? { sourceUpdatedAt, sourceUpdatedAtBasis }
+        : {}),
+    })),
+  } : null;
+  const sourceEdition = comparisonMeasure.countries.map(({ country, value, source, calculationInputs }) => [
     country,
     value,
-    source?.url ?? null,
-    source?.series ?? null,
+    calculationInputs ?? null,
+    sourceDetails(source),
   ]);
   if (comparisonMeasure.countryHistory) {
-    sourceEdition.push(...comparisonMeasure.countryHistory.map(({ country, value, observationYear, source }) => [
+    sourceEdition.push(...comparisonMeasure.countryHistory.map(({ country, value, observationYear, source, calculationInputs }) => [
       country,
       observationYear,
       value,
-      source?.url ?? null,
-      source?.series ?? null,
+      calculationInputs ?? null,
+      sourceDetails(source),
     ]));
   }
   const hasValues = comparisonMeasure.comparableCountryCount > 0;
@@ -169,6 +197,16 @@ function value(map, country) {
   if (!(map instanceof Map)) return null;
   const candidate = map.get(country);
   return Number.isFinite(candidate) ? candidate : null;
+}
+
+function withAdditionalSource(source, additionalSource) {
+  return { ...source, additionalSources: [additionalSource] };
+}
+
+function withSourceUpdate(source, update) {
+  return update?.sourceUpdatedAt && update?.sourceUpdatedAtBasis
+    ? { ...source, ...update }
+    : source;
 }
 
 function nullObservation(country, year, exclusionReason, valueType = "historical") {
@@ -243,6 +281,7 @@ function measure(id, year, observations) {
 
 function buildInternationalComparisonPublication(bundle, now = new Date()) {
   const oecdCoverage = (country) => OECD_IDS.has(country);
+  const sourceUpdates = bundle.sourceUpdates ?? {};
   const gdp2023 = bundle.gdpPerCapita2023;
   const gdp2024 = bundle.gdpPerCapita2024;
   const gdp2026 = bundle.gdpPerCapita2026;
@@ -260,7 +299,7 @@ function buildInternationalComparisonPublication(bundle, now = new Date()) {
       "officialDevelopmentAssistance",
       2025,
       bundle.odaUsd2025 instanceof Map && population2025 instanceof Map
-        ? totalObservations(bundle.odaUsd2025, population2025, 2025, SOURCES.oecdOda2025, oecdCoverage, "not-covered-by-comparable-donor-series", "estimate")
+        ? totalObservations(bundle.odaUsd2025, population2025, 2025, withSourceUpdate(SOURCES.oecdOda2025, sourceUpdates["oecd-oda-2025"]), oecdCoverage, "not-covered-by-comparable-donor-series", "estimate")
         : sourceUnavailableObservations(2025, oecdCoverage, "not-covered-by-comparable-donor-series", "estimate")
     ),
     defenceSpending: measure(
@@ -274,28 +313,56 @@ function buildInternationalComparisonPublication(bundle, now = new Date()) {
       "publicSocialExpenditure",
       2023,
       bundle.socialPctGdp2023 instanceof Map && gdp2023 instanceof Map
-        ? percentGdpObservations(bundle.socialPctGdp2023, gdp2023, 2023, SOURCES.oecdSocx2023, oecdCoverage, "not-covered-by-oecd-comparable-series")
+        ? percentGdpObservations(
+          bundle.socialPctGdp2023,
+          gdp2023,
+          2023,
+          withAdditionalSource(
+            withSourceUpdate(SOURCES.oecdSocx2023, sourceUpdates["oecd-socx-2023"]),
+            withSourceUpdate(SOURCES.worldBankGdpPerCapita2023, sourceUpdates["world-bank-gdp-per-capita-2023"]),
+          ),
+          oecdCoverage,
+          "not-covered-by-oecd-comparable-series",
+        )
         : sourceUnavailableObservations(2023, oecdCoverage, "not-covered-by-oecd-comparable-series")
     ),
     healthcareSpending: measure(
       "healthcareSpending",
       2024,
       bundle.healthPerCapita2024 instanceof Map
-        ? directObservations(bundle.healthPerCapita2024, 2024, SOURCES.whoViaWorldBank2024)
+        ? directObservations(bundle.healthPerCapita2024, 2024, withSourceUpdate(SOURCES.whoViaWorldBank2024, sourceUpdates["world-bank-health-2024"]))
         : sourceUnavailableObservations(2024)
     ),
     taxRevenue: measure(
       "taxRevenue",
       2024,
       bundle.taxPctGdp2024 instanceof Map && gdp2024 instanceof Map
-        ? percentGdpObservations(bundle.taxPctGdp2024, gdp2024, 2024, SOURCES.oecdTax2024, oecdCoverage, "not-covered-by-oecd-comparable-series")
+        ? percentGdpObservations(
+          bundle.taxPctGdp2024,
+          gdp2024,
+          2024,
+          withAdditionalSource(
+            withSourceUpdate(SOURCES.oecdTax2024, sourceUpdates["oecd-tax-2024"]),
+            withSourceUpdate(SOURCES.worldBankGdpPerCapita2024, sourceUpdates["world-bank-gdp-per-capita-2024"]),
+          ),
+          oecdCoverage,
+          "not-covered-by-oecd-comparable-series",
+        )
         : sourceUnavailableObservations(2024, oecdCoverage, "not-covered-by-oecd-comparable-series")
     ),
     debtInterest: measure(
       "debtInterest",
       2024,
       bundle.interestPctGdp2024 instanceof Map && gdp2024 instanceof Map
-        ? percentGdpObservations(bundle.interestPctGdp2024, gdp2024, 2024, SOURCES.imfInterest2024)
+        ? percentGdpObservations(
+          bundle.interestPctGdp2024,
+          gdp2024,
+          2024,
+          withAdditionalSource(
+            SOURCES.imfInterest2024,
+            withSourceUpdate(SOURCES.worldBankGdpPerCapita2024, sourceUpdates["world-bank-gdp-per-capita-2024"]),
+          ),
+        )
         : sourceUnavailableObservations(2024)
     ),
   };
@@ -387,8 +454,8 @@ async function collectInternationalComparison(fetchImpl = fetch, now = new Date(
     healthPerCapita2024,
     taxPctGdp2024,
   ] = await Promise.all([
-    attempt("imf-gdp-2023", () => fetchImfSeries("NGDPDPC", 2023, fetchImpl)),
-    attempt("imf-gdp-2024", () => fetchImfSeries("NGDPDPC", 2024, fetchImpl)),
+    attempt("world-bank-gdp-per-capita-2023", () => fetchWorldBankSeries("NY.GDP.PCAP.CD", 2023, fetchImpl)),
+    attempt("world-bank-gdp-per-capita-2024", () => fetchWorldBankSeries("NY.GDP.PCAP.CD", 2024, fetchImpl)),
     attempt("imf-gdp-2026", () => fetchImfSeries("NGDPDPC", 2026, fetchImpl)),
     attempt("world-bank-population-2025", () => fetchWorldBankSeriesHistory("SP.POP.TOTL", 2015, 2025, fetchImpl)),
     attempt("imf-debt-2026", () => fetchImfSeries("GGXWDG_NGDP", 2026, fetchImpl)),
@@ -402,19 +469,29 @@ async function collectInternationalComparison(fetchImpl = fetch, now = new Date(
 
   return buildInternationalComparisonPublication(
     comparisonSourceBundle({
-      gdpPerCapita2023,
-      gdpPerCapita2024,
+      gdpPerCapita2023: gdpPerCapita2023?.values ?? null,
+      gdpPerCapita2024: gdpPerCapita2024?.values ?? null,
       gdpPerCapita2026,
       populationByYear,
       population2025: populationByYear instanceof Map ? populationByYear.get(2025) ?? null : null,
       debtPctGdp2026,
       interestPctGdp2024,
-      odaUsd2025,
+      odaUsd2025: odaUsd2025?.values ?? null,
       defenceUsdByYear,
       defenceUsd2025: defenceUsdByYear instanceof Map ? defenceUsdByYear.get(2025) ?? null : null,
-      socialPctGdp2023,
-      healthPerCapita2024,
-      taxPctGdp2024,
+      socialPctGdp2023: socialPctGdp2023?.values ?? null,
+      healthPerCapita2024: healthPerCapita2024?.values ?? null,
+      taxPctGdp2024: taxPctGdp2024?.values ?? null,
+      sourceUpdates: Object.fromEntries([
+        ["world-bank-gdp-per-capita-2023", gdpPerCapita2023],
+        ["world-bank-gdp-per-capita-2024", gdpPerCapita2024],
+        ["oecd-oda-2025", odaUsd2025],
+        ["oecd-socx-2023", socialPctGdp2023],
+        ["world-bank-health-2024", healthPerCapita2024],
+        ["oecd-tax-2024", taxPctGdp2024],
+      ].flatMap(([sourceId, source]) => source?.sourceUpdatedAt && source?.sourceUpdatedAtBasis
+        ? [[sourceId, { sourceUpdatedAt: source.sourceUpdatedAt, sourceUpdatedAtBasis: source.sourceUpdatedAtBasis }]]
+        : [])),
       sourceFailures,
       attemptedSources: [...requested],
     }),
