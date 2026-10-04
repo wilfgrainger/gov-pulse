@@ -179,6 +179,15 @@ export function formatUsdPerResident(value: number | null) {
   }).format(rounded);
 }
 
+export function formatExactUsdPerResident(value: number | null) {
+  if (value === null || !Number.isFinite(value)) return "Unavailable";
+  return new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "USD",
+    maximumSignificantDigits: 17,
+  }).format(value);
+}
+
 export function ordinal(value: number) {
   const remainder100 = value % 100;
   if (remainder100 >= 11 && remainder100 <= 13) return `${value}th`;

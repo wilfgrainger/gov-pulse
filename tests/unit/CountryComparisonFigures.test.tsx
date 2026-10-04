@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import CountryComparisonFigures from "@/app/components/CountryComparisonFigures";
 import { COMPARISON_MEASURE_ORDER, type ComparisonMeasure } from "@/app/lib/internationalComparison";
@@ -50,6 +50,53 @@ describe("shareable country comparison controls", () => {
 
     await waitFor(() => expect(screen.getByLabelText("Measure")).toHaveValue("defenceSpending"));
     expect(screen.getByRole("status")).toHaveTextContent("Visible denominator: 3 of 3");
+  });
+
+  it("shows the published numeric value in the table while keeping chart labels rounded", async () => {
+    const publishedMeasures = measures();
+    publishedMeasures.defenceSpending = {
+      ...publishedMeasures.defenceSpending,
+      countries: publishedMeasures.defenceSpending.countries.map((row) =>
+        row.country === "GBR" ? { ...row, value: 1969.5458592202074 } : row,
+      ),
+    };
+    render(<CountryComparisonFigures measures={publishedMeasures} />);
+
+    await waitFor(() => expect(screen.getByLabelText("Measure")).toHaveValue("defenceSpending"));
+
+    const table = screen.getByRole("table", { name: "Exact selected country observations and denominator" });
+    expect(within(table).getByRole("row", { name: /United Kingdom · UK/ })).toHaveTextContent("US$1,969.5458592202074");
+    expect(screen.getByText("US$1,970 · 1")).toBeInTheDocument();
+  });
+
+  it("translates source exclusion codes into a reader-facing reason", async () => {
+    const publishedMeasures = measures();
+    const defence = publishedMeasures.defenceSpending;
+    publishedMeasures.defenceSpending = {
+      ...defence,
+      countries: [
+        ...defence.countries,
+        {
+          country: "CHN",
+          value: null,
+          rank: null,
+          observationYear: 2024,
+          valueType: "estimate",
+          source: null,
+          exclusionReason: "not-covered-by-comparable-donor-series",
+        },
+      ],
+    };
+    render(<CountryComparisonFigures measures={publishedMeasures} />);
+    await waitFor(() => expect(screen.getByLabelText("Measure")).toHaveValue("defenceSpending"));
+
+    const excluded = screen.getByText("1 excluded country records");
+    fireEvent.click(excluded);
+
+    const details = excluded.closest("details");
+    expect(details).toHaveTextContent("China:");
+    expect(details).toHaveTextContent("Not covered by the comparable donor series");
+    expect(details).not.toHaveTextContent("not-covered-by-comparable-donor-series");
   });
 
   it("keeps the selected year clear when status filters leave no values", async () => {

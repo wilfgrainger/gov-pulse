@@ -48,6 +48,18 @@ describe("interactive country comparison", () => {
     expect(result.excluded[0].reason).toBe("publisher-reported-no-value");
   });
 
+  it("exports readable source exclusion explanations instead of machine codes", () => {
+    const data = measure({ countries: [
+      { country: "GBR", value: 100, rank: 1, observationYear: 2024, valueType: "estimate", source: null },
+      { country: "CHN", value: null, rank: null, observationYear: 2024, valueType: "estimate", source: null, exclusionReason: "not-covered-by-comparable-donor-series" },
+    ] });
+    const selected = selectCountryFigure(data, ["GBR", "CHN"], ["estimate"]);
+    const metadata = buildCountryChartMetadata(data, selected);
+
+    expect(metadata.caveats).toContain("Not covered by the comparable donor series");
+    expect(metadata.caveats).not.toContain("not-covered-by-comparable-donor-series");
+  });
+
   it("updates the denominator and ranking when country filters change", () => {
     const result = selectCountryFigure(measure(), ["GBR", "DEU"], ["estimate"]);
     expect(result.denominator).toBe(2);
