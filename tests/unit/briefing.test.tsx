@@ -1,11 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import BriefingEdition from "@/app/components/BriefingEdition";
 import StoryEvidence from "@/app/components/StoryEvidence";
+import GuidedStoryPage from "@/app/stories/[slug]/page";
 import householdStory from "@/app/content/stories/household-budgets";
 import publicFinanceStory from "@/app/content/stories/public-finances";
 import { MEASURE_IDS } from "../../worker/measure-catalog.js";
 import type { MetricsSnapshot } from "@/app/lib/metricsSnapshot";
+
+vi.mock("@/app/lib/serverMetricsSnapshot", () => ({ readServerMetricsSnapshot: () => Promise.resolve(null) }));
 
 const measure = {
   id: "inflation", label: "CPI inflation", evidenceClass: "official-statistics", comparisonKey: "uk-cpi-annual-inflation", cadence: "monthly", unit: "%", basis: "Annual CPI change",
@@ -97,5 +100,16 @@ describe("edition briefing and guided story contracts", () => {
       expect(story.measureIds.length).toBeGreaterThan(0);
       expect(story.measureIds.every((id) => (MEASURE_IDS as readonly string[]).includes(id))).toBe(true);
     }
+  });
+
+  it.each([
+    ["household-budgets", "2026-10-02T16:37:38.000Z"],
+    ["public-finances", "2026-10-02T16:37:38.000Z"],
+  ])("shows the verified publication date for the %s story", async (slug, publishedAt) => {
+    const page = await GuidedStoryPage({ params: Promise.resolve({ slug }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain(`dateTime="${publishedAt}"`);
+    expect(markup).toContain(`Published ${publishedAt.slice(0, 10)}`);
   });
 });
