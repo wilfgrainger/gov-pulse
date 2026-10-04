@@ -4,12 +4,14 @@ import { deflateRawSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { sharedStrings, workbookSheetCells, worksheetCells, zipEntries } from "../../worker/xlsx-workbook.js";
 
-function zipFixture(entries: Array<{
+type ZipFixtureEntry = {
   name: string;
   data: Buffer;
-  method?: 0 | 8;
+  method?: number;
   declaredSize?: number;
-}>): ArrayBuffer {
+};
+
+function zipFixture(entries: ZipFixtureEntry[]): ArrayBuffer {
   const localFiles: Buffer[] = [];
   const directoryEntries: Buffer[] = [];
   let localOffset = 0;
@@ -17,7 +19,11 @@ function zipFixture(entries: Array<{
   for (const entry of entries) {
     const name = Buffer.from(entry.name);
     const method = entry.method ?? 8;
-    const compressed = method === 0 ? entry.data : deflateRawSync(entry.data);
+    const compressed = method === 0
+      ? entry.data
+      : method === 8
+        ? deflateRawSync(entry.data)
+        : entry.data;
     const declaredSize = entry.declaredSize ?? entry.data.length;
     const local = Buffer.alloc(30 + name.length + compressed.length);
     local.writeUInt32LE(0x04034b50, 0);
@@ -52,7 +58,7 @@ function zipFixture(entries: Array<{
   return archive.buffer.slice(archive.byteOffset, archive.byteOffset + archive.byteLength);
 }
 
-function workbookEntries(sheets: string[]) {
+function workbookEntries(sheets: string[]): ZipFixtureEntry[] {
   return [
     { name: "xl/workbook.xml", data: Buffer.from(`<workbook><sheets>${sheets.map((_, i) => `<sheet name="Sheet${i + 1}" r:id="rId${i + 1}"/>`).join("")}</sheets></workbook>`) },
     { name: "xl/_rels/workbook.xml.rels", data: Buffer.from(`<Relationships>${sheets.map((_, i) => `<Relationship id="rId${i + 1}" target="worksheets/sheet${i + 1}.xml"/>`).join("")}</Relationships>`) },
@@ -103,13 +109,28 @@ describe("bounded spreadsheet decompression", () => {
     })).toThrow(/shared strings.*limit/i);
   });
 
-  it("counts cells and rows across every worksheet, not only the selected one", async () => {
+  it("applies row and cell caps before building the selected worksheet map", async () => {
     const archive = zipFixture(workbookEntries([
+      "<worksheet><row><c r='A1'><v>1</v></c><c r='B1'><v>2</v></c></row><row><c r='A2'><v>3</v></c></row></worksheet>",
+      "<worksheet><row><c r='A1'><v>4</v></c></row></worksheet>",
+    ]));
+    await expect(workbookSheetCells(archive, "Sheet1", { maxWorksheetRows: 1 }))
+      .rejects.toThrow(/row.*limit/i);
+    await expect(workbookSheetCells(archive, "Sheet1", { maxWorkbookCells: 2 }))
+      .rejects.toThrow(/cell.*limit/i);
+  });
+
+  it("does not decompress an unrelated worksheet when reading a selected sheet", async () => {
+    const entries = workbookEntries([
       "<worksheet><row><c r='A1'><v>1</v></c></row></worksheet>",
       "<worksheet><row><c r='A1'><v>2</v></c></row></worksheet>",
-    ]));
-    await expect(workbookSheetCells(archive, "Sheet1", { maxWorkbookCells: 1 }))
-      .rejects.toThrow(/cell.*limit/i);
+    ]);
+    entries.find((entry) => entry.name === "xl/worksheets/sheet2.xml")!.method = 12;
+    const archive = zipFixture(entries);
+
+    await expect(workbookSheetCells(archive, "Sheet1")).resolves.toEqual(
+      new Map([["A1", "1"]]),
+    );
   });
 
   it("applies the expanded-entry cap to stored ZIP entries", async () => {
