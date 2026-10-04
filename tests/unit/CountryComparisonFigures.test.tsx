@@ -180,4 +180,32 @@ describe("shareable country comparison controls", () => {
     expect(screen.getByLabelText("Germany")).toBeChecked();
     expect(screen.getByLabelText("United States")).not.toBeChecked();
   });
+
+  it("replaces URL state restored from a shared link but pushes reader-made changes", async () => {
+    window.history.replaceState({}, "", "/compare/");
+    window.history.pushState({}, "", "/compare/?measure=defenceSpending&countries=GBR%2CUSA%2CCHN%2CRUS%2CUKR%2CDEU%2CFRA%2CITA%2CESP%2CIRL%2CNLD%2CCHE%2CPOL&types=historical%2Cestimate%2Cprojection&year=latest");
+    const pushState = vi.spyOn(window.history, "pushState");
+    const replaceState = vi.spyOn(window.history, "replaceState");
+
+    render(<CountryComparisonFigures measures={measures()} />);
+    await waitFor(() => expect(screen.getByLabelText("Comparison year")).toHaveValue("latest"));
+    await waitFor(() => expect(window.location.search).toBe(""));
+
+    expect(pushState).not.toHaveBeenCalled();
+    expect(replaceState).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(screen.getByLabelText("Comparison year"), { target: { value: "2023" } });
+    await waitFor(() => expect(new URL(window.location.href).searchParams.get("year")).toBe("2023"));
+    expect(pushState).toHaveBeenCalledTimes(1);
+
+    replaceState.mockClear();
+    window.history.replaceState({}, "", "/compare/?measure=healthcareSpending&countries=GBR%2CUSA&types=estimate&year=latest");
+    replaceState.mockClear();
+    fireEvent(window, new PopStateEvent("popstate"));
+    await waitFor(() => expect(screen.getByLabelText("Measure")).toHaveValue("healthcareSpending"));
+    await waitFor(() => expect(window.location.search).toBe("?measure=healthcareSpending&countries=GBR%2CUSA&types=estimate"));
+
+    expect(pushState).toHaveBeenCalledTimes(1);
+    expect(replaceState).toHaveBeenCalledTimes(1);
+  });
 });
