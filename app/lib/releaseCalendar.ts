@@ -19,6 +19,20 @@ function isDate(value: unknown): value is string {
   return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
+function dateLabelFor(value: unknown, date: string): string | undefined {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  const expected = new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${date}T00:00:00.000Z`));
+  const escaped = expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?:^|[^\\d])${escaped}(?:$|[^\\d])`, "i").test(value)
+    ? value.trim()
+    : expected;
+}
+
 function isTimestamp(value: unknown): value is string {
   return typeof value === "string" && Number.isFinite(Date.parse(value));
 }
@@ -111,6 +125,11 @@ export function buildReleaseEvents(snapshot: unknown, now = new Date()): Release
       const checkedAt = isTimestamp(item.checkedAt) ? item.checkedAt : confirmedAt(officialCalendarSource);
       const date = item.date === null || item.date === undefined ? null : item.date;
       if (date !== null && (!isDate(date) || date < today)) continue;
+      const dateLabel = typeof date === "string" && isDate(date)
+        ? dateLabelFor(item.dateLabel, date)
+        : typeof item.dateLabel === "string" && item.dateLabel.trim()
+          ? item.dateLabel.trim()
+          : undefined;
       events.push({
         eventId: item.id,
         measureId: families[0],
@@ -119,7 +138,7 @@ export function buildReleaseEvents(snapshot: unknown, now = new Date()): Release
         label: item.title,
         publisherUrl: url.toString(),
         date,
-        ...(typeof item.dateLabel === "string" && item.dateLabel.trim() ? { dateLabel: item.dateLabel } : {}),
+        ...(dateLabel ? { dateLabel } : {}),
         certainty: "published",
         status: item.status as ReleaseEvent["status"],
         timezone: "Europe/London",
@@ -140,6 +159,7 @@ export function buildReleaseEvents(snapshot: unknown, now = new Date()): Release
       try { url = new URL(item.publisherUrl as string); } catch { continue; }
       if (url.hostname !== "www.england.nhs.uk" || !/^\/statistics\/wp-content\/uploads\/sites\/2\/20\d{2}\/(?:0[1-9]|1[0-2])\/[^/?#]+\.pdf$/i.test(url.pathname) || url.search || url.hash) continue;
       const checkedAt = isTimestamp(item.checkedAt) ? item.checkedAt : confirmedAt(nhsCalendarSource);
+      const dateLabel = dateLabelFor(item.dateLabel, item.date);
       events.push({
         eventId: item.id,
         measureId: "nhsStats",
@@ -148,7 +168,7 @@ export function buildReleaseEvents(snapshot: unknown, now = new Date()): Release
         label: item.title,
         publisherUrl: url.toString(),
         date: item.date,
-        ...(typeof item.dateLabel === "string" && item.dateLabel.trim() ? { dateLabel: item.dateLabel } : {}),
+        ...(dateLabel ? { dateLabel } : {}),
         certainty: "published",
         status: item.status as ReleaseEvent["status"],
         timezone: "Europe/London",
