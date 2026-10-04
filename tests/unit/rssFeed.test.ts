@@ -89,7 +89,11 @@ describe("RSS publication feed", () => {
       `${SITE_DISCOVERY.origin}/stories/public-finances/`,
     ]);
     expect(stories.every((item) => item.querySelector("guid")?.textContent === item.querySelector("link")?.textContent)).toBe(true);
-    expect(stories.every((item) => !item.querySelector("pubDate"))).toBe(true);
+    expect(stories.map((item) => item.querySelector("pubDate")?.textContent)).toEqual([
+      "Fri, 02 Oct 2026 16:37:38 GMT",
+      "Fri, 02 Oct 2026 16:37:38 GMT",
+    ]);
+    expect(stories.every((item) => !item.textContent?.includes("Publication date not disclosed"))).toBe(true);
     expect(items.every((item) => Boolean(item.querySelector("title")?.textContent && item.querySelector("link")?.textContent && item.querySelector("guid")?.textContent && item.querySelector("description")?.textContent))).toBe(true);
     expect(new Set(items.map((item) => item.querySelector("guid")?.textContent)).size).toBe(items.length);
   });

@@ -1,6 +1,7 @@
 const story = {
   slug: "household-budgets",
   title: "How to read the household pressure signals",
+  publishedAt: "2026-10-02T16:37:38.000Z",
   introduction: "Prices and pay each describe a different part of the household picture. Read their published periods and definitions before deciding whether two series can be compared.",
   owner: "Public-data editorial desk",
   measureIds: ["inflation", "regularPayRealGrowth"],

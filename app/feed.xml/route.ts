@@ -94,7 +94,7 @@ export function renderRssFeed(input: unknown) {
   ].filter(Boolean).join("") : "";
   const storyEntries = STORIES.map((story) => {
     const link = absoluteUrl(`/stories/${story.slug}/`);
-    const publishedDate = validDate((story as { publishedAt?: string }).publishedAt);
+    const publishedDate = validDate(story.publishedAt);
     return [
       "<item>",
       `<title>${escapeXml(story.title)}</title>`,

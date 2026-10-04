@@ -1,6 +1,7 @@
 const story = {
   slug: "public-finances",
   title: "Debt, receipts and economic output",
+  publishedAt: "2026-10-02T16:37:38.000Z",
   introduction: "Public borrowing, the debt stock, tax receipts and national output are related parts of public finance, but each has its own definition and reporting period.",
   owner: "Public-data editorial desk",
   measureIds: ["debt-ratio", "receipts", "gdp-threeMonthGrowth"],
