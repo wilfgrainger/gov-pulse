@@ -80,7 +80,11 @@ describe("SourceDetailPage", () => {
     render(page);
 
     expect(screen.getByRole("heading", { level: 1, name: "CPI inflation" })).toBeInTheDocument();
+    expect(screen.getByText("Evidence class").nextElementSibling).toHaveTextContent("Official statistics");
     expect(screen.getByText("Office for National Statistics", { selector: "strong" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open primary publication" }).parentElement).toHaveTextContent(
+      "edition inflation-edition-2026-09",
+    );
     expect(screen.getByRole("link", { name: "Open primary publication" })).toHaveAttribute("href", "https://www.ons.gov.uk/inflation");
     expect(screen.queryByText("Official Bank Rate", { selector: "p" })).not.toBeInTheDocument();
     expect(screen.getByText("Measures").nextElementSibling).toHaveTextContent("1");
@@ -94,6 +98,7 @@ describe("SourceDetailPage", () => {
     render(page);
 
     expect(screen.getByRole("heading", { level: 1, name: "Series-level economic indicators" })).toBeInTheDocument();
+    expect(screen.getByText("Evidence class").nextElementSibling).toHaveTextContent("Mixed: Official policy, Official statistics");
     expect(screen.getByText("CPI inflation")).toBeInTheDocument();
     expect(screen.getByText("Official Bank Rate")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Primary publication" })).toHaveLength(2);
