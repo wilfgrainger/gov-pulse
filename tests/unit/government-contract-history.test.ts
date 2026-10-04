@@ -33,6 +33,17 @@ describe("Find a Tender OCID release history", () => {
     expect(result.source.packageUrl).toBe(`https://www.find-tender.service.gov.uk/api/1.0/ocdsRecordPackages/${ocid}`);
   });
 
+  it("normalizes the publisher's release-package response for the same OCID", () => {
+    const releases = packageFor().records[0].releases;
+    const result = normalizeContractReleaseHistory({ releases }, ocid);
+
+    expect(result.releases).toHaveLength(5);
+    expect(result.releases.map((release) => release.tags[0])).toEqual([
+      "planning", "tender", "tenderUpdate", "award", "contractAmendment",
+    ]);
+    expect(result.source.packageUrl).toBe(`https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages/${ocid}`);
+  });
+
   it("rejects a package for another OCID and duplicate release identifiers", () => {
     expect(() => normalizeContractReleaseHistory(packageFor([{ ...packageFor().records[0].releases[0], ocid: "ocds-h6vhtk-999999" }]), ocid)).toThrow(/OCID/i);
     const duplicate = packageFor([packageFor().records[0].releases[0], packageFor().records[0].releases[0]]);

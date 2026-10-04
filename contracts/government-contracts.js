@@ -384,27 +384,38 @@ function normalizeDataQuality(value) {
 function normalizeContractReleaseHistory(packageValue, expectedOcid) {
   const ocid = requiredText(expectedOcid, "Expected OCID", 80);
   if (!/^ocds-h6vhtk-[0-9a-f]+$/i.test(ocid)) throw new Error("Expected OCID is invalid");
-  if (!packageValue || typeof packageValue !== "object" || !Array.isArray(packageValue.records) || packageValue.records.length !== 1) {
-    throw new Error("Find a Tender record package must contain one record");
+  if (!packageValue || typeof packageValue !== "object") throw new Error("Find a Tender package is invalid");
+  let sourceReleases;
+  let packageUrl;
+  let documentationUrl;
+  if (Array.isArray(packageValue.records) && packageValue.records.length === 1) {
+    const record = packageValue.records[0];
+    if (!record || typeof record !== "object" || record.ocid !== ocid || !Array.isArray(record.releases)) {
+      throw new Error("Find a Tender record package OCID or releases are invalid");
+    }
+    sourceReleases = record.releases;
+    packageUrl = `https://www.find-tender.service.gov.uk/api/1.0/ocdsRecordPackages/${ocid}`;
+    documentationUrl = FIND_A_TENDER_RECORD_PACKAGE_DOCUMENTATION;
+  } else if (Array.isArray(packageValue.releases)) {
+    sourceReleases = packageValue.releases;
+    packageUrl = `${FIND_A_TENDER_API}/${ocid}`;
+    documentationUrl = FIND_A_TENDER_DOCUMENTATION;
+  } else {
+    throw new Error("Find a Tender package must contain one record or a release list");
   }
-
-  const record = packageValue.records[0];
-  if (!record || typeof record !== "object" || record.ocid !== ocid || !Array.isArray(record.releases)) {
-    throw new Error("Find a Tender record package OCID or releases are invalid");
-  }
-  if (record.releases.length < 1 || record.releases.length > 200) {
-    throw new Error("Find a Tender record package must contain between one and 200 releases");
+  if (sourceReleases.length < 1 || sourceReleases.length > 200) {
+    throw new Error("Find a Tender package must contain between one and 200 releases");
   }
 
   const seen = new Set();
-  const releases = record.releases.map((release, index) => {
+  const releases = sourceReleases.map((release, index) => {
     const label = `Release ${index + 1}`;
     if (!release || typeof release !== "object" || release.ocid !== ocid) {
       throw new Error(`${label} OCID is invalid`);
     }
     const id = requiredText(release.id, `${label} id`, 40);
     if (!/^\d{6}-\d{4}$/.test(id)) throw new Error(`${label} id is invalid`);
-    if (seen.has(id)) throw new Error(`Find a Tender record package contains duplicate release IDs`);
+    if (seen.has(id)) throw new Error(`Find a Tender package contains duplicate release IDs`);
     seen.add(id);
     const date = isoTimestamp(release.date, `${label} date`).text;
     if (!Array.isArray(release.tag) || release.tag.length < 1 || release.tag.length > 8) {
@@ -433,8 +444,8 @@ function normalizeContractReleaseHistory(packageValue, expectedOcid) {
     source: {
       publisher: "Cabinet Office",
       service: "Find a Tender",
-      packageUrl: `https://www.find-tender.service.gov.uk/api/1.0/ocdsRecordPackages/${ocid}`,
-      documentationUrl: FIND_A_TENDER_RECORD_PACKAGE_DOCUMENTATION,
+      packageUrl,
+      documentationUrl,
     },
     releases,
   };
