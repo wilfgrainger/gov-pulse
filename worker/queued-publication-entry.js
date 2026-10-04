@@ -37,7 +37,7 @@ import {
   refreshInternationalComparison,
   sourcesDue as comparisonSourcesDue,
 } from "./international-comparison-publication.js";
-import { archiveEdition, reconcileEditionSummaryFromRetainedPrior } from "./edition-archive.js";
+import { archiveEdition, reconcileRetainedEditionSummaries } from "./edition-archive.js";
 
 const PUBLICATION_SECTION_PREFIX = "v12:publication:section:";
 const PUBLICATION_HISTORY_TTL_SECONDS = 14 * 24 * 60 * 60;
@@ -285,7 +285,7 @@ async function publishFromCaches(env, options = {}) {
       await archiveEdition(env, publication.meta.measureCatalog, publication.meta.editionSummary);
       publication.meta.editionArchiveStatus = "ready";
       try {
-        const reconciled = await reconcileEditionSummaryFromRetainedPrior(
+        const reconciled = await reconcileRetainedEditionSummaries(
           env,
           publication.meta.measureCatalog.editionId,
         );

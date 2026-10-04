@@ -25,7 +25,7 @@ import {
 } from "@/worker/government-contracts-cloudflare";
 import { ukNationFromPostcode } from "@/contracts/government-contracts";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
-import { archiveEdition } from "@/worker/edition-archive";
+import { archiveEdition, readEdition } from "@/worker/edition-archive";
 import { catalogRevisionIdentity } from "@/worker/measure-catalog";
 
 const REQUIRED = [
@@ -278,28 +278,49 @@ describe("Cloudflare data publication", () => {
     expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(result.publication);
   });
 
-  it("reconciles a first archive summary against retained history when the current snapshot has no catalog baseline", async () => {
+  it("reconciles retained and current summaries that missed their catalog baselines", async () => {
     const prior = archivedBaseline();
+    const historical = structuredClone(prior);
+    historical.catalog.generatedAt = "2026-07-17T11:30:00.000Z";
+    historical.catalog.measures["baseline-measure"].sourceEditionId = "ons-historical";
+    historical.catalog.measures["baseline-measure"].publishedAt = historical.catalog.generatedAt;
+    historical.catalog.measures["baseline-measure"].fetchedAt = historical.catalog.generatedAt;
+    historical.catalog.editionId = catalogRevisionIdentity(historical.catalog.measures);
+    historical.summary = {
+      ...historical.summary,
+      id: historical.catalog.editionId,
+      publishedAt: historical.catalog.generatedAt,
+      previousEditionId: null,
+      sourceEditionIds: ["ons-historical"],
+      changes: [],
+    };
     const { env, store } = kvEnv({ [PUBLICATION_CURRENT_KEY]: snapshot() });
     await archiveEdition(env, prior.catalog, prior.summary);
+    await archiveEdition(env, historical.catalog, historical.summary);
 
     const result = await publishFromCaches(env, {
       now: new Date("2026-07-17T12:30:00.000Z"),
     });
 
     expect(result.publication.meta.editionSummary).toMatchObject({
-      previousEditionId: prior.catalog.editionId,
+      previousEditionId: historical.catalog.editionId,
       summaryCorrection: {
         kind: "baseline-reconciliation",
-        baselineEditionId: prior.catalog.editionId,
+        baselineEditionId: historical.catalog.editionId,
       },
     });
     expect(store.get(PUBLICATION_CURRENT_KEY)).toMatchObject({
       meta: {
         editionSummary: {
-          previousEditionId: prior.catalog.editionId,
-          summaryCorrection: { baselineEditionId: prior.catalog.editionId },
+          previousEditionId: historical.catalog.editionId,
+          summaryCorrection: { baselineEditionId: historical.catalog.editionId },
         },
+      },
+    });
+    await expect(readEdition(env, historical.catalog.editionId)).resolves.toMatchObject({
+      summary: {
+        previousEditionId: prior.catalog.editionId,
+        summaryCorrection: { baselineEditionId: prior.catalog.editionId },
       },
     });
 
@@ -307,8 +328,8 @@ describe("Cloudflare data publication", () => {
       now: new Date("2026-07-17T12:31:00.000Z"),
     });
     expect(retried.publication.meta.editionSummary).toMatchObject({
-      previousEditionId: prior.catalog.editionId,
-      summaryCorrection: { baselineEditionId: prior.catalog.editionId },
+      previousEditionId: historical.catalog.editionId,
+      summaryCorrection: { baselineEditionId: historical.catalog.editionId },
     });
     expect(retried.publication.meta.editionSummary?.previousEditionId).not.toBe(
       retried.publication.meta.editionSummary?.id,
