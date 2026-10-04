@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { serializeJsonLd, SITE_DISCOVERY } from "@/app/lib/discovery";
 import { MetricsSnapshotProvider } from "@/app/lib/MetricsSnapshotProvider";
+import { createClientMetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
 import { BRAND_NAME, SITE_DESCRIPTION, SITE_SOCIAL_DESCRIPTION, SITE_TITLE } from "@/app/lib/siteCopy";
 import "./globals.css";
@@ -86,7 +87,7 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(publicationStructuredData) }}
         />
-        <MetricsSnapshotProvider snapshot={initialSnapshot}>
+        <MetricsSnapshotProvider snapshot={createClientMetricsSnapshot(initialSnapshot)}>
           {children}
         </MetricsSnapshotProvider>
       </body>

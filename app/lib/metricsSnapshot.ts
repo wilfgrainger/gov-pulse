@@ -51,6 +51,15 @@ export interface MetricsSnapshot {
   [section: string]: unknown;
 }
 
+export function createClientMetricsSnapshot(
+  snapshot: MetricsSnapshot | null
+): MetricsSnapshot | null {
+  if (!snapshot) return null;
+  const meta = { ...snapshot.meta };
+  delete meta.measureCatalog;
+  return { ...snapshot, meta };
+}
+
 export interface LoadedMetricsSnapshot {
   payload: MetricsSnapshot;
   delivery: "snapshot";
