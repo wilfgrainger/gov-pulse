@@ -1,12 +1,15 @@
 import { pathToFileURL } from "node:url";
 
+const RELEASE_PROPAGATION_ATTEMPTS = 25;
+const RELEASE_PROPAGATION_RETRY_MS = 5000;
+
 // Code readiness and evidence readiness have different failure domains.
 // Bound the release probe; full source diagnostics remain test:live / verify-production.
 export async function releaseSmoke({
   url,
   revision,
   fetchImpl = fetch,
-  attempts = 3,
+  attempts = RELEASE_PROPAGATION_ATTEMPTS,
   delay = (ms) => new Promise((r) => setTimeout(r, ms)),
   log = console,
 }) {
@@ -61,7 +64,7 @@ export async function releaseSmoke({
       return;
     } catch (failure) {
       error = failure;
-      if (attempt + 1 < attempts) await delay(3000);
+      if (attempt + 1 < attempts) await delay(RELEASE_PROPAGATION_RETRY_MS);
     }
   }
   throw error;

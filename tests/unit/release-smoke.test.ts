@@ -28,6 +28,25 @@ it("accepts deployed code when evidence is explicitly degraded", async () => {
   });
   expect(log.warn).toHaveBeenCalledOnce();
 });
+it("waits for reader routes to converge across the edge propagation window", async () => {
+  let readerCalls = 0;
+  const delay = vi.fn(async () => {});
+  const fetchImpl = vi.fn(async (url: URL) => {
+    if (url.pathname.endsWith("health.json")) return new Response('{"ready":true}');
+    const attempt = Math.floor(readerCalls++ / 2);
+    return new Response(attempt < 3 ? '<meta name="public-data-revision" content="old">' : html);
+  });
+
+  await releaseSmoke({
+    url: "https://public-data.org/",
+    revision,
+    fetchImpl,
+    delay,
+  });
+
+  expect(delay).toHaveBeenCalledTimes(3);
+  expect(delay).toHaveBeenCalledWith(5000);
+});
 it.each(['{}', '{"ready":"false"}'])("rejects a malformed health contract: %s", async (body) => {
   await expect(
     releaseSmoke({
@@ -45,6 +64,7 @@ it("rejects a wrong revision with a bounded retry count", async () => {
     releaseSmoke({
       url: "https://public-data.org/",
       revision,
+      attempts: 3,
       fetchImpl,
       delay: async () => {},
     }),
