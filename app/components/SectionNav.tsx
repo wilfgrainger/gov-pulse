@@ -105,7 +105,7 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
         >
           <BrandLogo compact />
         </Link>
-        <Link href="/explore/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/explore' ? 'page' : undefined} className={`hidden min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 min-[400px]:inline-flex ${focusClasses}`}>Explore data</Link>
+        <Link href="/explore/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/explore' ? 'page' : undefined} className={`hidden min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 sm:inline-flex ${focusClasses}`}>Explore data</Link>
         <Link href="/measure/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/measure' ? 'page' : undefined} className={`hidden min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 xl:inline-flex ${focusClasses}`}>Measure library</Link>
         <Link href="/compare/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/compare' ? 'page' : undefined} className={`hidden min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 xl:inline-flex ${focusClasses}`}>Compare</Link>
         <Link href="/briefing/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/briefing' ? 'page' : undefined} className={`hidden min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 xl:inline-flex ${focusClasses}`}>Briefing</Link>
