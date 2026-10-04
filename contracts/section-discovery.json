@@ -87,9 +87,9 @@
     },
     "government-contracts": {
       "title": "UK government contracts",
-      "description": "The largest comparable disclosed GBP awards in the latest complete Find a Tender window, with independent scrutiny.",
+      "description": "Government-contracts evidence is temporarily withdrawn while the procurement data is reverified before republication.",
       "category": "Public money",
-      "kind": "dataset",
+      "kind": "withdrawn",
       "sourceKey": "governmentContracts",
       "sameAs": ["https://www.find-tender.service.gov.uk/"]
     },

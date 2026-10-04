@@ -16,7 +16,6 @@ const QUICK_LINK_IDS = [
   "migration",
   "election-polls",
   "crime-stats",
-  "government-contracts",
 ] as const;
 
 export default function SectionNav({ sections }: { sections: CategoryGroup[] }) {
@@ -204,7 +203,6 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
                   ["Briefing", "/briefing/"],
                   ["Release calendar", "/calendar/"],
                   ["Cost of living", "/cost-of-living/"],
-                  ["Public money", "/money/"],
                   ["Editions", "/editions/"],
                 ].map(([label, href]) => (
                   <li key={href}>

@@ -17,6 +17,7 @@ export const WITHDRAWN_SECTION_IDS = [
   "gov-trust-trend",
   "uk-regions",
   "policy-links",
+  "government-contracts",
 ] as const;
 
 export const SECTIONS: CategoryGroup[] = [
@@ -43,7 +44,6 @@ export const SECTIONS: CategoryGroup[] = [
     category: "Public money",
     sections: [
       { id: "uk-in-context", label: "UK in context", shortLabel: "UK context" },
-      { id: "government-contracts", label: "Government contracts", shortLabel: "Contracts" },
     ],
   },
   {

@@ -18,6 +18,7 @@ import { readServerMetricsSnapshot } from "../../lib/serverMetricsSnapshot";
 import { sectionDistribution } from "../../lib/sectionDownloads";
 import { filterCurrentSnapshot } from "@/worker/publication-currentness";
 import type { MetricsSnapshot } from "../../lib/metricsSnapshot";
+import PublicMoneyPage, { metadata as publicMoneyMetadata } from "../../money/page";
 
 export function generateStaticParams() {
   return Object.keys(SECTION_CONTENT).map((id) => ({ id }));
@@ -29,6 +30,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
+  if (id === "government-contracts") return publicMoneyMetadata;
   const discovery = SECTION_DISCOVERY[id];
   if (!discovery) return {};
 
@@ -71,6 +73,7 @@ export default async function SectionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (id === "government-contracts") return <PublicMoneyPage />;
   const section = SECTION_CONTENT[id as keyof typeof SECTION_CONTENT];
 
   if (!section) notFound();

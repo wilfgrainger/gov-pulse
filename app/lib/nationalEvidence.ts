@@ -135,11 +135,6 @@ export const DIRECT_EVIDENCE_LINKS = [
     description: "Crime Survey, police-recorded and court evidence kept separate.",
   },
   {
-    href: "/section/government-contracts",
-    label: "Government contracts",
-    description: "The largest comparable disclosed awards and their limits.",
-  },
-  {
     href: "/section/tax",
     label: "Tax receipts",
     description: "Current official receipts on a stated accounting basis.",

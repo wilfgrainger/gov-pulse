@@ -180,6 +180,9 @@ function validateSourceOwnership(inventory, projectRoot = process.cwd()) {
   const activeSections = validateActiveSources(inventory, projectRoot, failures);
   if (inventory.publicationSources !== undefined) {
     validateAdditionalSources(inventory.publicationSources, "publicationSources", projectRoot, failures);
+    if (Array.isArray(inventory.publicationSources)) {
+      for (const source of inventory.publicationSources) activeSections.add(source.section);
+    }
   }
   validateStaticSources(inventory, projectRoot, failures);
   const withdrawnSections = validateWithdrawnSources(inventory, projectRoot, failures);
