@@ -51,14 +51,27 @@ describe("Cloudflare publication bootstrap", () => {
       now,
     });
 
-    expect(result).toMatchObject({ queued: 7, reason: "queued" });
-    expect(send).toHaveBeenCalledTimes(7);
+    expect(result).toMatchObject({ queued: 8, reason: "queued" });
+    expect(send).toHaveBeenCalledTimes(8);
     expect(send).toHaveBeenCalledWith(expect.objectContaining({
       runId: "daily-comparison-run",
       batchId: "defence",
       sourceIds: ["world-bank-population-2025", "sipri-2025"],
       force: true,
     }));
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({
+      type: "finalise-international-comparison",
+      runId: "daily-comparison-run",
+      expectedBatchIds: [
+        "government-debt",
+        "oda",
+        "defence",
+        "social-spending",
+        "healthcare",
+        "tax-revenue",
+        "debt-interest",
+      ],
+    }), expect.any(Object));
   });
 
   it("schedules only required national sections", () => {
@@ -185,7 +198,9 @@ describe("Cloudflare publication bootstrap", () => {
       expect(
         (store.get(`${RUN_PREFIX}${runId}`) as { finalisedAt: string }).finalisedAt
       ).toBeTruthy();
-      expect(job).toMatchObject({ type: "refresh-international-comparison" });
+      expect(job).toMatchObject({
+        type: expect.stringMatching(/^(refresh-international-comparison|finalise-international-comparison)$/),
+      });
     });
     const message = {
       body: { type: "finalise-run", runId },
@@ -195,7 +210,7 @@ describe("Cloudflare publication bootstrap", () => {
 
     await queuedWorker.queue({ messages: [message] }, env, {});
 
-    expect(send).toHaveBeenCalledTimes(7);
+    expect(send).toHaveBeenCalledTimes(8);
     expect(send).toHaveBeenNthCalledWith(1, expect.objectContaining({
       type: "refresh-international-comparison",
       runId,
@@ -234,6 +249,20 @@ describe("Cloudflare publication bootstrap", () => {
       batchId: "debt-interest",
       sourceIds: ["imf-gdp-2024", "imf-interest-2024"],
     }));
+    expect(send).toHaveBeenNthCalledWith(8, expect.objectContaining({
+      type: "finalise-international-comparison",
+      runId,
+      jobId: `comparison:${runId}`,
+      expectedBatchIds: [
+        "government-debt",
+        "oda",
+        "defence",
+        "social-spending",
+        "healthcare",
+        "tax-revenue",
+        "debt-interest",
+      ],
+    }), expect.any(Object));
     expect(message.ack).toHaveBeenCalledOnce();
     expect(message.retry).not.toHaveBeenCalled();
     expect(store.get(`${RUN_PREFIX}${runId}`)).toMatchObject({
@@ -241,7 +270,7 @@ describe("Cloudflare publication bootstrap", () => {
     });
   });
 
-  it("requeues only unfinished comparison batches for a forced finalised-run retry", async () => {
+  it("requeues successful legacy batches without fragments before finalising a forced retry", async () => {
     const { env, store, send } = environment();
     const runId = bootstrapRunId(SHA);
     store.set(`${RUN_PREFIX}${runId}`, {
@@ -274,13 +303,21 @@ describe("Cloudflare publication bootstrap", () => {
 
     await queuedWorker.queue({ messages: [message] }, env, {});
 
-    expect(send).toHaveBeenCalledTimes(6);
-    expect(send).toHaveBeenCalledWith({
+    expect(send).toHaveBeenCalledTimes(8);
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({
       type: "refresh-international-comparison",
       runId,
       jobId: `comparison:${runId}:government-debt`,
       batchId: "government-debt",
       sourceIds: ["imf-gdp-2026", "imf-debt-2026"],
+      force: true,
+    }));
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({
+      type: "refresh-international-comparison",
+      batchId: "healthcare",
+    }));
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({
+      type: "finalise-international-comparison",
       expectedBatchIds: [
         "government-debt",
         "oda",
@@ -290,9 +327,7 @@ describe("Cloudflare publication bootstrap", () => {
         "tax-revenue",
         "debt-interest",
       ],
-      force: true,
-    });
-    expect(send).not.toHaveBeenCalledWith(expect.objectContaining({ batchId: "healthcare" }));
+    }), expect.any(Object));
     expect(store.get(`${RUN_PREFIX}${runId}:terminal:comparison:${runId}`)).toMatchObject({
       status: "pending",
       completedAt: null,

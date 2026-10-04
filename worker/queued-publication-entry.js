@@ -26,9 +26,13 @@ import { buildPublicationDiagnostics } from "../contracts/publication-diagnostic
 import { FEED_REGISTRY } from "./feed-registry.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
 import {
+  INTERNATIONAL_COMPARISON_KEY,
   INTERNATIONAL_COMPARISON_REFRESH_BATCHES,
   INTERNATIONAL_SOURCES,
   due as comparisonRefreshDue,
+  buildInternationalComparisonPublication,
+  comparisonSourceBundle,
+  mergeInternationalComparisonBatchResults,
   readInternationalComparison,
   refreshInternationalComparison,
   sourcesDue as comparisonSourcesDue,
@@ -43,6 +47,9 @@ const RUN_TTL_SECONDS = 14 * 24 * 60 * 60;
 const PUBLICATION_QUEUE_MAX_RETRIES = 3;
 const FINALISE_DELAY_SECONDS = 20 * 60;
 const FINALISE_RETRY_SECONDS = 5 * 60;
+const COMPARISON_FINALISE_INITIAL_DELAY_SECONDS = 60;
+const COMPARISON_FINALISE_TIMEOUT_SECONDS =
+  (PUBLICATION_QUEUE_MAX_RETRIES + 2) * FINALISE_RETRY_SECONDS;
 // Worst-case wait before a bootstrap run with a failing/slow section is
 // finalised as `incomplete`. A HEALTHY run is finalised immediately by the
 // prompt finaliser (enqueueCompletedBootstrapFinaliser) once every required
@@ -127,6 +134,20 @@ function terminalKey(runId, jobId) {
 
 function comparisonBatchManifestKey(runId) {
   return `${RUN_PREFIX}${runId}:comparison-batches`;
+}
+
+function comparisonBatchBaseKey(runId) {
+  return `${RUN_PREFIX}${runId}:comparison-base`;
+}
+
+function hasComparisonBatchFragment(terminal, batch) {
+  const fragment = terminal?.result?.comparisonFragment;
+  return terminal?.status === "success" &&
+    isRecord(fragment) &&
+    fragment.batchId === batch.id &&
+    isRecord(fragment.meta) &&
+    isRecord(fragment.measures) &&
+    batch.measureIds.every((id) => isRecord(fragment.measures[id]));
 }
 
 function sectionRefreshJobs(runId, sections, type) {
@@ -310,6 +331,37 @@ async function publishFromCaches(env, options = {}) {
 
 async function processQueueJob(job, env, ctx, options = {}) {
   if (job?.type === "refresh-international-comparison") {
+    if (typeof job.batchId === "string") {
+      const batch = INTERNATIONAL_COMPARISON_REFRESH_BATCHES.find(({ id }) => id === job.batchId);
+      const baseRecord = await kvGet(env, comparisonBatchBaseKey(job.runId));
+      if (!batch || !isRecord(baseRecord?.publication)) {
+        throw new Error("International comparison batch baseline is not available");
+      }
+      const result = await refreshInternationalComparison(env, {
+        fetchImpl: options.fetchImpl ?? fetch,
+        now: options.now ?? new Date(),
+        force: job.force === true,
+        sourceIds: job.sourceIds,
+        currentPublication: baseRecord.publication,
+        publish: false,
+      });
+      const publication = result.publication;
+      return {
+        type: job.type,
+        updated: result.updated,
+        due: result.due,
+        comparisonFragment: {
+          batchId: batch.id,
+          meta: {
+            generatedAt: publication.meta.generatedAt,
+            checkedAt: publication.meta.checkedAt,
+            attemptedSources: publication.meta.attemptedSources ?? [...batch.sourceIds],
+            sourceFailures: publication.meta.sourceFailures ?? [],
+          },
+          measures: Object.fromEntries(batch.measureIds.map((id) => [id, publication.measures[id]])),
+        },
+      };
+    }
     const result = await refreshInternationalComparison(env, {
       fetchImpl: options.fetchImpl ?? fetch,
       now: options.now ?? new Date(),
@@ -532,29 +584,72 @@ async function enqueueCompletedBootstrapFinaliser(runId, env) {
   return true;
 }
 
-async function recordComparisonAggregateTerminal(env, job, options = {}) {
-  if (typeof job?.runId !== "string") return;
-  const manifest = await kvGet(env, comparisonBatchManifestKey(job.runId));
-  const allowedBatchIds = new Set(INTERNATIONAL_COMPARISON_REFRESH_BATCHES.map(({ id }) => id));
-  const expectedBatchIds = Array.isArray(manifest?.batchIds)
-    ? manifest.batchIds.filter((id) => allowedBatchIds.has(id))
-    : INTERNATIONAL_COMPARISON_REFRESH_BATCHES.map(({ id }) => id);
-  const expectedBatches = INTERNATIONAL_COMPARISON_REFRESH_BATCHES.filter(({ id }) => expectedBatchIds.includes(id));
+async function finaliseComparisonBatches(env, job, now = new Date()) {
+  const validBatchIds = new Set(INTERNATIONAL_COMPARISON_REFRESH_BATCHES.map(({ id }) => id));
+  const expectedBatchIds = Array.isArray(job?.expectedBatchIds)
+    ? [...new Set(job.expectedBatchIds.filter((id) => validBatchIds.has(id)))]
+    : [];
+  if (typeof job?.runId !== "string" || expectedBatchIds.length === 0) {
+    return {
+      status: "failure",
+      result: { errorCode: "comparison-finaliser-input-invalid" },
+    };
+  }
+
+  const expectedBatches = INTERNATIONAL_COMPARISON_REFRESH_BATCHES.filter(({ id }) =>
+    expectedBatchIds.includes(id)
+  );
   const terminals = await Promise.all(expectedBatches.map(({ id }) =>
     kvGet(env, terminalKey(job.runId, `comparison:${job.runId}:${id}`))
   ));
-  const failed = expectedBatches.filter((_, index) => terminals[index]?.status === "failure").map(({ id }) => id);
-  const parentJob = { runId: job.runId, jobId: `comparison:${job.runId}` };
-  if (failed.length > 0) {
-    await recordTerminal(env, parentJob, options.retrying ? "pending" : "failure", {
-      errorCode: options.retrying ? "comparison-batch-retrying" : "comparison-batch-failed",
-      failedBatches: failed,
-    });
-  } else if (terminals.every((terminal) => terminal?.status === "success")) {
-    await recordTerminal(env, parentJob, "success", {
-      completedBatches: expectedBatchIds,
-    });
+  const pendingBatches = expectedBatches.filter((_, index) =>
+    terminals[index]?.status !== "success" && terminals[index]?.status !== "failure"
+  ).map(({ id }) => id);
+  const missingFragments = expectedBatches.filter((batch, index) =>
+    terminals[index]?.status === "success" && !hasComparisonBatchFragment(terminals[index], batch)
+  ).map(({ id }) => id);
+  const baseRecord = await kvGet(env, comparisonBatchBaseKey(job.runId));
+  const baseMissing = !isRecord(baseRecord?.publication);
+  const deadlineAt = Date.parse(String(job.deadlineAt ?? ""));
+  const pending = pendingBatches.length > 0 || missingFragments.length > 0 || baseMissing;
+
+  if (pending) {
+    const unresolved = {
+      pendingBatches,
+      missingFragments,
+      baselineMissing: baseMissing,
+    };
+    if (Number.isFinite(deadlineAt) && now.getTime() >= deadlineAt) {
+      return {
+        status: "failure",
+        result: { errorCode: "comparison-finalisation-timeout", ...unresolved },
+      };
+    }
+    return { pending: true, result: { errorCode: "comparison-batches-pending", ...unresolved } };
   }
+
+  const failedBatches = expectedBatches.filter((_, index) => terminals[index]?.status === "failure").map(({ id }) => id);
+  const successfulResults = terminals
+    .filter((terminal) => terminal?.status === "success")
+    .map((terminal) => terminal.result.comparisonFragment);
+  let publication = null;
+  if (successfulResults.length > 0) {
+    publication = mergeInternationalComparisonBatchResults(
+      baseRecord.publication,
+      successfulResults,
+      now
+    );
+    await kvPut(env, INTERNATIONAL_COMPARISON_KEY, publication);
+  }
+
+  return {
+    status: failedBatches.length > 0 ? "failure" : "success",
+    result: {
+      completedBatches: expectedBatchIds.filter((id) => !failedBatches.includes(id)),
+      failedBatches,
+      ...(publication ? { generatedAt: publication.meta.generatedAt } : {}),
+    },
+  };
 }
 
 async function enqueueComparisonRefreshBatches(env, runId, options = {}) {
@@ -607,26 +702,45 @@ async function enqueueComparisonRefreshBatches(env, runId, options = {}) {
     ...(Array.isArray(previousManifest?.batchIds) ? previousManifest.batchIds : []),
     ...selectedBatches.map(({ id }) => id),
   ])].filter((id) => validBatchIds.has(id));
+  const baselineKey = comparisonBatchBaseKey(runId);
+  const previousBase = await kvGet(env, baselineKey);
+  if (!isRecord(previousBase?.publication)) {
+    const publication = current ?? buildInternationalComparisonPublication(
+      comparisonSourceBundle({
+        sourceFailures: [...INTERNATIONAL_SOURCES],
+        attemptedSources: [],
+      }),
+      now
+    );
+    await kvPut(env, baselineKey, { publication }, { expirationTtl: RUN_TTL_SECONDS });
+  }
   await kvPut(env, comparisonBatchManifestKey(runId), { batchIds }, { expirationTtl: RUN_TTL_SECONDS });
 
   let queued = 0;
   for (const batch of selectedBatches) {
     const childJobId = `comparison:${runId}:${batch.id}`;
     const terminal = await kvGet(env, terminalKey(runId, childJobId));
-    if (terminal?.status === "success") continue;
+    if (hasComparisonBatchFragment(terminal, batch)) continue;
     await env.DATA_JOBS.send({
       type: "refresh-international-comparison",
       runId,
       jobId: childJobId,
       batchId: batch.id,
       sourceIds: [...batch.sourceIds],
-      expectedBatchIds: batchIds,
       // The orchestration made the due decision once. Keep every later batch
       // eligible after the first batch updates the global checkedAt clock.
       force: true,
     });
     queued += 1;
   }
+  await env.DATA_JOBS.send({
+    type: "finalise-international-comparison",
+    runId,
+    jobId: parentJobId,
+    expectedBatchIds: batchIds,
+    deadlineAt: new Date(now.getTime() + COMPARISON_FINALISE_TIMEOUT_SECONDS * 1000).toISOString(),
+  }, { delaySeconds: COMPARISON_FINALISE_INITIAL_DELAY_SECONDS });
+  queued += 1;
   return { queued, reason: queued > 0 ? "queued" : "already-complete" };
 }
 
@@ -761,6 +875,24 @@ const queuedPublicationWorker = {
           continue;
         }
 
+        if (job?.type === "finalise-international-comparison") {
+          const result = await finaliseComparisonBatches(env, job);
+          if (result.pending) {
+            await recordTerminal(env, job, "pending", result.result);
+            await env.DATA_JOBS.send(job, { delaySeconds: FINALISE_RETRY_SECONDS });
+          } else {
+            await recordTerminal(env, job, result.status, result.result);
+            console.log("Cloudflare international comparison batches finalised", {
+              runId: job.runId,
+              status: result.status,
+              completedBatches: result.result?.completedBatches?.length ?? 0,
+              failedBatches: result.result?.failedBatches?.length ?? 0,
+            });
+          }
+          message.ack();
+          continue;
+        }
+
         if (
           job?.type === "refresh-international-comparison" &&
           typeof job.runId === "string" &&
@@ -786,9 +918,6 @@ const queuedPublicationWorker = {
 
         const result = await processQueueJob(job, env, ctx);
         await recordTerminal(env, job, "success", result);
-        if (job?.type === "refresh-international-comparison" && job.batchId) {
-          await recordComparisonAggregateTerminal(env, job);
-        }
         try {
           await enqueueCompletedBootstrapFinaliser(job.runId, env);
         } catch (error) {
@@ -797,7 +926,10 @@ const queuedPublicationWorker = {
             error: error instanceof Error ? error.message : String(error),
           });
         }
-        console.log("Cloudflare data publication job completed", result);
+        const logResult = job?.type === "refresh-international-comparison" && job.batchId
+          ? { type: result.type, updated: result.updated, due: result.due }
+          : result;
+        console.log("Cloudflare data publication job completed", logResult);
         message.ack();
       } catch (error) {
         const errorMessage =
@@ -809,25 +941,30 @@ const queuedPublicationWorker = {
             // Preserve the Queue retry even if the private diagnostic write fails.
           }
         }
+        if (job?.type === "finalise-international-comparison") {
+          const attempts = Number(message.attempts);
+          const retrying = !Number.isSafeInteger(attempts) || attempts <= PUBLICATION_QUEUE_MAX_RETRIES;
+          await recordTerminal(env, job, retrying ? "pending" : "failure", {
+            errorCode: retrying
+              ? "comparison-finalisation-retrying"
+              : "comparison-finalisation-failed",
+            errorName: error instanceof Error ? error.name : "Error",
+          });
+          if (retrying) message.retry({ delaySeconds: FINALISE_RETRY_SECONDS });
+          else message.ack();
+          continue;
+        }
         // Persist the real failure reason (not just an opaque code) so a
         // repeatedly-failing section — e.g. an external collector blocked at
         // Cloudflare egress — is diagnosable from the terminal record in KV
         // without needing a live `wrangler tail` across the daily cron window.
-        await recordTerminal(env, job, "failure", {
+        const comparisonBatchRetrying = job?.type === "refresh-international-comparison" && job.batchId &&
+          (!Number.isSafeInteger(message.attempts) || message.attempts <= PUBLICATION_QUEUE_MAX_RETRIES);
+        await recordTerminal(env, job, comparisonBatchRetrying ? "pending" : "failure", {
           errorCode: "job-failed",
           errorName: error instanceof Error ? error.name : "Error",
           errorMessage: errorMessage.slice(0, 500),
         });
-        if (job?.type === "refresh-international-comparison" && job.batchId) {
-          try {
-            await recordComparisonAggregateTerminal(env, job, {
-              retrying: !Number.isSafeInteger(message.attempts) ||
-                message.attempts <= PUBLICATION_QUEUE_MAX_RETRIES,
-            });
-          } catch {
-            // Keep the Queue retry if private aggregate bookkeeping is unavailable.
-          }
-        }
         console.error("Cloudflare data publication job failed", {
           job,
           error: errorMessage,
