@@ -208,6 +208,47 @@ async function readKvValue(
   }
 }
 
+function safeFailureKind(message) {
+  if (typeof message !== "string") return "unknown";
+
+  const findATenderStatus = message.match(/^Find a Tender returned ([45]\d{2})$/);
+  if (findATenderStatus) return `http-${findATenderStatus[1]}`;
+  if (/Find a Tender .*time budget exceeded/i.test(message)) {
+    return "source-time-budget";
+  }
+  if (/Find a Tender .*page budget exceeded/i.test(message)) {
+    return "source-page-budget";
+  }
+  if (/Find a Tender .*release budget exceeded/i.test(message)) {
+    return "source-release-budget";
+  }
+  if (/Find a Tender .*pagination|pagination .*Find a Tender/i.test(message)) {
+    return "source-pagination";
+  }
+  if (/Find a Tender .*unexpected OCDS|Find a Tender .*invalid .*JSON/i.test(message)) {
+    return "source-shape";
+  }
+  if (/timed? ?out|timeout|aborted/i.test(message)) return "timeout";
+  if (/failed to fetch|fetch failed|network error|connection|socket|\bDNS\b|ENOTFOUND/i.test(message)) {
+    return "network";
+  }
+  return "unknown";
+}
+
+function safeErrorName(name) {
+  return [
+    "Error",
+    "TypeError",
+    "RangeError",
+    "SyntaxError",
+    "URIError",
+    "AbortError",
+    "TimeoutError",
+  ].includes(name)
+    ? name
+    : null;
+}
+
 async function publicationDiagnostics(
   fetchImpl,
   accountId,
@@ -264,6 +305,12 @@ async function publicationDiagnostics(
           ? {
               status: terminal.status ?? null,
               completedAt: terminal.completedAt ?? null,
+              ...(terminal.status === "failure"
+                ? {
+                    failureKind: safeFailureKind(terminal.result?.errorMessage),
+                    errorName: safeErrorName(terminal.result?.errorName),
+                  }
+                : {}),
             }
           : null,
       ])
