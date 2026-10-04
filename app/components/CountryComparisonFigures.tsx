@@ -18,8 +18,10 @@ export default function CountryComparisonFigures({ measures }: { measures: Recor
   const [types, setTypes] = useState<ComparisonValueType[]>(TYPES);
   const [year, setYear] = useState<number | "latest">("latest");
   const [urlReady, setUrlReady] = useState(false);
+  const restoringUrl = useRef(false);
   useEffect(() => {
     const readUrl = () => {
+      restoringUrl.current = true;
       const preliminary = parseCountryComparisonUrlState(window.location.search, [], defaultMeasureId);
       const availableYears = measures[preliminary.measureId]?.countryHistory?.map(({ observationYear }) => observationYear) ?? [];
       const state = parseCountryComparisonUrlState(window.location.search, [...new Set(availableYears)], defaultMeasureId);
@@ -41,7 +43,12 @@ export default function CountryComparisonFigures({ measures }: { measures: Recor
     encoded.forEach((value, key) => url.searchParams.set(key, value));
     const next = `${url.pathname}${url.search}${url.hash}`;
     const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    if (next !== current) window.history.pushState(window.history.state, "", next);
+    const replaceCurrentEntry = restoringUrl.current;
+    restoringUrl.current = false;
+    if (next !== current) {
+      if (replaceCurrentEntry) window.history.replaceState(window.history.state, "", next);
+      else window.history.pushState(window.history.state, "", next);
+    }
   }, [defaultMeasureId, measureId, countries, types, year, urlReady]);
   const measure = measures[measureId];
   const availableYears = [...new Set(measure.countryHistory?.map(({ observationYear }) => observationYear) ?? [])].sort((left, right) => right - left);
