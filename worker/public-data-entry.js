@@ -355,7 +355,7 @@ async function contractHistoryResponse(request, url) {
         Accept: "application/json",
         "User-Agent": FIND_A_TENDER_USER_AGENT,
       },
-      redirect: "error",
+      redirect: "manual",
       signal: AbortSignal.timeout(Math.max(1, requestDeadline - Date.now())),
     });
     let response;

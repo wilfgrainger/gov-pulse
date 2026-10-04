@@ -40,7 +40,7 @@ describe("public per-OCID Find a Tender history route", () => {
         Accept: "application/json",
         "User-Agent": "public-data.org-cloudflare-contracts/1.0",
       },
-      redirect: "error",
+      redirect: "manual",
     });
     expect(payload.releases).toHaveLength(2);
     expect(payload.releases[0].tags).toEqual(["planning"]);
@@ -65,6 +65,22 @@ describe("public per-OCID Find a Tender history route", () => {
     ]);
     expect(payload.source.packageUrl).toBe(`https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages/${ocid}`);
     expect(payload.releases).toHaveLength(2);
+  });
+
+  it("does not follow or retry an upstream redirect", async () => {
+    const fetchMock = vi.fn(async () => new Response(null, {
+      status: 302,
+      headers: { location: "https://attacker.example/record-package" },
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await publicDataWorker.fetch(
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
+    );
+
+    expect(response.status).toBe(503);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ redirect: "manual" });
   });
 
   it("rejects missing, malformed, repeated and extra query parameters before fetching", async () => {
