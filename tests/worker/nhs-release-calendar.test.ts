@@ -42,9 +42,9 @@ describe("NHS England RTT release calendar collector", () => {
       "11/03/2027 Referral to treatment waiting times statistics for consultant - led elective care for January 202 7 Accredited Official",
     ].join(" ");
     expect(parseNhsReleaseSchedule(text, now)).toEqual([
-      expect.objectContaining({ id: "nhs-rtt-2026-08", date: "2026-10-08", period: "August 2026" }),
-      expect.objectContaining({ id: "nhs-rtt-2026-09", date: "2026-11-12", period: "September 2026" }),
-      expect.objectContaining({ id: "nhs-rtt-2027-01", date: "2027-03-11", period: "January 2027" }),
+      expect.objectContaining({ id: "nhs-rtt-2026-08", date: "2026-10-08", dateLabel: "8 October 2026", period: "August 2026" }),
+      expect.objectContaining({ id: "nhs-rtt-2026-09", date: "2026-11-12", dateLabel: "12 November 2026", period: "September 2026" }),
+      expect.objectContaining({ id: "nhs-rtt-2027-01", date: "2027-03-11", dateLabel: "11 March 2027", period: "January 2027" }),
     ]);
   });
 

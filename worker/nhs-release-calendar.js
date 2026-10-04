@@ -91,7 +91,10 @@ function parseNhsReleaseSchedule(pdfText, now = new Date()) {
     if (date <= periodEnd) continue;
     const period = `${match[4][0].toUpperCase()}${match[4].slice(1).toLowerCase()} ${year}`;
     const id = `nhs-rtt-${year}-${String(monthNumber).padStart(2, "0")}`;
-    events.push({ id, period, date, dateLabel: `${Number(match[1])} ${match[4]} ${match[3]}` });
+    const dateLabel = new Intl.DateTimeFormat("en-GB", {
+      day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
+    }).format(new Date(`${date}T00:00:00.000Z`));
+    events.push({ id, period, date, dateLabel });
   }
   const unique = [...new Map(events.map((event) => [event.id, event])).values()];
   if (!unique.length) throw new Error("NHS annual statistics plan contained no reconciled future RTT release rows");
