@@ -440,11 +440,12 @@ async function bootstrapCloudflarePublication(options = {}) {
   let latestRunActive = false;
   let nextAttemptAt = nowImpl();
   let lastHealth = initialHealth;
-  const completedResult = async (health, run) => {
+  const completedResult = async (health, run, sourceRequestsMade = null) => {
     const result = { triggered: true, attempts: attempt, health };
     if (includeContracts) {
       result.contractsRefresh = {
         status: "success",
+        sourceRequestsMade,
         published: await hasContractsPublication(fetchImpl, healthUrl, run),
       };
     }
@@ -493,8 +494,21 @@ async function bootstrapCloudflarePublication(options = {}) {
       latestRunActive = Boolean(run && !run.finalisedAt);
       // A previously serveable edition cannot prove that this deployment's
       // collectors ran. Forced refresh requires the active run to finalise.
-      const contractsJobSucceeded = !includeContracts ||
-        run?.successfulJobIds?.includes("contracts") === true;
+      let sourceRequestsMade = null;
+      let contractsJobSucceeded = !includeContracts;
+      if (includeContracts && run?.successfulJobIds?.includes("contracts") === true) {
+        const terminal = await readKvValue(
+          fetchImpl,
+          accountId,
+          apiToken,
+          namespaceId,
+          `v13:publication:run:bootstrap-${latestAttemptId}:terminal:contracts`
+        );
+        sourceRequestsMade = Number.isSafeInteger(terminal?.result?.requestsMade)
+          ? terminal.result.requestsMade
+          : 0;
+        contractsJobSucceeded = terminal?.status === "success" && sourceRequestsMade > 0;
+      }
       if (
         run?.finalisedAt &&
         ["published", "no-change", "incomplete"].includes(run.status) &&
@@ -502,7 +516,7 @@ async function bootstrapCloudflarePublication(options = {}) {
       ) {
         lastHealth = await readHealth(fetchImpl, healthUrl);
         if (lastHealth?.ready === true && await hasPreparedPublication(fetchImpl, healthUrl, lastHealth)) {
-          return completedResult(lastHealth, run);
+          return completedResult(lastHealth, run, sourceRequestsMade);
         }
         // A STABLE degraded publication (ready:false + non-empty
         // missingRequiredSections) is an accepted terminal state once the
@@ -511,7 +525,7 @@ async function bootstrapCloudflarePublication(options = {}) {
           isDegradedPublicationHealth(lastHealth) &&
           (await hasPreparedPublication(fetchImpl, healthUrl, lastHealth))
         ) {
-          return completedResult(lastHealth, run);
+          return completedResult(lastHealth, run, sourceRequestsMade);
         }
       }
     }

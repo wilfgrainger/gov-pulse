@@ -183,6 +183,7 @@ function refreshJobs(runId, scope = "daily", options = {}) {
       type: "refresh-contracts",
       runId,
       jobId: "contracts",
+      ...(scope === "bootstrap" && options.includeContracts === true ? { force: true } : {}),
     });
   }
   return jobs;
@@ -398,6 +399,7 @@ async function processQueueJob(job, env, ctx, options = {}) {
     const result = await refreshGovernmentContracts(env, {
       fetchImpl: options.fetchImpl ?? fetch,
       now: options.now,
+      force: job.force === true,
     });
     return {
       type: job.type,

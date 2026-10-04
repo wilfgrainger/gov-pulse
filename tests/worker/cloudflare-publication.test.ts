@@ -17,6 +17,7 @@ import {
   MAX_PAGES_PER_REFRESH,
   MAX_PAGES_PER_SLICE,
   MAX_RELEASES_PER_REFRESH,
+  SHARD_PREFIX,
   createContractsRetrievalBudget,
   fetchSlice,
   previousCompleteDays,
@@ -605,6 +606,33 @@ describe("Cloudflare data publication", () => {
 
     expect(result.collected).toEqual(days);
     expect(fetchImpl).toHaveBeenCalledTimes(28);
+  });
+
+  it("force-retrieves every complete contracts shard instead of reusing the cache", async () => {
+    const now = new Date("2026-10-04T12:00:00.000Z");
+    const oldCollectedAt = "2026-10-03T12:00:00.000Z";
+    const days = previousCompleteDays(now, 7);
+    const cachedShards = Object.fromEntries(days.map((day) => [
+      `${SHARD_PREFIX}${day}`,
+      rankDailyAwards([], day, new Date(oldCollectedAt)),
+    ]));
+    const { env, store } = kvEnv(cachedShards);
+    const fetchImpl = vi.fn(async () => new Response(
+      JSON.stringify({ publisher: { name: "Cabinet Office" }, version: "1.1", releases: [] }),
+      { headers: { "content-type": "application/json" } },
+    ));
+
+    const result = await refreshGovernmentContracts(env, { now, fetchImpl, force: true });
+
+    expect(result.collected).toEqual(days);
+    expect(result.requestsMade).toBe(28);
+    expect(fetchImpl).toHaveBeenCalledTimes(28);
+    for (const day of days) {
+      expect(store.get(`${SHARD_PREFIX}${day}`)).toMatchObject({
+        complete: true,
+        collectedAt: now.toISOString(),
+      });
+    }
   });
 
   it("follows Find a Tender cursors until every result page is read", async () => {

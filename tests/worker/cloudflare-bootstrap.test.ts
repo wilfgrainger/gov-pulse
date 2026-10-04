@@ -104,6 +104,7 @@ describe("Cloudflare publication bootstrap", () => {
       type: "refresh-contracts",
       runId: "bootstrap-run",
       jobId: "contracts",
+      force: true,
     });
     expect(refreshJobs("bootstrap-run", "bootstrap")).toHaveLength(10);
   });
@@ -184,6 +185,7 @@ describe("Cloudflare publication bootstrap", () => {
         type: "refresh-contracts",
         runId: bootstrapRunId(SHA),
         jobId: "contracts",
+        force: true,
       },
     });
     expect(store.get(`${RUN_PREFIX}${bootstrapRunId(SHA)}`)).toMatchObject({

@@ -89,6 +89,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p node_modules/@opennextjs
+          rm -rf node_modules/@opennextjs/cloudflare
           ln -s "$PWD/worker/node_modules/@opennextjs/cloudflare" node_modules/@opennextjs/cloudflare
           cp worker/open-next.config.template open-next.config.ts
 
