@@ -82,6 +82,9 @@ describe("SourceDetailPage", () => {
     expect(screen.getByRole("heading", { level: 1, name: "CPI inflation" })).toBeInTheDocument();
     expect(screen.getByText("Evidence class").nextElementSibling).toHaveTextContent("Official statistics");
     expect(screen.getByText("Office for National Statistics", { selector: "strong" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open primary publication" }).parentElement).toHaveTextContent(
+      "edition inflation-edition-2026-09",
+    );
     expect(screen.getByRole("link", { name: "Open primary publication" })).toHaveAttribute("href", "https://www.ons.gov.uk/inflation");
     expect(screen.queryByText("Official Bank Rate", { selector: "p" })).not.toBeInTheDocument();
     expect(screen.getByText("Measures").nextElementSibling).toHaveTextContent("1");
