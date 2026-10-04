@@ -21,7 +21,11 @@ describe("interactive country comparison", () => {
     const data = measure({
       caveat: "Purchasing power adjusted; estimates may be revised.",
       countries: [
-        { country: "GBR", value: 100, rank: 1, observationYear: 2024, valueType: "estimate", source: { publisher: "OECD", url: "https://example.org/uk", series: "Revenue" , publicationDate: "2025-01-20" }, calculationInputs: { percentGdp: 23, gdpPerResidentUsd: 48_000 } },
+        { country: "GBR", value: 100, rank: 1, observationYear: 2024, valueType: "estimate", source: {
+          publisher: "OECD", url: "https://example.org/uk", series: "Revenue", publicationDate: "2025-01-20",
+          sourceUpdatedAt: "2025-10-06", sourceUpdatedAtBasis: "http-last-modified",
+          additionalSources: [{ publisher: "World Bank", url: "https://example.org/wb", series: "GDP per capita", sourceUpdatedAt: "2026-07-13", sourceUpdatedAtBasis: "publisher-metadata" }],
+        }, calculationInputs: { percentGdp: 23, gdpPerResidentUsd: 48_000 } },
         { country: "DEU", value: 75, rank: 2, observationYear: 2024, valueType: "estimate", source: { publisher: "OECD", url: "https://example.org/de", series: "Revenue", publicationDate: "2025-01-20" } },
         { country: "FRA", value: null, rank: null, observationYear: 2024, valueType: "estimate", source: null, exclusionReason: "Publisher reports no value" },
       ],
@@ -31,6 +35,8 @@ describe("interactive country comparison", () => {
 
     expect(metadata.observationWindow).toEqual({ start: { period: "2024", observedAt: "2024-01-01" }, end: { period: "2024", observedAt: "2024-12-31" } });
     expect(metadata.sourceCitation).toContain("OECD");
+    expect(metadata.sourceCitation).toContain("source resource last modified 2025-10-06");
+    expect(metadata.sourceCitation).toContain("publisher data last updated 2026-07-13");
     expect(metadata.sourceCitation).toContain("https://example.org/uk");
     expect(metadata.sourceCitation).toContain("Visible denominator: 2 of 3");
     expect(metadata.series).toEqual([

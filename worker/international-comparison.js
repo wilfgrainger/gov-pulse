@@ -2,6 +2,7 @@ const COMPARISON_SET_ID = "uk-context-13-v2";
 const COMPARISON_SCHEMA_VERSION = 1;
 const UNIT_USD_PER_RESIDENT = "USD per resident";
 const LIFECYCLE_STATUSES = new Set(["current", "historical", "unavailable"]);
+const SOURCE_UPDATE_BASES = new Set(["publisher-metadata", "http-last-modified"]);
 
 const COMPARISON_COUNTRIES = Object.freeze([
   Object.freeze({ id: "GBR", name: "United Kingdom" }),
@@ -111,6 +112,7 @@ function validateSource(source) {
   ) {
     throw new Error("Comparison value source publicationDate must be YYYY-MM-DD");
   }
+  validateSourceUpdate(source);
   if (source.additionalSources !== undefined) {
     if (!Array.isArray(source.additionalSources) || source.additionalSources.length > 4) {
       throw new Error("Comparison value additionalSources are invalid");
@@ -121,9 +123,21 @@ function validateSource(source) {
         (item.publicationDate !== undefined && (typeof item.publicationDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(item.publicationDate)))) {
         throw new Error("Comparison value additional source is invalid");
       }
+      validateSourceUpdate(item);
     }
   }
   return source;
+}
+
+function validateSourceUpdate(source) {
+  const hasDate = source.sourceUpdatedAt !== undefined;
+  const hasBasis = source.sourceUpdatedAtBasis !== undefined;
+  if (!hasDate && !hasBasis) return;
+  if (!hasDate || !hasBasis || typeof source.sourceUpdatedAt !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(source.sourceUpdatedAt) ||
+    !SOURCE_UPDATE_BASES.has(source.sourceUpdatedAtBasis)) {
+    throw new Error("Comparison source update metadata is invalid");
+  }
 }
 
 function validateObservation(observation) {

@@ -138,6 +138,28 @@
       "schedule": "one bounded daily Cloudflare Queue job",
       "storage": "seven complete UTC-day KV shards and current top-100 comparable GBP award record",
       "fallback": "previous canonical top-100 only while its 72-hour publication window remains current"
+    },
+    {
+      "section": "internationalComparison",
+      "collector": "worker/international-comparison-publication.js",
+      "normalizer": "worker/international-comparison.js",
+      "entrypoint": "worker/queued-publication-entry.js",
+      "schedule": "scheduled and explicit Cloudflare Queue refreshes in bounded per-measure source batches",
+      "storage": "independent versioned KV publication at v1:international-comparison:current, committed after batch reconciliation",
+      "fallback": "retain each prior measure only within its 30-day validity; failed source batches never reset its source edition or mark other measures successful",
+      "sourceIds": [
+        "imf-gdp-2026",
+        "world-bank-population-2025",
+        "imf-debt-2026",
+        "imf-interest-2024",
+        "oecd-oda-2025",
+        "sipri-2025",
+        "oecd-socx-2023",
+        "world-bank-health-2024",
+        "oecd-tax-2024",
+        "world-bank-gdp-per-capita-2023",
+        "world-bank-gdp-per-capita-2024"
+      ]
     }
   ],
   "staticSources": [

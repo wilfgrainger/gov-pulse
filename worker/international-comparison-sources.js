@@ -287,14 +287,27 @@ function calculatePerResidentFromTotal(totalUsd, population) {
   return total / people;
 }
 
-async function fetchJson(url, fetchImpl = fetch) {
+async function fetchJsonDocument(url, fetchImpl = fetch) {
   const response = await fetchResponse(url, fetchImpl, "application/json");
   const text = await readResponseText(response, { label: `${new URL(url).hostname} JSON` });
   try {
-    return JSON.parse(text);
+    return { payload: JSON.parse(text), response };
   } catch {
     throw new Error(`${new URL(url).hostname} returned invalid JSON`);
   }
+}
+
+async function fetchJson(url, fetchImpl = fetch) {
+  return (await fetchJsonDocument(url, fetchImpl)).payload;
+}
+
+function sourceUpdateMetadata(value, basis) {
+  if (typeof value !== "string" || !value.trim()) return {};
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) return {};
+  const sourceUpdatedAt = new Date(timestamp).toISOString().slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value) && sourceUpdatedAt !== value) return {};
+  return { sourceUpdatedAt, sourceUpdatedAtBasis: basis };
 }
 
 async function fetchText(url, fetchImpl = fetch, accept = "text/csv,text/plain;q=0.9") {
@@ -309,7 +322,11 @@ async function fetchImfSeries(indicator, year, fetchImpl = fetch) {
 
 async function fetchWorldBankSeries(indicator, year, fetchImpl = fetch) {
   const url = `${WORLD_BANK_API}/country/${WORLD_BANK_COUNTRIES}/indicator/${indicator}?date=${year}&format=json&per_page=100`;
-  return parseWorldBankSeries(await fetchJson(url, fetchImpl), year);
+  const { payload } = await fetchJsonDocument(url, fetchImpl);
+  return {
+    values: parseWorldBankSeries(payload, year),
+    ...sourceUpdateMetadata(payload?.[0]?.lastupdated, "publisher-metadata"),
+  };
 }
 
 async function fetchWorldBankSeriesHistory(indicator, startYear, endYear, fetchImpl = fetch) {
@@ -318,7 +335,12 @@ async function fetchWorldBankSeriesHistory(indicator, startYear, endYear, fetchI
 }
 
 async function fetchOecdSeries(url, year, fetchImpl = fetch) {
-  return parseOecdCsvSeries(await fetchText(url, fetchImpl), year);
+  const response = await fetchResponse(url, fetchImpl, "text/csv,text/plain;q=0.9");
+  const text = await readResponseText(response, { label: `${new URL(url).hostname} data` });
+  return {
+    values: parseOecdCsvSeries(text, year),
+    ...sourceUpdateMetadata(response.headers.get("last-modified"), "http-last-modified"),
+  };
 }
 
 async function fetchSipri2025Series(fetchImpl = fetch) {

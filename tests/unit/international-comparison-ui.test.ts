@@ -92,10 +92,14 @@ describe("UK in context presentation", () => {
           publisher: "OECD",
           url: "https://example.test/oecd",
           series: "Public social spending, percent of GDP",
+          sourceUpdatedAt: "2025-10-06",
+          sourceUpdatedAtBasis: "http-last-modified",
           additionalSources: [{
             publisher: "World Bank World Development Indicators",
             url: "https://api.worldbank.org/v2/country/GBR/indicator/NY.GDP.PCAP.CD?date=2023",
             series: "GDP per capita (current US$), 2023",
+            sourceUpdatedAt: "2026-07-13",
+            sourceUpdatedAtBasis: "publisher-metadata",
           }],
         },
       },
@@ -105,6 +109,8 @@ describe("UK in context presentation", () => {
     expect(markup).toContain('href="https://api.worldbank.org/v2/country/GBR/indicator/NY.GDP.PCAP.CD?date=2023"');
     expect(markup).toContain("Supporting source");
     expect(markup).toContain("World Bank World Development Indicators");
+    expect(markup).toContain("source resource last modified 2025-10-06");
+    expect(markup).toContain("publisher data last updated 2026-07-13");
   });
 
   it("derives the memorable comparison from the actual countries above the UK", () => {

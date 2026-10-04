@@ -7,6 +7,7 @@ import {
   exclusionLabel,
   formatUsdPerResident,
   rankLabel,
+  sourceUpdateAttribution,
   ukObservation,
   valueTypeLabel,
   type ComparisonMeasure,
@@ -16,6 +17,7 @@ import {
 
 export function ComparisonSourceAttribution({ observation }: { observation: ComparisonObservation | null }) {
   if (!observation?.source) return null;
+  const sourceUpdate = sourceUpdateAttribution(observation.source);
   return (
     <p className="mt-3 text-xs leading-5 text-gray-600">
       Source: {" "}
@@ -31,21 +33,26 @@ export function ComparisonSourceAttribution({ observation }: { observation: Comp
       {observation.source.publicationDate
         ? `, published ${observation.source.publicationDate}`
         : ""}
-      .{(observation.source.additionalSources ?? []).map((source) => (
-        <span key={`${source.url}-${source.series}`}>
-          {" Supporting source: "}
-          <a
-            href={source.url}
-            className="font-semibold underline decoration-black/20 underline-offset-4 hover:text-accent"
-            target="_blank"
-            rel="noreferrer"
-          >
-            {source.publisher}
-          </a>
-          {source.series ? `, ${source.series}` : ""}
-          {source.publicationDate ? `, published ${source.publicationDate}` : ""}.
-        </span>
-      ))}
+      {sourceUpdate ? `, ${sourceUpdate}` : ""}.
+      {(observation.source.additionalSources ?? []).map((source) => {
+        const supportingSourceUpdate = sourceUpdateAttribution(source);
+        return (
+          <span key={`${source.url}-${source.series}`}>
+            {" Supporting source: "}
+            <a
+              href={source.url}
+              className="font-semibold underline decoration-black/20 underline-offset-4 hover:text-accent"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {source.publisher}
+            </a>
+            {source.series ? `, ${source.series}` : ""}
+            {source.publicationDate ? `, published ${source.publicationDate}` : ""}
+            {supportingSourceUpdate ? `, ${supportingSourceUpdate}` : ""}.
+          </span>
+        );
+      })}
     </p>
   );
 }

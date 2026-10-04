@@ -1,4 +1,4 @@
-import { COMPARISON_COUNTRY_NAMES, COMPARISON_MEASURE_ORDER, type ComparisonMeasure, type ComparisonMeasureId, type ComparisonCountryId, type ComparisonValueType } from "@/app/lib/internationalComparison";
+import { COMPARISON_COUNTRY_NAMES, COMPARISON_MEASURE_ORDER, sourceUpdateAttribution, type ComparisonMeasure, type ComparisonMeasureId, type ComparisonCountryId, type ComparisonValueType } from "@/app/lib/internationalComparison";
 import type { ChartMetadata } from "@/app/lib/chartExport";
 
 export type CountryComparisonUrlState = {
@@ -140,7 +140,7 @@ export function buildCountryChartMetadata(
   const sourceCitation = [
     `${measure.label}: ${measure.definition}`,
     `Visible denominator: ${result.denominator} of ${result.sourceCountryCount}; ${result.ranked ? `ranked within ${result.commonYear} ${result.commonValueType} observations` : "not ranked because year or evidence status differs"}`,
-    ...sources.map((source) => `${source.publisher}${source.publicationDate ? `, published ${source.publicationDate}` : ""}: ${source.url}`),
+    ...sources.map((source) => `${source.publisher}${source.publicationDate ? `, published ${source.publicationDate}` : ""}${sourceUpdateAttribution(source) ? `, ${sourceUpdateAttribution(source)}` : ""}: ${source.url}`),
   ].join(" · ");
   const excludedCaveats = [...new Set(result.excluded.map(({ reason }) => countryComparisonExclusionLabel(reason)))];
   const caveats = [
