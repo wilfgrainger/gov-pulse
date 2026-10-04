@@ -65,8 +65,7 @@ function u32(bytes, offset) {
   ) >>> 0;
 }
 
-async function zipEntries(arrayBuffer, requestedLimits = {}) {
-  const limits = boundedLimits(requestedLimits);
+function zipDirectory(arrayBuffer) {
   const bytes = new Uint8Array(arrayBuffer);
   let eocd = -1;
   for (
@@ -88,60 +87,91 @@ async function zipEntries(arrayBuffer, requestedLimits = {}) {
 
   let cursor = u32(bytes, eocd + 16);
   const entries = new Map();
-  let expandedTotal = 0;
   for (let count = 0; count < total; count += 1) {
-    if (u32(bytes, cursor) !== 0x02014b50) {
+    if (cursor + 46 > bytes.length || u32(bytes, cursor) !== 0x02014b50) {
       throw new Error("Workbook central directory was invalid");
     }
     const method = u16(bytes, cursor + 10);
     const compressedSize = u32(bytes, cursor + 20);
+    const uncompressedSize = u32(bytes, cursor + 24);
     const fileNameLength = u16(bytes, cursor + 28);
     const extraLength = u16(bytes, cursor + 30);
     const commentLength = u16(bytes, cursor + 32);
     const localOffset = u32(bytes, cursor + 42);
+    const nextCursor = cursor + 46 + fileNameLength + extraLength + commentLength;
+    if (nextCursor > bytes.length) {
+      throw new Error("Workbook central directory entry was truncated");
+    }
     const name = new TextDecoder().decode(
       bytes.subarray(cursor + 46, cursor + 46 + fileNameLength)
     );
-
-    if (u32(bytes, localOffset) !== 0x04034b50) {
-      throw new Error("Workbook local entry was invalid");
+    if (nextCursor <= cursor) {
+      throw new Error("Workbook central directory did not advance");
     }
-    const localNameLength = u16(bytes, localOffset + 26);
-    const localExtraLength = u16(bytes, localOffset + 28);
-    const start = localOffset + 30 + localNameLength + localExtraLength;
-    const compressed = bytes.subarray(start, start + compressedSize);
+    if (entries.has(name)) {
+      throw new Error("Workbook central directory repeated an entry name");
+    }
+    entries.set(name, { name, method, compressedSize, uncompressedSize, localOffset });
+    cursor = nextCursor;
+  }
+  return { bytes, entries };
+}
+
+async function zipEntryData(bytes, entry, maxEntryBytes) {
+  if (entry.uncompressedSize > maxEntryBytes) {
+    throw new Error(`Workbook entry exceeded its ${maxEntryBytes}-byte limit`);
+  }
+  const { localOffset, compressedSize, method, name } = entry;
+  if (localOffset + 30 > bytes.length || u32(bytes, localOffset) !== 0x04034b50) {
+    throw new Error("Workbook local entry was invalid");
+  }
+  if (u16(bytes, localOffset + 8) !== method) {
+    throw new Error("Workbook local entry compression did not match its directory");
+  }
+  const localNameLength = u16(bytes, localOffset + 26);
+  const localExtraLength = u16(bytes, localOffset + 28);
+  const localNameStart = localOffset + 30;
+  const start = localNameStart + localNameLength + localExtraLength;
+  const end = start + compressedSize;
+  const localNameEnd = localNameStart + localNameLength;
+  const localName = new TextDecoder().decode(bytes.subarray(localNameStart, localNameEnd));
+  if (localName !== name || end > bytes.length) {
+    throw new Error("Workbook local entry data was invalid");
+  }
+  const compressed = bytes.subarray(start, end);
+  const data =
+    method === 0
+      ? compressed
+      : method === 8
+        ? await inflate(compressed, maxEntryBytes)
+        : null;
+  if (!data) throw new Error(`Workbook used unsupported ZIP method ${method}`);
+  if (data.byteLength > maxEntryBytes) {
+    throw new Error(`Workbook entry exceeded its ${maxEntryBytes}-byte limit`);
+  }
+  return data;
+}
+
+async function zipEntries(arrayBuffer, requestedLimits = {}) {
+  const limits = boundedLimits(requestedLimits);
+  const { bytes, entries: directory } = zipDirectory(arrayBuffer);
+  const entries = new Map();
+  let expandedTotal = 0;
+  for (const [name, entry] of directory) {
     const requiredEntry =
       name === "xl/workbook.xml" ||
       name === "xl/_rels/workbook.xml.rels" ||
       name === "xl/sharedStrings.xml" ||
       /^xl\/worksheets\/[^/]+\.xml$/i.test(name);
-
-    if (requiredEntry) {
-      if (method === 0 && compressedSize > limits.maxEntryBytes) {
-        throw new Error(`Workbook entry exceeded its ${limits.maxEntryBytes}-byte limit`);
-      }
-      const data =
-        method === 0
-          ? compressed
-          : method === 8
-            ? await inflate(compressed, limits.maxEntryBytes)
-            : null;
-      if (!data) throw new Error(`Workbook used unsupported ZIP method ${method}`);
-      if (data.byteLength > limits.maxEntryBytes) {
-        throw new Error(`Workbook entry exceeded its ${limits.maxEntryBytes}-byte limit`);
-      }
-      expandedTotal += data.byteLength;
-      if (expandedTotal > limits.maxTotalBytes) {
-        throw new Error(`Workbook expanded contents exceeded its ${limits.maxTotalBytes}-byte limit`);
-      }
-      entries.set(name, new TextDecoder().decode(data));
+    if (!requiredEntry) continue;
+    const data = await zipEntryData(bytes, entry, limits.maxEntryBytes);
+    expandedTotal += data.byteLength;
+    if (expandedTotal > limits.maxTotalBytes) {
+      throw new Error(
+        `Workbook expanded contents exceeded its ${limits.maxTotalBytes}-byte limit`
+      );
     }
-
-    const nextCursor = cursor + 46 + fileNameLength + extraLength + commentLength;
-    if (nextCursor <= cursor) {
-      throw new Error("Workbook central directory did not advance");
-    }
-    cursor = nextCursor;
+    entries.set(name, new TextDecoder().decode(data));
   }
   return entries;
 }
@@ -206,21 +236,20 @@ function worksheetPath(target) {
 
 async function workbookSheetCells(arrayBuffer, sheetNamePattern, requestedLimits = {}) {
   const limits = boundedLimits(requestedLimits);
-  const archive = await zipEntries(arrayBuffer, limits);
-  let workbookCells = 0;
-  for (const [name, xml] of archive) {
-    if (!/^xl\/worksheets\/[^/]+\.xml$/i.test(name)) continue;
-    const rowCount = [...xml.matchAll(/<row\b/gi)].length;
-    if (rowCount > limits.maxWorksheetRows) {
-      throw new Error(`Workbook worksheet exceeded the ${limits.maxWorksheetRows}-row limit`);
+  const { bytes, entries: directory } = zipDirectory(arrayBuffer);
+  let expandedTotal = 0;
+  const readText = async (name) => {
+    const entry = directory.get(name);
+    if (!entry) return "";
+    const data = await zipEntryData(bytes, entry, limits.maxEntryBytes);
+    expandedTotal += data.byteLength;
+    if (expandedTotal > limits.maxTotalBytes) {
+      throw new Error(`Workbook expanded contents exceeded its ${limits.maxTotalBytes}-byte limit`);
     }
-    workbookCells += [...xml.matchAll(/<c\b/gi)].length;
-    if (workbookCells > limits.maxWorkbookCells) {
-      throw new Error(`Workbook exceeded the ${limits.maxWorkbookCells}-cell limit`);
-    }
-  }
-  const workbook = archive.get("xl/workbook.xml") ?? "";
-  const relationships = archive.get("xl/_rels/workbook.xml.rels") ?? "";
+    return new TextDecoder().decode(data);
+  };
+  const workbook = await readText("xl/workbook.xml");
+  const relationships = await readText("xl/_rels/workbook.xml.rels");
   const pattern =
     sheetNamePattern instanceof RegExp
       ? sheetNamePattern
@@ -240,9 +269,9 @@ async function workbookSheetCells(arrayBuffer, sheetNamePattern, requestedLimits
     throw new Error("Workbook worksheet relationship was unavailable");
   }
 
-  const xml = archive.get(worksheetPath(relationship.target));
+  const xml = await readText(worksheetPath(relationship.target));
   if (!xml) throw new Error("Workbook worksheet XML was unavailable");
-  const strings = sharedStrings(archive.get("xl/sharedStrings.xml") ?? "", limits);
+  const strings = sharedStrings(await readText("xl/sharedStrings.xml"), limits);
   return worksheetCells(xml, strings, limits);
 }
 
