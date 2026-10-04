@@ -51,6 +51,25 @@ describe("content-addressed edition archive", () => {
     expect([...kv.values.keys()].filter((key) => key.startsWith(EDITION_CONTENT_PREFIX))).toHaveLength(1);
   });
 
+  it("keeps the immutable archive when the same catalogue is retried with a different comparison summary", async () => {
+    const kv = new MemoryKv();
+    const first = edition(0);
+    await archiveEdition({ METRICS_CACHE: kv }, first.catalog, first.summary);
+
+    const retrySummary = {
+      ...first.summary,
+      publishedAt: "2024-01-03T00:00:00.000Z",
+      previousEditionId: "catalog-different-baseline",
+    };
+    const retried = await archiveEdition({ METRICS_CACHE: kv }, first.catalog, retrySummary);
+    const restored = await readEdition({ METRICS_CACHE: kv }, first.catalog.editionId);
+
+    expect(retried).toMatchObject({ archived: false, duplicate: true, id: first.catalog.editionId });
+    expect(restored).toMatchObject({ catalog: first.catalog, summary: first.summary });
+    expect(JSON.parse(kv.values.get(EDITION_INDEX_KEY)!.value)).toHaveLength(1);
+    expect([...kv.values.keys()].filter((key) => key.startsWith(EDITION_CONTENT_PREFIX))).toHaveLength(1);
+  });
+
   it("archives source-linked value and metadata changes with their publication dates", async () => {
     const kv = new MemoryKv();
     const item = edition(9);
