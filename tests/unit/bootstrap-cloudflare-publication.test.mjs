@@ -141,6 +141,8 @@ describe("Cloudflare deployment bootstrap", () => {
     const expectedJobIds = [
       "section:housePriceIndex",
       "section:realWages",
+      "section:gdpTracker",
+      "section:contracts",
       "external:nhsStats",
     ];
     const run = {
@@ -153,7 +155,9 @@ describe("Cloudflare deployment bootstrap", () => {
       [`v13:publication:run:${runId}`, run],
       [`v13:publication:run:${runId}:terminal:section:housePriceIndex`, { status: "success", completedAt: "2026-10-03T12:00:00.000Z" }],
       [`v13:publication:run:${runId}:terminal:section:realWages`, { status: "success", completedAt: "2026-10-03T12:01:00.000Z" }],
-      [`v13:publication:run:${runId}:terminal:external:nhsStats`, { status: "failure", completedAt: "2026-10-03T12:02:00.000Z", result: { errorMessage: "private source details" } }],
+      [`v13:publication:run:${runId}:terminal:external:nhsStats`, { status: "failure", completedAt: "2026-10-03T12:02:00.000Z", result: { errorName: "TypeError", errorMessage: "Failed to fetch private source.internal/path?token=secret" } }],
+      [`v13:publication:run:${runId}:terminal:section:contracts`, { status: "failure", completedAt: "2026-10-03T12:02:30.000Z", result: { errorName: "Error", errorMessage: "Find a Tender returned 503" } }],
+      [`v13:publication:run:${runId}:terminal:section:gdpTracker`, { status: "failure", completedAt: "2026-10-03T12:02:45.000Z", result: { errorName: "Error", errorMessage: "Find a Tender refresh time budget exceeded" } }],
       [`v13:publication:run:${runId}:terminal:comparison:${runId}`, { status: "success", completedAt: "2026-10-03T12:03:00.000Z" }],
     ]);
     const fetchImpl = vi.fn(async (input) => {
@@ -169,8 +173,24 @@ describe("Cloudflare deployment bootstrap", () => {
       ...expectedJobIds,
       `comparison:${runId}`,
     ]);
-    expect(result.terminals["external:nhsStats"]).toMatchObject({ status: "failure" });
+    expect(result.terminals["external:nhsStats"]).toMatchObject({
+      status: "failure",
+      failureKind: "network",
+      errorName: "TypeError",
+    });
     expect(result.terminals["external:nhsStats"]).not.toHaveProperty("result");
+    expect(result.terminals["section:contracts"]).toMatchObject({
+      status: "failure",
+      failureKind: "http-503",
+      errorName: "Error",
+    });
+    expect(result.terminals["section:gdpTracker"]).toMatchObject({
+      status: "failure",
+      failureKind: "source-time-budget",
+      errorName: "Error",
+    });
+    expect(JSON.stringify(result)).not.toContain("private source.internal");
+    expect(JSON.stringify(result)).not.toContain("token=secret");
     expect(result.terminals[`comparison:${runId}`]).toMatchObject({ status: "success" });
   });
 
