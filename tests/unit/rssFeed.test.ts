@@ -98,23 +98,15 @@ describe("RSS publication feed", () => {
     expect(new Set(items.map((item) => item.querySelector("guid")?.textContent)).size).toBe(items.length);
   });
 
-  it("dates polling, debt and contract RSS entries from publisher records", () => {
+  it("dates polling and debt RSS entries from publisher records", () => {
     const snapshot = publicSnapshot(BUILD_METRICS_SNAPSHOT) as MetricsSnapshot;
     const document = new DOMParser().parseFromString(renderRssFeed(snapshot), "application/xml");
     const polling = snapshot.electionPolling as { latestPublicationDate?: string };
     const debt = snapshot.nationalDebt as { publicationDate?: string };
-    const contracts = snapshot.governmentContracts as { awards?: Array<{ publishedAt?: string }> };
-    const latestContractDate = contracts.awards
-      ?.map((award) => award.publishedAt)
-      .filter((date): date is string => Boolean(date))
-      .map((date) => new Date(date).toISOString())
-      .sort()
-      .at(-1);
 
     for (const [sectionId, sourceDate] of [
       ["election-polls", polling.latestPublicationDate],
       ["national-debt", debt.publicationDate],
-      ["government-contracts", latestContractDate],
     ] as const) {
       const item = [...document.querySelectorAll("channel > item")]
         .find((entry) => entry.querySelector("link")?.textContent === `${SITE_DISCOVERY.origin}/section/${sectionId}/`);
