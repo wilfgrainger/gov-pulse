@@ -249,6 +249,14 @@ function safeErrorName(name) {
     : null;
 }
 
+function safeJobIds(value) {
+  return Array.isArray(value)
+    ? value.filter((jobId) =>
+        typeof jobId === "string" && /^(?:section|external):[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(jobId)
+      ).slice(0, 64)
+    : [];
+}
+
 async function publicationDiagnostics(
   fetchImpl,
   accountId,
@@ -489,6 +497,35 @@ async function bootstrapCloudflarePublication(options = {}) {
   let lastHealth = initialHealth;
   const completedResult = async (health, run, sourceRequestsMade = null) => {
     const result = { triggered: true, attempts: attempt, health };
+    if (isDegradedPublicationHealth(health) && latestAttemptId) {
+      try {
+        const diagnostics = await publicationDiagnostics(
+          fetchImpl,
+          accountId,
+          apiToken,
+          namespaceId,
+          latestAttemptId
+        );
+        result.sourceDiagnostics = {
+          runStatus: diagnostics.run?.status ?? run?.status ?? null,
+          failedJobIds: safeJobIds(diagnostics.run?.failedJobIds),
+          missingJobIds: safeJobIds(diagnostics.run?.missingJobIds),
+          terminalFailures: Object.fromEntries(
+            Object.entries(diagnostics.terminals)
+              .filter(([jobId, terminal]) =>
+                terminal?.status === "failure" &&
+                /^(?:section|external):[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(jobId)
+              )
+              .map(([jobId, terminal]) => [jobId, {
+                failureKind: terminal.failureKind,
+                errorName: terminal.errorName,
+              }])
+          ),
+        };
+      } catch {
+        // A valid degraded edition must remain deployable if private diagnostics are unavailable.
+      }
+    }
     if (includeContracts) {
       result.contractsRefresh = {
         status: "success",
@@ -659,9 +696,12 @@ async function main() {
     forceComparison: process.env.FORCE_COMPARISON_REFRESH === "true",
     includeContracts: process.env.FORCE_CONTRACTS_REFRESH === "true",
   });
+  const sourceDiagnostics = result.sourceDiagnostics
+    ? ` Source diagnostics=${JSON.stringify(result.sourceDiagnostics)}.`
+    : "";
   console.log(
     result.triggered
-      ? `Cloudflare publication bootstrap completed after ${result.attempts} attempt${result.attempts === 1 ? "" : "s"}.${result.comparisonRefresh ? ` Comparison refresh status=${result.comparisonRefresh.status}${result.comparisonRefresh.completedAt ? ` completedAt=${result.comparisonRefresh.completedAt}` : ""}.` : ""}${result.contractsRefresh ? ` Contracts refresh job=${result.contractsRefresh.status}, published=${result.contractsRefresh.published}.` : ""}`
+      ? `Cloudflare publication bootstrap completed after ${result.attempts} attempt${result.attempts === 1 ? "" : "s"}.${result.comparisonRefresh ? ` Comparison refresh status=${result.comparisonRefresh.status}${result.comparisonRefresh.completedAt ? ` completedAt=${result.comparisonRefresh.completedAt}` : ""}.` : ""}${result.contractsRefresh ? ` Contracts refresh job=${result.contractsRefresh.status}, published=${result.contractsRefresh.published}.` : ""}${sourceDiagnostics}`
       : "Cloudflare prepared publication was already deployable; bootstrap skipped."
   );
 }
