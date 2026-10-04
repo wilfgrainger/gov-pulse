@@ -230,6 +230,33 @@ describe("international comparison publication", () => {
     expect(publication.measures.taxRevenue.comparableCountryCount).toBe(10);
   });
 
+  it("retains primary source references for unavailable IMF measures", () => {
+    const publication = buildInternationalComparisonPublication(comparisonSourceBundle({
+      sourceFailures: ["imf-gdp-2026", "imf-debt-2026", "imf-interest-2024"],
+    }), new Date("2026-10-04T10:00:00.000Z"));
+    const debt = publication.measures.governmentDebt;
+    const interest = publication.measures.debtInterest;
+
+    expect(debt.lifecycle?.status).toBe("unavailable");
+    expect(debt.countries.every((item) => item.value === null && item.source === null)).toBe(true);
+    expect(debt.sourceReferences).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        publisher: "International Monetary Fund",
+        url: expect.stringContaining("/GGXWDG_NGDP/"),
+        series: expect.stringContaining("gross general government debt"),
+      }),
+    ]));
+    expect(interest.lifecycle?.status).toBe("unavailable");
+    expect(interest.countries.every((item) => item.value === null && item.source === null)).toBe(true);
+    expect(interest.sourceReferences).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        publisher: "International Monetary Fund",
+        url: expect.stringContaining("/ie/"),
+        series: expect.stringContaining("interest paid"),
+      }),
+    ]));
+  });
+
   it("retains source-backed defence history by common year with population provenance", () => {
     const defence2023 = mapAll(65_000_000_000);
     const population2023 = mapAll(68_000_000);

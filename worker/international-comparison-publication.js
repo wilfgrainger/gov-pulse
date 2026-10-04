@@ -105,6 +105,15 @@ const SOURCES = Object.freeze({
     series: "SH.XPD.CHEX.PC.CD",
   }),
 });
+const MEASURE_SOURCE_REFERENCES = Object.freeze({
+  governmentDebt: Object.freeze([SOURCES.imfWEO2026]),
+  officialDevelopmentAssistance: Object.freeze([SOURCES.oecdOda2025, SOURCES.worldBankPopulationHistory]),
+  defenceSpending: Object.freeze([SOURCES.sipri2025, SOURCES.worldBankPopulationHistory]),
+  publicSocialExpenditure: Object.freeze([SOURCES.oecdSocx2023, SOURCES.worldBankGdpPerCapita2023]),
+  healthcareSpending: Object.freeze([SOURCES.whoViaWorldBank2024]),
+  taxRevenue: Object.freeze([SOURCES.oecdTax2024, SOURCES.worldBankGdpPerCapita2024]),
+  debtInterest: Object.freeze([SOURCES.imfInterest2024, SOURCES.worldBankGdpPerCapita2024]),
+});
 
 function comparisonSourceBundle(values = {}) {
   return {
@@ -167,12 +176,15 @@ function lifecycleFor(id, comparisonMeasure, now, sourceFailures) {
         : {}),
     })),
   } : null;
-  const sourceEdition = comparisonMeasure.countries.map(({ country, value, source, calculationInputs }) => [
-    country,
-    value,
-    calculationInputs ?? null,
-    sourceDetails(source),
-  ]);
+  const sourceEdition = [
+    ["sourceReferences", comparisonMeasure.sourceReferences ?? []],
+    ...comparisonMeasure.countries.map(({ country, value, source, calculationInputs }) => [
+      country,
+      value,
+      calculationInputs ?? null,
+      sourceDetails(source),
+    ]),
+  ];
   if (comparisonMeasure.countryHistory) {
     sourceEdition.push(...comparisonMeasure.countryHistory.map(({ country, value, observationYear, source, calculationInputs }) => [
       country,
@@ -276,7 +288,7 @@ function sourceUnavailableObservations(year, coverage = () => true, notCoveredRe
 
 function measure(id, year, observations) {
   const descriptor = DESCRIPTORS.get(id);
-  return buildComparisonMeasure({ id, definition: descriptor.definition, observationYear: year, observations });
+  return buildComparisonMeasure({ id, definition: descriptor.definition, observationYear: year, observations, sourceReferences: MEASURE_SOURCE_REFERENCES[id] });
 }
 
 function buildInternationalComparisonPublication(bundle, now = new Date()) {

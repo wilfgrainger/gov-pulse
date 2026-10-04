@@ -56,8 +56,20 @@ describe("shareable country comparison controls", () => {
     const publishedMeasures = measures();
     publishedMeasures.governmentDebt = {
       ...publishedMeasures.governmentDebt,
+      sourceReferences: [{
+        publisher: "International Monetary Fund",
+        url: "https://www.imf.org/external/datamapper/api/v2/GGXWDG_NGDP/GBR/USA/CHN/RUS/UKR/DEU/FRA/ITA/ESP/IRL/NLD/CHE/POL?periods=2026",
+        series: "World Economic Outlook: gross general government debt (% GDP)",
+        additionalSources: [{
+          publisher: "International Monetary Fund",
+          url: "https://www.imf.org/external/datamapper/api/v2/NGDPDPC/GBR/USA/CHN/RUS/UKR/DEU/FRA/ITA/ESP/IRL/NLD/CHE/POL?periods=2026",
+          series: "World Economic Outlook: GDP per capita (current USD)",
+        }],
+      }],
+      lifecycle: { sourceEditionId: null, validUntil: null, lastSuccessAt: null, retryAfter: null, status: "unavailable" },
       countries: publishedMeasures.governmentDebt.countries.map((row) => ({
         ...row,
+        source: null,
         observationYear: 2026,
         exclusionReason: "source-unavailable",
       })),
@@ -91,6 +103,9 @@ describe("shareable country comparison controls", () => {
     const exported = JSON.parse(json);
     expect(exported.sourceCitation).toContain("Visible denominator: 0 of 3");
     expect(exported.sourceCitation).toContain("no values matched the selected filters");
+    expect(exported.sourceCitation).toContain("Primary source reference; values unavailable in this edition");
+    expect(exported.sourceCitation).toContain("https://www.imf.org/external/datamapper/api/v2/GGXWDG_NGDP/");
+    expect(exported.sourceCitation).toContain("https://www.imf.org/external/datamapper/api/v2/NGDPDPC/");
     expect(exported.observations.map((item: { observedAt: string | null; values: Record<string, number | null>; details: Record<string, unknown> }) => [
       item.observedAt,
       Object.values(item.values)[0],

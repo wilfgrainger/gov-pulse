@@ -138,17 +138,25 @@ export function buildCountryChartMetadata(
   const unavailableRecords = (result.rows.length ? [] : result.excluded.filter(({ reason }) => reason !== "Excluded by country filter"))
     .map((row) => ({ row, included: false as const, exclusionReason: countryComparisonExclusionLabel(row.reason) }));
   const records = [...includedRecords, ...unavailableRecords];
-  const sources = [...new Map(records.flatMap(({ row: { source } }) => source
-    ? [source, ...(source.additionalSources ?? [])].map((item) => [item.url, item] as const)
-    : [])).values()];
+  const sourceReferences = (measure.sourceReferences ?? []).flatMap((source) => [source, ...(source.additionalSources ?? [])]);
+  const observationSources = records.flatMap(({ row: { source } }) => source
+    ? [source, ...(source.additionalSources ?? [])]
+    : []);
+  const sources = [...new Map([...sourceReferences, ...observationSources].map((source) => [source.url, source] as const)).values()];
+  const unavailableReferenceUrls = new Set(measure.lifecycle?.status === "unavailable" && result.rows.length === 0
+    ? sourceReferences.map(({ url }) => url)
+    : []);
   const sourceCitation = [
     `${measure.label}: ${measure.definition}`,
     `Visible denominator: ${result.denominator} of ${result.sourceCountryCount}; ${result.rows.length === 0 ? "no values matched the selected filters; no ranking is available" : result.ranked ? `ranked within ${result.commonYear} ${result.commonValueType} observations` : "not ranked because year or evidence status differs"}`,
-    ...sources.map((source) => `${source.publisher}${source.publicationDate ? `, published ${source.publicationDate}` : ""}${sourceUpdateAttribution(source) ? `, ${sourceUpdateAttribution(source)}` : ""}: ${source.url}`),
+    ...sources.map((source) => unavailableReferenceUrls.has(source.url)
+      ? `Primary source reference; values unavailable in this edition: ${source.publisher}, ${source.series}: ${source.url}`
+      : `${source.publisher}${source.publicationDate ? `, published ${source.publicationDate}` : ""}${sourceUpdateAttribution(source) ? `, ${sourceUpdateAttribution(source)}` : ""}: ${source.url}`),
   ].join(" · ");
   const excludedCaveats = [...new Set(result.excluded.map(({ reason }) => countryComparisonExclusionLabel(reason)))];
   const caveats = [
     measure.caveat,
+    measure.lifecycle?.status === "unavailable" ? "Primary source retrieval was unavailable for this edition; null values are not zero." : null,
     `Visible denominator is ${result.denominator} of ${result.sourceCountryCount} source-set countries; excluded or missing values are not zero.`,
     result.rows.length === 0 ? "No values matched the selected filters; no ranking is available." : result.ranked ? `Ranks apply only to the selected ${result.commonYear} ${result.commonValueType} observations.` : "No rank is shown because selected observations do not share one year and evidence status.",
     ...excludedCaveats,
