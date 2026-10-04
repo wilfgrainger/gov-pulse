@@ -638,6 +638,80 @@ describe("Cloudflare deployment bootstrap", () => {
     });
   });
 
+  it("uses a fresh workflow identity so an earlier comparison success cannot satisfy a forced refresh", async () => {
+    let now = Date.now();
+    let queuedDeploymentId = null;
+    const kvReads = [];
+    const priorRunId = `bootstrap-${SHA}`;
+    const priorTerminalKey = `v13:publication:run:${priorRunId}:terminal:comparison:${priorRunId}`;
+    const staleCompletedAt = new Date(now - 60_000).toISOString();
+    const freshCompletedAt = new Date(now + 10_000).toISOString();
+    const fetchImpl = vi.fn(async (input, init = {}) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/data/health.json") {
+        return jsonResponse({ status: "ready", ready: true });
+      }
+      if (url.pathname.endsWith("/queues")) {
+        return jsonResponse({
+          success: true,
+          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
+        });
+      }
+      if (url.pathname.endsWith("/queues/queue-id/messages")) {
+        queuedDeploymentId = JSON.parse(init.body).body.deploymentId;
+        return jsonResponse({ success: true });
+      }
+      if (url.pathname.endsWith("/data/metrics-snapshot.json")) {
+        return new Response(JSON.stringify(preparedSnapshot(new Date(now))), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Publication-Delivery": "cloudflare-kv",
+          },
+        });
+      }
+      if (url.pathname.includes("/storage/kv/namespaces/")) {
+        const key = decodeURIComponent(url.pathname.split("/values/")[1] ?? "");
+        kvReads.push(key);
+        const runId = `bootstrap-${queuedDeploymentId}`;
+        if (key === `v13:publication:run:${runId}`) {
+          return jsonResponse({ status: "published", finalisedAt: new Date(now).toISOString() });
+        }
+        if (key === `${priorTerminalKey}`) {
+          return jsonResponse({ status: "success", completedAt: staleCompletedAt });
+        }
+        if (key === `v13:publication:run:${runId}:terminal:comparison:${runId}`) {
+          return jsonResponse({ status: "success", completedAt: freshCompletedAt });
+        }
+        return new Response(null, { status: 404 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+
+    const result = await bootstrapCloudflarePublication({
+      accountId: "account",
+      apiToken: "token",
+      deploymentId: SHA,
+      executionId: "37190244352.1",
+      forceRefresh: true,
+      forceComparison: true,
+      fetchImpl,
+      timeoutMs: 60_000,
+      comparisonTimeoutMs: 30_000,
+      pollIntervalMs: 10_000,
+      nowImpl: () => now,
+      sleepImpl: async (milliseconds) => { now += milliseconds; },
+    });
+
+    expect(queuedDeploymentId).toMatch(/^[0-9a-f]{40}$/);
+    expect(queuedDeploymentId).not.toBe(SHA);
+    expect(result.comparisonRefresh).toEqual({
+      status: "success",
+      completedAt: freshCompletedAt,
+    });
+    expect(kvReads).not.toContain(priorTerminalKey);
+  });
+
   it("starts a fresh recovery run when the first run remains bootstrapping", async () => {
     let now = 0;
     const fetchImpl = vi
