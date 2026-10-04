@@ -32,6 +32,7 @@ export default function RevisionLedger({ summaries, measureIds }: { summaries: E
     <h2 id="revision-ledger-heading" className="mt-2 text-3xl font-black">Revision ledger</h2>
     {editions.length ? <ol className="mt-5 list-none divide-y divide-line p-0">{editions.map((edition) => <li key={edition.id} className="py-4">
       <p className="font-mono text-xs text-gray-600">Catalog published {edition.publishedAt.slice(0, 10)} · edition {edition.id}</p>
+      {edition.summaryCorrection ? <p className="mt-2 text-sm text-gray-700">{edition.summaryCorrection.note} <Link className="font-semibold underline" href={`/editions/${encodeURIComponent(edition.summaryCorrection.baselineEditionId)}`}>Open the retained baseline →</Link></p> : null}
       <ul className="mt-3 list-disc space-y-4 pl-5 text-sm">{edition.changes.filter((change) => !measureIds || measureIds.includes(change.measureId)).map((change, index) => <li key={`${change.measureId}-${change.period}-${index}`}>
         <strong>{change.measureId}</strong> · {label(change.kind)}{change.period ? ` · ${change.period} (${change.observedAt ?? "observation date unavailable"})` : ""}.
         <p className="mt-1">{valueChange(change)}</p>

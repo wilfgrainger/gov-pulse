@@ -20,6 +20,11 @@ export interface MetricsSnapshot {
       id: string;
       publishedAt: string;
       previousEditionId?: string | null;
+      summaryCorrection?: {
+        kind: "baseline-reconciliation";
+        baselineEditionId: string;
+        note: string;
+      };
       sourceEditionIds: string[];
       changes: {
         measureId: string;

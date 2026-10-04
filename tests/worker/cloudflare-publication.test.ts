@@ -25,6 +25,8 @@ import {
 } from "@/worker/government-contracts-cloudflare";
 import { ukNationFromPostcode } from "@/contracts/government-contracts";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
+import { archiveEdition } from "@/worker/edition-archive";
+import { catalogRevisionIdentity } from "@/worker/measure-catalog";
 
 const REQUIRED = [
   "sentimentPulse",
@@ -41,19 +43,81 @@ const REQUIRED = [
 
 function kvEnv(initial: Record<string, unknown> = {}) {
   const store = new Map(Object.entries(initial));
+  const metadata = new Map<string, Record<string, unknown>>();
+  const read = (key: string, type?: "json" | "text") => {
+    const value = store.get(key);
+    if (value === undefined) return null;
+    if (type === "text") return typeof value === "string" ? value : JSON.stringify(value);
+    if (typeof value === "string") {
+      try { return JSON.parse(value); } catch { return value; }
+    }
+    return value;
+  };
   return {
     store,
     env: {
       METRICS_CACHE: {
-        get: vi.fn(async (key: string) => store.get(key) ?? null),
-        put: vi.fn(async (key: string, value: string) => {
+        get: vi.fn(async (key: string, type?: "json" | "text") => read(key, type)),
+        getWithMetadata: vi.fn(async (key: string, type?: "json" | "text") => ({
+          value: read(key, type),
+          metadata: metadata.get(key) ?? null,
+        })),
+        put: vi.fn(async (key: string, value: string, options?: { metadata?: Record<string, unknown> }) => {
           try {
             store.set(key, JSON.parse(value));
           } catch {
             store.set(key, value);
           }
+          if (options?.metadata) metadata.set(key, options.metadata);
+        }),
+        delete: vi.fn(async (key: string) => {
+          store.delete(key);
+          metadata.delete(key);
         }),
       },
+    },
+  };
+}
+
+function archivedBaseline() {
+  const measure = {
+    id: "baseline-measure",
+    label: "Baseline measure",
+    evidenceClass: "official-statistics",
+    comparisonKey: "baseline-measure",
+    cadence: "monthly",
+    unit: "units",
+    basis: "Published basis",
+    geography: { code: "GB", label: "Great Britain" },
+    sourceId: "ons",
+    sourceUrl: "https://www.ons.gov.uk/series",
+    sourceEditionId: "ons-baseline",
+    observationPeriod: { start: "2026-07-01", end: "2026-07-31", label: "July 2026" },
+    publishedAt: "2026-07-17T10:00:00.000Z",
+    fetchedAt: "2026-07-17T10:00:00.000Z",
+    validUntil: "2026-08-17T00:00:00.000Z",
+    availability: "current",
+    value: 10,
+    revisionId: "ons-baseline-r1",
+    points: [{ period: "July 2026", observedAt: "2026-07-31", value: 10, valueStatus: "observed", revisionId: "ons-baseline-r1" }],
+    caveats: [],
+  };
+  const measures = { [measure.id]: measure };
+  const catalog = {
+    schemaVersion: 2,
+    editionId: catalogRevisionIdentity(measures),
+    generatedAt: "2026-07-17T11:00:00.000Z",
+    validUntil: "2026-08-17T00:00:00.000Z",
+    measures,
+  };
+  return {
+    catalog,
+    summary: {
+      id: catalog.editionId,
+      publishedAt: "2026-07-17T10:00:00.000Z",
+      previousEditionId: null,
+      sourceEditionIds: [measure.sourceEditionId],
+      changes: [],
     },
   };
 }
@@ -212,6 +276,32 @@ describe("Cloudflare data publication", () => {
       expect.any(Object),
     );
     expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(result.publication);
+  });
+
+  it("reconciles a first archive summary against retained history when the current snapshot has no catalog baseline", async () => {
+    const prior = archivedBaseline();
+    const { env, store } = kvEnv({ [PUBLICATION_CURRENT_KEY]: snapshot() });
+    await archiveEdition(env, prior.catalog, prior.summary);
+
+    const result = await publishFromCaches(env, {
+      now: new Date("2026-07-17T12:30:00.000Z"),
+    });
+
+    expect(result.publication.meta.editionSummary).toMatchObject({
+      previousEditionId: prior.catalog.editionId,
+      summaryCorrection: {
+        kind: "baseline-reconciliation",
+        baselineEditionId: prior.catalog.editionId,
+      },
+    });
+    expect(store.get(PUBLICATION_CURRENT_KEY)).toMatchObject({
+      meta: {
+        editionSummary: {
+          previousEditionId: prior.catalog.editionId,
+          summaryCorrection: { baselineEditionId: prior.catalog.editionId },
+        },
+      },
+    });
   });
 
   it("publishes an atomic degraded edition when a required section expires", async () => {

@@ -38,6 +38,12 @@ routes may be added when needed, with their own contract, validation, tests and
 deployment updates. Wildcard routing that exposes collector, queue, KV or
 diagnostic internals remains unsafe.
 
+The archived catalog and its first recorded summary remain immutable. If a
+retained predecessor later proves that a summary was created without its
+baseline, append a separately keyed, immutable summary correction that cites
+the predecessor and leaves archived observations untouched. Public list and
+detail reads expose the corrected summary and its reconciliation note.
+
 ## Consequences
 
 New public routes require a manifest change and a route test. Displayed measures

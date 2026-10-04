@@ -45,10 +45,19 @@ function validOptionalFieldList(value: unknown): boolean {
     value.every((field) => typeof field === "string" && /^[A-Za-z][A-Za-z0-9.]{0,79}$/.test(field));
 }
 
+function validSummaryCorrection(value: unknown, editionId: string, previousEditionId: unknown): boolean {
+  if (value === undefined) return true;
+  return object(value) && value.kind === "baseline-reconciliation" &&
+    typeof value.baselineEditionId === "string" && safeEditionId(value.baselineEditionId) &&
+    value.baselineEditionId !== editionId && value.baselineEditionId === previousEditionId &&
+    typeof value.note === "string" && Boolean(value.note.trim()) && value.note.length <= 500;
+}
+
 function validEditionSummary(value: unknown, id?: string): value is EditionSummary {
   if (!object(value) || typeof value.id !== "string" || !safeEditionId(value.id) || (id && value.id !== id) ||
     !validInstant(value.publishedAt) || !(value.previousEditionId === undefined || value.previousEditionId === null ||
       typeof value.previousEditionId === "string" && safeEditionId(value.previousEditionId)) ||
+    !validSummaryCorrection(value.summaryCorrection, value.id, value.previousEditionId) ||
     !Array.isArray(value.sourceEditionIds) || value.sourceEditionIds.length > 100 ||
     !Array.isArray(value.changes) || value.changes.length > 5_000) return false;
   const sourceIds = new Set<string>();

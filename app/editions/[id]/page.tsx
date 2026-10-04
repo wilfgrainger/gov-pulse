@@ -47,6 +47,7 @@ function changeValue(change: ArchivedEdition["summary"]["changes"][number]) {
 function EditionChanges({ edition }: { edition: ArchivedEdition }) {
   return <section className="mb-8 border-y-2 border-foreground bg-white p-5">
     <h2 className="text-2xl font-black">Changes recorded at publication</h2>
+    {edition.summary.summaryCorrection ? <p className="mt-3 text-sm leading-6 text-gray-700">{edition.summary.summaryCorrection.note} <Link className="font-semibold underline" href={`/editions/${encodeURIComponent(edition.summary.summaryCorrection.baselineEditionId)}`}>Open the retained baseline →</Link></p> : null}
     {edition.summary.changes.length ? <ul className="mt-4 list-disc space-y-4 pl-5 text-sm">{edition.summary.changes.map((change, index) => <li key={`${change.measureId}-${change.period}-${index}`}>
       <strong>{change.measureId}</strong> · {changeTitle(change.kind)}{change.period ? ` · ${change.period} (${change.observedAt ?? "observation date unavailable"})` : ""}: {changeValue(change)}
       {change.changedFields?.length ? <p className="mt-1">Changed fields: {change.changedFields.join(", ")}.</p> : null}
