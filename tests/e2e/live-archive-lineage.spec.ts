@@ -59,6 +59,14 @@ function hasSameObservationIdentity(
   );
 }
 
+function findObservationPoint(
+  measure: ArchivedMeasure,
+  period: string,
+  observedAt: string,
+): ArchivedMeasure["points"][number] | undefined {
+  return measure.points.find((point) => point.period === period && point.observedAt === observedAt);
+}
+
 test("archive lineage compares observation identity rather than measure presence", () => {
   const current: ArchivedMeasure = {
     id: "housePriceAverage",
@@ -73,7 +81,10 @@ test("archive lineage compares observation identity rather than measure presence
     sourceEditionId: "current-edition",
     publishedAt: "2026-10-01T00:00:00.000Z",
     observationPeriod: { start: "2026-07-01", end: "2026-07-31", label: "July 2026" },
-    points: [{ period: "July 2026", observedAt: "2026-08-14", value: 273000 }],
+    points: [
+      { period: "June 2026", observedAt: "2026-07-15", value: 270000 },
+      { period: "July 2026", observedAt: "2026-08-14", value: 273000 },
+    ],
   };
   const previousValue = { ...current, value: 270000 };
   const previousPeriod = {
@@ -94,6 +105,7 @@ test("archive lineage compares observation identity rather than measure presence
     current,
     observation,
   )).toBe(false);
+  expect(findObservationPoint(current, "June 2026", "2026-07-15")).toEqual(current.points[0]);
 });
 
 test("deployed source history opens its immutable edition and primary publication", async ({ page }) => {
@@ -107,7 +119,13 @@ test("deployed source history opens its immutable edition and primary publicatio
   const index = await indexResponse.json() as { editions: Array<{ id: string }> };
   expect(index.editions.length).toBeGreaterThan(0);
 
-  let selected: { id: string; archive: ArchiveDetail; measure: ArchivedMeasure; change: ArchiveDetail["summary"]["changes"][number] } | null = null;
+  let selected: {
+    id: string;
+    archive: ArchiveDetail;
+    measure: ArchivedMeasure;
+    change: ArchiveDetail["summary"]["changes"][number];
+    observation: ArchivedMeasure["points"][number];
+  } | null = null;
   for (const listed of index.editions) {
     const detailResponse = await page.request.get(
       new URL(`data/edition.json?edition=${encodeURIComponent(listed.id)}`, base).toString(),
@@ -118,16 +136,19 @@ test("deployed source history opens its immutable edition and primary publicatio
       item.measureId === "housePriceAverage" && item.kind === "new-observation" && item.nextSourceUrl,
     );
     const measure = archive.measureCatalog.measures.housePriceAverage;
-    if (change && measure?.value !== null && measure?.value !== undefined) {
-      selected = { id: listed.id, archive, measure, change };
+    const observation = change && measure && change.period && change.observedAt
+      ? findObservationPoint(measure, change.period, change.observedAt)
+      : undefined;
+    if (change && measure && observation?.value !== null && observation?.value !== undefined) {
+      selected = { id: listed.id, archive, measure, change, observation };
       break;
     }
   }
   expect(selected, "a retained house-price observation with a primary source").not.toBeNull();
 
-  const { id, archive, measure, change } = selected!;
+  const { id, archive, measure, change, observation } = selected!;
   expect(archive.edition).toBe(id);
-  expect(change.next).toBe(measure.value);
+  expect(change.next).toBe(observation.value);
   expect(change.nextUnit).toBe(measure.unit);
   expect(change.nextSourceEditionId).toBe(measure.sourceEditionId);
   expect(change.nextSourceUrl).toBe(measure.sourceUrl);
@@ -146,7 +167,13 @@ test("deployed source history opens its immutable edition and primary publicatio
   await archiveLink.click();
   await expect(page).toHaveURL(new RegExp(`/editions/${id}/?$`));
   await expect(page.getByRole("heading", { level: 1, name: `Edition ${id}` })).toBeVisible();
-  await expect(page.getByText(new RegExp(`${measure.id} · New observation · ${measure.observationPeriod.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`))).toBeVisible();
+  const observationChange = page.locator("li").filter({
+    hasText: `${measure.id} · New observation · ${change.period} (${change.observedAt})`,
+  });
+  await expect(observationChange).toContainText(`→ ${observation.value} ${measure.unit}`);
+  await expect(observationChange.getByRole("link", { name: "Current primary publication" }))
+    .toHaveAttribute("href", change.nextSourceUrl!);
+  await expect(page.getByText(`As-of observation: ${measure.observationPeriod.label}`).first()).toBeVisible();
   await expect(page.locator(`a[href="${measure.sourceUrl}"]`).first()).toBeVisible();
   await expect(page.getByText(`Archived value: ${measure.value} ${measure.unit} · current at capture · source edition ${measure.sourceEditionId}`)).toBeVisible();
 
