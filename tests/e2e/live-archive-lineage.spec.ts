@@ -7,11 +7,15 @@ type ArchivedMeasure = {
   label: string;
   value: number | null;
   unit: string;
+  comparisonKey: string;
+  basis: string;
+  geography: { code: string; label: string };
   sourceId: string;
   sourceUrl: string;
   sourceEditionId: string;
   publishedAt: string;
-  observationPeriod: { label: string };
+  observationPeriod: { start: string; end: string; label: string };
+  points: Array<{ period: string; observedAt: string; value: number | null }>;
 };
 
 type ArchiveDetail = {
@@ -23,6 +27,7 @@ type ArchiveDetail = {
     changes: Array<{
       measureId: string;
       kind: string;
+      observedAt: string | null;
       period: string | null;
       next: number | null;
       nextUnit: string | null;
@@ -34,6 +39,62 @@ type ArchiveDetail = {
   };
   measureCatalog: { measures: Record<string, ArchivedMeasure> };
 };
+
+function hasSameObservationIdentity(
+  previous: ArchivedMeasure | undefined,
+  current: ArchivedMeasure,
+  observation: { period: string; observedAt: string },
+): boolean {
+  return Boolean(
+    previous &&
+      previous.id === current.id &&
+      previous.geography.code === current.geography.code &&
+      previous.geography.label === current.geography.label &&
+      previous.unit === current.unit &&
+      previous.comparisonKey === current.comparisonKey &&
+      previous.basis === current.basis &&
+      previous.points.some((point) =>
+        point.period === observation.period && point.observedAt === observation.observedAt,
+      ),
+  );
+}
+
+test("archive lineage compares observation identity rather than measure presence", () => {
+  const current: ArchivedMeasure = {
+    id: "housePriceAverage",
+    label: "UK house price average",
+    value: 273000,
+    unit: "GBP",
+    comparisonKey: "average-house-price",
+    basis: "nominal-price-level",
+    geography: { code: "K02000001", label: "United Kingdom" },
+    sourceId: "housePriceIndex",
+    sourceUrl: "https://example.com/current",
+    sourceEditionId: "current-edition",
+    publishedAt: "2026-10-01T00:00:00.000Z",
+    observationPeriod: { start: "2026-07-01", end: "2026-07-31", label: "July 2026" },
+    points: [{ period: "July 2026", observedAt: "2026-08-14", value: 273000 }],
+  };
+  const previousValue = { ...current, value: 270000 };
+  const previousPeriod = {
+    ...previousValue,
+    points: [{ period: "June 2026", observedAt: "2026-07-15", value: 270000 }],
+  };
+  const observation = { period: "July 2026", observedAt: "2026-08-14" };
+
+  expect(hasSameObservationIdentity(previousValue, current, observation)).toBe(true);
+  expect(hasSameObservationIdentity(previousPeriod, current, observation)).toBe(false);
+  expect(hasSameObservationIdentity(
+    { ...previousValue, geography: { code: "GB", label: "United Kingdom" } },
+    current,
+    observation,
+  )).toBe(false);
+  expect(hasSameObservationIdentity(
+    { ...previousValue, geography: { ...current.geography, label: "Great Britain" } },
+    current,
+    observation,
+  )).toBe(false);
+});
 
 test("deployed source history opens its immutable edition and primary publication", async ({ page }) => {
   test.setTimeout(30_000);
@@ -101,11 +162,14 @@ test("deployed source history opens its immutable edition and primary publicatio
   expect(previousResponse.status()).toBe(200);
   const previousArchive = await previousResponse.json() as ArchiveDetail;
   expect(previousArchive.edition).toBe(previousEditionId);
-  expect(previousArchive.measureCatalog.measures.housePriceAverage).toBeUndefined();
+  expect(hasSameObservationIdentity(
+    previousArchive.measureCatalog.measures.housePriceAverage,
+    measure,
+    { period: change.period!, observedAt: change.observedAt! },
+  )).toBe(false);
 
   const baselineLink = page.locator(`a[href^="/editions/${previousEditionId}"]`);
   await expect(baselineLink).toBeVisible();
   await baselineLink.click();
   await expect(page.getByRole("heading", { level: 1, name: `Edition ${previousEditionId}` })).toBeVisible();
-  await expect(page.getByRole("heading", { name: `${measure.label}: archived observations` })).toHaveCount(0);
 });
