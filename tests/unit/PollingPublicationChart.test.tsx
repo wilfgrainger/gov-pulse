@@ -1,5 +1,5 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import PollingPublicationChart from "@/app/components/PollingPublicationChart";
 
 const polls = [
@@ -22,7 +22,11 @@ const partyMeta = {
   labour: { label: "Labour", color: "#a32035" },
 };
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 describe("poll publication party controls", () => {
   it("filters chart rows to the selected party without merging poll publications", () => {
@@ -37,5 +41,39 @@ describe("poll publication party controls", () => {
     expect(within(table).getAllByText("Labour")).toHaveLength(2);
     expect(within(table).getAllByText("YouGov")).toHaveLength(1);
     expect(within(table).getAllByText("Ipsos")).toHaveLength(1);
+  });
+
+  it("renders one percent suffix on each share axis tick", async () => {
+    class MockResizeObserver {
+      constructor(private callback: ResizeObserverCallback) {}
+      observe(target: Element) {
+        this.callback(
+          [{ target, contentRect: { width: 640, height: 340 } } as ResizeObserverEntry],
+          this as unknown as ResizeObserver,
+        );
+      }
+      disconnect() {}
+      unobserve() {}
+    }
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 640,
+      height: 340,
+    } as DOMRect);
+
+    render(<PollingPublicationChart polls={polls} partyMeta={partyMeta} partyOrder={["conservative", "labour"]} />);
+
+    const ticks = await waitFor(() => {
+      const renderedTicks = document.querySelectorAll(
+        ".recharts-yAxis-tick-labels .recharts-cartesian-axis-tick-value",
+      );
+      expect(renderedTicks.length).toBeGreaterThan(0);
+      return Array.from(renderedTicks, (tick) => tick.textContent?.trim() ?? "");
+    });
+
+    expect(
+      ticks.every((label) => /^-?\d+(?:[.,]\d+)?%$/.test(label)),
+      `Rendered y-axis ticks: ${ticks.join(", ")}`,
+    ).toBe(true);
   });
 });

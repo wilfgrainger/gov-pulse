@@ -228,7 +228,7 @@ export default function PollingPublicationChart<PartyKey extends string>({
               <YAxis
                 dataKey="share"
                 type="number"
-                tickFormatter={(value: number) => `${value}%`}
+                tickFormatter={(value: number) => String(value)}
                 tick={{ fontSize: 11, fontFamily: "ui-monospace, monospace", fill: "#586170" }}
                 axisLine={false}
                 tickLine={false}
