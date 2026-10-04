@@ -277,6 +277,22 @@ async function reconcileEditionSummaryFromRetainedPrior(env, id) {
   return { corrected: true, duplicate: false, summary };
 }
 
+async function reconcileRetainedEditionSummaries(env, currentId) {
+  validateEditionId(currentId);
+  const index = await readIndex(env);
+  const reconciledIds = [];
+  for (const entry of index) {
+    if (entry.id === currentId) continue;
+    const summary = validateSummary(entry.summary, entry.id);
+    if (summary.previousEditionId) continue;
+    const result = await reconcileEditionSummaryFromRetainedPrior(env, entry.id);
+    if (result.corrected) reconciledIds.push(entry.id);
+  }
+  const current = await reconcileEditionSummaryFromRetainedPrior(env, currentId);
+  if (current.corrected) reconciledIds.push(currentId);
+  return { reconciledIds, summary: current.summary };
+}
+
 async function listEditionSummaries(env, limit = EDITION_SUMMARY_RETENTION) {
   if (!env?.METRICS_CACHE?.get) return [];
   if (!Number.isInteger(limit) || limit < 1 || limit > EDITION_SUMMARY_RETENTION) throw new Error("Edition summary limit is invalid");
@@ -307,6 +323,7 @@ export {
   listEditionSummaries,
   readEdition,
   reconcileEditionSummaryFromRetainedPrior,
+  reconcileRetainedEditionSummaries,
   validateCatalog,
   validateEditionId,
   validateSummary,

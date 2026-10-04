@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { archiveEdition, EDITION_CONTENT_PREFIX, EDITION_INDEX_KEY, EDITION_SUMMARY_CORRECTION_PREFIX, EDITION_SUMMARY_PREFIX, listEditionSummaries, readEdition, reconcileEditionSummaryFromRetainedPrior } from "../../worker/edition-archive.js";
+import { archiveEdition, EDITION_CONTENT_PREFIX, EDITION_INDEX_KEY, EDITION_SUMMARY_CORRECTION_PREFIX, EDITION_SUMMARY_PREFIX, listEditionSummaries, readEdition, reconcileEditionSummaryFromRetainedPrior, reconcileRetainedEditionSummaries } from "../../worker/edition-archive.js";
 import { catalogRevisionIdentity } from "../../worker/measure-catalog.js";
 import publicDataWorker, { editionResponse, editionsResponse } from "../../worker/public-data-entry.js";
 
@@ -154,6 +154,36 @@ describe("content-addressed edition archive", () => {
       catalog: current.catalog,
       summary: repaired.summary,
     });
+  });
+
+  it("reconciles older retained editions that missed their baseline during a later publication", async () => {
+    const kv = new MemoryKv();
+    const { prior, current } = misbasedEditionPair();
+    const latest = edition(6);
+    latest.summary.previousEditionId = current.catalog.editionId;
+    await archiveEdition({ METRICS_CACHE: kv }, prior.catalog, prior.summary);
+    await archiveEdition({ METRICS_CACHE: kv }, current.catalog, current.summary);
+    await archiveEdition({ METRICS_CACHE: kv }, latest.catalog, latest.summary);
+
+    const result = await reconcileRetainedEditionSummaries(
+      { METRICS_CACHE: kv },
+      latest.catalog.editionId,
+    );
+    const corrected = await readEdition({ METRICS_CACHE: kv }, current.catalog.editionId);
+    const original = await kv.getWithMetadata(
+      `${EDITION_SUMMARY_PREFIX}${current.catalog.editionId}`,
+      "json",
+    );
+
+    expect(result).toMatchObject({
+      reconciledIds: [current.catalog.editionId],
+      summary: latest.summary,
+    });
+    expect(corrected?.summary).toMatchObject({
+      previousEditionId: prior.catalog.editionId,
+      summaryCorrection: { baselineEditionId: prior.catalog.editionId },
+    });
+    expect(original.value.summary).toEqual(current.summary);
   });
 
   it("archives source-linked value and metadata changes with their publication dates", async () => {
