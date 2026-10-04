@@ -174,6 +174,24 @@ test("home, comparison and release tools fit 320px and 360px layouts", async ({ 
   }
 });
 
+test("mobile masthead fits a 412px phone while keeping its tools reachable", async ({ page }) => {
+  await page.setViewportSize({ width: 412, height: 800 });
+  await page.goto("./");
+  await expect(page.getByRole("button", { name: "Search evidence" })).toBeVisible();
+  const topics = page.getByRole("button", { name: "Topics" });
+  await expect(topics).toBeVisible();
+  await topics.click();
+  await expect(page.locator("#all-topic-navigation").getByRole("link", { name: "Explore data" })).toBeVisible();
+
+  const dimensions = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    documentWidth: document.documentElement.scrollWidth,
+    bodyWidth: document.body.scrollWidth,
+  }));
+  expect(dimensions.documentWidth, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
+  expect(dimensions.bodyWidth, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
+});
+
 test("measure-library route keeps its truthful HTML available without JavaScript", async ({ browser }) => {
   const page = await browser.newPage({ baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173", javaScriptEnabled: false });
   await page.goto("./measure");
