@@ -43,6 +43,15 @@ const INTERNATIONAL_SOURCES = Object.freeze([
   "world-bank-health-2024",
   "oecd-tax-2024",
 ]);
+const INTERNATIONAL_COMPARISON_REFRESH_BATCHES = Object.freeze([
+  Object.freeze({ id: "government-debt", sourceIds: Object.freeze(["imf-gdp-2026", "imf-debt-2026"]), measureIds: Object.freeze(["governmentDebt"]) }),
+  Object.freeze({ id: "oda", sourceIds: Object.freeze(["world-bank-population-2025", "oecd-oda-2025"]), measureIds: Object.freeze(["officialDevelopmentAssistance"]) }),
+  Object.freeze({ id: "defence", sourceIds: Object.freeze(["world-bank-population-2025", "sipri-2025"]), measureIds: Object.freeze(["defenceSpending"]) }),
+  Object.freeze({ id: "social-spending", sourceIds: Object.freeze(["imf-gdp-2023", "oecd-socx-2023"]), measureIds: Object.freeze(["publicSocialExpenditure"]) }),
+  Object.freeze({ id: "healthcare", sourceIds: Object.freeze(["world-bank-health-2024"]), measureIds: Object.freeze(["healthcareSpending"]) }),
+  Object.freeze({ id: "tax-revenue", sourceIds: Object.freeze(["imf-gdp-2024", "oecd-tax-2024"]), measureIds: Object.freeze(["taxRevenue"]) }),
+  Object.freeze({ id: "debt-interest", sourceIds: Object.freeze(["imf-gdp-2024", "imf-interest-2024"]), measureIds: Object.freeze(["debtInterest"]) }),
+]);
 const COMPARISON_VALIDITY_MS = 30 * 24 * 60 * 60 * 1000;
 
 const SOURCES = Object.freeze({
@@ -522,13 +531,16 @@ async function readInternationalComparison(env, now = new Date()) {
 async function refreshInternationalComparison(env, options = {}) {
   if (!env?.METRICS_CACHE?.put) throw new Error("METRICS_CACHE KV binding is required");
   const now = options.now ?? new Date();
-  const current = await readInternationalComparison(env, now);
+  const current = Object.prototype.hasOwnProperty.call(options, "currentPublication")
+    ? options.currentPublication
+    : await readInternationalComparison(env, now);
   if (!options.force && current && !due(current, now)) {
     return { updated: false, reason: "not-due", publication: current };
   }
 
   const collect = options.collect ?? collectInternationalComparison;
-  const selectedSources = current && !options.force ? sourcesDue(current, now) : [...INTERNATIONAL_SOURCES];
+  const selectedSources = options.sourceIds ??
+    (current && !options.force ? sourcesDue(current, now) : [...INTERNATIONAL_SOURCES]);
   const candidate = await collect(options.fetchImpl ?? fetch, now, { sourceIds: selectedSources });
   const candidatePublication = validateInternationalComparisonPublication(candidate);
   const mergedMeasures = { ...candidatePublication.measures };
@@ -542,6 +554,10 @@ async function refreshInternationalComparison(env, options = {}) {
     }
     const failed = dependencies.some((source) => (candidatePublication.meta.sourceFailures ?? []).includes(source));
     const allDependenciesAttempted = dependencies.every((source) => attempted.includes(source));
+    if (!allDependenciesAttempted && !failed) {
+      if (previous) mergedMeasures[id] = previous;
+      continue;
+    }
     if (!failed && allDependenciesAttempted) {
       const previousEdition = previous?.lifecycle?.sourceEditionId;
       const candidateEdition = candidatePublication.measures[id].lifecycle?.sourceEditionId;
@@ -598,10 +614,12 @@ async function refreshInternationalComparison(env, options = {}) {
   const availableMeasureCount = Object.values(publication.measures).filter(
     (measure) => measure.comparableCountryCount > 0
   ).length;
-  await env.METRICS_CACHE.put(
-    INTERNATIONAL_COMPARISON_KEY,
-    JSON.stringify(publication)
-  );
+  if (options.publish !== false) {
+    await env.METRICS_CACHE.put(
+      INTERNATIONAL_COMPARISON_KEY,
+      JSON.stringify(publication)
+    );
+  }
   return {
     updated: true,
     reason: current ? "refreshed" : "published",
@@ -610,12 +628,71 @@ async function refreshInternationalComparison(env, options = {}) {
   };
 }
 
+function mergeInternationalComparisonBatchResults(basePublication, batchResults, now = new Date()) {
+  const measures = { ...basePublication.measures };
+  const attemptedSources = new Set();
+  const sourceFailures = new Set(basePublication.meta.sourceFailures ?? []);
+  const generatedAtValues = [basePublication.meta.generatedAt];
+  const checkedAtValues = [basePublication.meta.checkedAt];
+
+  for (const result of batchResults) {
+    const batch = INTERNATIONAL_COMPARISON_REFRESH_BATCHES.find(({ id }) => id === result?.batchId);
+    if (!batch || !result?.measures || !result?.meta) {
+      throw new Error("International comparison batch result is invalid");
+    }
+    const attemptedInBatch = Array.isArray(result.meta.attemptedSources)
+      ? result.meta.attemptedSources.filter((sourceId) => batch.sourceIds.includes(sourceId))
+      : batch.sourceIds;
+    for (const sourceId of attemptedInBatch) {
+      attemptedSources.add(sourceId);
+      sourceFailures.delete(sourceId);
+    }
+    for (const sourceId of result.meta.sourceFailures ?? []) {
+      if (batch.sourceIds.includes(sourceId)) sourceFailures.add(sourceId);
+    }
+    if (typeof result.meta.generatedAt === "string") generatedAtValues.push(result.meta.generatedAt);
+    if (typeof result.meta.checkedAt === "string") checkedAtValues.push(result.meta.checkedAt);
+
+    for (const measureId of batch.measureIds) {
+      const candidate = result.measures[measureId];
+      if (!candidate) throw new Error(`International comparison batch '${batch.id}' omitted '${measureId}'`);
+      const previous = measures[measureId];
+      const previousSuccessAt = Date.parse(String(previous?.lifecycle?.lastSuccessAt ?? ""));
+      const candidateSuccessAt = Date.parse(String(candidate.lifecycle?.lastSuccessAt ?? ""));
+      if (Number.isFinite(previousSuccessAt) && previousSuccessAt > candidateSuccessAt) continue;
+      measures[measureId] = candidate;
+    }
+  }
+
+  const latestTimestamp = (values) => values
+    .map((value) => ({ value, timestamp: Date.parse(String(value ?? "")) }))
+    .filter(({ timestamp }) => Number.isFinite(timestamp))
+    .sort((left, right) => right.timestamp - left.timestamp)[0]?.value ?? now.toISOString();
+
+  return validateInternationalComparisonPublication({
+    ...basePublication,
+    meta: {
+      ...basePublication.meta,
+      generatedAt: latestTimestamp(generatedAtValues),
+      checkedAt: latestTimestamp(checkedAtValues),
+      attemptedSources: [...attemptedSources].sort(),
+      sourceFailures: [...sourceFailures].sort(),
+      sourceStatus: Object.fromEntries(Object.entries(measures).map(([id, measure]) => [
+        id,
+        measure.comparableCountryCount > 0 ? "available" : "unavailable",
+      ])),
+    },
+    measures,
+  });
+}
+
 export {
   COMPARISON_REFRESH_MAX_AGE_MS,
   INTERNATIONAL_COMPARISON_KEY,
   SOURCES,
   COMPARISON_VALIDITY_MS,
   INTERNATIONAL_SOURCES,
+  INTERNATIONAL_COMPARISON_REFRESH_BATCHES,
   buildInternationalComparisonPublication,
   collectInternationalComparison,
   comparisonSourceBundle,
@@ -623,4 +700,5 @@ export {
   sourcesDue,
   readInternationalComparison,
   refreshInternationalComparison,
+  mergeInternationalComparisonBatchResults,
 };

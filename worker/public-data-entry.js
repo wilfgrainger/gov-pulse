@@ -1,4 +1,7 @@
-import queuedWorker, { DAILY_CRON } from "./queued-publication-entry.js";
+import queuedWorker, {
+  DAILY_CRON,
+  enqueueInternationalComparisonRefresh,
+} from "./queued-publication-entry.js";
 import { isSnapshot, readCurrentPublication } from "./publication-entry.js";
 import {
   FEED_REGISTRY_VERSION,
@@ -13,10 +16,7 @@ import {
   PUBLIC_SNAPSHOT_KEY,
   publicSnapshot,
 } from "./public-snapshot.js";
-import {
-  readInternationalComparison,
-  refreshInternationalComparison,
-} from "./international-comparison-publication.js";
+import { readInternationalComparison } from "./international-comparison-publication.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
 import { listEditionSummaries, readEdition } from "./edition-archive.js";
 import {
@@ -460,7 +460,9 @@ const publicDataWorker = {
     queuedWorker.scheduled(controller, env, ctx);
     if (controller.cron === DAILY_CRON) {
       ctx.waitUntil(
-        refreshInternationalComparison(env).catch((error) => {
+        enqueueInternationalComparisonRefresh(env, {
+          now: new Date(controller.scheduledTime ?? Date.now()),
+        }).catch((error) => {
           console.error("International comparison refresh failed", {
             error: error instanceof Error ? error.message : String(error),
           });

@@ -31,4 +31,23 @@ describe("international comparison queue refresh", () => {
       force: true,
     });
   });
+
+  it("forwards a bounded source batch to the isolated comparison publisher", async () => {
+    const env = {};
+    const sourceIds = ["world-bank-health-2024"];
+    mocks.refreshInternationalComparison.mockResolvedValue({ updated: true, due: false });
+
+    await processQueueJob(
+      { type: "refresh-international-comparison", force: true, sourceIds },
+      env,
+      {},
+    );
+
+    expect(mocks.refreshInternationalComparison).toHaveBeenCalledWith(env, {
+      fetchImpl: fetch,
+      now: expect.any(Date),
+      force: true,
+      sourceIds,
+    });
+  });
 });
