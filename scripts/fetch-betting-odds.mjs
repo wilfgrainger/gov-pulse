@@ -7,9 +7,6 @@ import {
   normalizeBettingMarketPayload,
 } from "../worker/betting-markets.js";
 
-const BROWSER_USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
-
 function safeParseFloat(value) {
   if (value == null) return null;
   const parsed = Number.parseFloat(String(value).replace(/,/g, ""));
@@ -103,12 +100,10 @@ async function main() {
   const { outPath } = parseArgs(process.argv.slice(2));
   const browser = await chromium.launch({
     headless: true,
-    args: ["--disable-blink-features=AutomationControlled"],
   });
 
   try {
     const context = await browser.newContext({
-      userAgent: BROWSER_USER_AGENT,
       locale: "en-GB",
       timezoneId: "Europe/London",
       viewport: { width: 1440, height: 1200 },
