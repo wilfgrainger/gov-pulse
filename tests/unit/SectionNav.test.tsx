@@ -80,7 +80,7 @@ describe("SectionNav", () => {
     const tools = screen.getByRole("navigation", { name: "More tools" });
     expect(within(tools).getByRole("link", { name: "Release calendar" })).toHaveAttribute("href", "/calendar");
     expect(within(tools).getByRole("link", { name: "Cost of living" })).toHaveAttribute("href", "/cost-of-living");
-    expect(within(tools).getByRole("link", { name: "Public money" })).toHaveAttribute("href", "/money");
+    expect(within(tools).queryByRole("link", { name: "Public money" })).not.toBeInTheDocument();
     expect(within(tools).getByRole("link", { name: "Editions" })).toHaveAttribute("href", "/editions");
   });
 

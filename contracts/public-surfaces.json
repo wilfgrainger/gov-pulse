@@ -20,7 +20,7 @@
     { "id": "economy", "status": "active" },
     { "id": "tax", "status": "active" },
     { "id": "uk-in-context", "status": "active" },
-    { "id": "government-contracts", "status": "active" },
+    { "id": "government-contracts", "status": "withdrawn" },
     { "id": "employment", "status": "active" },
     { "id": "crime-stats", "status": "active" },
     { "id": "nhs", "status": "active" },

@@ -8,7 +8,6 @@ const publicationLinks = [
   ["Latest briefing", "/briefing/"],
   ["Release calendar", "/calendar/"],
   ["Cost-of-living lens", "/cost-of-living/"],
-  ["Public-money dossiers", "/money/"],
   ["Edition archive", "/editions/"],
   ["Sources and methods", "/sources"],
   ["About", "/about"],
