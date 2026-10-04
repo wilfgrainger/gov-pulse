@@ -302,6 +302,17 @@ describe("Cloudflare data publication", () => {
         },
       },
     });
+
+    const retried = await publishFromCaches(env, {
+      now: new Date("2026-07-17T12:31:00.000Z"),
+    });
+    expect(retried.publication.meta.editionSummary).toMatchObject({
+      previousEditionId: prior.catalog.editionId,
+      summaryCorrection: { baselineEditionId: prior.catalog.editionId },
+    });
+    expect(retried.publication.meta.editionSummary?.previousEditionId).not.toBe(
+      retried.publication.meta.editionSummary?.id,
+    );
   });
 
   it("publishes an atomic degraded edition when a required section expires", async () => {
