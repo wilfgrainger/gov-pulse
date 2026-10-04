@@ -102,7 +102,7 @@ async function sha256(value) {
 async function readIndex(env) {
   const index = await env.METRICS_CACHE.get(EDITION_INDEX_KEY, "json");
   if (index === null) return [];
-  if (!Array.isArray(index) || index.length > EDITION_SUMMARY_RETENTION || index.some((entry) => !entry || typeof entry.id !== "string" || typeof entry.contentHash !== "string" || !entry.summary)) throw new Error("Edition index is invalid");
+  if (!Array.isArray(index) || index.length > EDITION_SUMMARY_RETENTION || index.some((entry) => !entry || typeof entry.id !== "string" || typeof entry.contentHash !== "string" || !entry.summary || entry.asOf !== undefined && !validInstant(entry.asOf))) throw new Error("Edition index is invalid");
   return index;
 }
 
@@ -113,7 +113,16 @@ async function writeIndex(env, entries) {
 }
 
 async function retainIndex(env, entries) {
-  const ordered = entries.toSorted((left, right) => right.summary.publishedAt.localeCompare(left.summary.publishedAt) || right.id.localeCompare(left.id));
+  const datedEntries = await Promise.all(entries.map(async (entry) => {
+    if (validInstant(entry.asOf)) return entry;
+    const archived = await readEditionRaw(env, entry.id);
+    return archived ? { ...entry, asOf: archived.asOf } : entry;
+  }));
+  const ordered = datedEntries.toSorted((left, right) =>
+    (right.asOf ?? right.summary.publishedAt).localeCompare(left.asOf ?? left.summary.publishedAt) ||
+    right.summary.publishedAt.localeCompare(left.summary.publishedAt) ||
+    right.id.localeCompare(left.id)
+  );
   const retained = ordered.slice(0, EDITION_SUMMARY_RETENTION);
   const retainedHashes = new Set(retained.map((entry) => entry.contentHash));
   await writeIndex(env, retained);
@@ -154,7 +163,7 @@ async function archiveEdition(env, catalogInput, summaryInput) {
   if (contentExisting && contentExisting !== content) throw new Error("Content-addressed edition hash collision");
   if (!contentExisting) await env.METRICS_CACHE.put(contentKey, content, { metadata: { contentHash, schemaVersion: 2 } });
   await env.METRICS_CACHE.put(summaryKey, JSON.stringify({ summary }), { metadata: { contentHash, fingerprint, publishedAt: summary.publishedAt } });
-  const retained = await retainIndex(env, [...index.filter((entry) => entry.id !== id), { id, contentHash, summary }]);
+  const retained = await retainIndex(env, [...index.filter((entry) => entry.id !== id), { id, contentHash, summary, asOf: catalog.generatedAt }]);
   return { archived: true, duplicate: false, id, contentHash, retained: retained.length };
 }
 
@@ -297,19 +306,25 @@ async function listEditionSummaries(env, limit = EDITION_SUMMARY_RETENTION) {
   if (!env?.METRICS_CACHE?.get) return [];
   if (!Number.isInteger(limit) || limit < 1 || limit > EDITION_SUMMARY_RETENTION) throw new Error("Edition summary limit is invalid");
   const index = await readIndex(env);
-  const summaries = await Promise.all(index.slice(0, limit).map(async (entry) => {
+  const editions = await Promise.all(index.map(async (entry) => {
     try {
       const id = validateEditionId(entry.id);
       const summary = validateSummary(entry.summary, id);
       const archived = await readEditionRaw(env, id);
       if (!archived || archived.contentHash !== entry.contentHash || stableStringify(archived.summary) !== stableStringify(summary)) return null;
-      if (archived.summary.previousEditionId || archived.summary.summaryCorrection) return archived.summary;
-      return await readSummaryCorrection(env, archived) ?? summary;
+      const correctedSummary = archived.summary.previousEditionId || archived.summary.summaryCorrection
+        ? archived.summary
+        : await readSummaryCorrection(env, archived) ?? summary;
+      return { summary: correctedSummary, asOf: archived.asOf };
     } catch {
       return null;
     }
   }));
-  return summaries.filter((summary) => summary !== null);
+  return editions
+    .filter((edition) => edition !== null)
+    .toSorted((left, right) => right.asOf.localeCompare(left.asOf) || right.summary.id.localeCompare(left.summary.id))
+    .slice(0, limit)
+    .map(({ summary, asOf }) => ({ ...summary, asOf }));
 }
 
 export {

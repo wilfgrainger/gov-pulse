@@ -70,6 +70,23 @@ function misbasedEditionPair() {
   return { prior, current };
 }
 
+function editionsWithTiedSourceDate() {
+  const candidates = [edition(0), edition(1)];
+  const sourcePublishedAt = "2024-01-01T00:00:00.000Z";
+  for (const candidate of candidates) {
+    candidate.catalog.measures.measure.publishedAt = sourcePublishedAt;
+    candidate.catalog.editionId = catalogRevisionIdentity(candidate.catalog.measures);
+    candidate.summary.id = candidate.catalog.editionId;
+    candidate.summary.publishedAt = sourcePublishedAt;
+  }
+  candidates.sort((left, right) => left.catalog.editionId.localeCompare(right.catalog.editionId));
+  const newer = candidates[0];
+  const older = candidates[1];
+  older.catalog.generatedAt = "2024-01-02T00:00:00.000Z";
+  newer.catalog.generatedAt = "2024-01-03T00:00:00.000Z";
+  return { newer, older };
+}
+
 describe("content-addressed edition archive", () => {
   it("archives idempotently and returns a validated as-of edition", async () => {
     const kv = new MemoryKv();
@@ -81,6 +98,44 @@ describe("content-addressed edition archive", () => {
     expect(repeated.duplicate).toBe(true);
     expect(restored).toMatchObject({ asOf: first.catalog.generatedAt, summary: first.summary, catalog: first.catalog });
     expect([...kv.values.keys()].filter((key) => key.startsWith(EDITION_CONTENT_PREFIX))).toHaveLength(1);
+  });
+
+  it("orders editions by archive time and backfills older index entries from immutable content", async () => {
+    const kv = new MemoryKv();
+    const { newer, older } = editionsWithTiedSourceDate();
+    await archiveEdition({ METRICS_CACHE: kv }, older.catalog, older.summary);
+
+    const legacyIndex = JSON.parse(kv.values.get(EDITION_INDEX_KEY)!.value);
+    delete legacyIndex[0].asOf;
+    await kv.put(EDITION_INDEX_KEY, JSON.stringify(legacyIndex));
+
+    await archiveEdition({ METRICS_CACHE: kv }, newer.catalog, newer.summary);
+
+    const index = JSON.parse(kv.values.get(EDITION_INDEX_KEY)!.value);
+    expect(index.map((entry: { id: string; asOf?: string }) => ({ id: entry.id, asOf: entry.asOf }))).toEqual([
+      { id: newer.catalog.editionId, asOf: newer.catalog.generatedAt },
+      { id: older.catalog.editionId, asOf: older.catalog.generatedAt },
+    ]);
+
+    const preMigrationIndex = index.map((entry: { asOf?: string }) => {
+      const legacyEntry = { ...entry };
+      delete legacyEntry.asOf;
+      return legacyEntry;
+    }).reverse();
+    await kv.put(EDITION_INDEX_KEY, JSON.stringify(preMigrationIndex));
+    const listed = await listEditionSummaries({ METRICS_CACHE: kv });
+    const newestOnly = await listEditionSummaries({ METRICS_CACHE: kv }, 1);
+    expect(listed.map((entry) => ({ id: entry.id, asOf: (entry as typeof entry & { asOf?: string }).asOf }))).toEqual([
+      { id: newer.catalog.editionId, asOf: newer.catalog.generatedAt },
+      { id: older.catalog.editionId, asOf: older.catalog.generatedAt },
+    ]);
+    expect(newestOnly).toEqual([{ ...newer.summary, asOf: newer.catalog.generatedAt }]);
+    const response = await editionsResponse(new Request("https://public-data.org/data/editions.json"), { METRICS_CACHE: kv });
+    const payload = await response.json();
+    expect(payload.editions.map((entry: { id: string; asOf?: string }) => ({ id: entry.id, asOf: entry.asOf }))).toEqual([
+      { id: newer.catalog.editionId, asOf: newer.catalog.generatedAt },
+      { id: older.catalog.editionId, asOf: older.catalog.generatedAt },
+    ]);
   });
 
   it("keeps the immutable archive when the same catalogue is retried with a different comparison summary", async () => {
@@ -139,7 +194,7 @@ describe("content-addressed edition archive", () => {
       },
     });
     expect(reread?.summary).toEqual(repaired.summary);
-    expect(indexed[0]).toEqual(repaired.summary);
+    expect(indexed[0]).toMatchObject({ ...repaired.summary, asOf: current.catalog.generatedAt });
     expect(detail.summary).toEqual(repaired.summary);
     expect(detailResponse.headers.get("Cache-Control")).toBe("public, max-age=60, s-maxage=60");
     expect(originalRecord.value.summary).toEqual(current.summary);
@@ -284,7 +339,7 @@ describe("content-addressed edition archive", () => {
 
     const recovered = await archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary);
     expect(recovered.duplicate).toBe(true);
-    expect(await listEditionSummaries({ METRICS_CACHE: kv })).toEqual([item.summary]);
+    expect(await listEditionSummaries({ METRICS_CACHE: kv })).toEqual([{ ...item.summary, asOf: item.catalog.generatedAt }]);
     expect(await readEdition({ METRICS_CACHE: kv }, item.catalog.editionId)).not.toBeNull();
   });
 

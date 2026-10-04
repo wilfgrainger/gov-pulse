@@ -65,6 +65,14 @@ describe("server edition archive reads", () => {
     await expect(readArchivedEdition(id)).resolves.toEqual(archived);
   });
 
+  it("orders edition listings by archive time when source publication dates tie", async () => {
+    const older = { ...summary, id: "catalog-older-a1", asOf: "2026-07-02T12:00:00.000Z" };
+    const newer = { ...summary, id: "catalog-newer-b1", asOf: "2026-07-03T12:00:00.000Z" };
+    serve({ editions: [older, newer], retention: 2 });
+
+    await expect(readEditionSummaries()).resolves.toEqual([newer, older]);
+  });
+
   it("continues to read archived summaries that predate baseline identity", async () => {
     const legacySummary = Object.fromEntries(Object.entries(summary).filter(([key]) => key !== "previousEditionId"));
     serve({ editions: [legacySummary], retention: 1 });
@@ -74,6 +82,7 @@ describe("server edition archive reads", () => {
   it.each([
     ["unsafe edition ID", { ...summary, id: "catalog other" }],
     ["invalid publication time", { ...summary, publishedAt: "not-a-time" }],
+    ["invalid archive time", { ...summary, asOf: "not-a-time" }],
     ["unlisted source identity", { ...summary, changes: [{ ...summary.changes[0], nextSourceEditionId: "not-in-manifest" }] }],
     ["unsafe source link", { ...summary, changes: [{ ...summary.changes[0], nextSourceUrl: "javascript:alert(1)" }] }],
   ])("rejects a summary with %s", async (_label, invalidSummary) => {
