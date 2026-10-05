@@ -12,9 +12,31 @@
   --accent-soft: #3a1614;
   --accent-on-dark: #ff6b63;
   --accent-vivid: #e8352e;
-  --teal: #e8352e;
-  --gold: #e8352e;
-  --blue: #e8352e;
+
+  /* Editorial subject palette. These colours identify domains only; they never
+     encode whether a statistic is politically or economically "good" or "bad". */
+  --domain-economy: #4568c8;
+  --domain-prices: #a76000;
+  --domain-health: #08766c;
+  --domain-population: #7550a7;
+  --domain-public-money: #a72d24;
+  --domain-politics: #8a4b83;
+  --domain-society: #2f7186;
+  --domain-neutral: #5b6674;
+
+  --domain-economy-soft: #e9edfb;
+  --domain-prices-soft: #fbefdc;
+  --domain-health-soft: #e3f2ef;
+  --domain-population-soft: #f0eafb;
+  --domain-public-money-soft: #f8e5e2;
+  --domain-politics-soft: #f5e9f3;
+  --domain-society-soft: #e6f0f4;
+
+  /* Legacy semantic aliases remain for older chart/card primitives, but they
+     now point at the domain system rather than collapsing every subject to red. */
+  --teal: var(--domain-health);
+  --gold: var(--domain-prices);
+  --blue: var(--domain-economy);
   --font-editorial: var(--font-display-file), "Avenir Next", "Segoe UI", sans-serif;
   --edition-max: 76rem;
   --edition-gutter: clamp(1rem, 2.5vw, 1.5rem);
