@@ -63,7 +63,7 @@ describe("NationalDebtCounter evidence integrity", () => {
     expect(screen.getByTestId("debt-history-card")).toHaveTextContent("Public sector net debt: ten-year direction");
     const debtSummary = screen.getByText(/A dated debt stock, not a live counter/).parentElement;
     expect(debtSummary).toHaveTextContent(/May 2026.*95\.1% of GDP.*published 19 June 2026/i);
-    expect(screen.getByText(/Latest official stock; no movement inferred from one observation/).toBeInTheDocument();
+    expect(screen.getByText(/Latest official stock; no movement inferred from one observation/)).toBeInTheDocument();
     expect(screen.getAllByText(/published 19 june 2026/i).length).toBeGreaterThan(1);
     expect(screen.getByText("What changed?")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Why it matters" })).toBeInTheDocument();
