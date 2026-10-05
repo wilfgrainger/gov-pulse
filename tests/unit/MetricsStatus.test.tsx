@@ -21,10 +21,10 @@ describe("MetricsStatus", () => {
 
     expect(screen.getByText("Current value unavailable")).toBeInTheDocument();
     expect(screen.getByText("No current verified value")).toBeInTheDocument();
-    const methods = screen.getByText("Evidence file");
-    expect(methods.tagName).toBe("SUMMARY");
+    const methods = screen.getByText("Evidence file").closest("summary");
+    expect(methods).not.toBeNull();
 
-    fireEvent.click(methods);
+    fireEvent.click(methods!);
 
     expect(
       screen.getByRole("link", {
