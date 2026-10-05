@@ -68,23 +68,51 @@ function filterOptions(items: MeasureLibraryItem[], key: Exclude<keyof Filters, 
 }
 
 function MeasureMiniTrend({ record }: { record: MeasureRecord | null }) {
-  const points = record?.points.filter((point) => point.value !== null).slice(-12) ?? [];
-  if (points.length < 2) return null;
-  const values = points.map((point) => point.value as number);
+  const points = record?.points.slice(-12) ?? [];
+  const numeric = points.filter((point) => point.value !== null);
+  if (numeric.length < 2) return null;
+
+  const values = numeric.map((point) => point.value as number);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;
-  const coords = points.map((point, index) => {
-    const x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100;
-    const y = 34 - (((point.value as number) - min) / span) * 28;
-    return `${x},${y}`;
-  }).join(" ");
+  const times = points.map((point) => Date.parse(point.observedAt));
+  const finiteTimes = times.filter(Number.isFinite);
+  const minTime = Math.min(...finiteTimes);
+  const maxTime = Math.max(...finiteTimes);
+  const timeSpan = maxTime - minTime;
+
+  const coordinate = (point: MeasureRecord["points"][number], index: number) => {
+    const time = Date.parse(point.observedAt);
+    const x = Number.isFinite(time) && Number.isFinite(timeSpan) && timeSpan > 0
+      ? ((time - minTime) / timeSpan) * 100
+      : (index / Math.max(points.length - 1, 1)) * 100;
+    const y = 34 - ((((point.value as number) - min) / span) * 28);
+    return [x, y] as const;
+  };
+
+  const segments: Array<Array<readonly [number, number]>> = [];
+  const dots: Array<readonly [number, number]> = [];
+  let current: Array<readonly [number, number]> = [];
+  points.forEach((point, index) => {
+    if (point.value === null) {
+      if (current.length) segments.push(current);
+      current = [];
+      return;
+    }
+    const coords = coordinate(point, index);
+    current.push(coords);
+    dots.push(coords);
+  });
+  if (current.length) segments.push(current);
 
   return (
     <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="measure-atlas-card__sparkline" aria-hidden="true">
       <line x1="0" x2="100" y1="34" y2="34" stroke="currentColor" opacity="0.14" vectorEffect="non-scaling-stroke" />
-      <polyline points={coords} fill="none" stroke="currentColor" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
-      <circle cx={coords.split(" ").at(-1)?.split(",")[0]} cy={coords.split(" ").at(-1)?.split(",")[1]} r="2.5" fill="currentColor" vectorEffect="non-scaling-stroke" />
+      {segments.filter((segment) => segment.length > 1).map((segment, index) => (
+        <polyline key={index} points={segment.map(([x, y]) => `${x},${y}`).join(" ")} fill="none" stroke="currentColor" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
+      ))}
+      {dots.map(([x, y], index) => <circle key={index} cx={x} cy={y} r="2.2" fill="currentColor" />)}
     </svg>
   );
 }
