@@ -18,7 +18,23 @@ describe("notice-level public-money dossiers", () => {
 
   it("reports visible coverage against the exact current source window", () => {
     const awards = [award("ocds-h6vhtk-a1", 100), award("ocds-h6vhtk-b2", 250)];
-    expect(filteredAwardCoverage(awards, [awards[1]])).toEqual({ visibleCount: 1, sourceDenominator: 2, shareOfSourceWindow: 0.5 });
+    expect(filteredAwardCoverage(awards, [awards[1]])).toEqual({
+      visibleCount: 1,
+      listedCount: 2,
+      sourceDenominator: 2,
+      shareOfSourceWindow: 0.5,
+    });
+  });
+
+  it("reports a filtered top-award sample against the full comparable source universe", () => {
+    const listedAwards = Array.from({ length: 100 }, (_, index) => award(`ocds-h6vhtk-${index}`, 1000 - index));
+
+    expect(filteredAwardCoverage(listedAwards, [listedAwards[0]], 881)).toEqual({
+      visibleCount: 1,
+      listedCount: 100,
+      sourceDenominator: 881,
+      shareOfSourceWindow: 1 / 881,
+    });
   });
 
   it("exports only the supplied filtered notices with exact values and escaped source fields", () => {
@@ -117,14 +133,24 @@ describe("notice-level public-money dossiers", () => {
       [award("ocds-h6vhtk-a1", 100)],
       {
         windowLabel: "1–7 August 2026",
+        listedAwardSampleCount: 3,
         sourceWindowAwardCount: 4,
-        filteredCoverage: 0.25,
       },
     );
 
     expect(csv.split("\n")).toHaveLength(2);
-    expect(csv).toContain("Source window,Filtered row count,Full source-window award count,Window coverage,Currency basis note");
-    expect(csv).toContain("1–7 August 2026,1,4,25.0%,GBP only; disclosed award value is not confirmed expenditure");
+    expect(csv).toContain("Source window,Filtered row count,Published top-ranked sample count,Full source-window award count,Window coverage,Currency basis note");
+    expect(csv).toContain("1–7 August 2026,1,3,4,25.0%,GBP only; disclosed award value is not confirmed expenditure");
+  });
+
+  it("exports separate listed-sample and complete-window denominators", () => {
+    const csv = serializePublicAwardsCsv([award("ocds-h6vhtk-a1", 100)], {
+      listedAwardSampleCount: 100,
+      sourceWindowAwardCount: 881,
+    });
+
+    expect(csv.split("\n")[0]).toContain("Published top-ranked sample count,Full source-window award count,Window coverage");
+    expect(csv.split("\n")[1]).toContain(",1,100,881,0.1%,");
   });
 
   it("exports the signed-contract basis explicitly when that value is used", () => {

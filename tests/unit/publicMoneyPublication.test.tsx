@@ -20,8 +20,8 @@ const { snapshotState } = vi.hoisted(() => ({ snapshotState: { value: null as un
 
 vi.mock("@/app/components/SectionNav", () => ({ default: () => null }));
 vi.mock("@/app/components/PublicMoneyExplorer", () => ({
-  default: ({ awards, windowLabel }: { awards: Array<{ releaseId: string }>; windowLabel: string }) => (
-    <p>{awards.length} records from {windowLabel}; first notice {awards[0]?.releaseId}</p>
+  default: ({ awards, windowLabel, completeWindowComparableAwardCount }: { awards: Array<{ releaseId: string }>; windowLabel: string; completeWindowComparableAwardCount: number }) => (
+    <p>{awards.length} records from {windowLabel}; {completeWindowComparableAwardCount} comparable awards; first notice {awards[0]?.releaseId}</p>
   ),
 }));
 vi.mock("@/app/components/GovernmentContracts", () => ({
@@ -118,7 +118,7 @@ describe("verified public-money publication", () => {
     expect(screen.getByRole("heading", { name: "Public money dossiers" })).toBeInTheDocument();
     expect(screen.getByText("Current complete window: 2026-09-27 to 2026-10-03. Find a Tender award-stage releases from seven complete UTC day shards collected by public-data.org"))
       .toBeInTheDocument();
-    expect(screen.getByText("100 records from 2026-09-27 to 2026-10-03; first notice 092585-2026"))
+    expect(screen.getByText("100 records from 2026-09-27 to 2026-10-03; 881 comparable awards; first notice 092585-2026"))
       .toBeInTheDocument();
     expect(readServerMetricsSnapshot).toHaveBeenCalledOnce();
   });

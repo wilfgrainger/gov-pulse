@@ -41,14 +41,20 @@ function pounds(value: number) {
   }).format(value);
 }
 
+function percentage(value: number) {
+  return new Intl.NumberFormat("en-GB", { style: "percent", maximumFractionDigits: 1 }).format(value);
+}
+
 export default function PublicMoneyExplorer({
   awards,
   caveats,
   windowLabel = "Not stated",
+  completeWindowComparableAwardCount = awards.length,
 }: {
   awards: PublicAward[];
   caveats: string[];
   windowLabel?: string;
+  completeWindowComparableAwardCount?: number;
 }) {
   const valueBasis = awards[0]?.valueBasis ?? "award-value";
   const [query, setQuery] = useState("");
@@ -146,14 +152,17 @@ export default function PublicMoneyExplorer({
     });
   }
 
-  const coverage = filteredAwardCoverage(awards, visible);
+  const coverage = filteredAwardCoverage(awards, visible, completeWindowComparableAwardCount);
+  const listedShareOfSourceWindow = coverage.sourceDenominator
+    ? coverage.listedCount / coverage.sourceDenominator
+    : 0;
   const maximum = Math.max(0, ...visible.map((award) => award.amount));
 
   function downloadVisibleAwards() {
     const blob = new Blob([serializePublicAwardsCsv(visible, {
       windowLabel,
-      sourceWindowAwardCount: awards.length,
-      filteredCoverage: coverage.shareOfSourceWindow,
+      listedAwardSampleCount: coverage.listedCount,
+      sourceWindowAwardCount: coverage.sourceDenominator,
     })], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -244,7 +253,7 @@ export default function PublicMoneyExplorer({
           </div>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <p role="status" className="text-sm font-semibold">
-              Showing {firstRow}–{lastRow} of {coverage.visibleCount} matching awards; filter coverage is {coverage.visibleCount} of {coverage.sourceDenominator} comparable awards in this source window ({new Intl.NumberFormat("en-GB", { style: "percent", maximumFractionDigits: 1 }).format(coverage.shareOfSourceWindow)}).
+              Showing {firstRow}–{lastRow} of {coverage.visibleCount} matching awards. Listed top-ranked sample: {coverage.listedCount} of {coverage.sourceDenominator} comparable awards ({percentage(listedShareOfSourceWindow)}). Search and filters apply only within that list; current matches cover {coverage.visibleCount} of {coverage.sourceDenominator} awards in the full source window ({percentage(coverage.shareOfSourceWindow)}).
             </p>
             <button type="button" onClick={downloadVisibleAwards} disabled={!visible.length} className="min-h-11 border border-foreground bg-white px-4 text-sm font-bold underline decoration-black/30 underline-offset-4 hover:bg-surface-warm disabled:cursor-not-allowed disabled:opacity-50">
               Download filtered notices CSV

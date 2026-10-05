@@ -36,6 +36,22 @@ function award(key: string, amount: number, buyer: string, supplier: string): Pu
 }
 
 describe("PublicMoneyExplorer name-matched dossiers", () => {
+  it("discloses the top-ranked sample and the complete source-window denominator", () => {
+    render(
+      <PublicMoneyExplorer
+        awards={[
+          award("ocds-h6vhtk-111111", 100, "Department A", "Example Ltd"),
+          award("ocds-h6vhtk-222222", 250, "Department B", "Other Ltd"),
+        ]}
+        completeWindowComparableAwardCount={881}
+        caveats={[]}
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(/listed top-ranked sample: 2 of 881 comparable awards \(0\.2%\)/i);
+    expect(screen.getByRole("status")).toHaveTextContent(/search and filters apply only within that list/i);
+  });
+
   it("loads and displays the source release sequence on demand for the selected OCID", async () => {
     const selected = award("ocds-h6vhtk-111111", 100, "Department A", "Example Ltd");
     selected.valueBasis = "contract-value";
@@ -161,6 +177,7 @@ describe("PublicMoneyExplorer name-matched dossiers", () => {
           award("ocds-h6vhtk-222222", 250, "Department A", "Example Ltd"),
           award("ocds-h6vhtk-333333", 500, "Department B", "Other Ltd"),
         ]}
+        completeWindowComparableAwardCount={881}
         caveats={[]}
       />,
     );
@@ -176,5 +193,7 @@ describe("PublicMoneyExplorer name-matched dossiers", () => {
     expect(csv).toContain("222222-2026");
     expect(csv).not.toContain("333333-2026");
     expect(csv).toContain("https://www.find-tender.service.gov.uk/Notice/111111-2026");
+    expect(csv.split("\n")[0]).toContain("Published top-ranked sample count,Full source-window award count,Window coverage");
+    expect(csv.split("\n")[1]).toContain(",2,3,881,0.2%,");
   });
 });
