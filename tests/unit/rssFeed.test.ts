@@ -98,6 +98,25 @@ describe("RSS publication feed", () => {
     expect(new Set(items.map((item) => item.querySelector("guid")?.textContent)).size).toBe(items.length);
   });
 
+  it("dates polling and debt RSS entries from publisher records", () => {
+    const snapshot = publicSnapshot(BUILD_METRICS_SNAPSHOT) as MetricsSnapshot;
+    const document = new DOMParser().parseFromString(renderRssFeed(snapshot), "application/xml");
+    const polling = snapshot.electionPolling as { latestPublicationDate?: string };
+    const debt = snapshot.nationalDebt as { publicationDate?: string };
+
+    for (const [sectionId, sourceDate] of [
+      ["election-polls", polling.latestPublicationDate],
+      ["national-debt", debt.publicationDate],
+    ] as const) {
+      const item = [...document.querySelectorAll("channel > item")]
+        .find((entry) => entry.querySelector("link")?.textContent === `${SITE_DISCOVERY.origin}/section/${sectionId}/`);
+
+      expect(sourceDate, sectionId).toBeTruthy();
+      expect(item?.querySelector("pubDate")?.textContent)
+        .toBe(new Date(sourceDate!).toUTCString());
+    }
+  });
+
   it.each([
     [null, /no comparable earlier publication/i],
     ["catalog-prior", /no observation, revision, metadata or method changes.*catalog-prior/i],
