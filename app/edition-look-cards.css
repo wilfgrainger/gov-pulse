@@ -60,13 +60,33 @@
   }
 }
 
+.editorial-mosaic [data-card-size="feature"] {
+  min-height: 20rem;
+}
+
+.editorial-mosaic [data-card-size="standard"] {
+  min-height: 17rem;
+}
+
+.editorial-mosaic [data-card-size="compact"] {
+  min-height: 13rem;
+}
+
 @media (min-width: 64rem) {
   [data-testid="topic-cards"] {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(12, minmax(0, 1fr));
   }
 
-  [data-testid="topic-cards"] > li:has([data-evidence-state="current"]):first-of-type {
-    grid-column: span 2;
+  .editorial-mosaic__item--feature {
+    grid-column: span 6;
+  }
+
+  .editorial-mosaic__item--standard {
+    grid-column: span 4;
+  }
+
+  .editorial-mosaic__item--compact {
+    grid-column: span 4;
   }
 }
 
