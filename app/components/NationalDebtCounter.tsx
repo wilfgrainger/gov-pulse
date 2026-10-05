@@ -106,9 +106,13 @@ export default function NationalDebtCounter() {
     <div className="space-y-8">
       {valid ? (
         <>
-          <section aria-labelledby="national-debt-value" className="debt-lead grid min-w-0 gap-5 border-y-2 border-foreground bg-[#e8f2ef] p-4 sm:p-6 min-[64rem]:grid-cols-[minmax(15rem,0.72fr)_minmax(0,1.28fr)]">
-            <div className="order-2 min-w-0 py-1 min-[64rem]:order-1">
-              <p className="eyebrow !text-[#08766c]">Latest ONS observation · UK</p>
+          <div className="grid gap-4 lg:grid-cols-2 lg:gap-5">
+            <section
+              data-testid="debt-lead-card"
+              aria-labelledby="national-debt-value"
+              className="dashboard-card border border-[var(--line)] bg-white p-5 sm:p-6"
+            >
+              <p className="eyebrow !text-[#08766c]">Lead figure · Latest ONS observation · UK</p>
               <h3 id="national-debt-value" className="headline-figure mt-3 text-[clamp(2.4rem,9vw,4.8rem)] text-[#14243b]">
                 £{(debtValue / 1_000_000_000_000).toFixed(2)}tn
               </h3>
@@ -118,26 +122,35 @@ export default function NationalDebtCounter() {
               <p className="mt-2 text-sm leading-6 text-gray-700">
                 {period} · {debtRatio.toFixed(1)}% of GDP · published {formatPublicationDate(data.publicationDate)}.
               </p>
-              <p className="mt-3 border-l-2 border-[#ef5124] pl-3 text-xs leading-5 text-gray-700">
+              <p className="mt-3 border-l-2 border-accent pl-3 text-xs leading-5 text-gray-700">
                 A dated debt stock, not a live counter or an estimate between releases.
               </p>
-            </div>
-            <div className="order-1 min-w-0 min-[64rem]:order-2">
-            <FinancialTimeSeriesChart
-              title="Public sector net debt: ten-year direction"
-              description="End-month ONS debt stock excluding public sector banks. Values are dated observations, not a live counter."
-              citation={`Office for National Statistics · ${data.source.debtUrl} · published ${data.publicationDate} · observation period ${period} · dated public sector net debt stock, excluding public sector banks.`}
-              data={data.history}
-              series={[{ key: "debtBillion", label: "Debt stock", color: "#08766c" }]}
-              valueFormatter={(value) => `£${value.toFixed(1)}bn`}
-              axisFormatter={(value) => `£${Math.round(value)}bn`}
-              heightClass="h-[155px] sm:h-[280px]"
-            />
-            </div>
-          </section>
+            </section>
 
-          <section aria-labelledby="national-debt-change-title">
-            <div className="mb-4 border-b border-black/15 pb-3">
+            <section
+              data-testid="debt-history-card"
+              aria-labelledby="national-debt-history-title"
+              className="dashboard-card min-w-0 border border-[var(--line)] bg-white p-5 sm:p-6"
+            >
+              <p className="eyebrow !text-[#08766c]">History card</p>
+              <h3 id="national-debt-history-title" className="sr-only">
+                Public sector net debt history
+              </h3>
+              <FinancialTimeSeriesChart
+                title="Public sector net debt: ten-year direction"
+                description="End-month ONS debt stock excluding public sector banks. Values are dated observations, not a live counter."
+                citation={`Office for National Statistics · ${data.source.debtUrl} · published ${data.publicationDate} · observation period ${period} · dated public sector net debt stock, excluding public sector banks.`}
+                data={data.history}
+                series={[{ key: "debtBillion", label: "Debt stock", color: "#08766c" }]}
+                valueFormatter={(value) => `£${value.toFixed(1)}bn`}
+                axisFormatter={(value) => `£${Math.round(value)}bn`}
+                heightClass="h-[155px] sm:h-[280px]"
+              />
+            </section>
+          </div>
+
+          <section aria-labelledby="national-debt-change-title" className="dashboard-card border border-[var(--line)] bg-white p-5 sm:p-6">
+            <div className="mb-4 border-b border-[var(--line)] pb-3">
               <p className="text-sm font-semibold text-accent">What changed?</p>
               <h4 id="national-debt-change-title" className="mt-1 text-2xl font-semibold">
                 Latest official stock; no movement inferred from one observation
@@ -146,7 +159,7 @@ export default function NationalDebtCounter() {
             <p className="max-w-3xl text-sm leading-6 text-gray-700">
               The latest verified observation is {formatDebt(debtValue)} for {period}, or {debtRatio.toFixed(1)}% of GDP. public-data.org does not project the stock between releases or claim a monthly change without a matched comparison series.
             </p>
-            <dl className="mt-5 grid gap-4 border-y border-black/15 py-4 sm:grid-cols-2 sm:divide-x sm:divide-black/15">
+            <dl className="mt-5 grid gap-4 border-y border-[var(--line)] py-4 sm:grid-cols-2 sm:divide-x sm:divide-[var(--line)]">
               <div>
                 <dt className="text-xs uppercase tracking-[0.08em] text-gray-500">Annual change in debt stock</dt>
                 <dd className="mt-1 text-2xl font-semibold tabular-nums">
@@ -162,14 +175,16 @@ export default function NationalDebtCounter() {
             </dl>
           </section>
 
-          <FinancialTimeSeriesChart
-            title="Debt relative to GDP"
-            description="The matching ONS debt-to-GDP series places the stock against the size of the economy on the same publication basis."
-            citation={`Office for National Statistics · ${data.source.debtToGdpUrl} · published ${data.publicationDate} · observation period ${period} · matched debt-to-GDP series.`}
-            data={data.history}
-            series={[{ key: "debtToGdp", label: "Debt-to-GDP", color: "#1f5c8a" }]}
-            valueFormatter={(value) => `${value.toFixed(1)}%`}
-          />
+          <div className="dashboard-card border border-[var(--line)] bg-white p-5 sm:p-6">
+            <FinancialTimeSeriesChart
+              title="Debt relative to GDP"
+              description="The matching ONS debt-to-GDP series places the stock against the size of the economy on the same publication basis."
+              citation={`Office for National Statistics · ${data.source.debtToGdpUrl} · published ${data.publicationDate} · observation period ${period} · matched debt-to-GDP series.`}
+              data={data.history}
+              series={[{ key: "debtToGdp", label: "Debt-to-GDP", color: "#1f5c8a" }]}
+              valueFormatter={(value) => `${value.toFixed(1)}%`}
+            />
+          </div>
 
           <CoreEvidenceExplanation
             idPrefix="national-debt"
