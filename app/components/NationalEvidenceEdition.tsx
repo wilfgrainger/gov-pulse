@@ -119,16 +119,20 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
   return (
     <section id="national-signals" tabIndex={-1} aria-labelledby="national-evidence-title" className="scroll-mt-24 focus:outline-none">
       <div className="mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-5">
-        <div className="mb-5 grid gap-3 border-b border-[var(--line)] pb-4 md:grid-cols-[1fr_auto] md:items-end">
+        <div className="front-page-edition-bar" data-testid="front-page-edition-bar">
           <div>
-            <p className="eyebrow">The public data edition</p>
-            <h2 id="national-evidence-title" className="font-display mt-1 text-3xl leading-none tracking-[-0.04em] md:text-4xl">Latest figures</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-5 text-[var(--muted)]">
-              Each release keeps its own period, geography and original source.
-            </p>
+            <p className="eyebrow">Latest verified edition</p>
+            <h2 id="national-evidence-title" className="font-display mt-1 text-xl leading-tight md:text-2xl">
+              What changed in Britain
+            </h2>
           </div>
-          <p className="font-mono text-xs text-[var(--muted)] md:pb-1 md:text-sm">
-            {edition.counts.current} current · {edition.counts["update-due"]} update due · {edition.counts.unavailable} unavailable
+          <div className="front-page-edition-bar__status" aria-label="Evidence availability">
+            <span><strong>{edition.counts.current}</strong> current</span>
+            <span><strong>{edition.counts["update-due"]}</strong> update due</span>
+            <span><strong>{edition.counts.unavailable}</strong> unavailable</span>
+          </div>
+          <p className="front-page-edition-bar__date">
+            {edition.generatedAt ? `Edition refreshed ${edition.generatedAt}` : "Edition refresh time unavailable"}
           </p>
         </div>
 
