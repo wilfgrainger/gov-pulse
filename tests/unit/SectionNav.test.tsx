@@ -40,9 +40,9 @@ describe("SectionNav", () => {
     render(<SectionNav sections={sections} />);
 
     expect(screen.getByRole("link", { name: "Latest" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: "Explore" })).toHaveAttribute("href", "/explore/");
-    expect(screen.getByRole("link", { name: "Compare" })).toHaveAttribute("href", "/compare/");
-    expect(screen.getByRole("link", { name: "Briefing" })).toHaveAttribute("href", "/briefing/");
+    expect(screen.getByRole("link", { name: "Explore" })).toHaveAttribute("href", "/explore");
+    expect(screen.getByRole("link", { name: "Compare" })).toHaveAttribute("href", "/compare");
+    expect(screen.getByRole("link", { name: "Briefing" })).toHaveAttribute("href", "/briefing");
     expect(screen.queryByRole("link", { name: "GDP" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Topics" }));
