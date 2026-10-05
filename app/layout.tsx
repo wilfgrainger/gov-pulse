@@ -6,6 +6,7 @@ import { createClientMetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
 import { BRAND_NAME, SITE_DESCRIPTION, SITE_SOCIAL_DESCRIPTION, SITE_TITLE } from "@/app/lib/siteCopy";
 import "./globals.css";
+import "./edition-look.css";
 import { anyPublicationEnabled } from "@/contracts/publication-policy";
 
 const bodyFont = localFont({
