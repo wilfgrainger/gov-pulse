@@ -48,7 +48,7 @@ describe("measure library", () => {
     };
     render(<MeasureLibrary measures={[item, other]} />);
 
-    fireEvent.change(screen.getByRole("combobox", { name: "topic" }), { target: { value: "Jobs" } });
+    fireEvent.click(screen.getByRole("button", { name: "Jobs" }));
     expect(screen.getByRole("link", { name: /Unemployment rate/i })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Central government receipts/i })).not.toBeInTheDocument();
     expect(window.location.search).toBe("?topic=Jobs");
@@ -70,24 +70,60 @@ describe("measure library", () => {
     };
     render(<MeasureLibrary measures={[item, finance]} />);
 
+    fireEvent.click(screen.getByRole("button", { name: finance.topic }));
+    expect(screen.getByRole("link", { name: /Central government receipts/i })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Unemployment rate/i })).not.toBeInTheDocument();
+
+    const advanced = screen.getByText("Advanced filters").closest("summary");
+    expect(advanced).not.toBeNull();
+    fireEvent.click(advanced!);
+
     const filters = [
-      ["topic", "topic", finance.topic],
-      ["publisher", "publisher", finance.publisher],
-      ["geography", "geography", finance.geography],
-      ["Frequency", "cadence", finance.cadence],
-      ["unit", "unit", finance.unit],
-      ["availability", "availability", finance.availability],
+      ["publisher", finance.publisher],
+      ["geography", finance.geography],
+      ["Frequency", finance.cadence],
+      ["unit", finance.unit],
     ] as const;
 
-    for (const [label, , value] of filters) {
+    for (const [label, value] of filters) {
       fireEvent.change(screen.getByRole("combobox", { name: label }), { target: { value } });
       expect(screen.getByRole("link", { name: /Central government receipts/i })).toBeInTheDocument();
       expect(screen.queryByRole("link", { name: /Unemployment rate/i })).not.toBeInTheDocument();
     }
 
+    fireEvent.click(screen.getByRole("button", { name: "Historical" }));
+
     expect(window.location.search).toBe(
       `?topic=Public+finances&publisher=HM+Treasury&geography=United+Kingdom&cadence=monthly&unit=%C2%A3bn&availability=historical`,
     );
+  });
+
+  it("keeps topic and availability primary while secondary filters live behind advanced disclosure", () => {
+    const unavailable: MeasureLibraryItem = {
+      ...MEASURES.find((measure) => measure.id === "waitingPathwaysEstimate")!,
+      publisher: "NHS England",
+      availability: "unavailable",
+      observationPeriod: null,
+      record: null,
+      availabilityReason: "The source section is unavailable in this edition.",
+    };
+    render(<MeasureLibrary measures={[item, unavailable]} />);
+
+    expect(screen.getByRole("group", { name: "Topic" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Jobs" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("group", { name: "Availability" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Current" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Unavailable" })).toHaveAttribute("aria-pressed", "false");
+
+    const advanced = screen.getByText("Advanced filters").closest("summary");
+    expect(advanced).not.toBeNull();
+    fireEvent.click(advanced!);
+    expect(screen.getByRole("combobox", { name: "publisher" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "geography" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Frequency" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "unit" })).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "topic" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "availability" })).not.toBeInTheDocument();
   });
 
   it("renders shared measure filters from the server-provided query", () => {
