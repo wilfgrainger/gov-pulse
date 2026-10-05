@@ -129,6 +129,26 @@ describe("measure library", () => {
   });
 
 
+
+  it("does not connect across missing observations in atlas sparklines", () => {
+    const gapped: MeasureLibraryItem = {
+      ...item,
+      record: {
+        ...record,
+        points: [
+          { period: "January 2026", observedAt: "2026-01-31", value: 4.7, valueStatus: "estimate", revisionId: "r1" },
+          { period: "February 2026", observedAt: "2026-02-28", value: null, valueStatus: "not-available", revisionId: "r1" },
+          { period: "March 2026", observedAt: "2026-03-31", value: 4.8, valueStatus: "estimate", revisionId: "r1" },
+        ],
+      } as MeasureRecord,
+    };
+    const { container } = render(<MeasureLibrary measures={[gapped]} />);
+    const sparkline = container.querySelector(".measure-atlas-card__sparkline");
+    expect(sparkline).not.toBeNull();
+    expect(sparkline?.querySelectorAll("polyline")).toHaveLength(0);
+    expect(sparkline?.querySelectorAll("circle")).toHaveLength(2);
+  });
+
   it("defaults to an atlas view, can switch to list view, and separates unavailable definitions", () => {
     const unavailable: MeasureLibraryItem = {
       ...MEASURES.find((measure) => measure.id === "waitingPathwaysEstimate")!,
