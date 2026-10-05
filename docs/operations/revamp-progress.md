@@ -1,35 +1,22 @@
 # Revamp progress
 
-Updated 5 October 2026. Branch: `edition-look`.
+Updated 5 October 2026.
 
-## Pull requests
+## Signed off
 
-No open pull requests were waiting. This branch is the work. A pull request form was shown and not submitted, so this is not on `main`.
+| Change | Test | Result |
+|---|---|---|
+| #197 edition look | GitHub quality check on `7a50464` | Passed, merged as `9eb9500` |
+| Debt generator reconciliation | `npx vitest run tests/worker/national-debt.test.ts tests/worker/national-debt-generator.test.ts tests/unit/publication-policy.test.ts` | 13 passed |
 
 ## Features
 
 | # | Feature | Status |
 |---|---|---|
-| 1 | Edition look | In progress. Display face vendored. Three doors on the masthead. Ticker removed from the masthead. Offline state uses the same shell. |
-| 2 | Enable debt only | Not started. Publications stay disabled. |
-| 3 | Machine feeds | Not started |
-| 4 | Lead card and history card | Not started |
-| 5 | Six topic cards | Not started |
-| 6 | Contract dossier | Not started |
-| 7 | Look up a place | Not started |
-| 8 | Compare, one indicator | Not started |
-| 9 | Polling table | Not started |
-| 10 | Edition page and read API | Not started |
+| 1 | Edition look | Merged. Not a live edition yet, because publications stay disabled. |
+| 2 | Enable debt only | Tested, not enabled. Official generator files read August 2026 as HF6W 2985.5 and HF6X 93.8. The flag stays off until the worker publishes that pair. |
+| 3–10 | Remaining | Not started |
 
-## This slice
+## Why debt is not enabled yet
 
-- `public/fonts/familjen-grotesk-latin.woff2` is Familjen Grotesk, SIL Open Font License, wired through `next/font/local`.
-- Masthead doors are Latest, Look up, Compare at every width.
-- The dateline ticker is no longer rendered.
-- Offline page is one card, no fake numbers.
-
-## Next
-
-1. Open the pull request and merge only after the quality check is green.
-2. Enable debt only after the generator CSV reconciles.
-3. Do not invent NHS figures.
+The collector already reads the ONS generator CSV. Turning `nationalDebt` on before a published snapshot exists would open the route without the August pair. The policy test still requires every publication to stay paused.
