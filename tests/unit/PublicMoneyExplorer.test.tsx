@@ -141,6 +141,8 @@ describe("PublicMoneyExplorer name-matched dossiers", () => {
           award("ocds-h6vhtk-222222", 250, "Department A", "Example Ltd"),
           award("ocds-h6vhtk-333333", 500, "Department B", "Example Ltd"),
         ]}
+        completeWindowComparableAwardCount={3}
+        excludedAwardCount={0}
         caveats={[]}
       />,
     );
@@ -151,6 +153,7 @@ describe("PublicMoneyExplorer name-matched dossiers", () => {
     fireEvent.click(screen.getByRole("button", { name: "Exact supplier name: Example Ltd" }));
 
     expect(screen.getByText("£850")).toBeInTheDocument();
+    expect(screen.getAllByText(/3 of 3 awards · 0 excluded for missing or non-comparable values/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("3 matched notices · 3 award records in filtered denominator")).toBeInTheDocument();
     expect(screen.getByText(/exact disclosed supplier string only/i)).toBeInTheDocument();
     expect(screen.getByText(/does not prove a shared legal entity/i)).toBeInTheDocument();
@@ -161,6 +164,29 @@ describe("PublicMoneyExplorer name-matched dossiers", () => {
     expect(screen.queryByText("£850")).not.toBeInTheDocument();
     expect(screen.getByText("2 matched notices · 2 award records in filtered denominator")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /Notice .*2026/ })).toHaveLength(2);
+  });
+
+  it("withholds matched-notice money totals when exclusion counts are incomplete", () => {
+    render(
+      <PublicMoneyExplorer
+        awards={[
+          award("ocds-h6vhtk-111111", 100, "Department A", "Example Ltd"),
+          award("ocds-h6vhtk-222222", 250, "Department A", "Example Ltd"),
+        ]}
+        completeWindowComparableAwardCount={2}
+        caveats={[]}
+      />,
+    );
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Open notice dossier" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Exact supplier name: Example Ltd" }));
+    expect(
+      screen.getAllByRole("status").some((node) =>
+        /money totals are withheld until exclusion counts are complete/i.test(node.textContent ?? ""),
+      ),
+    ).toBe(true);
+    expect(screen.queryByText(/Total disclosed award value for matched notices/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("£350")).not.toBeInTheDocument();
   });
 
   it("downloads only notices in the current buyer filter", async () => {

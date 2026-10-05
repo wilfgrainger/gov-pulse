@@ -189,3 +189,39 @@ describe("GovernmentContracts nation breakdown and supplier concentration", () =
     expect(nationCells.length).toBeGreaterThan(0);
   });
 });
+
+
+describe("GovernmentContracts notice-first dossier presentation", () => {
+  it("leads with the highest-ranked notice, not a money headline", () => {
+    const payload = currentPayload({ withNations: true });
+    payload.dataQuality.excludedMissingValue = 15;
+    payload.awards[0].framework = true;
+    payload.summary.frameworkAwards = 1;
+    useMetrics.mockReturnValue(result(payload));
+
+    render(<GovernmentContracts />);
+
+    expect(screen.getByRole("heading", { name: "Notices updated, not money spent" })).toBeInTheDocument();
+    const lead = screen.getByTestId("lead-notice");
+    expect(lead).toHaveTextContent(payload.awards[0].title);
+    expect(lead).toHaveTextContent("Open Find a Tender notice");
+    expect(lead).toHaveTextContent("Framework maximum (ceiling, not committed spend)");
+    expect(screen.getAllByText(/100 of 115 awards · 15 excluded for missing or non-comparable values/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: payload.awards[0].buyer })).toHaveAttribute(
+      "href",
+      `/money/buyer/${encodeURIComponent(payload.awards[0].buyerId!)}`,
+    );
+  });
+
+  it("keeps the exclusion line beside every ranked money total", () => {
+    const payload = currentPayload({ withNations: false });
+    payload.dataQuality.excludedNonGbp = 4;
+    useMetrics.mockReturnValue(result(payload));
+
+    render(<GovernmentContracts />);
+
+    const notes = screen.getAllByText(/100 of 104 awards · 4 excluded for missing or non-comparable values/i);
+    expect(notes.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Value in ranked notices")).toBeInTheDocument();
+  });
+});

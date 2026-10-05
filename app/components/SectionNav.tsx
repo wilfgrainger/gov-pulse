@@ -8,7 +8,6 @@ import type { CategoryGroup } from "../lib/sections";
 import BrandLogo from "./BrandLogo";
 import EvidenceSearch from "./EvidenceSearch";
 import PublicationFreshnessIndicator from "./PublicationFreshnessIndicator";
-import BritishDatelineTicker from "./visuals/BritishDatelineTicker";
 
 const QUICK_LINK_IDS = [
   "gdp",

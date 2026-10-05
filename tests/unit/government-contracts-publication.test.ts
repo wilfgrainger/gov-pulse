@@ -152,11 +152,13 @@ describe("government contracts publication", () => {
   });
 
   it("keeps UK DOGE independent and evidence-led", () => {
-    const component = source("app/components/GovernmentContracts.tsx");
+    const charts = source("app/components/GovernmentContractsCharts.tsx");
+    const scrutiny = source("app/components/GovernmentContractsScrutiny.tsx");
 
-    expect(component).toContain('id="uk-doge"');
-    expect(component).toMatch(/not a government body/i);
-    expect(component).toMatch(/not affiliated with the US Department of Government Efficiency/i);
-    expect(component).toMatch(/not findings of waste, fraud or savings/i);
+    expect(charts).toContain("GovernmentContractsScrutiny");
+    expect(scrutiny).toContain('id="uk-doge"');
+    expect(scrutiny).toMatch(/not a government body/i);
+    expect(scrutiny).toMatch(/not affiliated with the US Department of Government Efficiency/i);
+    expect(scrutiny).toMatch(/not findings of waste, fraud or savings/i);
   });
 });
