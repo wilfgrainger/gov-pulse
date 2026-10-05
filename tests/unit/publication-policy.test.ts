@@ -12,11 +12,11 @@ const fixture = {
 };
 
 describe("publication switches", () => {
-  it("enables only the reverified contracts publication and fails closed for unknown identifiers", () => {
-    expect(anyPublicationEnabled()).toBe(true);
+  it("keeps every publication paused and fails closed for unknown identifiers", () => {
+    expect(anyPublicationEnabled()).toBe(false);
     for (const id of [...Object.keys(FEED_REGISTRY), ...Object.keys(PUBLICATION_SOURCE_REGISTRY), "earlyYears", "editionArchive"]) {
       expect(PUBLICATION_CONFIG.publications).toHaveProperty(id);
-      expect(publicationEnabled(id)).toBe(id === "governmentContracts");
+      expect(publicationEnabled(id)).toBe(false);
     }
     expect(publicationEnabled("unexpected", config)).toBe(false);
     expect(sectionPublication("gdp")).toBe("gdpTracker");

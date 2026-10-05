@@ -16,6 +16,12 @@ import {
   buildSummary,
 } from "@/contracts/government-contracts";
 
+// Verify restoration behavior independently of the production publication pause.
+vi.mock("@/config/publications.json", async (importOriginal) => {
+  const { default: config } = await importOriginal<{ default: { publications: Record<string, { enabled: boolean }> } }>();
+  return { default: { ...config, publications: { ...config.publications, governmentContracts: { ...config.publications.governmentContracts, enabled: true } } } };
+});
+
 const { snapshotState } = vi.hoisted(() => ({ snapshotState: { value: null as unknown } }));
 
 vi.mock("@/app/components/SectionNav", () => ({ default: () => null }));
