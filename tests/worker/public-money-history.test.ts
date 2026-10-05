@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import publicDataWorker, { CONTRACT_HISTORY_PATH } from "../../worker/public-data-entry.js";
+import { MAX_RESPONSE_BYTES } from "../../worker/response-limits.js";
 
 const ocid = "ocds-h6vhtk-047306";
 
@@ -44,6 +45,30 @@ describe("public per-OCID Find a Tender history route", () => {
     });
     expect(payload.releases).toHaveLength(2);
     expect(payload.releases[0].tags).toEqual(["planning"]);
+  });
+
+  it("serves a valid 35-release record package larger than the former 512 KiB cap", async () => {
+    const releases = Array.from({ length: 35 }, (_, index) => ({
+      ocid,
+      id: `${String(index + 1).padStart(6, "0")}-2026`,
+      date: new Date(Date.UTC(2026, 0, index + 1)).toISOString(),
+      tag: ["contractUpdate"],
+      tender: { title: `Amendment ${index + 1}`, description: "source detail ".repeat(1800) },
+    }));
+    const sourcePackage = JSON.stringify({ records: [{ ocid, releases }] });
+    expect(new TextEncoder().encode(sourcePackage).byteLength).toBeGreaterThan(512 * 1024);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(sourcePackage, {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    })));
+
+    const response = await publicDataWorker.fetch(
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.releases).toHaveLength(35);
   });
 
   it("falls back to the publisher's release package after record-package transport failure", async () => {
@@ -165,11 +190,10 @@ describe("public per-OCID Find a Tender history route", () => {
     );
     expect(foreign.status).toBe(503);
 
-    const oversized = JSON.stringify({ records: [{ ocid, releases: Array.from({ length: 10000 }, (_, index) => ({
-      ocid, id: `${String(index % 1000000).padStart(6, "0")}-2026`, date: "2026-01-01T00:00:00Z", tag: ["planning"],
-      tender: { description: "x".repeat(60) },
-    })) }] });
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(oversized, { status: 200 })));
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", {
+      status: 200,
+      headers: { "content-length": String(MAX_RESPONSE_BYTES.json + 1) },
+    })));
     const large = await publicDataWorker.fetch(
       new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
     );

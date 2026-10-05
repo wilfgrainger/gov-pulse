@@ -130,6 +130,11 @@ const SIGNAL_ORDER = Object.keys(SIGNAL_META) as SignalId[];
 
 export const DIRECT_EVIDENCE_LINKS = [
   {
+    href: "/section/government-contracts",
+    label: "Government contracts",
+    description: "Find a Tender award disclosures, with buyer, supplier, revision and value-basis caveats.",
+  },
+  {
     href: "/section/crime-stats",
     label: "Crime statistics",
     description: "Crime Survey, police-recorded and court evidence kept separate.",

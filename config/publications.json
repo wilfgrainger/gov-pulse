@@ -56,7 +56,7 @@
       ]
     },
     "governmentContracts": {
-      "enabled": false,
+      "enabled": true,
       "sections": [
         "government-contracts"
       ]
