@@ -49,7 +49,7 @@ function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?:
         prefetch={false}
         data-testid="signal-card"
         data-evidence-state={signal.state}
-        className="editorial-lift group flex h-full min-h-64 flex-col border-t-4 border-t-[#0f6b63] bg-white p-5 transition-colors hover:border-foreground hover:bg-[#eef6fb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black md:p-6 british-538-border"
+        className="editorial-lift group flex h-full min-h-64 flex-col bg-[var(--surface)] p-5 text-[var(--ink)] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] md:p-6"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -70,7 +70,7 @@ function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?:
         </div>
 
         {!unavailable && signal.history.length > 1 ? (
-          <div className="mb-5 text-[#0f6b63]"><TrendSparkline label={signal.title} points={signal.history} /></div>
+          <div className="mb-5 text-[var(--accent)]"><TrendSparkline label={signal.title} points={signal.history} /></div>
         ) : (
           <p className="my-5 text-xs text-gray-600">{unavailable ? "Source check pending" : "Comparable trend unavailable"}</p>
         )}
@@ -108,15 +108,15 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
   return (
     <section id="national-signals" tabIndex={-1} aria-labelledby="national-evidence-title" className="scroll-mt-24 focus:outline-none">
       <div className="mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-5">
-        <div className="mb-5 grid gap-3 border-b border-black/20 pb-4 md:grid-cols-[1fr_auto] md:items-end">
+        <div className="mb-5 grid gap-3 border-b border-[var(--line)] pb-4 md:grid-cols-[1fr_auto] md:items-end">
           <div>
             <p className="eyebrow">The public data edition</p>
             <h2 id="national-evidence-title" className="font-display mt-1 text-3xl leading-none tracking-[-0.04em] md:text-4xl">Latest figures</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-5 text-gray-600">
+            <p className="mt-2 max-w-2xl text-sm leading-5 text-[var(--muted)]">
               Each release keeps its own period, geography and original source.
             </p>
           </div>
-          <p className="font-mono text-xs text-gray-700 md:pb-1 md:text-sm">
+          <p className="font-mono text-xs text-[var(--muted)] md:pb-1 md:text-sm">
             {edition.counts.current} current · {edition.counts["update-due"]} update due · {edition.counts.unavailable} unavailable
           </p>
         </div>
@@ -124,10 +124,10 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
         <LeadHistoryCards signal={edition.lead} />
 
         <section aria-labelledby="at-a-glance-title" className="mt-9 md:mt-12">
-          <div className="border-b border-black/20 pb-5">
+          <div className="border-b border-[var(--line)] pb-5">
             <p className="eyebrow">Six topics</p>
             <h3 id="at-a-glance-title" className="font-display mt-2 text-3xl leading-tight md:text-5xl">The country at a glance</h3>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
               Prices, jobs, debt, rents, the NHS waiting list and contracts. A card without verified evidence says so.
             </p>
           </div>
@@ -140,22 +140,21 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
 
         <AwardNoticeContext />
 
-        <section id="more-evidence" aria-labelledby="more-evidence-title" className="mt-12 border-y border-black/20 py-8 md:mt-16">
+        <section id="more-evidence" aria-labelledby="more-evidence-title" className="mt-12 border-y border-[var(--line)] py-8 md:mt-16">
           <div className="grid gap-6 lg:grid-cols-[17rem_1fr]">
             <div>
               <p className="eyebrow">More evidence</p>
               <h3 id="more-evidence-title" className="font-display mt-2 text-3xl leading-tight">Go deeper by topic.</h3>
             </div>
-            <ul className="grid gap-3 sm:grid-cols-2">
+            <ul className="grid gap-px bg-[var(--line)] sm:grid-cols-2">
               {DIRECT_EVIDENCE_LINKS.filter((item) => publicationRouteEnabled(item.href)).map((item) => (
-                <li key={item.href}>
-                  <Link href={item.href} prefetch={false} className="editorial-lift group flex min-h-28 items-start justify-between gap-4 bg-white p-5 transition-colors hover:bg-[#f9fbfc] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black british-538-border">
-
+                <li key={item.href} className="bg-background">
+                  <Link href={item.href} prefetch={false} className="editorial-lift group flex min-h-28 items-start justify-between gap-4 bg-[var(--surface)] p-5 text-[var(--ink)] transition-colors hover:bg-[var(--surface-warm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]">
                     <span>
                       <span className="text-lg font-semibold">{item.label}</span>
-                      <span className="mt-2 block text-sm leading-6 text-gray-600">{item.description}</span>
+                      <span className="mt-2 block text-sm leading-6 text-[#51565f]">{item.description}</span>
                     </span>
-                    <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span>
+                    <span aria-hidden="true" className="text-[var(--accent)] transition-transform group-hover:translate-x-1">→</span>
                   </Link>
                 </li>
               ))}
