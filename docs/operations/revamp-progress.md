@@ -15,21 +15,22 @@ Updated 5 October 2026.
 | #205 contract dossier | Local money/contracts suites; PR validation classify, quality and full-quality on `366bc62` | Passed. Squash-merged as `0450dcb`. |
 | #206 Look up a place | Local `placeLookup` unit tests; PR validation classify, quality and full-quality on `6226d4b` | 6 passed locally. Squash-merged as `75153d9`. |
 | #207 Compare one indicator | Local `oneIndicatorCompare` unit tests; PR validation classify, quality and full-quality on `d37ed53` | 7 passed locally. Squash-merged as `0a9ee2f`. |
+| #209 Polling table | Local `pollingTable` and `ElectionPolling` suites; PR validation classify, quality and full-quality on `cdf1aad` | 17 passed locally. Squash-merged as `3a9a063`. |
 
 ## Features
 
 | # | Feature | Status |
 |---|---|---|
 | 1 | Edition look | Merged. Masthead doors and display face are on `main`. |
-| 2 | Enable debt only | Merged. `config/publications.json` sets `nationalDebt` to true. Every other publication stays false. NHS stays unavailable. |
+| 2 | Enable debt only | Merged. `config/publications.json` sets `nationalDebt` to true. Every other publication stays false except the later archive enablement in feature 10. NHS stays unavailable. |
 | 3 | Machine feeds | Merged. Debt generator HF6W/HF6X tips are cross-checked against the ONS public-sector-finances bulletin. Bulletin is a check only; published figures still come from the generator. Fail closed on mismatch. |
 | 4 | Lead card and history card | Merged. Homepage lead and history are separate white cards. Debt section mirrors the same lead/history split. Fail closed when history has fewer than two verified points. |
 | 5 | Six topic cards | Merged. Homepage grid is six cards: prices, jobs, debt, rents, NHS waiting list, contracts. Unavailable cards say unavailable, never zero. NHS stays unavailable. |
 | 6 | Contract dossier | Merged. Notice-first lead, exclusion coverage on totals, framework badges, buyer/supplier dossier routes. `governmentContracts` stays disabled. |
 | 7 | Look up a place | Merged. Explore is the Look up door; published geographies only; postcodes fail closed. |
 | 8 | Compare, one indicator | Merged. One-indicator Compare door; overlay peers only when definitions match; country peers unavailable while UK-in-context is offline. |
-| 9 | Polling table | In progress on PR #209. Aligned party-column table; no average; shares require a source URL; corrections are separate rows; betting markets absent from the table. `electionPolling` stays disabled. |
-| 10 | Edition page and read API | Not started |
+| 9 | Polling table | Merged. Aligned party-column table; no average; shares require a source URL; corrections are separate rows; betting markets absent from the table. `electionPolling` stays disabled. |
+| 10 | Edition page and read API | In progress on this branch. `/editions/` and `/editions/[id]` open with `editionArchive` enabled; `/data/editions.json` and `/data/edition.json` are the public read path; revision ledger on the index. Disabled source values stay redacted from archived responses. |
 
 ## Lead and history evidence
 
@@ -84,8 +85,18 @@ Updated 5 October 2026.
 - `electionPolling` and `bettingOdds` stay disabled in `config/publications.json`. NHS stays unavailable. `governmentContracts` stays disabled. No invented figures.
 - YouGov remains CC BY-NC with attribution and source URL. More in Common rows link to the publisher URL; workbooks are not bulk-hosted by this change.
 - Local: `npx vitest run tests/unit/pollingTable.test.ts tests/unit/ElectionPolling.test.tsx` — 17 passed.
+- Squash-merged as `3a9a063` from PR #209 after classify, quality and full-quality on `cdf1aad`.
+
+## Edition page and read API evidence
+
+- `config/publications.json` sets `editionArchive.enabled` to true so `/editions/` and `/editions/[id]` leave the offline notice.
+- Public read path: `/data/editions.json` (bounded list) and `/data/edition.json?edition=<validated-id>` (immutable detail). Malformed ids fail closed; missing editions return not found, not invented catalogs.
+- Archived responses redact disabled sources via `filterPublicationCatalog` / `filterPublicationSummary`. With debt-only source publication, non-debt measures and their revision rows stay private.
+- Editions index lists retained catalogs newest-first, links each as-of detail page, documents the read API, and renders `RevisionLedger` for dated changes. Historical detail pages keep as-of labelling and never present archived values as current.
+- NHS stays unavailable. `governmentContracts`, `electionPolling` and `bettingOdds` stay disabled. No Oddschecker. No invented figures. British English copy.
+- Local focused suites: `npx vitest run tests/unit/publication-policy.test.ts tests/worker/publication-switches.test.ts tests/unit/publication-page-switches.test.tsx tests/unit/editionsPage.test.tsx tests/unit/editionArchiveRoute.test.ts tests/unit/serverEditionArchive.test.ts tests/unit/RevisionLedger.test.tsx` — 38 passed.
 
 ## Next
 
-1. Feature 10 (Edition page and read API).
+1. Deploy verification of live `/editions/` and `/data/editions.json` after this enablement lands.
 2. Do not invent NHS figures. Do not mark NHS optional. `governmentContracts` stays disabled unless this progress note says otherwise.
