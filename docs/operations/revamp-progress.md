@@ -20,7 +20,7 @@ Updated 5 October 2026.
 | 2 | Enable debt only | Merged. `config/publications.json` sets `nationalDebt` to true. Every other publication stays false. NHS stays unavailable. |
 | 3 | Machine feeds | Merged. Debt generator HF6W/HF6X tips are cross-checked against the ONS public-sector-finances bulletin. Bulletin is a check only; published figures still come from the generator. Fail closed on mismatch. |
 | 4 | Lead card and history card | Merged. Homepage lead and history are separate white cards. Debt section mirrors the same lead/history split. Fail closed when history has fewer than two verified points. |
-| 5 | Six topic cards | Not started |
+| 5 | Six topic cards | In review. Homepage grid is six cards: prices, jobs, debt, rents, NHS waiting list, contracts. Not merged yet. |
 | 6 | Contract dossier | Not started |
 | 7 | Look up a place | Not started |
 | 8 | Compare, one indicator | Not started |
@@ -34,7 +34,18 @@ Updated 5 October 2026.
 - Debt section `NationalDebtCounter` presents the ONS stock as a lead card and the ten-year HF6W series as a history card.
 - NHS stays unavailable. Other publications stay paused as configured. No invented figures.
 
+## Six topic cards evidence
+
+- `selectNationalEvidenceEdition` returns exactly six cards in this order: Prices (CPI), Jobs (unemployment), Debt (PSND % of GDP), Rents (ONS PIPR annual change with the ONS average monthly rent), NHS waiting list (England RTT pathways), Contracts (Find a Tender comparable award count).
+- GDP, real wages, house prices and net migration leave the homepage grid. They are demoted to "Go deeper by topic" links, shown only when their publication is enabled. No tool or route is removed.
+- Each card fails closed: a missing source, a non-current catalog record or a missing field gives "Current value unavailable", never zero.
+- Rents read `housePriceIndex.headline.privateRent*` only, and are gated on the catalog `privateRentAnnualChange` state without overwriting the house-price history.
+- Contracts show a notice count with "Notices updated, not money spent" and the summed exclusion counts. No money total on the card. Contracts never become the lead.
+- With today's debt-only publication, debt is current and the other five cards say unavailable. NHS stays unavailable.
+- Local tests: `npx vitest run` 170 files, 1090 tests passed. `tsc --noEmit`, ESLint on changed files, static architecture and source ownership checks passed.
+- Known gap: `tests/e2e/smoke.spec.ts` still expects 7 signal cards (it was already stale at 8). It is not run in PR validation and will be updated with the homepage rebuild.
+
 ## Next
 
-1. Start feature 5 (Six topic cards).
+1. Merge feature 5 only when PR validation is green, then start feature 6 (Contract dossier).
 2. Do not invent NHS figures. Do not mark NHS optional.
