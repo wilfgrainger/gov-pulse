@@ -33,7 +33,7 @@ export default function PageHeader({
           </nav>
           <p className="eyebrow mb-4">{eyebrow}</p>
           <h1 className="page-title section-title max-w-5xl">{title}</h1>
-          <p className="mt-4 max-w-3xl text-base leading-7 text-[#565f6b] md:text-lg md:leading-8">
+          <p className="editorial-prose editorial-prose--wide mt-5 text-[#565f6b]">
             {subtitle}
           </p>
         </div>
