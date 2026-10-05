@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const HOME_LINKS = [
-  ["Look up", "/explore/", "Look up a measure or place"],
+  ["Explore", "/explore/", "Explore measures and places"],
   ["Compare", "/compare/", "Compare"],
   ["Editions", "/editions/", "Edition archive"],
   ["Sources", "/sources", "Sources and dates"],
@@ -19,7 +19,7 @@ export default function HomepageIntro() {
           >
             Britain, <span>in evidence.</span>
           </h1>
-          <p className="mt-5 max-w-[36rem] text-sm leading-6 text-[var(--muted)] md:text-base md:leading-7">
+          <p className="editorial-prose mt-5 text-[var(--muted)]">
             What changed, what it means, and the{" "}
             <Link
               href="https://www.ons.gov.uk/"
