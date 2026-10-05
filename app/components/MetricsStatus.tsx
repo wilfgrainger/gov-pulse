@@ -164,7 +164,7 @@ export default function MetricsStatus({ section, status, showCurrentness = true 
 
       <details className={`${showCurrentness ? "mt-1" : ""} max-w-5xl evidence-file-disclosure`}>
         <summary className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-sm font-semibold underline decoration-1 underline-offset-4 hover:text-accent">
-          Evidence file <span aria-hidden="true">＋</span>
+          <span>Evidence file</span><span aria-hidden="true">＋</span>
         </summary>
         <div className="evidence-file">
           <div>
