@@ -1,7 +1,7 @@
 import Link from "next/link";
 import BrandLogo from "./BrandLogo";
 
-export default function PublicationOffline({ title = "This edition is offline for verification" }: { title?: string }) {
+export default function PublicationOffline({ title = "Data publications are temporarily offline" }: { title?: string }) {
   return <div className="min-h-screen bg-background text-foreground">
     <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-white">
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 md:px-6">
