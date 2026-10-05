@@ -7,19 +7,13 @@ import { fetchMetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import {
   DIRECT_EVIDENCE_LINKS,
   selectNationalEvidenceEdition,
-  type EvidenceState,
   type NationalEvidenceEdition as Edition,
   type SignalPresentation,
 } from "@/app/lib/nationalEvidence";
 import EvidenceClassBadge from "./EvidenceClassBadge";
+import LeadHistoryCards, { StateBadge } from "./LeadHistoryCards";
 import Reveal from "./Reveal";
 import TrendSparkline from "./TrendSparkline";
-
-const STATE_LABELS: Record<EvidenceState, string> = {
-  current: "Current",
-  "update-due": "Update due",
-  unavailable: "Unavailable",
-};
 
 function AwardNoticeContext() {
   if (!publicationRouteEnabled("/money/")) return null;
@@ -41,75 +35,6 @@ function AwardNoticeContext() {
         </Link>
       </div>
     </section>
-  );
-}
-
-function StateBadge({ state }: { state: EvidenceState }) {
-  const tone =
-    state === "current"
-      ? "border-foreground bg-foreground text-white"
-      : state === "update-due"
-        ? "border-[#8a5a12] bg-[#e9eef3] text-[#3a4657]"
-        : "border-black/20 bg-[#eef1f4] text-gray-600";
-
-  return (
-    <span className={`british-538-badge ${tone}`}>
-      {STATE_LABELS[state]}
-    </span>
-  );
-}
-
-function LeadStory({ signal }: { signal: SignalPresentation | null }) {
-  if (!signal || !signal.value || !signal.leadHeadline) {
-    return (
-      <article className="border-y border-foreground bg-white p-6 md:p-8 lg:p-10">
-        <p className="eyebrow">Lead figure</p>
-        <h3 className="font-display mt-3 max-w-4xl text-4xl leading-[1.02] md:text-6xl">
-          No current lead figure is available.
-        </h3>
-        <p className="mt-5 max-w-2xl text-base leading-7 text-gray-700 md:text-lg">
-          Older figures are not substituted for a current publication. The topic pages show the latest available evidence and its source.
-        </p>
-        <Link href="/sources" prefetch={false} className="v3-secondary-action mt-7">
-          Browse sources
-        </Link>
-      </article>
-    );
-  }
-
-  return (
-    <article className="v3-lead-story editorial-lift grid overflow-hidden border-y-2 border-foreground min-[60rem]:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
-      <div className="flex flex-col bg-[#14243b] p-5 text-white md:p-7">
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="eyebrow eyebrow-on-dark">The latest release to know</p>
-          <span className="british-538-badge border border-white bg-white text-foreground">
-            {STATE_LABELS[signal.state]}
-          </span>
-        </div>
-        <h3 className="font-display mt-4 max-w-4xl text-3xl leading-[1.03] md:text-4xl">
-          {signal.leadHeadline}
-        </h3>
-        {signal.leadSummary ? (
-          <p className="mt-4 max-w-2xl text-base leading-6 text-slate-200 md:text-lg md:leading-7">
-            {signal.leadSummary}
-          </p>
-        ) : null}
-        <Link href={signal.href} prefetch={false} className="mt-5 inline-flex min-h-11 w-fit items-center gap-6 border-b-2 border-[#8fc2e6] py-2 text-base font-semibold text-white hover:text-[#8fc2e6] min-[60rem]:mt-auto">
-          Understand this figure <span aria-hidden="true">↗</span>
-        </Link>
-      </div>
-
-      <div className="flex flex-col bg-[#dceaf4] p-5 md:p-7">
-        <p className="eyebrow !text-[#0f6b63]">{signal.kicker} · {signal.geography}</p>
-        <p className="headline-figure mt-3 text-5xl tracking-[-0.06em] md:text-6xl">{signal.value}</p>
-        <p className="mt-2 text-sm font-semibold">{signal.period} · published {signal.publishedAt}</p>
-        <div className="text-[#0f6b63]"><TrendSparkline label={signal.title} points={signal.history} large /></div>
-        <p className="mt-5 border-t border-black/15 pt-5 text-base leading-7">{signal.comparison}</p>
-        {signal.caveat ? (
-          <p className="mt-4 border-l-2 border-accent pl-4 text-sm leading-6 text-gray-700">{signal.caveat}</p>
-        ) : null}
-      </div>
-    </article>
   );
 }
 
@@ -196,9 +121,7 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
           </p>
         </div>
 
-        <Reveal>
-          <LeadStory signal={edition.lead} />
-        </Reveal>
+        <LeadHistoryCards signal={edition.lead} />
 
         <section aria-labelledby="at-a-glance-title" className="mt-9 md:mt-12">
           <div className="border-b border-black/20 pb-5">

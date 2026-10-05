@@ -58,6 +58,9 @@ describe("NationalDebtCounter evidence integrity", () => {
     render(<NationalDebtCounter />);
 
     expect(screen.getByText("Exact published value: £2,984,300,000,000")).toBeInTheDocument();
+    expect(screen.getByTestId("debt-lead-card")).toHaveTextContent("Lead figure");
+    expect(screen.getByTestId("debt-history-card")).toHaveTextContent("History card");
+    expect(screen.getByTestId("debt-history-card")).toHaveTextContent("Public sector net debt: ten-year direction");
     const debtSummary = screen.getByText(/A dated debt stock, not a live counter/).parentElement;
     expect(debtSummary).toHaveTextContent(/May 2026.*95\.1% of GDP.*published 19 June 2026/i);
     expect(screen.getByText(/Latest official stock; no movement inferred from one observation/)).toBeInTheDocument();
