@@ -12,6 +12,7 @@ Updated 5 October 2026.
 | #199 machine feeds (bulletin as a check) | Local debt suite including entry mocks; PR validation full-quality on `812158eb` | 21 related tests passed locally. Merged as `c219817`. |
 | #201 lead card and history card | Local `LeadHistoryCards`, `NationalDebtCounter`, `NationalEvidenceEditionBadges`; PR validation classify, quality and full-quality on `8e9f287` | Passed. Merged as `c68aeed`. |
 | #203 six topic cards | Local six-card suites; PR validation classify, quality and full-quality on `8bd3628` | Passed. Merged as `de9d4b6`. |
+| #205 contract dossier | Local money/contracts suites; PR validation classify, quality and full-quality on `366bc62` | Passed. Squash-merged as `0450dcb`. |
 
 ## Features
 
@@ -22,8 +23,8 @@ Updated 5 October 2026.
 | 3 | Machine feeds | Merged. Debt generator HF6W/HF6X tips are cross-checked against the ONS public-sector-finances bulletin. Bulletin is a check only; published figures still come from the generator. Fail closed on mismatch. |
 | 4 | Lead card and history card | Merged. Homepage lead and history are separate white cards. Debt section mirrors the same lead/history split. Fail closed when history has fewer than two verified points. |
 | 5 | Six topic cards | Merged. Homepage grid is six cards: prices, jobs, debt, rents, NHS waiting list, contracts. Unavailable cards say unavailable, never zero. NHS stays unavailable. |
-| 6 | Contract dossier | In progress. Notice-first lead, exclusion line on totals, framework badges, buyer/supplier dossier routes. Not merged yet. |
-| 7 | Look up a place | Not started |
+| 6 | Contract dossier | Merged. Notice-first lead, exclusion coverage on totals, framework badges, buyer/supplier dossier routes. `governmentContracts` stays disabled. |
+| 7 | Look up a place | In progress. Geography lookup on the Look up/Explore door; postcodes fail closed. |
 | 8 | Compare, one indicator | Not started |
 | 9 | Polling table | Not started |
 | 10 | Edition page and read API | Not started |
@@ -53,9 +54,19 @@ Updated 5 October 2026.
 - Framework awards use an amber badge and row treatment: "Framework maximum (ceiling, not committed spend)".
 - Buyer and supplier publisher IDs open `/money/buyer/[id]` and `/money/supplier/[id]`, which redirect into the existing dossier URL state.
 - Window copy states notices updated, not money spent that week. Caveats and no-waste policy stay. `governmentContracts` publication stays disabled.
-- Local focused suites: GovernmentContracts, publicMoney, PublicMoneyExplorer, publicMoneyPublication, plus contracts publication/contract/chart tests. `tsc --noEmit`, source ownership and architecture checks passed.
+- UK DOGE scrutiny panel remains in `GovernmentContractsScrutiny` (`id="uk-doge"`), composed via Charts. Independent, evidence-led, not findings of waste.
+- Local focused suites and PR validation full-quality green on tip `366bc62` before squash-merge `0450dcb`.
+
+## Look up a place evidence
+
+- Explore (`/explore/`) is the Look up door: place geography search plus the existing measure explorer.
+- `lookupPlace` matches only geographies already present on measure definitions (UK, ENG, EW, GB, …). No invented local-authority series.
+- Postcodes (including SY1, TD15, JE1) stay `postcode-unclassified` — a postcode area is not a country boundary.
+- Unknown place names fail closed as `no-match`.
+- Buyer and supplier dossiers remain under `/money/`.
 
 ## Next
 
-1. Merge feature 6 only when PR validation is green, then start feature 7 (Look up a place).
-2. Do not invent NHS figures. Do not mark NHS optional.
+1. Finish feature 7 (Look up a place): tests, PR, merge when green.
+2. Then feature 8 (Compare, one indicator).
+3. Do not invent NHS figures. Do not mark NHS optional. `governmentContracts` stays disabled unless this progress note says otherwise.
