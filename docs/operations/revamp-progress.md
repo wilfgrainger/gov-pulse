@@ -16,6 +16,7 @@ Updated 5 October 2026.
 | #206 Look up a place | Local `placeLookup` unit tests; PR validation classify, quality and full-quality on `6226d4b` | 6 passed locally. Squash-merged as `75153d9`. |
 | #207 Compare one indicator | Local `oneIndicatorCompare` unit tests; PR validation classify, quality and full-quality on `d37ed53` | 7 passed locally. Squash-merged as `0a9ee2f`. |
 | #209 Polling table | Local `pollingTable` and `ElectionPolling` suites; PR validation classify, quality and full-quality on `cdf1aad` | 17 passed locally. Squash-merged as `3a9a063`. |
+| #210 Edition page and read API | Local edition archive suites; PR validation classify, quality and full-quality on `70f072a` | 38 passed locally. Squash-merged as `cd44854`. |
 
 ## Features
 
@@ -30,7 +31,7 @@ Updated 5 October 2026.
 | 7 | Look up a place | Merged. Explore is the Look up door; published geographies only; postcodes fail closed. |
 | 8 | Compare, one indicator | Merged. One-indicator Compare door; overlay peers only when definitions match; country peers unavailable while UK-in-context is offline. |
 | 9 | Polling table | Merged. Aligned party-column table; no average; shares require a source URL; corrections are separate rows; betting markets absent from the table. `electionPolling` stays disabled. |
-| 10 | Edition page and read API | In progress on this branch. `/editions/` and `/editions/[id]` open with `editionArchive` enabled; `/data/editions.json` and `/data/edition.json` are the public read path; revision ledger on the index. Disabled source values stay redacted from archived responses. |
+| 10 | Edition page and read API | Merged. `/editions/` and `/editions/[id]` open with `editionArchive` enabled; `/data/editions.json` and `/data/edition.json` are the public read path; revision ledger on the index. Disabled source values stay redacted from archived responses. Squash-merged as `cd44854`. |
 
 ## Lead and history evidence
 
@@ -95,8 +96,9 @@ Updated 5 October 2026.
 - Editions index lists retained catalogs newest-first, links each as-of detail page, documents the read API, and renders `RevisionLedger` for dated changes. Historical detail pages keep as-of labelling and never present archived values as current.
 - NHS stays unavailable. `governmentContracts`, `electionPolling` and `bettingOdds` stay disabled. No Oddschecker. No invented figures. British English copy.
 - Local focused suites: `npx vitest run tests/unit/publication-policy.test.ts tests/worker/publication-switches.test.ts tests/unit/publication-page-switches.test.tsx tests/unit/editionsPage.test.tsx tests/unit/editionArchiveRoute.test.ts tests/unit/serverEditionArchive.test.ts tests/unit/RevisionLedger.test.tsx` — 38 passed.
+- Squash-merged as `cd44854` from PR #210 after classify, quality and full-quality on `70f072a`.
 
 ## Next
 
-1. Deploy verification of live `/editions/` and `/data/editions.json` after this enablement lands.
+1. Deploy verification of live `/editions/` and `/data/editions.json` after enablement `cd44854`.
 2. Do not invent NHS figures. Do not mark NHS optional. `governmentContracts` stays disabled unless this progress note says otherwise.
