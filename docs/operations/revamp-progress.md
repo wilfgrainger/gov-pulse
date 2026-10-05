@@ -18,7 +18,7 @@ Updated 5 October 2026.
 | 1 | Edition look | Merged. Masthead doors and display face are on `main`. |
 | 2 | Enable debt only | Merged. `config/publications.json` sets `nationalDebt` to true. Every other publication stays false. NHS stays unavailable. |
 | 3 | Machine feeds | Merged. Debt generator HF6W/HF6X tips are cross-checked against the ONS public-sector-finances bulletin. Bulletin is a check only; published figures still come from the generator. Fail closed on mismatch. |
-| 4 | Lead card and history card | Not started |
+| 4 | Lead card and history card | On this branch. Homepage lead and history are separate white cards. Debt section mirrors the same lead/history split. Fail closed when history has fewer than two verified points. |
 | 5 | Six topic cards | Not started |
 | 6 | Contract dossier | Not started |
 | 7 | Look up a place | Not started |
@@ -26,15 +26,15 @@ Updated 5 October 2026.
 | 9 | Polling table | Not started |
 | 10 | Edition page and read API | Not started |
 
-## Machine feeds evidence
+## Lead and history evidence
 
-- Collector still publishes from the ONS generator CSV for HF6W and HF6X.
-- The Public sector finances, UK bulletin is fetched as an independent check.
-- Fixture `tests/fixtures/ons-public-sector-finances-august-2026.html` matches the live August 2026 bulletin wording fetched 5 October 2026: £2,985.5 billion and 93.8% of GDP at the end of August 2026; release date 22 September 2026; next release 21 October 2026.
-- Period, stock, ratio and release date must agree with the generator tip. Mismatches fail closed. No invented bulletin-only figures.
-- NHS stays unavailable. Other publications stay paused as configured.
+- Homepage `NationalEvidenceEdition` renders `lead-card` and `history-card` from the selected lead signal only.
+- History card requires at least two verified observations. No invented earlier points.
+- Debt section `NationalDebtCounter` presents the ONS stock as a lead card and the ten-year HF6W series as a history card.
+- NHS stays unavailable. Other publications stay paused as configured. No invented figures.
 
 ## Next
 
-1. Start feature 4 (Lead card and history card).
-2. Do not invent NHS figures. Do not mark NHS optional.
+1. Merge this pull request after the quality check is green.
+2. Start feature 5 (Six topic cards) only after lead and history cards are signed off on `main`.
+3. Do not invent NHS figures. Do not mark NHS optional.
