@@ -1,12 +1,14 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import PublicationOffline from "@/app/components/PublicationOffline";
 import HomepageIntro from "@/app/components/HomepageIntro";
 
 const editionLook = ["edition-look.css","edition-look-tokens.css","edition-look-chrome.css","edition-look-cards.css","edition-look-states.css"].map((f) => readFileSync(resolve(process.cwd(), "app", f), "utf8")).join("\n");
 const socialScript = readFileSync(resolve(process.cwd(), "scripts/generate-social-cards.mjs"), "utf8");
+
+afterEach(() => cleanup());
 
 describe("Premium look", () => {
   it("locks ink paper, single vermillion accent, and Familjen display tokens", () => {
