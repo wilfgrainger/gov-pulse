@@ -43,8 +43,8 @@ export type PublicMoneyUrlState = {
 
 export type PublicMoneyExportContext = {
   windowLabel?: string;
+  listedAwardSampleCount?: number;
   sourceWindowAwardCount?: number;
-  filteredCoverage?: number;
 };
 
 export function buildDossier(
@@ -160,11 +160,20 @@ export function serializePublicMoneyUrlState(state: PublicMoneyUrlState): string
   return params.toString();
 }
 
-export function filteredAwardCoverage(allAwards: PublicAward[], visibleAwards: PublicAward[]) {
+export function filteredAwardCoverage(
+  listedAwards: PublicAward[],
+  visibleAwards: PublicAward[],
+  completeWindowComparableAwardCount = listedAwards.length,
+) {
+  const sourceDenominator = Number.isSafeInteger(completeWindowComparableAwardCount) &&
+    completeWindowComparableAwardCount >= listedAwards.length
+    ? completeWindowComparableAwardCount
+    : listedAwards.length;
   return {
     visibleCount: visibleAwards.length,
-    sourceDenominator: allAwards.length,
-    shareOfSourceWindow: allAwards.length ? visibleAwards.length / allAwards.length : 0,
+    listedCount: listedAwards.length,
+    sourceDenominator,
+    shareOfSourceWindow: sourceDenominator ? visibleAwards.length / sourceDenominator : 0,
   };
 }
 
@@ -181,8 +190,17 @@ export function serializePublicAwardsCsv(
   const columns = [
     "Notice ID", "Title", "Buyer", "Buyer ID", "Suppliers", "Supplier IDs", "Supplier nations", "Award date", "Publication date",
     "Recorded value", "Value basis", "Currency", "Procedure", "Framework", "Notice URL", "Procurement history URL",
-    "Source window", "Filtered row count", "Full source-window award count", "Window coverage", "Currency basis note",
+    "Source window", "Filtered row count", "Published top-ranked sample count", "Full source-window award count", "Window coverage", "Currency basis note",
   ];
+  const listedSampleCount = Number.isSafeInteger(context.listedAwardSampleCount) &&
+    context.listedAwardSampleCount! >= awards.length
+    ? context.listedAwardSampleCount!
+    : awards.length;
+  const sourceWindowAwardCount = Number.isSafeInteger(context.sourceWindowAwardCount) &&
+    context.sourceWindowAwardCount! >= listedSampleCount
+    ? context.sourceWindowAwardCount!
+    : listedSampleCount;
+  const windowCoverage = `${((sourceWindowAwardCount ? awards.length / sourceWindowAwardCount : 0) * 100).toFixed(1)}%`;
   const rows = awards.map((award) => [
     award.releaseId,
     award.title,
@@ -202,12 +220,9 @@ export function serializePublicAwardsCsv(
     award.procurementUrl,
     context.windowLabel?.trim() || "Not stated",
     awards.length,
-    Number.isSafeInteger(context.sourceWindowAwardCount) && context.sourceWindowAwardCount! >= 0
-      ? context.sourceWindowAwardCount!
-      : awards.length,
-    Number.isFinite(context.filteredCoverage)
-      ? `${(Math.max(0, Math.min(1, context.filteredCoverage!)) * 100).toFixed(1)}%`
-      : "Not stated",
+    listedSampleCount,
+    sourceWindowAwardCount,
+    windowCoverage,
     `GBP only; ${valueBasisDescription(award.valueBasis)} is not confirmed expenditure`,
   ].map(csvCell));
   return [columns.map(csvCell).join(","), ...rows.map((row) => row.join(","))].join("\n");
