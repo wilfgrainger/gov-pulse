@@ -28,7 +28,7 @@ export default async function EditionsPage() {
           <h1 className="mt-2 text-5xl font-black tracking-[-0.06em] md:text-7xl">Editions and revisions</h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-gray-700">Each archived catalog is presented as it was known at its publication date. Later checks do not silently overwrite earlier editions.</p>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-700">Retention: the 60 most recent verified catalogs are kept. Older entries may expire as new editions arrive, so this is a bounded change record rather than a complete history of every publisher. Observation, source-publication and archive dates are shown separately. Disabled publications are omitted from archived responses.</p>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-700">Machine-readable copies: <a className="font-bold underline" href={`${SITE_DISCOVERY.origin}/data/editions.json`}>/data/editions.json</a> and <code className="font-mono text-xs">/data/edition.json?edition=<id></code>.</p>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-700">Machine-readable copies: <a className="font-bold underline" href={`${SITE_DISCOVERY.origin}/data/editions.json`}>/data/editions.json</a> and <code className="font-mono text-xs">{'/data/edition.json?edition=<id>'}</code>.</p>
         </header>
         {editions?.length ? (
           <>
