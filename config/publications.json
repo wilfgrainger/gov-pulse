@@ -131,7 +131,7 @@
       ]
     },
     "editionArchive": {
-      "enabled": false
+      "enabled": true
     },
     "storyHouseholdBudgets": {
       "enabled": false
