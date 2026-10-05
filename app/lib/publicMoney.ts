@@ -6,6 +6,49 @@ export function valueBasisDescription(valueBasis: PublicMoneyValueBasis): string
     : "disclosed award value";
 }
 
+export const CONTRACT_EXCLUSION_FIELDS = [
+  "excludedMissingValue",
+  "excludedAmbiguousContractValue",
+  "excludedNonGbp",
+  "excludedMissingBuyer",
+  "excludedMissingSupplier",
+  "excludedMalformed",
+] as const;
+
+export type ContractDataQuality = {
+  validComparableAwards?: number;
+  releasesSeen?: number;
+  [key: string]: number | undefined;
+};
+
+/** Sum exclusion counters. Returns null when any field is missing or non-integer. */
+export function sumContractExclusions(quality: ContractDataQuality | null | undefined): number | null {
+  if (!quality) return null;
+  const values = CONTRACT_EXCLUSION_FIELDS.map((field) => quality[field]);
+  if (values.some((value) => value === undefined || !Number.isInteger(value) || (value as number) < 0)) {
+    return null;
+  }
+  return values.reduce<number>((sum, value) => sum + (value as number), 0);
+}
+
+/**
+ * Coverage line required beside any money total.
+ * Example: "881 of 915 awards · 34 excluded for missing or non-comparable values"
+ */
+export function contractCoverageLine(
+  comparableAwards: number,
+  excluded: number | null,
+): string | null {
+  if (!Number.isInteger(comparableAwards) || comparableAwards < 0) return null;
+  if (excluded === null) return null;
+  const examined = comparableAwards + excluded;
+  return `${comparableAwards.toLocaleString("en-GB")} of ${examined.toLocaleString("en-GB")} awards · ${excluded.toLocaleString("en-GB")} excluded for missing or non-comparable values`;
+}
+
+export function frameworkValueLabel(framework: boolean): string {
+  return framework ? "Framework maximum (ceiling, not committed spend)" : "Single award notice";
+}
+
 export type PublicAward = {
   rank: number; key: string; ocid: string; releaseId: string; awardId: string; title: string; buyer: string; buyerId?: string | null; suppliers: string[]; supplierIds?: Array<string | null>; supplierNations: string[];
   awardDate: string; publishedAt: string; amount: number; currency: "GBP"; valueBasis: PublicMoneyValueBasis; procurementMethod: string | null; procurementMethodDetails: string | null; mainProcurementCategory: string | null; framework: boolean; noticeUrl: string; procurementUrl: string;
@@ -158,6 +201,17 @@ export function serializePublicMoneyUrlState(state: PublicMoneyUrlState): string
     params.set("dossier", `${state.dossier.kind}:${state.dossier.basis}:${state.dossier.identity}`);
   }
   return params.toString();
+}
+
+export function dossierHref(selection: DossierSelection): string {
+  const search = serializePublicMoneyUrlState({
+    query: "",
+    buyer: "all",
+    nation: "all",
+    page: 1,
+    dossier: selection,
+  });
+  return search ? `/money?${search}` : "/money";
 }
 
 export function filteredAwardCoverage(
