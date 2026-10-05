@@ -13,6 +13,7 @@ Updated 5 October 2026.
 | #201 lead card and history card | Local `LeadHistoryCards`, `NationalDebtCounter`, `NationalEvidenceEditionBadges`; PR validation classify, quality and full-quality on `8e9f287` | Passed. Merged as `c68aeed`. |
 | #203 six topic cards | Local six-card suites; PR validation classify, quality and full-quality on `8bd3628` | Passed. Merged as `de9d4b6`. |
 | #205 contract dossier | Local money/contracts suites; PR validation classify, quality and full-quality on `366bc62` | Passed. Squash-merged as `0450dcb`. |
+| #206 Look up a place | Local `placeLookup` unit tests; PR validation classify, quality and full-quality on `6226d4b` | 6 passed locally. Squash-merged as `75153d9`. |
 
 ## Features
 
@@ -24,8 +25,8 @@ Updated 5 October 2026.
 | 4 | Lead card and history card | Merged. Homepage lead and history are separate white cards. Debt section mirrors the same lead/history split. Fail closed when history has fewer than two verified points. |
 | 5 | Six topic cards | Merged. Homepage grid is six cards: prices, jobs, debt, rents, NHS waiting list, contracts. Unavailable cards say unavailable, never zero. NHS stays unavailable. |
 | 6 | Contract dossier | Merged. Notice-first lead, exclusion coverage on totals, framework badges, buyer/supplier dossier routes. `governmentContracts` stays disabled. |
-| 7 | Look up a place | In progress. Geography lookup on the Look up/Explore door; postcodes fail closed. |
-| 8 | Compare, one indicator | Not started |
+| 7 | Look up a place | Merged. Explore is the Look up door; published geographies only; postcodes fail closed. |
+| 8 | Compare, one indicator | In progress. One-indicator Compare door; overlay peers only when definitions match; country peers unavailable. |
 | 9 | Polling table | Not started |
 | 10 | Edition page and read API | Not started |
 
@@ -65,8 +66,15 @@ Updated 5 October 2026.
 - Unknown place names fail closed as `no-match`.
 - Buyer and supplier dossiers remain under `/money/`.
 
+## Compare, one indicator evidence
+
+- `/compare/` leads with one published indicator from the current measure catalog.
+- Overlay peers require `compareEligibility === "overlay"` (shared definition, unit, cadence and geography).
+- Country peers stay unavailable while `internationalComparison` / UK-in-context is offline. No invented peer table.
+- Comparison studio remains below for multi-measure workspaces. NHS stays unavailable. `governmentContracts` stays disabled.
+
 ## Next
 
-1. Finish feature 7 (Look up a place): tests, PR, merge when green.
-2. Then feature 8 (Compare, one indicator).
+1. Finish feature 8 (Compare, one indicator): tests, PR, merge when green.
+2. Then feature 9 (Polling table).
 3. Do not invent NHS figures. Do not mark NHS optional. `governmentContracts` stays disabled unless this progress note says otherwise.
