@@ -136,7 +136,7 @@ export default function MetricsStatus({ section, status, showCurrentness = true 
   return (
     <aside
       className={`${showCurrentness ? "mt-6" : "mt-3"} border-y border-line-strong px-1 py-3 md:px-2`}
-      aria-label={`${meta.name} ${showCurrentness ? "evidence status" : "sources and methods"}`}
+      aria-label={`${meta.name} ${showCurrentness ? "evidence status" : "evidence file"}`}
     >
       {showCurrentness ? (
         <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3">
@@ -162,11 +162,11 @@ export default function MetricsStatus({ section, status, showCurrentness = true 
         </div>
       ) : null}
 
-      <details className={`${showCurrentness ? "mt-1" : ""} max-w-4xl`}>
-        <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-semibold underline decoration-1 underline-offset-4 hover:text-accent">
-          Sources and methods
+      <details className={`${showCurrentness ? "mt-1" : ""} max-w-5xl evidence-file-disclosure`}>
+        <summary className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-sm font-semibold underline decoration-1 underline-offset-4 hover:text-accent">
+          Evidence file <span aria-hidden="true">＋</span>
         </summary>
-        <div className="grid gap-3 border-l-2 border-accent py-2 pl-4 text-sm leading-6 text-neutral-700 sm:ml-1 sm:grid-cols-[minmax(0,1fr)_minmax(15rem,0.8fr)] sm:gap-6">
+        <div className="evidence-file">
           <div>
             <h2 className="font-semibold text-foreground">Primary publications</h2>
             <ul className="mt-1 list-none space-y-1 p-0">
@@ -194,6 +194,11 @@ export default function MetricsStatus({ section, status, showCurrentness = true 
             <h2 className="font-semibold text-foreground">How to read it</h2>
             <p className="mt-1">{detail.caveat}</p>
           </div>
+          <dl className="evidence-file__metadata">
+            <div><dt>Publication window</dt><dd>{detail.publicationPeriod}</dd></div>
+            <div><dt>Unit</dt><dd>{detail.unit}</dd></div>
+            <div><dt>Revision policy</dt><dd>{detail.revisionStatus}</dd></div>
+          </dl>
         </div>
       </details>
     </aside>
