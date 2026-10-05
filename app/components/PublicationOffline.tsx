@@ -1,7 +1,16 @@
 import Link from "next/link";
+import { publicationRouteEnabled } from "@/contracts/publication-policy";
 import BrandLogo from "./BrandLogo";
 
 export default function PublicationOffline({ title = "Evidence is being reverified" }: { title?: string }) {
+  const evidenceDoors = [
+    ["Explore", "/explore"],
+    ["Compare", "/compare"],
+    ["Briefing", "/briefing"],
+  ] as const;
+  const enabledEvidenceDoors = evidenceDoors.filter(([, href]) => publicationRouteEnabled(href));
+  const sourcesEnabled = publicationRouteEnabled("/sources");
+
   return (
     <div className="premium-offline">
       <header className="publication-masthead sticky top-0 z-50">
@@ -17,15 +26,11 @@ export default function PublicationOffline({ title = "Evidence is being reverifi
             <Link prefetch={false} href="/" className="edition-door" aria-current="page">
               Latest
             </Link>
-            <Link prefetch={false} href="/explore" className="edition-door">
-              Explore
-            </Link>
-            <Link prefetch={false} href="/compare" className="edition-door">
-              Compare
-            </Link>
-            <Link prefetch={false} href="/briefing" className="edition-door">
-              Briefing
-            </Link>
+            {enabledEvidenceDoors.map(([label, href]) => (
+              <Link key={href} prefetch={false} href={href} className="edition-door">
+                {label}
+              </Link>
+            ))}
           </nav>
           <p className="justify-self-end text-[0.625rem] font-bold uppercase tracking-[0.14em] text-[var(--muted)]">
             Offline edition
@@ -54,9 +59,11 @@ export default function PublicationOffline({ title = "Evidence is being reverifi
               <Link prefetch={false} href="/contact">
                 Contact
               </Link>
-              <Link prefetch={false} href="/sources">
-                Sources
-              </Link>
+              {sourcesEnabled ? (
+                <Link prefetch={false} href="/sources">
+                  Sources
+                </Link>
+              ) : null}
             </div>
           </article>
 
