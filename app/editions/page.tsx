@@ -1,4 +1,5 @@
 import PublicationOffline from "@/app/components/PublicationOffline";
+import RevisionLedger from "@/app/components/RevisionLedger";
 import { publicationRouteEnabled } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -8,11 +9,61 @@ import { readEditionSummaries } from "@/app/lib/serverEditionArchive";
 import { SITE_DISCOVERY } from "@/app/lib/discovery";
 import { SECTIONS } from "@/app/lib/sections";
 
-export const metadata: Metadata = { title: "Publication editions and revisions", description: "Browse retained source editions and their dated observations, corrections and method changes." };
+export const metadata: Metadata = {
+  title: "Publication editions and revisions",
+  description: "Browse retained source editions and their dated observations, corrections and method changes.",
+};
 
 export default async function EditionsPage() {
   if (!publicationRouteEnabled("/editions/")) return <PublicationOffline />;
   const staticExport = process.env.STATIC_EXPORT === "true";
   const editions = staticExport ? null : await readEditionSummaries();
-  return <div className="min-h-screen bg-background text-foreground"><a href="#editions" className="sr-only focus:not-sr-only focus:block focus:bg-white focus:p-4">Skip to edition archive</a><SectionNav sections={SECTIONS}/><main id="editions" className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-12"><header className="mb-8 border-b-4 border-foreground bg-surface-warm p-5 md:p-8"><p className="eyebrow">Historical publication archive</p><h1 className="mt-2 text-5xl font-black tracking-[-0.06em] md:text-7xl">Editions and revisions</h1><p className="mt-4 max-w-3xl text-base leading-7 text-gray-700">Each archived catalog is presented as it was known at its publication date. Later checks do not silently overwrite earlier editions.</p><p className="mt-3 max-w-3xl text-sm leading-6 text-gray-700">Retention: the 60 most recent verified catalogs are kept. Older entries may expire as new editions arrive, so this is a bounded change record rather than a complete history of every publisher. Observation, source-publication and archive dates are shown separately.</p></header>{editions?.length ? <ol className="list-none divide-y-2 divide-foreground border-y-2 border-foreground bg-white p-0">{editions.map((edition) => <li key={edition.id} className="grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"><div><p className="font-mono text-xs text-gray-600">Source published {edition.publishedAt.slice(0, 10)} · {edition.asOf ? `Archived ${edition.asOf.slice(0, 10)}` : "Archive date unavailable for this older edition"} · {edition.sourceEditionIds.length} source editions</p><h2 className="mt-2 text-xl font-black">{edition.changes.length} recorded changes</h2><p className="mt-1 text-sm text-gray-700">{edition.changes.slice(0, 3).map((change) => `${change.measureId}: ${change.kind}`).join(" · ") || "No source change from the preceding archived catalog"}</p></div><Link className="v3-secondary-action" href={`/editions/${encodeURIComponent(edition.id)}`}>Open as-of edition</Link></li>)}</ol> : <div role="status" className="border-l-4 border-accent bg-white p-6 text-sm leading-6">{staticExport ? <><p>This bounded static seed does not include retained edition summaries.</p><a className="mt-3 inline-block font-bold underline" href={`${SITE_DISCOVERY.origin}/editions/`}>Open the live publication archive</a></> : editions ? "No edition summaries are retained yet. The first verified archive will appear here." : "The public edition archive is temporarily unavailable."}</div>}</main><SiteFooter/></div>;
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <a href="#editions" className="sr-only focus:not-sr-only focus:block focus:bg-white focus:p-4">Skip to edition archive</a>
+      <SectionNav sections={SECTIONS}/>
+      <main id="editions" className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-12">
+        <header className="mb-8 border-b-4 border-foreground bg-surface-warm p-5 md:p-8">
+          <p className="eyebrow">Historical publication archive</p>
+          <h1 className="mt-2 text-5xl font-black tracking-[-0.06em] md:text-7xl">Editions and revisions</h1>
+          <p className="mt-4 max-w-3xl text-base leading-7 text-gray-700">Each archived catalog is presented as it was known at its publication date. Later checks do not silently overwrite earlier editions.</p>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-700">Retention: the 60 most recent verified catalogs are kept. Older entries may expire as new editions arrive, so this is a bounded change record rather than a complete history of every publisher. Observation, source-publication and archive dates are shown separately. Disabled publications are omitted from archived responses.</p>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-700">Machine-readable copies: <a className="font-bold underline" href={`${SITE_DISCOVERY.origin}/data/editions.json`}>/data/editions.json</a> and <code className="font-mono text-xs">{'/data/edition.json?edition=<id>'}</code>.</p>
+        </header>
+        {editions?.length ? (
+          <>
+            <ol className="list-none divide-y-2 divide-foreground border-y-2 border-foreground bg-white p-0">
+              {editions.map((edition) => (
+                <li key={edition.id} className="grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                  <div>
+                    <p className="font-mono text-xs text-gray-600">Source published {edition.publishedAt.slice(0, 10)} · {edition.asOf ? `Archived ${edition.asOf.slice(0, 10)}` : "Archive date unavailable for this older edition"} · {edition.sourceEditionIds.length} source editions</p>
+                    <h2 className="mt-2 text-xl font-black">{edition.changes.length} recorded changes</h2>
+                    <p className="mt-1 text-sm text-gray-700">{edition.changes.slice(0, 3).map((change) => `${change.measureId}: ${change.kind}`).join(" · ") || "No source change from the preceding archived catalog"}</p>
+                  </div>
+                  <Link className="v3-secondary-action" href={`/editions/${encodeURIComponent(edition.id)}`}>Open as-of edition</Link>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-10">
+              <RevisionLedger summaries={editions}/>
+            </div>
+          </>
+        ) : (
+          <div role="status" className="border-l-4 border-accent bg-white p-6 text-sm leading-6">
+            {staticExport ? (
+              <>
+                <p>This bounded static seed does not include retained edition summaries.</p>
+                <a className="mt-3 inline-block font-bold underline" href={`${SITE_DISCOVERY.origin}/editions/`}>Open the live publication archive</a>
+              </>
+            ) : editions ? (
+              "No edition summaries are retained yet. The first verified archive will appear here."
+            ) : (
+              "The public edition archive is temporarily unavailable."
+            )}
+          </div>
+        )}
+      </main>
+      <SiteFooter/>
+    </div>
+  );
 }

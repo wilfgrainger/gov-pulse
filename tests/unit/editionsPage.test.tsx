@@ -31,6 +31,9 @@ describe("edition archive reader", () => {
     expect(markup).toContain("Source published 2026-07-01 · Archived 2026-07-02");
     expect(markup).toContain("Archive date unavailable for this older edition");
     expect(markup.indexOf("Archived 2026-07-03")).toBeLessThan(markup.indexOf("Archived 2026-07-02"));
+    expect(markup).toContain("Revision ledger");
+    expect(markup).toContain("/data/editions.json");
+    expect(markup).toContain("/data/edition.json?edition=");
   });
 });
 

@@ -42,8 +42,6 @@ describe("disabled public deliveries", () => {
   });
   it.each([
     "/data/international-comparison.json",
-    "/data/editions.json",
-    "/data/edition.json?edition=example",
     "/data/contracts/history.json?ocid=ocds-h6vhtk-123abc",
   ])("blocks %s before reading storage or an upstream", async (path) => {
     const get = vi.fn(async () => null);
@@ -57,6 +55,17 @@ describe("disabled public deliveries", () => {
     expect(get).not.toHaveBeenCalled();
     expect(getWithMetadata).not.toHaveBeenCalled();
     expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("opens the edition archive read API while keeping disabled sources private", async () => {
+    const get = vi.fn(async () => null);
+    const getWithMetadata = vi.fn(async () => ({ value: null, metadata: null }));
+    const list = await worker.fetch(new Request("https://public-data.org/data/editions.json"), { METRICS_CACHE: { get, getWithMetadata } });
+    expect(list.status).not.toBe(503);
+    expect(await list.json()).not.toMatchObject({ code: "publication_disabled" });
+    const detail = await worker.fetch(new Request("https://public-data.org/data/edition.json?edition=example"), { METRICS_CACHE: { get, getWithMetadata } });
+    expect(detail.status).not.toBe(503);
+    expect(await detail.json()).not.toMatchObject({ code: "publication_disabled" });
   });
 
   it("serves the metrics snapshot only for the enabled nationalDebt publication", async () => {

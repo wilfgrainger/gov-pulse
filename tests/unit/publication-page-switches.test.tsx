@@ -3,6 +3,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import Home from "@/app/page";
 import SectionPage from "@/app/section/[id]/page";
 import PublicMoneyPage from "@/app/money/page";
+import EditionsPage from "@/app/editions/page";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
 import { GET } from "@/app/data/sections/[file]/route";
 import { renderRssFeed } from "@/app/feed.xml/route";
@@ -23,6 +24,12 @@ describe("source-specific publication switches", () => {
     expect(screen.queryByRole("heading", { name: /temporarily offline/i })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Britain, in evidence/i })).toBeInTheDocument();
     expect(readServerMetricsSnapshot).toHaveBeenCalled();
+  });
+
+  it("opens the edition archive pages once editionArchive is enabled", async () => {
+    render(await EditionsPage());
+    expect(screen.queryByRole("heading", { name: /temporarily offline/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Editions and revisions/i })).toBeInTheDocument();
   });
   it("withdraws public-money dossiers before reading stored awards", async () => {
     render(await PublicMoneyPage());
