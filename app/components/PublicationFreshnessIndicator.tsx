@@ -53,19 +53,13 @@ export default function PublicationFreshnessIndicator() {
   const copy = describeFreshness(report, new Date());
   if (!copy) return null;
 
-  // Desktop keeps the full sentence inline in the nav rail. Below `lg` there
-  // is no room for prose next to the logo/links, so the same status renders
-  // as a compact coloured dot + time-only chip instead of disappearing
-  // entirely — tapping/focusing it (a <details> needs no JS) reveals the
-  // full message. The underlying text and semantics are unchanged from the
-  // desktop version; this only adds a second, narrower presentation.
   const shortTime = copy.message.match(/\d{2}:\d{2}/)?.[0] ?? "";
 
   return (
     <>
       <p
         className={`hidden shrink-0 items-center gap-2 border-l pl-4 text-xs leading-5 lg:flex ${
-          copy.degraded ? "border-amber-400 text-amber-800" : "border-[var(--accent-vivid)] text-[#0a4a6e]"
+          copy.degraded ? "border-amber-400 text-amber-200" : "border-[var(--accent)] text-[var(--muted)]"
         }`}
         role="status"
       >
@@ -80,8 +74,8 @@ export default function PublicationFreshnessIndicator() {
           aria-label={copy.message}
           className={`flex min-h-8 cursor-pointer list-none items-center gap-1.5 border px-2 py-1 text-[0.68rem] font-semibold leading-none ${
             copy.degraded
-              ? "border-amber-400 bg-amber-50 text-amber-800"
-              : "border-[var(--accent-vivid)] bg-[var(--accent-soft)] text-[#0a4a6e]"
+              ? "border-amber-400 bg-[#2a2110] text-amber-200"
+              : "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-on-dark)]"
           }`}
         >
           <span
@@ -90,7 +84,7 @@ export default function PublicationFreshnessIndicator() {
           />
           <span aria-hidden="true">{shortTime || "Status"}</span>
         </summary>
-        <p role="status" className="mt-1 max-w-[14rem] border border-[#d3dae1] bg-white p-2 text-xs leading-5 text-[#3a4450] shadow-[0_8px_20px_rgba(20,36,59,0.12)]">
+        <p role="status" className="mt-1 max-w-[14rem] border border-[var(--line)] bg-[#151a21] p-2 text-xs leading-5 text-[var(--foreground)]">
           {copy.message}
         </p>
       </details>

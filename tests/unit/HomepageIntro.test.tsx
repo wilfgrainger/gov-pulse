@@ -17,16 +17,16 @@ describe("HomepageIntro", () => {
   it("puts today's evidence first and keeps source access visible", () => {
     render(<HomepageIntro />);
 
-    expect(screen.getByRole("link", { name: /Explore the data/i })).toHaveAttribute("href", "/explore");
-    expect(screen.getByRole("link", { name: /Read the latest briefing/i })).toHaveAttribute("href", "/briefing");
+    expect(screen.getByRole("link", { name: /Look up a measure or place/i })).toHaveAttribute("href", "/explore");
+    expect(screen.getByRole("link", { name: "Edition archive" })).toHaveAttribute("href", "/editions");
     expect(screen.getByRole("link", { name: "Sources and dates" })).toHaveAttribute("href", "/sources");
     expect(screen.queryByRole("navigation", { name: "Start with a question" })).not.toBeInTheDocument();
   });
 
-  it("gives the front page direct paths into the Measure library and Compare", () => {
+  it("gives the front page direct paths into Look up and Compare", () => {
     render(<HomepageIntro />);
 
-    expect(screen.getByRole("link", { name: "Measure library" })).toHaveAttribute("href", "/measure");
+    expect(screen.getByRole("link", { name: /Look up a measure or place/i })).toHaveAttribute("href", "/explore");
     expect(screen.getByRole("link", { name: "Compare" })).toHaveAttribute("href", "/compare");
   });
 });

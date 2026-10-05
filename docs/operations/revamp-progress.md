@@ -32,73 +32,18 @@ Updated 5 October 2026.
 | 8 | Compare, one indicator | Merged. One-indicator Compare door; overlay peers only when definitions match; country peers unavailable while UK-in-context is offline. |
 | 9 | Polling table | Merged. Aligned party-column table; no average; shares require a source URL; corrections are separate rows; betting markets absent from the table. `electionPolling` stays disabled. |
 | 10 | Edition page and read API | Merged. `/editions/` and `/editions/[id]` open with `editionArchive` enabled; `/data/editions.json` and `/data/edition.json` are the public read path; revision ledger on the index. Disabled source values stay redacted from archived responses. Squash-merged as `cd44854`. |
+| 11 | Premium look | In progress on `premium-look`. Ink chrome, warm paper surfaces, vermillion accent, asymmetric masthead, designed offline shell. Debt-only publication behaviour unchanged. |
 
-## Lead and history evidence
+## Premium look evidence
 
-- Homepage `NationalEvidenceEdition` renders `lead-card` and `history-card` from the selected lead signal only via `LeadHistoryCards`.
-- History card requires at least two verified observations. No invented earlier points.
-- Debt section `NationalDebtCounter` presents the ONS stock as a lead card and the ten-year HF6W series as a history card.
-- NHS stays unavailable. Other publications stay paused as configured. No invented figures.
-
-## Six topic cards evidence
-
-- `selectNationalEvidenceEdition` returns exactly six cards in this order: Prices (CPI), Jobs (unemployment), Debt (PSND % of GDP), Rents (ONS PIPR annual change with the ONS average monthly rent), NHS waiting list (England RTT pathways), Contracts (Find a Tender comparable award count).
-- GDP, real wages, house prices and net migration leave the homepage grid. They are demoted to "Go deeper by topic" links, shown only when their publication is enabled. No tool or route is removed.
-- Each card fails closed: a missing source, a non-current catalog record or a missing field gives "Current value unavailable", never zero.
-- Rents read `housePriceIndex.headline.privateRent*` only, and are gated on the catalog `privateRentAnnualChange` state without overwriting the house-price history.
-- Contracts show a notice count with "Notices updated, not money spent" and the summed exclusion counts. No money total on the card. Contracts never become the lead.
-- With today's debt-only publication, debt is current and the other five cards say unavailable. NHS stays unavailable.
-- Local tests: `npx vitest run` 170 files, 1090 tests passed before the PR split. Focused suites, `tsc --noEmit`, ESLint on changed files, static architecture and source ownership checks passed on the tip.
-- Known gap: `tests/e2e/smoke.spec.ts` still expects 7 signal cards (it was already stale at 8). It is not run in PR validation and will be updated with the homepage rebuild.
-
-## Contract dossier evidence
-
-- `GovernmentContracts` leads with the highest-ranked Find a Tender notice (title, buyer, supplier, value basis, procedure, framework flag, notice link), not a money headline.
-- Any ranked money total requires `contractCoverageLine` from complete exclusion counters. Incomplete exclusions withhold the totals.
-- Framework awards use an amber badge and row treatment: "Framework maximum (ceiling, not committed spend)".
-- Buyer and supplier publisher IDs open `/money/buyer/[id]` and `/money/supplier/[id]`, which redirect into the existing dossier URL state.
-- Window copy states notices updated, not money spent that week. Caveats and no-waste policy stay. `governmentContracts` publication stays disabled.
-- UK DOGE scrutiny panel remains in `GovernmentContractsScrutiny` (`id="uk-doge"`), composed via Charts. Independent, evidence-led, not findings of waste.
-- Local focused suites and PR validation full-quality green on tip `366bc62` before squash-merge `0450dcb`.
-
-## Look up a place evidence
-
-- Explore (`/explore/`) is the Look up door: place geography search plus the existing measure explorer.
-- `lookupPlace` matches only geographies already present on measure definitions (UK, ENG, EW, GB, …). No invented local-authority series.
-- Postcodes (including SY1, TD15, JE1) stay `postcode-unclassified` — a postcode area is not a country boundary.
-- Unknown place names fail closed as `no-match`.
-- Buyer and supplier dossiers remain under `/money/`.
-
-## Compare, one indicator evidence
-
-- `/compare/` leads with one published indicator from the current measure catalog.
-- Overlay peers require `compareEligibility === "overlay"` (shared definition, unit, cadence and geography).
-- Country peers stay unavailable while `internationalComparison` / UK-in-context is offline. No invented peer table.
-- Comparison studio remains below for multi-measure workspaces. NHS stays unavailable. `governmentContracts` stays disabled.
-- Local `oneIndicatorCompare` suite 7 passed; PR validation green on `d37ed53`; squash-merged as `0a9ee2f`.
-
-## Polling table evidence
-
-- `buildPollingTable` keeps pollsters as separate rows with aligned party columns. `includesAverage` is always false.
-- A publication without an https source URL is omitted (`omittedWithoutSource`). A share cannot appear without a source link.
-- Ipsos correction notices are separate `correction` rows with original and corrected shares; they do not extend current freshness.
-- `PollingTable` replaces the card grid on the election-polls section. Betting markets are absent from the table copy and model.
-- `electionPolling` and `bettingOdds` stay disabled in `config/publications.json`. NHS stays unavailable. `governmentContracts` stays disabled. No invented figures.
-- YouGov remains CC BY-NC with attribution and source URL. More in Common rows link to the publisher URL; workbooks are not bulk-hosted by this change.
-- Local: `npx vitest run tests/unit/pollingTable.test.ts tests/unit/ElectionPolling.test.tsx` — 17 passed.
-- Squash-merged as `3a9a063` from PR #209 after classify, quality and full-quality on `cdf1aad`.
-
-## Edition page and read API evidence
-
-- `config/publications.json` sets `editionArchive.enabled` to true so `/editions/` and `/editions/[id]` leave the offline notice.
-- Public read path: `/data/editions.json` (bounded list) and `/data/edition.json?edition=<validated-id>` (immutable detail). Malformed ids fail closed; missing editions return not found, not invented catalogs.
-- Archived responses redact disabled sources via `filterPublicationCatalog` / `filterPublicationSummary`. With debt-only source publication, non-debt measures and their revision rows stay private.
-- Editions index lists retained catalogs newest-first, links each as-of detail page, documents the read API, and renders `RevisionLedger` for dated changes. Historical detail pages keep as-of labelling and never present archived values as current.
-- NHS stays unavailable. `governmentContracts`, `electionPolling` and `bettingOdds` stay disabled. No Oddschecker. No invented figures. British English copy.
-- Local focused suites: `npx vitest run tests/unit/publication-policy.test.ts tests/worker/publication-switches.test.ts tests/unit/publication-page-switches.test.tsx tests/unit/editionsPage.test.tsx tests/unit/editionArchiveRoute.test.ts tests/unit/serverEditionArchive.test.ts tests/unit/RevisionLedger.test.tsx` — 38 passed.
-- Squash-merged as `cd44854` from PR #210 after classify, quality and full-quality on `70f072a`.
+- Direction: paid editorial terminal. Ink desk `#0c0f12`, warm paper reading surfaces `#f6f2ea`, one vermillion accent `#e8352e`.
+- Display face remains Familjen Grotesk (`--font-display-file`). Inter stays body only.
+- Signature moves: asymmetric masthead, extreme type contrast, ink paper, single accent, tabular nums, hairline furniture, lead breakout, designed offline state, reduced-motion, focus-visible AA.
+- Hard bans kept: no purple-to-blue gradient, no glassmorphism, no Inter display, no centred AI hero.
+- Publications config untouched. NHS stays unavailable. `governmentContracts`, polling and betting stay disabled.
+- Local: `npx vitest run tests/unit/premiumLook.test.tsx tests/unit/SectionNav.test.tsx tests/unit/LeadHistoryCards.test.tsx` — 14 passed.
 
 ## Next
 
-1. Deploy verification of live `/editions/` and `/data/editions.json` after enablement `cd44854`.
+1. Merge premium look after quality checks. Deploy verification of live homepage chrome and `/editions/`.
 2. Do not invent NHS figures. Do not mark NHS optional. `governmentContracts` stays disabled unless this progress note says otherwise.

@@ -8,6 +8,7 @@ import type { CategoryGroup } from "../lib/sections";
 import BrandLogo from "./BrandLogo";
 import EvidenceSearch from "./EvidenceSearch";
 import PublicationFreshnessIndicator from "./PublicationFreshnessIndicator";
+import SectionNavTopicsPanel from "./SectionNavTopicsPanel";
 
 const QUICK_LINK_IDS = [
   "gdp",
@@ -28,16 +29,13 @@ export default function SectionNav({ sections: configuredSections }: { sections:
   const searchToggleRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
 
-  const allSections = useMemo(
-    () => sections.flatMap((group) => group.sections),
-    [sections]
-  );
+  const allSections = useMemo(() => sections.flatMap((group) => group.sections), [sections]);
   const quickLinks = QUICK_LINK_IDS.flatMap((id) => {
     const section = allSections.find((item) => item.id === id);
     return section ? [section] : [];
   });
 
-  const isActive = (id: string) => pathname?.replace(/\/$/, '') === `/section/${id}`;
+  const isActive = (id: string) => pathname?.replace(/\/$/, "") === `/section/${id}`;
 
   useEffect(() => {
     if (!menuOpen && !searchOpen) return;
@@ -47,10 +45,7 @@ export default function SectionNav({ sections: configuredSections }: { sections:
       const targetElement = target instanceof Element ? target : null;
       const insideMenu = menuRef.current?.contains(target) ?? false;
       const insideSearch = searchRef.current?.contains(target) ?? false;
-      const insideToggle = Boolean(
-        targetElement?.closest("[data-publication-panel-toggle]")
-      );
-
+      const insideToggle = Boolean(targetElement?.closest("[data-publication-panel-toggle]"));
       if (!insideMenu && !insideSearch && !insideToggle) {
         setMenuOpen(false);
         setSearchOpen(false);
@@ -90,177 +85,111 @@ export default function SectionNav({ sections: configuredSections }: { sections:
   }
 
   const focusClasses =
-    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14243b]";
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]";
 
   return (
-    <header role="banner" className="w-full">
-      <nav className="publication-masthead border-b border-[#aab4bf] bg-white" aria-label="public-data.org navigation">
-      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2 md:px-6 md:py-3">
-        <Link
-          href="/"
-          prefetch={false}
-          className={`inline-flex min-h-11 shrink-0 items-center ${focusClasses}`}
-          aria-current={pathname === "/" ? "page" : undefined}
-        >
-          <BrandLogo compact />
-        </Link>
-        <Link href="/" prefetch={false} aria-current={pathname === "/" ? "page" : undefined} className={`inline-flex min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 ${focusClasses}`}>Latest</Link>
-        <Link href="/explore/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/explore' ? 'page' : undefined} className={`inline-flex min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 ${focusClasses}`}>Look up</Link>
-        <Link href="/compare/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/compare' ? 'page' : undefined} className={`inline-flex min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 ${focusClasses}`}>Compare</Link>
-
-        <PublicationFreshnessIndicator />
-
-        <div className="ml-auto flex items-center gap-1 sm:gap-2">
-          <Link
-            href="/sources"
-            prefetch={false}
-            className={`hidden min-h-11 items-center px-3 text-sm font-semibold underline decoration-black/20 underline-offset-4 hover:text-accent sm:inline-flex ${focusClasses}`}
-            aria-current={pathname === "/sources" ? "page" : undefined}
-          >
-            Sources
-          </Link>
-          <button
-            ref={searchToggleRef}
-            type="button"
-            data-publication-panel-toggle
-            onClick={toggleSearch}
-            className={`inline-flex min-h-11 items-center border border-[#14243b] px-3 py-2 text-sm font-semibold text-[#14243b] transition-colors hover:bg-[#eef1f4] max-[359px]:px-2 sm:px-4 ${focusClasses}`}
-            aria-label="Search evidence"
-            aria-expanded={searchOpen}
-            aria-controls="global-evidence-search-panel"
-          >
-            Search
-          </button>
-          <button
-            ref={menuToggleRef}
-            type="button"
-            data-publication-panel-toggle
-            onClick={toggleMenu}
-            className={`inline-flex min-h-11 items-center gap-2 bg-[#14243b] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1f5c8a] max-[359px]:px-2 sm:px-4 ${focusClasses}`}
-            aria-expanded={menuOpen}
-            aria-controls="all-topic-navigation"
-          >
-            <span>Topics</span>
-            <span aria-hidden="true" className={`text-base transition-transform ${menuOpen ? "rotate-45" : ""}`}>+</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="hidden border-t border-[#dbe0e6] md:block">
-        <div className="mx-auto flex max-w-7xl items-center overflow-x-auto px-6 text-xs">
-          <Link
-            href="/"
-            prefetch={false}
-            className={`inline-flex min-h-11 shrink-0 items-center border-r border-[#dbe0e6] pr-4 font-semibold transition-colors hover:text-accent ${focusClasses}`}
-            aria-current={pathname === "/" ? "page" : undefined}
-          >
-            Latest
-          </Link>
-          {quickLinks.map((section) => (
+    <header role="banner" className="w-full premium-sticky-chrome">
+      <nav className="publication-masthead" aria-label="public-data.org navigation">
+        <div className="edition-masthead-shell">
+          <div className="flex min-w-0 flex-wrap items-center gap-2.5">
             <Link
-              key={section.id}
-              href={`/section/${section.id}`}
+              href="/"
               prefetch={false}
-              className={`inline-flex min-h-11 shrink-0 items-center whitespace-nowrap border-r border-[#dbe0e6] px-3 font-medium transition-colors last:border-r-0 hover:bg-[#eef1f4] hover:text-accent ${focusClasses} ${
-                isActive(section.id)
-                  ? "bg-[#14243b] font-semibold text-white hover:bg-[#14243b] hover:text-white"
-                  : "text-[#14243b]"
-              }`}
-              aria-current={isActive(section.id) ? "page" : undefined}
+              className={`inline-flex min-h-11 shrink-0 items-center ${focusClasses}`}
+              aria-current={pathname === "/" ? "page" : undefined}
             >
-              {section.shortLabel ?? section.label}
+              <BrandLogo compact />
             </Link>
-          ))}
-        </div>
-      </div>
+            <PublicationFreshnessIndicator />
+          </div>
 
-      {menuOpen && (
-        <div
-          ref={menuRef}
-          id="all-topic-navigation"
-          className="border-t border-[#d3dae1] bg-[#f4f6f8] shadow-[0_18px_42px_rgba(20,36,59,0.18)]"
-        >
-          <div className="mx-auto max-h-[75vh] max-w-7xl overflow-y-auto px-4 py-6 md:px-6 md:py-8">
-            <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-[#aab4bf] pb-5">
-              <div>
-                <p className="eyebrow">Evidence library</p>
-                <h2 className="font-display mt-2 text-3xl leading-tight md:text-4xl">Choose a public question.</h2>
-              </div>
-              <div className="flex flex-wrap gap-4 text-sm font-semibold">
-                <Link href="/" prefetch={false} onClick={closePanels} className="underline underline-offset-4">Latest edition</Link>
-                <Link href="/sources" prefetch={false} onClick={closePanels} className="underline underline-offset-4">Sources and methods</Link>
-              </div>
-            </div>
+          <div className="edition-doors order-3 w-full md:order-none md:w-auto md:justify-self-center">
+            <Link href="/" prefetch={false} aria-current={pathname === "/" ? "page" : undefined} className={`edition-door ${focusClasses}`}>Latest</Link>
+            <Link href="/explore/" prefetch={false} aria-current={pathname?.replace(/\/$/, "") === "/explore" ? "page" : undefined} className={`edition-door ${focusClasses}`}>Look up</Link>
+            <Link href="/compare/" prefetch={false} aria-current={pathname?.replace(/\/$/, "") === "/compare" ? "page" : undefined} className={`edition-door ${focusClasses}`}>Compare</Link>
+          </div>
 
-            <nav aria-label="More tools" className="mb-6 border border-[#aab4bf] bg-white p-4 md:p-5">
-              <p className="eyebrow">More tools</p>
-              <ul className="mt-3 grid list-none gap-2 p-0 sm:grid-cols-2 lg:grid-cols-4">
-                {[
-                  ["Explore data", "/explore/"],
-                  ["Measure library", "/measure/"],
-                  ["Compare", "/compare/"],
-                  ["Briefing", "/briefing/"],
-                  ["Release calendar", "/calendar/"],
-                  ["Cost of living", "/cost-of-living/"],
-                  ["Public money", "/money/"],
-                  ["Editions", "/editions/"],
-                ].filter(([, href]) => publicationRouteEnabled(href)).map(([label, href]) => (
-                  <li key={href}>
-                    <Link
-                      href={href}
-                      prefetch={false}
-                      onClick={closePanels}
-                      className={`flex min-h-11 items-center justify-between gap-3 border-b border-[#e6ebf0] py-2 text-sm font-semibold hover:text-accent ${focusClasses}`}
-                      aria-current={pathname?.replace(/\/$/, "") === href.replace(/\/$/, "") ? "page" : undefined}
-                    >
-                      {label}<span aria-hidden="true">→</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-
-            <div className="grid gap-px border border-[#aab4bf] bg-[#aab4bf] md:grid-cols-2 lg:grid-cols-4">
-              {sections.map((group) => (
-                <section key={group.category} aria-labelledby={`topic-group-${group.category.toLowerCase().replace(/\s+/g, "-")}`} className="bg-white p-5">
-                  <h2 id={`topic-group-${group.category.toLowerCase().replace(/\s+/g, "-")}`} className="eyebrow">
-                    {group.category}
-                  </h2>
-                  <ul className="mt-4 space-y-1">
-                    {group.sections.map((section) => (
-                      <li key={section.id}>
-                        <Link
-                          href={`/section/${section.id}`}
-                          prefetch={false}
-                          onClick={closePanels}
-                          className={`flex min-h-11 items-center justify-between gap-3 border-b border-[#e6ebf0] py-2 text-sm transition-colors hover:text-accent ${focusClasses} ${
-                            isActive(section.id) ? "font-semibold text-accent" : "text-[#14243b]"
-                          }`}
-                          aria-current={isActive(section.id) ? "page" : undefined}
-                        >
-                          <span>{section.label}</span>
-                          <span aria-hidden="true">→</span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ))}
-            </div>
+          <div className="ml-auto flex items-center gap-1 justify-self-end sm:gap-2">
+            <Link
+              href="/sources"
+              prefetch={false}
+              className={`hidden min-h-11 items-center px-2 text-sm font-semibold text-[var(--muted)] underline decoration-white/20 underline-offset-4 hover:text-[var(--accent-on-dark)] sm:inline-flex ${focusClasses}`}
+              aria-current={pathname === "/sources" ? "page" : undefined}
+            >
+              Sources
+            </Link>
+            <button
+              ref={searchToggleRef}
+              type="button"
+              data-publication-panel-toggle
+              onClick={toggleSearch}
+              className={`inline-flex min-h-11 items-center border border-[var(--line-strong)] px-3 py-2 text-sm font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)] hover:text-white max-[359px]:px-2 sm:px-4 ${focusClasses}`}
+              aria-label="Search evidence"
+              aria-expanded={searchOpen}
+              aria-controls="global-evidence-search-panel"
+            >
+              Search
+            </button>
+            <button
+              ref={menuToggleRef}
+              type="button"
+              data-publication-panel-toggle
+              onClick={toggleMenu}
+              className={`inline-flex min-h-11 items-center gap-2 px-3 py-2 text-sm font-semibold transition-colors max-[359px]:px-2 sm:px-4 ${focusClasses}`}
+              aria-expanded={menuOpen}
+              aria-controls="all-topic-navigation"
+            >
+              <span>Topics</span>
+              <span aria-hidden="true" className={`text-base transition-transform ${menuOpen ? "rotate-45" : ""}`}>+</span>
+            </button>
           </div>
         </div>
-      )}
 
-      {searchOpen && (
-        <div
-          ref={searchRef}
-          id="global-evidence-search-panel"
-          className="border-t border-[#d3dae1] bg-white shadow-[0_18px_42px_rgba(20,36,59,0.18)]"
-        >
-          <EvidenceSearch onNavigate={closePanels} />
+        <div className="edition-quick-rail hidden md:block">
+          <div className="mx-auto flex max-w-7xl items-center overflow-x-auto px-6 text-xs">
+            <Link
+              href="/"
+              prefetch={false}
+              className={`inline-flex min-h-11 shrink-0 items-center border-r border-[var(--line)] pr-4 font-semibold transition-colors hover:text-[var(--accent-on-dark)] ${focusClasses}`}
+              aria-current={pathname === "/" ? "page" : undefined}
+            >
+              Latest
+            </Link>
+            {quickLinks.map((section) => (
+              <Link
+                key={section.id}
+                href={`/section/${section.id}`}
+                prefetch={false}
+                className={`inline-flex min-h-11 shrink-0 items-center whitespace-nowrap border-r border-[var(--line)] px-3 font-medium transition-colors last:border-r-0 hover:text-[var(--accent-on-dark)] ${focusClasses} ${
+                  isActive(section.id)
+                    ? "bg-[var(--accent)] font-semibold text-white hover:bg-[var(--accent)] hover:text-white"
+                    : "text-[var(--muted)]"
+                }`}
+                aria-current={isActive(section.id) ? "page" : undefined}
+              >
+                {section.shortLabel ?? section.label}
+              </Link>
+            ))}
+          </div>
         </div>
-      )}
-    </nav>
+
+        {menuOpen ? (
+          <SectionNavTopicsPanel
+            sections={sections}
+            pathname={pathname}
+            focusClasses={focusClasses}
+            closePanels={closePanels}
+            isActive={isActive}
+            menuRef={menuRef}
+          />
+        ) : null}
+
+        {searchOpen ? (
+          <div ref={searchRef} id="global-evidence-search-panel" className="border-t border-[var(--line)] bg-[#11151a]">
+            <EvidenceSearch onNavigate={closePanels} />
+          </div>
+        ) : null}
+      </nav>
     </header>
   );
 }
