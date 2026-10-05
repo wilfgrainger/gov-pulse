@@ -266,7 +266,8 @@ describe("ElectionPolling evidence integrity", () => {
 
     render(<ElectionPolling />);
 
-    expect(screen.getByRole("heading", { name: "Verified primary poll publications" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Polling table" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Primary tables/i })).toBeInTheDocument();
     expect(screen.getAllByText("YouGov").length).toBeGreaterThan(0);
     expect(screen.getAllByText("5 Jul 2026–6 Jul 2026").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/MRP model/i).length).toBeGreaterThan(0);
@@ -310,7 +311,7 @@ describe("ElectionPolling evidence integrity", () => {
 
     expect(screen.getByText("Latest verified poll · More in Common")).toBeInTheDocument();
     expect(screen.getByText(/More in Common reports Labour at 27%/)).toBeInTheDocument();
-    expect(screen.getAllByText("Publisher did not disclose a publication date").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Publisher did not disclose a publication date|Publication date not disclosed/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Unweighted N on the headline table; workbook cover reports 2,041 total respondents/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/More in Common: 1 publications verified; 11 historical archive files could not be checked/i)).toBeInTheDocument();
     expect(screen.getByText(/Question wording is not disclosed in this publication/i)).toBeInTheDocument();

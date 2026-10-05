@@ -4,228 +4,35 @@ import { useState } from "react";
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import MetricsStatus from "@/app/components/MetricsStatus";
 import PollingPublicationChart from "@/app/components/PollingPublicationChart";
+import PollingTable from "@/app/components/PollingTable";
 import { barWidthPercent } from "@/app/lib/chartModel";
 import {
+  acceptedCorrections,
+  FALLBACK,
+  fieldworkLabel,
+  PARTY_META,
+  formatDate,
+  publicationDateLabel,
+  rankedParties,
+  sourceStatusLabel,
+  validPayload,
+  type PartyKey,
+  type PollSource,
+  type PrimaryPoll,
+} from "@/app/lib/electionPollingSupport";
+import {
   filterPollingPublications,
-  HISTORICAL_POLL_CORRECTIONS,
   pollingLabOptions,
   serializePollingCorrectionCsv,
   serializePollingCorrectionJson,
-  type PollCorrection,
 } from "@/app/lib/pollingLab";
 import { useMetrics } from "@/app/lib/useMetrics";
-
-const FALLBACK = {
-  available: false,
-  latestPublicationDate: null,
-  latestFieldworkEnd: "",
-  expiresAt: "",
-  polls: [],
-  sources: [],
-  aggregation: {
-    method: "none",
-    explanation: "",
-  },
-  evidencePolicy: {
-    sourceClass: "primary-pollster-publication",
-    bpcDisclosureRequired: true,
-    secondaryAggregatorsUsedAsData: false,
-  },
-};
-
-const PARTY_META = {
-  conservative: { label: "Conservative", color: "#0087DC" },
-  labour: { label: "Labour", color: "#E4003B" },
-  liberalDemocrats: { label: "Liberal Democrats", color: "#FAA61A" },
-  reformUK: { label: "Reform UK", color: "#12B6CF" },
-  green: { label: "Green", color: "#6AB023" },
-  snp: { label: "SNP", color: "#FDF38E" },
-  plaidCymru: { label: "Plaid Cymru", color: "#005B54" },
-  yourParty: { label: "Your Party", color: "#6B7280" },
-  restoreBritain: { label: "Restore Britain", color: "#7C3AED" },
-  other: { label: "Other", color: "#767676" },
-} as const;
-
-type PartyKey = keyof typeof PARTY_META;
-
-type PrimaryPoll = {
-  id: string;
-  pollster: string;
-  commissioner: string | null;
-  title: string;
-  questionText: string | null;
-  publicationDate: string | null;
-  publicationDateStatus: "published" | "not-disclosed";
-  fieldworkStart: string;
-  fieldworkEnd: string;
-  sampleSize: number;
-  sampleSizeNote: string | null;
-  geography: string;
-  population: string;
-  mode: string | null;
-  headlineMethod: string;
-  parties: Partial<Record<PartyKey, number>>;
-  sourceUrl: string;
-  methodologyUrl: string;
-  bpcMember: boolean;
-  uncertainty: string | null;
-};
-
-type PollSource = {
-  pollster: string;
-  status: "current" | "partial" | "unavailable";
-  recordCount: number;
-  archiveFilesRequested?: number;
-  archiveFilesValidated?: number;
-  archiveFilesUnavailable?: number;
-};
-
-function isPollCorrection(value: unknown): value is PollCorrection {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const correction = value as Partial<PollCorrection>;
-  let hostname = "";
-  try {
-    hostname = new URL(String(correction.sourceUrl ?? "")).hostname.toLowerCase();
-  } catch {
-    return false;
-  }
-  return nonEmptyText(correction.id) &&
-    correction.pollster === "Ipsos" &&
-    nonEmptyText(correction.title) &&
-    correction.geography === "Scotland" &&
-    correction.observationPeriod === "September 2013" &&
-    correction.measure === "Certain to vote" &&
-    correction.unit === "%" &&
-    !Number.isNaN(parseDateOnlyUtc(correction.correctedAt).getTime()) &&
-    nonEmptyText(correction.reason) &&
-    isHttps(correction.sourceUrl) &&
-    ["ipsos.com", "www.ipsos.com"].includes(hostname) &&
-    Array.isArray(correction.results) &&
-    correction.results.length > 0 &&
-    correction.results.every((result) => result &&
-      nonEmptyText(result.partyId) &&
-      nonEmptyText(result.label) &&
-      Number.isFinite(result.original) && result.original >= 0 && result.original <= 100 &&
-      Number.isFinite(result.corrected) && result.corrected >= 0 && result.corrected <= 100);
-}
-
-function parseDateOnlyUtc(value: unknown) {
-  const match = typeof value === "string" ? value.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
-  if (!match) return new Date(Number.NaN);
-
-  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
-  return date.getUTCFullYear() === Number(match[1]) &&
-    date.getUTCMonth() === Number(match[2]) - 1 &&
-    date.getUTCDate() === Number(match[3])
-    ? date
-    : new Date(Number.NaN);
-}
-
-function nonEmptyText(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function isHttps(value: unknown): value is string {
-  return typeof value === "string" && value.startsWith("https://");
-}
-
-function isPrimaryPoll(value: unknown): value is PrimaryPoll {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const poll = value as Partial<PrimaryPoll>;
-  const shares = poll.parties && typeof poll.parties === "object" ? Object.values(poll.parties) : [];
-
-  return (
-    nonEmptyText(poll.id) &&
-    nonEmptyText(poll.pollster) &&
-    (poll.commissioner === null || nonEmptyText(poll.commissioner)) &&
-    nonEmptyText(poll.title) &&
-    (poll.questionText === null || nonEmptyText(poll.questionText)) &&
-    nonEmptyText(poll.geography) &&
-    nonEmptyText(poll.population) &&
-    (poll.mode === null || nonEmptyText(poll.mode)) &&
-    nonEmptyText(poll.headlineMethod) &&
-    (poll.uncertainty === null || nonEmptyText(poll.uncertainty)) &&
-    (typeof poll.publicationDate === "string"
-      ? !Number.isNaN(parseDateOnlyUtc(poll.publicationDate).getTime()) && poll.publicationDateStatus !== "not-disclosed"
-      : poll.publicationDate === null && poll.publicationDateStatus === "not-disclosed") &&
-    !Number.isNaN(parseDateOnlyUtc(poll.fieldworkStart).getTime()) &&
-    !Number.isNaN(parseDateOnlyUtc(poll.fieldworkEnd).getTime()) &&
-    Number.isInteger(poll.sampleSize) &&
-    Number(poll.sampleSize) >= 500 &&
-    shares.length >= 5 &&
-    shares.every((share) => typeof share === "number" && Number.isFinite(share)) &&
-    isHttps(poll.sourceUrl) &&
-    isHttps(poll.methodologyUrl) &&
-    poll.bpcMember === true
-  );
-}
-
-function isPollSource(value: unknown): value is PollSource {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const source = value as Partial<PollSource>;
-  return nonEmptyText(source.pollster) &&
-    ["current", "partial", "unavailable"].includes(String(source.status)) &&
-    Number.isSafeInteger(source.recordCount) &&
-    Number(source.recordCount) >= 0 &&
-    (source.status !== "partial" || Number(source.archiveFilesUnavailable) > 0);
-}
-
-function validPayload(value: typeof FALLBACK) {
-  const expiresAt = Date.parse(value?.expiresAt ?? "");
-  return (
-    value?.available === true &&
-    Number.isFinite(expiresAt) &&
-    expiresAt >= Date.now() &&
-    Array.isArray(value.polls) &&
-    value.polls.length > 0 &&
-    value.polls.every(isPrimaryPoll) &&
-    (value.sources === undefined || (Array.isArray(value.sources) && value.sources.every(isPollSource))) &&
-    value.aggregation?.method === "none" &&
-    value.evidencePolicy?.secondaryAggregatorsUsedAsData === false
-  );
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(parseDateOnlyUtc(value));
-}
-
-function publicationDateLabel(poll: PrimaryPoll) {
-  return poll.publicationDate
-    ? `Published ${formatDate(poll.publicationDate)}`
-    : "Publisher did not disclose a publication date";
-}
-
-function sourceStatusLabel(source: PollSource) {
-  if (source.status === "unavailable") return `${source.pollster}: source check unavailable.`;
-  if (source.status === "partial") {
-    return `${source.pollster}: ${source.recordCount} publications verified; ${source.archiveFilesUnavailable} historical archive files could not be checked.`;
-  }
-  return `${source.pollster}: ${source.recordCount} publications verified.`;
-}
-
-function fieldworkLabel(poll: PrimaryPoll) {
-  return poll.fieldworkStart === poll.fieldworkEnd
-    ? formatDate(poll.fieldworkEnd)
-    : `${formatDate(poll.fieldworkStart)}–${formatDate(poll.fieldworkEnd)}`;
-}
-
-function rankedParties(poll: PrimaryPoll) {
-  return (Object.entries(poll.parties) as Array<[PartyKey, number]>)
-    .filter(([key, share]) => key in PARTY_META && Number.isFinite(share))
-    .sort((left, right) => right[1] - left[1]);
-}
 
 export default function ElectionPolling() {
   const metrics = useMetrics("electionPolling", FALLBACK);
   const data = metrics.data;
-  const correctionHistory = HISTORICAL_POLL_CORRECTIONS.filter(isPollCorrection);
-  const valid =
-    metrics.isLive && metrics.cacheState === "fresh" && validPayload(data);
+  const correctionHistory = acceptedCorrections();
+  const valid = metrics.isLive && metrics.cacheState === "fresh" && validPayload(data);
   const allPolls = valid ? (data.polls as PrimaryPoll[]) : [];
   const [filters, setFilters] = useState({ pollster: "all", from: "", to: "", publicationFrom: "", publicationTo: "" });
   const pollsters = pollingLabOptions(allPolls);
@@ -233,6 +40,7 @@ export default function ElectionPolling() {
   const latest = polls[0] ?? null;
   const parties = latest ? rankedParties(latest) : [];
   const leader = parties[0] ?? null;
+
   function downloadCorrections(format: "csv" | "json") {
     const content = format === "csv"
       ? serializePollingCorrectionCsv(correctionHistory)
@@ -245,6 +53,7 @@ export default function ElectionPolling() {
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
+
   const pollingFilters = valid ? (
     <section aria-labelledby="polling-lab-title" className="border-y border-foreground bg-white p-5 md:p-6">
       <p className="eyebrow">Explore the source publications</p>
@@ -301,189 +110,74 @@ export default function ElectionPolling() {
           <section aria-labelledby="polling-briefing-title" className="polling-lead grid min-w-0 gap-6 border-y-2 border-foreground bg-[#fff2df] p-4 sm:p-6 lg:grid-cols-[minmax(16rem,0.82fr)_minmax(0,1.18fr)]">
             <div className="flex min-w-0 flex-col justify-center">
               <p className="eyebrow">Latest verified poll · {latest.pollster}</p>
-              <h3 id="polling-briefing-title" className="font-display mt-3 text-3xl leading-tight sm:text-4xl">
-                {PARTY_META[leader[0]].label}
-              </h3>
-              <p className="mt-1 w-fit border-l-[0.45rem] pl-3 text-6xl font-extrabold leading-none tracking-[-0.055em] text-[#14243b] sm:text-7xl" style={{ borderColor: PARTY_META[leader[0]].color }}>
-                {leader[1].toFixed(0)}%
-              </p>
-              <p className="mt-4 max-w-md text-sm leading-6 text-gray-700">
-                {latest.pollster} reports {PARTY_META[leader[0]].label} at {leader[1].toFixed(0)}%. One poll publication, not a polling average.
-              </p>
+              <h3 id="polling-briefing-title" className="font-display mt-3 text-3xl leading-tight sm:text-4xl">{PARTY_META[leader[0]].label}</h3>
+              <p className="mt-1 w-fit border-l-[0.45rem] pl-3 text-6xl font-extrabold leading-none tracking-[-0.055em] text-[#14243b] sm:text-7xl" style={{ borderColor: PARTY_META[leader[0]].color }}>{leader[1].toFixed(0)}%</p>
+              <p className="mt-4 max-w-md text-sm leading-6 text-gray-700">{latest.pollster} reports {PARTY_META[leader[0]].label} at {leader[1].toFixed(0)}%. One poll publication, not a polling average.</p>
               <p className="mt-3 text-xs font-semibold leading-5 text-gray-600">
                 Fieldwork {fieldworkLabel(latest)} · {latest.sampleSize.toLocaleString("en-GB")} {latest.population}<br />
                 {publicationDateLabel(latest)} · {latest.geography} · {latest.mode ?? "Mode not disclosed"}.
                 {latest.sampleSizeNote ? <><br />{latest.sampleSizeNote}</> : null}
               </p>
             </div>
-
             <section aria-labelledby="poll-results-title" className="min-w-0 border-t border-black/15 pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
               <div className="mb-4">
                 <p className="eyebrow">Published headline result</p>
-                <h4 id="poll-results-title" className="mt-2 text-lg font-bold sm:text-xl">
-                  Party shares · latest verified publication
-                </h4>
+                <h4 id="poll-results-title" className="mt-2 text-lg font-bold sm:text-xl">Party shares · latest verified publication</h4>
               </div>
               <div className="space-y-3">
-              {parties.map(([key, share]) => (
-                <div key={key} className="grid grid-cols-[minmax(6.5rem,9rem)_minmax(3rem,1fr)_2.8rem] items-center gap-2 sm:grid-cols-[9rem_1fr_3.5rem] sm:gap-3">
-                  <span className="truncate text-xs font-semibold sm:text-sm">{PARTY_META[key].label}</span>
-                  <div className="h-4 border border-black/20 bg-white" aria-hidden="true">
-                    <div
-                      className="h-full"
-                      style={{
-                        width: `${barWidthPercent(share, 100)}%`,
-                        backgroundColor: PARTY_META[key].color,
-                      }}
-                    />
+                {parties.map(([key, share]) => (
+                  <div key={key} className="grid grid-cols-[minmax(6.5rem,9rem)_minmax(3rem,1fr)_2.8rem] items-center gap-2 sm:grid-cols-[9rem_1fr_3.5rem] sm:gap-3">
+                    <span className="truncate text-xs font-semibold sm:text-sm">{PARTY_META[key].label}</span>
+                    <div className="h-4 border border-black/20 bg-white" aria-hidden="true">
+                      <div className="h-full" style={{ width: `${barWidthPercent(share, 100)}%`, backgroundColor: PARTY_META[key].color }} />
+                    </div>
+                    <span className="text-right font-mono text-xs font-bold tabular-nums sm:text-sm">{share.toFixed(0)}%</span>
                   </div>
-                  <span className="text-right font-mono text-xs font-bold tabular-nums sm:text-sm">{share.toFixed(0)}%</span>
-                </div>
-              ))}
+                ))}
               </div>
             </section>
           </section>
-
           {pollingFilters}
-
           <section aria-labelledby="poll-change-title">
             <div className="mb-4 border-b border-black/15 pb-3">
               <p className="text-sm font-semibold text-accent">What changed?</p>
-              <h4 id="poll-change-title" className="mt-1 text-2xl font-semibold">
-                One current publication; no trend is inferred
-              </h4>
+              <h4 id="poll-change-title" className="mt-1 text-2xl font-semibold">One current publication; no trend is inferred</h4>
             </div>
-            <p className="max-w-3xl text-sm leading-6 text-gray-700">
-              The latest accepted publication places {PARTY_META[leader[0]].label} at {leader[1].toFixed(0)}%. public-data.org does not compare this with a differently designed poll or claim a movement from one observation.
-            </p>
+            <p className="max-w-3xl text-sm leading-6 text-gray-700">The latest accepted publication places {PARTY_META[leader[0]].label} at {leader[1].toFixed(0)}%. public-data.org does not compare this with a differently designed poll or claim a movement from one observation.</p>
           </section>
-
           <section aria-labelledby="poll-uncertainty-title">
             <div className="mb-4 border-b border-black/15 pb-3">
               <p className="text-sm font-semibold text-accent">Uncertainty over time</p>
-              <h4 id="poll-uncertainty-title" className="mt-1 text-2xl font-semibold">
-                Individual publications and disclosed uncertainty, not an average
-              </h4>
+              <h4 id="poll-uncertainty-title" className="mt-1 text-2xl font-semibold">Individual publications and disclosed uncertainty, not an average</h4>
             </div>
-            <p className="max-w-3xl text-sm leading-6 text-gray-700">
-              Each point below is one verified primary poll publication, kept separate from
-              every other publication. public-data.org does not compute, show, or imply a
-              polling average or composite line across these points.
-            </p>
+            <p className="max-w-3xl text-sm leading-6 text-gray-700">Each point below is one verified primary poll publication, kept separate from every other publication. public-data.org does not compute, show, or imply a polling average or composite line across these points.</p>
             {polls.length < 2 ? (
-              <p role="status" className="mt-4 border-l-2 border-foreground/30 pl-4 text-sm leading-6 text-gray-600">
-                A timeline needs more than one verified poll publication. The latest result and original publication remain available on this page.
-              </p>
+              <p role="status" className="mt-4 border-l-2 border-foreground/30 pl-4 text-sm leading-6 text-gray-600">A timeline needs more than one verified poll publication. The latest result and original publication remain available on this page.</p>
             ) : (
               <div className="mt-4">
-                <PollingPublicationChart
-                  polls={polls}
-                  partyMeta={PARTY_META}
-                  partyOrder={Object.keys(PARTY_META) as PartyKey[]}
-                />
+                <PollingPublicationChart polls={polls} partyMeta={PARTY_META} partyOrder={Object.keys(PARTY_META) as PartyKey[]} />
               </div>
             )}
           </section>
-
           <section aria-labelledby="poll-method-title" className="border-l-4 border-foreground pl-4">
             <h3 id="poll-method-title" className="text-lg font-semibold">Evidence method</h3>
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-700">
-              public-data.org does not scrape Wikipedia or calculate an unweighted average. It displays each accepted British Polling Council member publication separately with its direct source, fieldwork, sample and method.
-            </p>
-            <p className="mt-2 max-w-3xl text-xs leading-5 text-gray-500">
-              Electoral compliance: Under Section 66A of the Representation of the People Act 1983, it is a criminal offence to publish any exit poll or forecast of how people have voted on a parliamentary election day before the close of polls (10:00 PM). public-data.org does not publish exit polls or voting estimates on polling days before the close of polls.
-            </p>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-700">public-data.org does not scrape Wikipedia or calculate an unweighted average. It displays each accepted British Polling Council member publication separately with its direct source, fieldwork, sample and method.</p>
+            <p className="mt-2 max-w-3xl text-xs leading-5 text-gray-500">Electoral compliance: Under Section 66A of the Representation of the People Act 1983, it is a criminal offence to publish any exit poll or forecast of how people have voted on a parliamentary election day before the close of polls (10:00 PM). public-data.org does not publish exit polls or voting estimates on polling days before the close of polls.</p>
           </section>
-
           <CoreEvidenceExplanation
             idPrefix="election-poll"
-            why={
-              <p>
-                Voting-intention polls are snapshots of stated preference and can show the shape of public opinion at the time of fieldwork. They do not directly forecast seats, turnout or the eventual election result.
-              </p>
-            }
-            definition={
-              <p>
-                {latest.questionText ?? "Question wording is not disclosed in this publication."} The displayed headline uses this method: {latest.headlineMethod}. Read the pollster&apos;s{" "}
-                <a
-                  className="font-semibold underline underline-offset-4"
-                  href={latest.methodologyUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  methodology
-                </a>
-                .
-              </p>
-            }
+            why={<p>Voting-intention polls are snapshots of stated preference and can show the shape of public opinion at the time of fieldwork. They do not directly forecast seats, turnout or the eventual election result.</p>}
+            definition={<p>{latest.questionText ?? "Question wording is not disclosed in this publication."} The displayed headline uses this method: {latest.headlineMethod}. Read the pollster&apos;s <a className="font-semibold underline underline-offset-4" href={latest.methodologyUrl} target="_blank" rel="noopener noreferrer">methodology</a>.</p>}
             unit="Published party share (%)"
             geography={latest.geography}
-            interpretation={
-              <p>
-                Party shares describe this publication only. Differences of a few percentage points may fall within the poll&apos;s stated uncertainty and should not be treated as a durable trend.
-              </p>
-            }
-              caveat={
-                <p>
-                  {latest.uncertainty ??
-                    "No publication-specific numeric interval was verified, so no uncertainty interval is shown. Sample size alone is not used to estimate one."}
-                </p>
-              }
+            interpretation={<p>Party shares describe this publication only. Differences of a few percentage points may fall within the poll&apos;s stated uncertainty and should not be treated as a durable trend.</p>}
+            caveat={<p>{latest.uncertainty ?? "No publication-specific numeric interval was verified, so no uncertainty interval is shown. Sample size alone is not used to estimate one."}</p>}
             sourceLabel={`Open ${latest.pollster} publication`}
             sourceUrl={latest.sourceUrl}
             sourceDate={`${publicationDateLabel(latest)} · fieldwork ${fieldworkLabel(latest)}`}
             explainLabel="Explain this number"
           />
-
-          <section aria-labelledby="poll-publications-title">
-            <div className="mb-4 border-b border-black/15 pb-3">
-              <p className="text-sm font-semibold text-accent">Evidence register</p>
-              <h4 id="poll-publications-title" className="mt-1 text-2xl font-semibold">Verified primary poll publications</h4>
-            </div>
-            <div className="grid gap-px border border-black/20 bg-black/20 md:grid-cols-2">
-              {polls.map((poll) => (
-                <article key={poll.id} className="bg-white p-4 md:p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500">
-                        Pollster
-                      </p>
-                      <h5 className="mt-1 text-lg font-semibold">{poll.pollster}</h5>
-                    </div>
-                    <a
-                      className="shrink-0 text-sm font-semibold underline decoration-black/25 underline-offset-4 hover:text-accent"
-                      href={poll.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Primary tables ↗
-                    </a>
-                  </div>
-                  <dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-4 border-t border-black/10 pt-4 text-sm">
-                    <div>
-                      <dt className="text-xs text-gray-500">Commissioner</dt>
-                      <dd className="mt-1 font-medium">{poll.commissioner ?? "Not disclosed"}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-gray-500">Sample</dt>
-                      <dd className="mt-1 font-medium tabular-nums">
-                        {poll.sampleSize.toLocaleString("en-GB")}
-                        {poll.sampleSizeNote ? <span className="block text-xs font-normal text-gray-600">{poll.sampleSizeNote}</span> : null}
-                      </dd>
-                    </div>
-                    <div className="col-span-2">
-                      <dt className="text-xs text-gray-500">Fieldwork</dt>
-                      <dd className="mt-1 font-medium">{fieldworkLabel(poll)}</dd>
-                    </div>
-                    <div className="col-span-2">
-                      <dt className="text-xs text-gray-500">Publication date</dt>
-                      <dd className="mt-1 font-medium">{publicationDateLabel(poll)}</dd>
-                    </div>
-                  </dl>
-                </article>
-              ))}
-            </div>
-          </section>
+          <PollingTable polls={polls} corrections={correctionHistory} />
         </>
       ) : (
         <section role="status" className="border-y-2 border-foreground bg-[#e8f2ef] p-5 md:p-6">
@@ -492,20 +186,15 @@ export default function ElectionPolling() {
               <p className="eyebrow !text-[#08766c]">Evidence status</p>
               <h3 className="mt-2 text-2xl font-bold leading-tight">Current primary polling evidence unavailable</h3>
             </div>
-            <p className="text-sm leading-6 text-gray-700">
-              No complete verified poll publication qualifies for the current window. Results return when a primary release passes the source and date checks; older polls and secondary averages are not presented as current.
-            </p>
+            <p className="text-sm leading-6 text-gray-700">No complete verified poll publication qualifies for the current window. Results return when a primary release passes the source and date checks; older polls and secondary averages are not presented as current.</p>
           </div>
         </section>
       )}
-
       {correctionHistory.length > 0 ? (
         <section aria-labelledby="poll-correction-history-title" className="border-y-2 border-foreground bg-white p-5 md:p-6">
           <p className="eyebrow">Publisher-documented historical change</p>
           <h3 id="poll-correction-history-title" className="mt-2 text-2xl font-bold">Poll correction history</h3>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-700">
-            These archived corrections are separate from current polling and do not extend a poll&apos;s freshness. Values below reproduce the publisher&apos;s own before-and-after notice; linked original tables may no longer be available.
-          </p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-700">These archived corrections are separate from current polling and do not extend a poll&apos;s freshness. Values below reproduce the publisher&apos;s own before-and-after notice; linked original tables may no longer be available.</p>
           <div className="mt-4 flex flex-wrap gap-4 text-sm font-semibold">
             <button type="button" onClick={() => downloadCorrections("csv")} className="min-h-11 underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">Download correction history CSV</button>
             <button type="button" onClick={() => downloadCorrections("json")} className="min-h-11 underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">Download correction history JSON</button>
@@ -531,7 +220,6 @@ export default function ElectionPolling() {
           </div>
         </section>
       ) : null}
-
       <MetricsStatus section="electionPolling" status={metrics} showCurrentness={valid} />
     </div>
   );

@@ -28,7 +28,7 @@ Updated 5 October 2026.
 | 6 | Contract dossier | Merged. Notice-first lead, exclusion coverage on totals, framework badges, buyer/supplier dossier routes. `governmentContracts` stays disabled. |
 | 7 | Look up a place | Merged. Explore is the Look up door; published geographies only; postcodes fail closed. |
 | 8 | Compare, one indicator | Merged. One-indicator Compare door; overlay peers only when definitions match; country peers unavailable while UK-in-context is offline. |
-| 9 | Polling table | Not started |
+| 9 | Polling table | In progress on PR #209. Aligned party-column table; no average; shares require a source URL; corrections are separate rows; betting markets absent from the table. `electionPolling` stays disabled. |
 | 10 | Edition page and read API | Not started |
 
 ## Lead and history evidence
@@ -75,8 +75,17 @@ Updated 5 October 2026.
 - Comparison studio remains below for multi-measure workspaces. NHS stays unavailable. `governmentContracts` stays disabled.
 - Local `oneIndicatorCompare` suite 7 passed; PR validation green on `d37ed53`; squash-merged as `0a9ee2f`.
 
+## Polling table evidence
+
+- `buildPollingTable` keeps pollsters as separate rows with aligned party columns. `includesAverage` is always false.
+- A publication without an https source URL is omitted (`omittedWithoutSource`). A share cannot appear without a source link.
+- Ipsos correction notices are separate `correction` rows with original and corrected shares; they do not extend current freshness.
+- `PollingTable` replaces the card grid on the election-polls section. Betting markets are absent from the table copy and model.
+- `electionPolling` and `bettingOdds` stay disabled in `config/publications.json`. NHS stays unavailable. `governmentContracts` stays disabled. No invented figures.
+- YouGov remains CC BY-NC with attribution and source URL. More in Common rows link to the publisher URL; workbooks are not bulk-hosted by this change.
+- Local: `npx vitest run tests/unit/pollingTable.test.ts tests/unit/ElectionPolling.test.tsx` — 17 passed.
+
 ## Next
 
-1. Feature 9 (Polling table).
-2. Feature 10 (Edition page and read API).
-3. Do not invent NHS figures. Do not mark NHS optional. `governmentContracts` stays disabled unless this progress note says otherwise.
+1. Feature 10 (Edition page and read API).
+2. Do not invent NHS figures. Do not mark NHS optional. `governmentContracts` stays disabled unless this progress note says otherwise.
