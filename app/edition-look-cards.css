@@ -108,3 +108,23 @@
 .british-538-badge {
   border-radius: 0;
 }
+
+
+/* Subject identity for national evidence cards. State is communicated
+   separately, so domain colour never implies positive/negative performance. */
+[data-testid="signal-card"][data-domain="economy"] { --card-accent: var(--domain-economy); }
+[data-testid="signal-card"][data-domain="prices"] { --card-accent: var(--domain-prices); }
+[data-testid="signal-card"][data-domain="health"] { --card-accent: var(--domain-health); }
+[data-testid="signal-card"][data-domain="population"] { --card-accent: var(--domain-population); }
+[data-testid="signal-card"][data-domain="public-money"] { --card-accent: var(--domain-public-money); }
+[data-testid="signal-card"][data-domain="politics"] { --card-accent: var(--domain-politics); }
+[data-testid="signal-card"][data-domain="society"] { --card-accent: var(--domain-society); }
+
+[data-testid="signal-card"][data-domain] .eyebrow {
+  color: var(--card-accent, var(--accent));
+}
+
+[data-testid="signal-card"][data-evidence-state="current"][data-domain],
+[data-testid="signal-card"][data-evidence-state="update-due"][data-domain] {
+  border-top-color: var(--card-accent, var(--accent)) !important;
+}
