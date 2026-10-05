@@ -12,12 +12,14 @@ const fixture = {
 };
 
 describe("publication switches", () => {
-  it("enables only nationalDebt and fails closed for unknown identifiers", () => {
+  it("enables nationalDebt and editionArchive only, and fails closed for unknown identifiers", () => {
     expect(anyPublicationEnabled()).toBe(true);
     expect(publicationEnabled("nationalDebt")).toBe(true);
+    expect(publicationEnabled("editionArchive")).toBe(true);
+    const enabled = new Set(["nationalDebt", "editionArchive"]);
     for (const id of [...Object.keys(FEED_REGISTRY), ...Object.keys(PUBLICATION_SOURCE_REGISTRY), "earlyYears", "editionArchive"]) {
       expect(PUBLICATION_CONFIG.publications).toHaveProperty(id);
-      expect(publicationEnabled(id)).toBe(id === "nationalDebt");
+      expect(publicationEnabled(id)).toBe(enabled.has(id));
     }
     expect(publicationEnabled("unexpected", config)).toBe(false);
     expect(sectionPublication("gdp")).toBe("gdpTracker");
