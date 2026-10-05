@@ -60,13 +60,33 @@
   }
 }
 
+.editorial-mosaic [data-card-size="feature"] {
+  min-height: 20rem;
+}
+
+.editorial-mosaic [data-card-size="standard"] {
+  min-height: 17rem;
+}
+
+.editorial-mosaic [data-card-size="compact"] {
+  min-height: 13rem;
+}
+
 @media (min-width: 64rem) {
   [data-testid="topic-cards"] {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(12, minmax(0, 1fr));
   }
 
-  [data-testid="topic-cards"] > li:has([data-evidence-state="current"]):first-of-type {
-    grid-column: span 2;
+  .editorial-mosaic__item--feature {
+    grid-column: span 6;
+  }
+
+  .editorial-mosaic__item--standard {
+    grid-column: span 4;
+  }
+
+  .editorial-mosaic__item--compact {
+    grid-column: span 4;
   }
 }
 
@@ -107,4 +127,409 @@
 
 .british-538-badge {
   border-radius: 0;
+}
+
+
+/* Subject identity for national evidence cards. State is communicated
+   separately, so domain colour never implies positive/negative performance. */
+[data-testid="signal-card"][data-domain="economy"] { --card-accent: var(--domain-economy); }
+[data-testid="signal-card"][data-domain="prices"] { --card-accent: var(--domain-prices); }
+[data-testid="signal-card"][data-domain="health"] { --card-accent: var(--domain-health); }
+[data-testid="signal-card"][data-domain="population"] { --card-accent: var(--domain-population); }
+[data-testid="signal-card"][data-domain="public-money"] { --card-accent: var(--domain-public-money); }
+[data-testid="signal-card"][data-domain="politics"] { --card-accent: var(--domain-politics); }
+[data-testid="signal-card"][data-domain="society"] { --card-accent: var(--domain-society); }
+
+[data-testid="signal-card"][data-domain] .eyebrow {
+  color: var(--card-accent, var(--accent));
+}
+
+[data-testid="signal-card"][data-evidence-state="current"][data-domain],
+[data-testid="signal-card"][data-evidence-state="update-due"][data-domain] {
+  border-top-color: var(--card-accent, var(--accent)) !important;
+}
+
+
+/* Canonical chart frame used across measure, compare, archive and lens pages. */
+.evidence-figure {
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--line-on-paper);
+  background: #fbfaf7;
+  color: var(--ink);
+  padding: 1.25rem clamp(0.75rem, 2vw, 1.25rem);
+}
+
+.evidence-figure figcaption h3 {
+  font-family: var(--font-editorial);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.evidence-figure svg {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.82), rgb(246 242 234 / 0.35));
+}
+
+.evidence-figure [role="img"] {
+  color: var(--chart-series);
+}
+
+
+/* Progressive disclosure for detailed provenance: currentness stays visible,
+   while the evidence file carries the full source/method record. */
+.evidence-file-disclosure[open] > summary span[aria-hidden] {
+  transform: rotate(45deg);
+}
+
+.evidence-file-disclosure > summary span[aria-hidden] {
+  display: inline-block;
+  transition: transform 160ms ease;
+}
+
+.evidence-file {
+  display: grid;
+  gap: 1rem 1.5rem;
+  border-left: 2px solid var(--accent);
+  background: rgb(246 242 234 / 0.58);
+  padding: 1rem 1rem 1rem 1.25rem;
+  color: #4b5563;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.evidence-file__metadata {
+  display: grid;
+  gap: 0.75rem;
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--line-on-paper);
+  padding-top: 0.9rem;
+}
+
+.evidence-file__metadata dt {
+  color: #6b7280;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.evidence-file__metadata dd {
+  margin-top: 0.2rem;
+  color: var(--ink);
+}
+
+@media (min-width: 40rem) {
+  .evidence-file {
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, 0.8fr);
+  }
+
+  .evidence-file__metadata {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+
+/* Measure atlas: a browsable evidence wall first, compact list second. */
+.measure-atlas-section-heading {
+  border-bottom: 1px solid var(--line-on-paper);
+  padding-bottom: 0.9rem;
+}
+
+.measure-atlas-section-heading h3 {
+  margin-top: 0.25rem;
+  font-family: var(--font-editorial);
+  font-size: clamp(1.6rem, 3vw, 2.35rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.measure-atlas-section-heading p:last-child:not(.eyebrow) {
+  margin-top: 0.55rem;
+  max-width: var(--reading-measure);
+  color: #646b74;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.measure-atlas-section-heading--muted .eyebrow {
+  color: var(--domain-neutral);
+}
+
+.measure-atlas-results {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1px;
+  margin-top: 1rem;
+  border: 1px solid var(--line-on-paper);
+  background: var(--line-on-paper);
+  list-style: none;
+  padding: 0;
+}
+
+@media (min-width: 40rem) {
+  .measure-atlas-results[data-view="atlas"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .measure-atlas-results[data-view="atlas"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.measure-atlas-card {
+  min-height: 19rem;
+  padding: 1.15rem;
+  background: #fff;
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.measure-atlas-card:hover {
+  background: var(--surface-warm);
+}
+
+.measure-atlas-card[data-availability="unavailable"] {
+  min-height: 14rem;
+  background: #f1efe9;
+}
+
+.measure-atlas-card__topline {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: #606975;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.measure-atlas-card__topline [data-availability-label="current"] {
+  color: var(--domain-health);
+}
+
+.measure-atlas-card__topline [data-availability-label="historical"] {
+  color: var(--domain-prices);
+}
+
+.measure-atlas-card__topline [data-availability-label="unavailable"] {
+  color: var(--domain-neutral);
+}
+
+.measure-atlas-card__title {
+  margin-top: 0.8rem;
+  font-family: var(--font-editorial);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+}
+
+.measure-atlas-card__publisher {
+  margin-top: 0.35rem;
+  color: #6a717b;
+  font-size: 0.75rem;
+}
+
+.measure-atlas-card__value-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(5rem, 0.8fr);
+  align-items: end;
+  gap: 1rem;
+  margin-top: auto;
+  padding-top: 1.5rem;
+}
+
+.measure-atlas-card__value {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+}
+
+.measure-atlas-card__sparkline {
+  width: 100%;
+  height: 3.25rem;
+  color: var(--chart-series);
+}
+
+.measure-atlas-card__period,
+.measure-atlas-card__scope {
+  margin-top: 0.55rem;
+  color: #656d77;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.measure-atlas-card__unavailable {
+  margin-top: 1.25rem;
+  max-width: 32rem;
+  color: #59616b;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.measure-atlas-card__action {
+  margin-top: auto;
+  padding-top: 1rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: rgb(232 53 46 / 0.45);
+  text-underline-offset: 4px;
+}
+
+.measure-view-toggle {
+  min-height: 2.5rem;
+  min-width: 4.5rem;
+  padding: 0.4rem 0.7rem;
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.measure-view-toggle[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.measure-atlas-results[data-view="list"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.measure-atlas-card--list {
+  min-height: 0;
+}
+
+@media (min-width: 48rem) {
+  .measure-atlas-card--list {
+    display: grid;
+    grid-template-columns: minmax(12rem, 1fr) minmax(9rem, 0.55fr) minmax(10rem, 0.65fr) auto;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .measure-atlas-card--list .measure-atlas-card__topline {
+    grid-column: 1 / -1;
+  }
+
+  .measure-atlas-card--list .measure-atlas-card__title,
+  .measure-atlas-card--list .measure-atlas-card__publisher,
+  .measure-atlas-card--list .measure-atlas-card__scope,
+  .measure-atlas-card--list .measure-atlas-card__action {
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .measure-atlas-card--list .measure-atlas-card__value-row {
+    display: block;
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .measure-atlas-card--list .measure-atlas-card__sparkline,
+  .measure-atlas-card--list .measure-atlas-card__period {
+    display: none;
+  }
+
+  .measure-atlas-card--list .measure-atlas-card__unavailable {
+    margin-top: 0;
+  }
+}
+
+
+/* Briefing change cards: editorial meaning first, machine/audit identities on demand. */
+.briefing-change-list {
+  display: grid;
+  gap: 1px;
+  margin-top: 1.5rem;
+  background: var(--line-on-paper);
+  list-style: none;
+  padding: 0;
+}
+
+.briefing-change-card {
+  display: grid;
+  gap: 1rem 1.5rem;
+  background: #fff;
+  padding: 1.25rem;
+}
+
+.briefing-change-card__meta {
+  color: #646b74;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.briefing-change-badge {
+  display: inline-flex;
+  margin-bottom: 0.65rem;
+  border: 1px solid currentColor;
+  padding: 0.22rem 0.42rem;
+  color: var(--domain-economy);
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+
+.briefing-change-card[data-change-type="revision"] .briefing-change-badge {
+  color: var(--domain-prices);
+}
+
+.briefing-change-card[data-change-type="method-change"] .briefing-change-badge,
+.briefing-change-card[data-change-type="metadata-change"] .briefing-change-badge {
+  color: var(--domain-population);
+}
+
+.briefing-change-card__heading {
+  color: #6a717b;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.briefing-change-card__title {
+  margin-top: 0.2rem;
+  font-family: var(--font-editorial);
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+}
+
+.briefing-change-card__description {
+  margin-top: 0.65rem;
+  max-width: var(--reading-measure);
+  color: #444d58;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.briefing-technical-record {
+  margin-top: 1rem;
+  border-top: 1px solid var(--line-on-paper);
+  padding-top: 0.55rem;
+  color: #646b74;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.briefing-technical-record summary {
+  min-height: 2.75rem;
+  cursor: pointer;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.briefing-technical-record p + p {
+  margin-top: 0.3rem;
+}
+
+@media (min-width: 40rem) {
+  .briefing-change-card {
+    grid-template-columns: minmax(9rem, 0.28fr) minmax(0, 1fr);
+    padding: 1.5rem;
+  }
 }

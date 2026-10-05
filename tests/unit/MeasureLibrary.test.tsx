@@ -48,7 +48,7 @@ describe("measure library", () => {
     };
     render(<MeasureLibrary measures={[item, other]} />);
 
-    fireEvent.change(screen.getByRole("combobox", { name: "topic" }), { target: { value: "Jobs" } });
+    fireEvent.click(screen.getByRole("button", { name: "Jobs" }));
     expect(screen.getByRole("link", { name: /Unemployment rate/i })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Central government receipts/i })).not.toBeInTheDocument();
     expect(window.location.search).toBe("?topic=Jobs");
@@ -70,24 +70,60 @@ describe("measure library", () => {
     };
     render(<MeasureLibrary measures={[item, finance]} />);
 
+    fireEvent.click(screen.getByRole("button", { name: finance.topic }));
+    expect(screen.getByRole("link", { name: /Central government receipts/i })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Unemployment rate/i })).not.toBeInTheDocument();
+
+    const advanced = screen.getByText("Advanced filters").closest("summary");
+    expect(advanced).not.toBeNull();
+    fireEvent.click(advanced!);
+
     const filters = [
-      ["topic", "topic", finance.topic],
-      ["publisher", "publisher", finance.publisher],
-      ["geography", "geography", finance.geography],
-      ["Frequency", "cadence", finance.cadence],
-      ["unit", "unit", finance.unit],
-      ["availability", "availability", finance.availability],
+      ["publisher", finance.publisher],
+      ["geography", finance.geography],
+      ["Frequency", finance.cadence],
+      ["unit", finance.unit],
     ] as const;
 
-    for (const [label, , value] of filters) {
+    for (const [label, value] of filters) {
       fireEvent.change(screen.getByRole("combobox", { name: label }), { target: { value } });
       expect(screen.getByRole("link", { name: /Central government receipts/i })).toBeInTheDocument();
       expect(screen.queryByRole("link", { name: /Unemployment rate/i })).not.toBeInTheDocument();
     }
 
+    fireEvent.click(screen.getByRole("button", { name: "Historical" }));
+
     expect(window.location.search).toBe(
       `?topic=Public+finances&publisher=HM+Treasury&geography=United+Kingdom&cadence=monthly&unit=%C2%A3bn&availability=historical`,
     );
+  });
+
+  it("keeps topic and availability primary while secondary filters live behind advanced disclosure", () => {
+    const unavailable: MeasureLibraryItem = {
+      ...MEASURES.find((measure) => measure.id === "waitingPathwaysEstimate")!,
+      publisher: "NHS England",
+      availability: "unavailable",
+      observationPeriod: null,
+      record: null,
+      availabilityReason: "The source section is unavailable in this edition.",
+    };
+    render(<MeasureLibrary measures={[item, unavailable]} />);
+
+    expect(screen.getByRole("group", { name: "Topic" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Jobs" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("group", { name: "Availability" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Current" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Unavailable" })).toHaveAttribute("aria-pressed", "false");
+
+    const advanced = screen.getByText("Advanced filters").closest("summary");
+    expect(advanced).not.toBeNull();
+    fireEvent.click(advanced!);
+    expect(screen.getByRole("combobox", { name: "publisher" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "geography" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Frequency" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "unit" })).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "topic" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "availability" })).not.toBeInTheDocument();
   });
 
   it("renders shared measure filters from the server-provided query", () => {
@@ -126,6 +162,48 @@ describe("measure library", () => {
 
     expect(screen.getByRole("link", { name: /Unemployment rate/i })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Central government receipts/i })).not.toBeInTheDocument();
+  });
+
+
+
+  it("does not connect across missing observations in atlas sparklines", () => {
+    const gapped: MeasureLibraryItem = {
+      ...item,
+      record: {
+        ...record,
+        points: [
+          { period: "January 2026", observedAt: "2026-01-31", value: 4.7, valueStatus: "estimate", revisionId: "r1" },
+          { period: "February 2026", observedAt: "2026-02-28", value: null, valueStatus: "estimate", revisionId: "r1" },
+          { period: "March 2026", observedAt: "2026-03-31", value: 4.8, valueStatus: "estimate", revisionId: "r1" },
+        ],
+      } as MeasureRecord,
+    };
+    const { container } = render(<MeasureLibrary measures={[gapped]} />);
+    const sparkline = container.querySelector(".measure-atlas-card__sparkline");
+    expect(sparkline).not.toBeNull();
+    expect(sparkline?.querySelectorAll("polyline")).toHaveLength(0);
+    expect(sparkline?.querySelectorAll("circle")).toHaveLength(2);
+  });
+
+  it("defaults to an atlas view, can switch to list view, and separates unavailable definitions", () => {
+    const unavailable: MeasureLibraryItem = {
+      ...MEASURES.find((measure) => measure.id === "waitingPathwaysEstimate")!,
+      publisher: "NHS England",
+      availability: "unavailable",
+      observationPeriod: null,
+      record: null,
+      availabilityReason: "The source section is unavailable in this edition.",
+    };
+    render(<MeasureLibrary measures={[item, unavailable]} />);
+
+    expect(screen.getByRole("button", { name: "Atlas view" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("measure-results")).toHaveAttribute("data-view", "atlas");
+    expect(screen.getByRole("heading", { name: "Verified and retained measures" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Unavailable in this edition" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "List view" }));
+    expect(screen.getByRole("button", { name: "List view" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("measure-results")).toHaveAttribute("data-view", "list");
   });
 
   it("keeps unavailable definitions discoverable without publishing a value", () => {

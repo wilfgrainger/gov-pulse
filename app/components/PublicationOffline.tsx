@@ -1,7 +1,16 @@
 import Link from "next/link";
+import { publicationRouteEnabled } from "@/contracts/publication-policy";
 import BrandLogo from "./BrandLogo";
 
-export default function PublicationOffline({ title = "Data publications are temporarily offline" }: { title?: string }) {
+export default function PublicationOffline({ title = "Evidence is being reverified" }: { title?: string }) {
+  const evidenceDoors = [
+    ["Explore", "/explore"],
+    ["Compare", "/compare"],
+    ["Briefing", "/briefing"],
+  ] as const;
+  const enabledEvidenceDoors = evidenceDoors.filter(([, href]) => publicationRouteEnabled(href));
+  const sourcesEnabled = publicationRouteEnabled("/sources");
+
   return (
     <div className="premium-offline">
       <header className="publication-masthead sticky top-0 z-50">
@@ -17,12 +26,11 @@ export default function PublicationOffline({ title = "Data publications are temp
             <Link prefetch={false} href="/" className="edition-door" aria-current="page">
               Latest
             </Link>
-            <Link prefetch={false} href="/explore/" className="edition-door">
-              Look up
-            </Link>
-            <Link prefetch={false} href="/compare/" className="edition-door">
-              Compare
-            </Link>
+            {enabledEvidenceDoors.map(([label, href]) => (
+              <Link key={href} prefetch={false} href={href} className="edition-door">
+                {label}
+              </Link>
+            ))}
           </nav>
           <p className="justify-self-end text-[0.625rem] font-bold uppercase tracking-[0.14em] text-[var(--muted)]">
             Offline edition
@@ -32,14 +40,14 @@ export default function PublicationOffline({ title = "Data publications are temp
 
       <main className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-16">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(14rem,0.55fr)] lg:items-start">
-          <article className="premium-offline__panel">
+          <article className="premium-offline__panel evidence-unavailable-shell">
             <p className="eyebrow">Publication review</p>
             <h1 className="font-display mt-4 text-[clamp(2.4rem,7vw,4.75rem)] leading-[0.94]">{title}</h1>
             <p className="mt-6 max-w-[58ch] text-base leading-7 text-[var(--muted)] md:text-lg md:leading-8">
-              We have taken data publications offline while we reverify the evidence. Figures return one verified section at a time. Nothing is shown until the source, period and geography can be checked.
+              The publication is deliberately failing closed while sources are checked. Figures return one verified section at a time; nothing is shown as current until its source, observation period, publication date and geography reconcile.
             </p>
             <p className="mt-4 text-sm leading-7 text-[var(--muted)]">
-              NHS referral-to-treatment stays unavailable until a permitted download of the official CSV exists. Debt may appear alone when that series is current.
+              Missing evidence is not replaced with an older number, a zero, an estimate or an interpolated value. Individual verified sections may return before the full edition is restored.
             </p>
             <div className="premium-offline__actions">
               <Link prefetch={false} href="/about">
@@ -51,9 +59,11 @@ export default function PublicationOffline({ title = "Data publications are temp
               <Link prefetch={false} href="/contact">
                 Contact
               </Link>
-              <Link prefetch={false} href="/sources">
-                Sources
-              </Link>
+              {sourcesEnabled ? (
+                <Link prefetch={false} href="/sources">
+                  Sources
+                </Link>
+              ) : null}
             </div>
           </article>
 

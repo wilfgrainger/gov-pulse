@@ -12,12 +12,43 @@
   --accent-soft: #3a1614;
   --accent-on-dark: #ff6b63;
   --accent-vivid: #e8352e;
-  --teal: #e8352e;
-  --gold: #e8352e;
-  --blue: #e8352e;
+
+  /* Editorial subject palette. These colours identify domains only; they never
+     encode whether a statistic is politically or economically "good" or "bad". */
+  --domain-economy: #4568c8;
+  --domain-prices: #a76000;
+  --domain-health: #08766c;
+  --domain-population: #7550a7;
+  --domain-public-money: #a72d24;
+  --domain-politics: #8a4b83;
+  --domain-society: #2f7186;
+  --domain-neutral: #5b6674;
+
+  --domain-economy-soft: #e9edfb;
+  --domain-prices-soft: #fbefdc;
+  --domain-health-soft: #e3f2ef;
+  --domain-population-soft: #f0eafb;
+  --domain-public-money-soft: #f8e5e2;
+  --domain-politics-soft: #f5e9f3;
+  --domain-society-soft: #e6f0f4;
+
+  /* Legacy semantic aliases remain for older chart/card primitives, but they
+     now point at the domain system rather than collapsing every subject to red. */
+  --teal: var(--domain-health);
+  --gold: var(--domain-prices);
+  --blue: var(--domain-economy);
+  --chart-series: #315f8f;
+  --chart-accent: #e8352e;
+  --chart-grid: #d7d0c4;
+  --chart-axis: #202832;
+  --chart-muted: #5f6771;
   --font-editorial: var(--font-display-file), "Avenir Next", "Segoe UI", sans-serif;
   --edition-max: 76rem;
   --edition-gutter: clamp(1rem, 2.5vw, 1.5rem);
+  --reading-measure: 42rem;
+  --reading-measure-wide: 58rem;
+  --section-rhythm: clamp(2.75rem, 6vw, 5.5rem);
+  --object-rhythm: clamp(1.5rem, 3vw, 2.75rem);
 }
 
 body {
@@ -25,6 +56,12 @@ body {
     radial-gradient(1200px 480px at 100% -10%, rgb(232 53 46 / 0.12), transparent 55%),
     var(--background);
   color: var(--foreground);
+}
+
+/* Light publication surfaces default back to ink. :where() deliberately keeps
+   specificity at zero so an explicit text utility can always override it. */
+:where(.bg-white, .bg-surface, .bg-surface-warm) {
+  color: var(--ink);
 }
 
 ::selection {
@@ -39,7 +76,7 @@ body {
 
 .page-title {
   font-family: var(--font-editorial);
-  font-size: clamp(2.75rem, 8vw, 5.5rem);
+  font-size: clamp(2.9rem, 8vw, 6.4rem);
   font-weight: 700;
   letter-spacing: -0.045em;
   line-height: 0.92;
@@ -76,7 +113,7 @@ body {
   color: var(--accent);
   font-size: 0.6875rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
 }
 
@@ -97,4 +134,20 @@ body {
 
 .dashboard-card > div:first-child {
   border-color: var(--line-on-paper) !important;
+}
+
+
+.editorial-prose {
+  max-width: var(--reading-measure);
+  font-size: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
+  line-height: 1.72;
+  text-wrap: pretty;
+}
+
+.editorial-prose--wide {
+  max-width: var(--reading-measure-wide);
+}
+
+.evidence-article > section + section {
+  margin-top: var(--section-rhythm);
 }

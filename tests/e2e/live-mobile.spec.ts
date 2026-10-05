@@ -49,7 +49,7 @@ test("measure library filters and briefing cards reflow at 320px", async ({ page
 test("deployed Pixel 7 journey passes evidence, search, touch and overflow checks", async ({ page }) => {
   await page.goto(liveUrl(), { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { level: 1, name: "Britain, in evidence." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Latest figures" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What changed in Britain" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "The country at a glance" })).toBeVisible();
   await expect(page.getByTestId("signal-card").first()).toBeVisible();
   await expect(page.locator("details[id^='category-']")).toHaveCount(0);

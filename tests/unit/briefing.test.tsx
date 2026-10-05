@@ -25,6 +25,8 @@ describe("edition briefing and guided story contracts", () => {
     } } as MetricsSnapshot;
     const markup = renderToStaticMarkup(<BriefingEdition snapshot={snapshot}/>);
     expect(markup).toContain("Historical revision");
+    expect(markup).toContain('data-change-badge="REVISION"');
+    expect(markup).toContain("<summary>Technical change record</summary>");
     expect(markup).toContain("3.3 % → 3.2 %");
     expect(markup).toContain("Historical edition · not a current headline");
     expect(markup).toContain("edition-2");
@@ -53,6 +55,7 @@ describe("edition briefing and guided story contracts", () => {
     } } as MetricsSnapshot;
     const markup = renderToStaticMarkup(<BriefingEdition snapshot={snapshot}/>);
     expect(markup).toContain("Definition or method changed; values are not treated as like-for-like.");
+    expect(markup).toContain('data-change-badge="METHOD CHANGE"');
     expect(markup).not.toContain("3.3 % → 3.2 %");
   });
 
@@ -64,6 +67,7 @@ describe("edition briefing and guided story contracts", () => {
     const markup = renderToStaticMarkup(<BriefingEdition snapshot={snapshot}/>);
 
     expect(markup).toContain("Source metadata changed");
+    expect(markup).toContain('data-change-badge="METHOD CHANGE"');
     expect(markup).toContain("No numeric change is inferred");
     expect(markup).toContain("2026-02-17 → 2026-02-18");
     expect(markup).toContain('href="https://www.ons.gov.uk/old"');

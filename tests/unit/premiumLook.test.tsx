@@ -11,12 +11,23 @@ const socialScript = readFileSync(resolve(process.cwd(), "scripts/generate-socia
 afterEach(() => cleanup());
 
 describe("Premium look", () => {
-  it("locks ink paper, single vermillion accent, and Familjen display tokens", () => {
+  it("locks ink paper, editorial subject colours, and Familjen display tokens", () => {
     expect(editionLook).toMatch(/--background:\s*#0c0f12/);
     expect(editionLook).toMatch(/--surface:\s*#f6f2ea/);
     expect(editionLook).toMatch(/--accent:\s*#e8352e/);
+    expect(editionLook).toMatch(/--domain-economy:\s*#[0-9a-f]{6}/i);
+    expect(editionLook).toMatch(/--domain-prices:\s*#[0-9a-f]{6}/i);
+    expect(editionLook).toMatch(/--domain-health:\s*#[0-9a-f]{6}/i);
+    expect(editionLook).toMatch(/--domain-population:\s*#[0-9a-f]{6}/i);
+    expect(editionLook).toMatch(/--domain-public-money:\s*#[0-9a-f]{6}/i);
+    const domainColours = [...editionLook.matchAll(/--domain-[a-z-]+:\s*(#[0-9a-f]{6})/gi)].map((match) => match[1].toLowerCase());
+    expect(new Set(domainColours).size).toBeGreaterThanOrEqual(5);
     expect(editionLook).toContain("var(--font-display-file)");
     expect(editionLook).toContain("font-variant-numeric: tabular-nums");
+    expect(editionLook).toMatch(/--reading-measure:\s*[0-9.]+rem/);
+    expect(editionLook).toContain("--section-rhythm:");
+    expect(editionLook).toContain(".editorial-prose");
+    expect(editionLook).toMatch(/:where\(\.bg-white, \.bg-surface, \.bg-surface-warm\)\s*\{[^}]*color:\s*var\(--ink\)/s);
     expect(editionLook).toContain(".premium-lead");
     expect(editionLook).toContain(".edition-masthead-shell");
     expect(editionLook).toContain("prefers-reduced-motion");
@@ -28,8 +39,11 @@ describe("Premium look", () => {
     render(<PublicationOffline />);
     expect(screen.getByRole("navigation", { name: "Edition" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Latest" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: "Look up" })).toHaveAttribute("href", "/explore");
+    expect(screen.getByRole("link", { name: "Explore" })).toHaveAttribute("href", "/explore");
     expect(screen.getByRole("link", { name: "Compare" })).toHaveAttribute("href", "/compare");
+    expect(screen.getByRole("link", { name: "Briefing" })).toHaveAttribute("href", "/briefing");
+    expect(screen.getByText("Evidence is being reverified")).toBeInTheDocument();
+    expect(editionLook).toContain(".evidence-unavailable-shell");
     expect(screen.getByRole("status")).toHaveTextContent(/Reverifying/i);
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "About" })).toBeInTheDocument();
@@ -40,6 +54,8 @@ describe("Premium look", () => {
     expect(container.querySelector(".premium-hero")).toBeTruthy();
     expect(container.querySelector(".premium-hero__meta")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Britain, in evidence." })).toBeInTheDocument();
+    expect(editionLook).toContain(".home-front-page");
+    expect(editionLook).toContain(".front-page-edition-bar");
   });
 
   it("matches social cards to the ink masthead", () => {
