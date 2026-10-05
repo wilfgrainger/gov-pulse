@@ -45,6 +45,10 @@
   --font-editorial: var(--font-display-file), "Avenir Next", "Segoe UI", sans-serif;
   --edition-max: 76rem;
   --edition-gutter: clamp(1rem, 2.5vw, 1.5rem);
+  --reading-measure: 42rem;
+  --reading-measure-wide: 58rem;
+  --section-rhythm: clamp(2.75rem, 6vw, 5.5rem);
+  --object-rhythm: clamp(1.5rem, 3vw, 2.75rem);
 }
 
 body {
@@ -66,7 +70,7 @@ body {
 
 .page-title {
   font-family: var(--font-editorial);
-  font-size: clamp(2.75rem, 8vw, 5.5rem);
+  font-size: clamp(2.9rem, 8vw, 6.4rem);
   font-weight: 700;
   letter-spacing: -0.045em;
   line-height: 0.92;
@@ -103,7 +107,7 @@ body {
   color: var(--accent);
   font-size: 0.6875rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
 }
 
@@ -124,4 +128,20 @@ body {
 
 .dashboard-card > div:first-child {
   border-color: var(--line-on-paper) !important;
+}
+
+
+.editorial-prose {
+  max-width: var(--reading-measure);
+  font-size: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
+  line-height: 1.72;
+  text-wrap: pretty;
+}
+
+.editorial-prose--wide {
+  max-width: var(--reading-measure-wide);
+}
+
+.evidence-article > section + section {
+  margin-top: var(--section-rhythm);
 }
