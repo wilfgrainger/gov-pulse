@@ -1,0 +1,143 @@
+{
+  "version": 1,
+  "publications": {
+    "pmApproval": {
+      "enabled": false,
+      "sections": [
+        "pm-approval"
+      ]
+    },
+    "electionPolling": {
+      "enabled": false,
+      "sections": [
+        "election-polls"
+      ]
+    },
+    "bettingOdds": {
+      "enabled": false,
+      "sections": [
+        "betting-odds"
+      ]
+    },
+    "polarizationMeter": {
+      "enabled": false,
+      "sections": [
+        "govt-approval"
+      ]
+    },
+    "trendLines": {
+      "enabled": false,
+      "sections": [
+        "gov-trust-trend"
+      ]
+    },
+    "nationalDebt": {
+      "enabled": false,
+      "sections": [
+        "national-debt"
+      ]
+    },
+    "gdpTracker": {
+      "enabled": false,
+      "sections": [
+        "gdp"
+      ]
+    },
+    "sentimentPulse": {
+      "enabled": false,
+      "sections": [
+        "economy"
+      ]
+    },
+    "taxRevenue": {
+      "enabled": false,
+      "sections": [
+        "tax"
+      ]
+    },
+    "governmentContracts": {
+      "enabled": false,
+      "sections": [
+        "government-contracts"
+      ]
+    },
+    "employmentStats": {
+      "enabled": false,
+      "sections": [
+        "employment"
+      ]
+    },
+    "crimeStatistics": {
+      "enabled": false,
+      "sections": [
+        "crime-stats"
+      ]
+    },
+    "nhsStats": {
+      "enabled": false,
+      "sections": [
+        "nhs"
+      ]
+    },
+    "migrationStats": {
+      "enabled": false,
+      "sections": [
+        "migration"
+      ]
+    },
+    "housePriceIndex": {
+      "enabled": false,
+      "sections": [
+        "house-price-index"
+      ]
+    },
+    "realWages": {
+      "enabled": false,
+      "sections": [
+        "real-wages"
+      ]
+    },
+    "earlyYears": {
+      "enabled": false,
+      "sections": [
+        "early-years"
+      ]
+    },
+    "geographicHeatmap": {
+      "enabled": false,
+      "sections": [
+        "uk-regions"
+      ]
+    },
+    "echoChamberMap": {
+      "enabled": false,
+      "sections": [
+        "policy-links"
+      ]
+    },
+    "politicalCompass": {
+      "enabled": false
+    },
+    "releaseCalendar": {
+      "enabled": false
+    },
+    "nhsReleaseCalendar": {
+      "enabled": false
+    },
+    "internationalComparison": {
+      "enabled": false,
+      "sections": [
+        "uk-in-context"
+      ]
+    },
+    "editionArchive": {
+      "enabled": false
+    },
+    "storyHouseholdBudgets": {
+      "enabled": false
+    },
+    "storyPublicFinances": {
+      "enabled": false
+    }
+  }
+}

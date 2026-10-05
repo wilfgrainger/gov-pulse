@@ -2,6 +2,7 @@ import queuedWorker, {
   DAILY_CRON,
   enqueueInternationalComparisonRefresh,
 } from "./queued-publication-entry.js";
+import { PUBLICATION_CONFIG, publicationEnabled, anyPublicationEnabled, filterPublicationSnapshot, filterPublicationCatalog, filterPublicationSummary } from "../contracts/publication-policy.js";
 import { isSnapshot, readCurrentPublication } from "./publication-entry.js";
 import {
   FEED_REGISTRY_VERSION,
@@ -272,6 +273,9 @@ async function snapshotResponse(request, env) {
       { status: 503 }
     );
   }
+  const snapshot = filterPublicationSnapshot(JSON.parse(result.body));
+  if (!snapshot) return json({ error: "Data publication is offline for verification", code: "publication_disabled" }, { status: 503, head: request.method === "HEAD" });
+  result.body = JSON.stringify(snapshot);
 
   const digest = await crypto.subtle.digest(
     "SHA-256",
@@ -325,7 +329,7 @@ async function comparisonResponse(request, env) {
 async function editionsResponse(request, env) {
   const url = new URL(request.url);
   if (url.searchParams.size) return json({ error: "Release listing does not accept query parameters" }, { status: 400, head: request.method === "HEAD" });
-  const editions = await listEditionSummaries(env);
+  const editions = (await listEditionSummaries(env)).map((summary) => filterPublicationSummary(summary));
   return json({ editions, retention: editions.length }, { head: request.method === "HEAD", cacheControl: "public, max-age=60, s-maxage=60" });
 }
 
@@ -336,7 +340,7 @@ async function editionResponse(request, env, url) {
   }
   const result = await readEdition(env, values[0]);
   if (!result) return json({ error: "Edition not found" }, { status: 404, head: request.method === "HEAD" });
-  return json({ edition: result.summary.id, asOf: result.asOf, availability: "historical", measureCatalog: result.catalog, summary: result.summary }, { head: request.method === "HEAD", cacheControl: "public, max-age=60, s-maxage=60" });
+  return json({ edition: result.summary.id, asOf: result.asOf, availability: "historical", measureCatalog: filterPublicationCatalog(result.catalog), summary: filterPublicationSummary(result.summary, PUBLICATION_CONFIG, result.catalog) }, { head: request.method === "HEAD", cacheControl: "no-store" });
 }
 
 async function contractHistoryResponse(request, url) {
@@ -461,6 +465,9 @@ const publicDataWorker = {
       return json({ error: "Method not allowed" }, { status: 405 });
     }
     try {
+      if (!anyPublicationEnabled() && url.pathname === HEALTH_PATH) return json({ status: "publication-paused", ready: false }, { head: request.method === "HEAD" });
+      const gate = url.pathname === COMPARISON_PATH ? "internationalComparison" : [EDITION_PATH, EDITIONS_PATH].includes(url.pathname) ? "editionArchive" : url.pathname === CONTRACT_HISTORY_PATH ? "governmentContracts" : null;
+      if (url.pathname !== HEALTH_PATH && (gate ? !publicationEnabled(gate) : !anyPublicationEnabled())) return json({ error: "Data publication is offline for verification", code: "publication_disabled" }, { status: 503, head: request.method === "HEAD" });
       if (url.pathname === HEALTH_PATH) return healthResponse(request, env);
       if (url.pathname === COMPARISON_PATH) return comparisonResponse(request, env);
       if (url.pathname === EDITIONS_PATH) return editionsResponse(request, env);

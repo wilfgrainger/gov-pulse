@@ -1,3 +1,5 @@
+import PublicationOffline from "@/app/components/PublicationOffline";
+import { publicationRouteEnabled } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
 import DataExplorer from "@/app/components/DataExplorer";
 import SectionNav from "@/app/components/SectionNav";
@@ -13,6 +15,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://public-data.org/explore/" },
 };
 export default async function ExplorePage() {
+  if (!publicationRouteEnabled("/explore/")) return <PublicationOffline />;
   const snapshot = await readServerMetricsSnapshot();
   return (
     <div className="min-h-screen bg-background text-foreground">

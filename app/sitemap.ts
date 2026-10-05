@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { publicationRouteEnabled } from "@/contracts/publication-policy";
 import {
   PUBLIC_SECTION_IDS,
   SECTION_DISCOVERY,
@@ -24,6 +25,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: absoluteUrl("/briefing/"), changeFrequency: "daily", priority: 0.8 },
     { url: absoluteUrl("/calendar/"), changeFrequency: "daily", priority: 0.7 },
     { url: absoluteUrl("/cost-of-living/"), changeFrequency: "daily", priority: 0.7 },
+    { url: absoluteUrl("/money/"), changeFrequency: "daily", priority: 0.7 },
     { url: absoluteUrl("/editions/"), changeFrequency: "daily", priority: 0.7 },
     { url: absoluteUrl("/stories/household-budgets/"), changeFrequency: "monthly", priority: 0.6 },
     { url: absoluteUrl("/stories/public-finances/"), changeFrequency: "monthly", priority: 0.6 },
@@ -44,7 +46,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  const sectionRoutes: MetadataRoute.Sitemap = PUBLIC_SECTION_IDS.filter((id) => id !== "government-contracts").map((id) => {
+  const sectionRoutes: MetadataRoute.Sitemap = PUBLIC_SECTION_IDS.filter((id) => publicationRouteEnabled(sectionPath(id))).map((id) => {
     const publication = getBuildPublication(SECTION_DISCOVERY[id]);
     return {
       url: absoluteUrl(sectionPath(id)),
@@ -54,5 +56,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     };
   });
 
-  return [...staticRoutes, ...sectionRoutes];
+  return [...staticRoutes.filter((entry) => publicationRouteEnabled(new URL(entry.url).pathname)), ...sectionRoutes];
 }

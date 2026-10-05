@@ -1,3 +1,4 @@
+import { publicationRouteEnabled } from "@/contracts/publication-policy";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import PublicMoneyPage, { metadata } from "@/app/money/page";
@@ -23,7 +24,7 @@ describe("temporary public-money withdrawal", () => {
     const page = route === "/money/" ? await PublicMoneyPage() : await SectionPage({ params: Promise.resolve({ id: "government-contracts" }) });
     render(page);
     expect(screen.getByRole("heading", { name: "Public money is temporarily unavailable" })).toBeInTheDocument();
-    expect(screen.getByText(/return once the data has been reverified/i)).toBeInTheDocument();
+    expect(screen.getByText(/return once.*data has been reverified/i)).toBeInTheDocument();
     expect(readServerMetricsSnapshot).not.toHaveBeenCalled();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     expect(document.body).not.toHaveTextContent(/£|Open notice dossier|Download filtered notices CSV/);
@@ -31,7 +32,7 @@ describe("temporary public-money withdrawal", () => {
 
   it("removes withdrawn destinations from navigation, homepage links, footer and sitemap", () => {
     const withdrawn = /\/(?:money|section\/government-contracts)\/?$/;
-    expect(SECTIONS.flatMap((group) => group.sections).map((section) => section.id)).not.toContain("government-contracts");
+    expect(SECTIONS.flatMap((group) => group.sections).filter((section) => publicationRouteEnabled(`/section/${section.id}/`)).map((section) => section.id)).not.toContain("government-contracts");
     expect(DIRECT_EVIDENCE_LINKS.some((link) => withdrawn.test(link.href))).toBe(false);
     expect(sitemap().some((entry) => withdrawn.test(entry.url))).toBe(false);
     render(<SiteFooter />);

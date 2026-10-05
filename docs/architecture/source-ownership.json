@@ -233,11 +233,6 @@
   ],
   "withdrawnRoutes": [
     {
-      "route": "government-contracts",
-      "source": "governmentContracts",
-      "consumer": "app/money/page.tsx"
-    },
-    {
       "route": "pm-approval",
       "source": "pmApproval",
       "consumer": "app/components/PMApproval.tsx"

@@ -6,6 +6,7 @@ import {
 import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
 import type { MetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import { publicSnapshot } from "@/worker/public-snapshot";
+import { filterPublicationSnapshot, publicationRouteEnabled } from "@/contracts/publication-policy";
 import householdStory from "@/app/content/stories/household-budgets";
 import publicFinanceStory from "@/app/content/stories/public-finances";
 
@@ -29,7 +30,7 @@ function validDate(value: string | undefined) {
 }
 
 export function renderRssFeed(input: unknown) {
-  const snapshot = publicSnapshot(input) as MetricsSnapshot | null;
+  const snapshot = filterPublicationSnapshot(publicSnapshot(input)) as MetricsSnapshot | null;
   const publications = publicationEntries(input).sort((left, right) =>
     (right.publication?.dateModified ?? "").localeCompare(left.publication?.dateModified ?? "")
   );
@@ -92,7 +93,7 @@ export function renderRssFeed(input: unknown) {
     "<category>Evidence edition</category>",
     "</item>",
   ].filter(Boolean).join("") : "";
-  const storyEntries = STORIES.map((story) => {
+  const storyEntries = STORIES.filter((story) => publicationRouteEnabled(`/stories/${story.slug}/`)).map((story) => {
     const link = absoluteUrl(`/stories/${story.slug}/`);
     const publishedDate = validDate(story.publishedAt);
     return [

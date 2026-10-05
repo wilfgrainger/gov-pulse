@@ -53,3 +53,9 @@ describe("same-origin section downloads", () => {
     expect(readServerMetricsSnapshot).not.toHaveBeenCalled();
   });
 });
+
+// Exercise the enabled-publication behavior independently of the production pause.
+vi.mock("@/config/publications.json", async (importOriginal) => {
+  const { default: config } = await importOriginal<{ default: { publications: Record<string, { enabled: boolean }> } }>();
+  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, enabled: true }])), ons: { enabled: true } } } };
+});

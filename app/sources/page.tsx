@@ -1,3 +1,5 @@
+import PublicationOffline from "@/app/components/PublicationOffline";
+import { publicationRouteEnabled } from "@/contracts/publication-policy";
 import PageHeader from "@/app/components/PageHeader";
 import SectionNav from "@/app/components/SectionNav";
 import SiteFooter from "@/app/components/SiteFooter";
@@ -177,6 +179,7 @@ function SourceEntryCard({ entry, gap = false, wide = false }: { entry: SourceEn
 }
 
 export default function SourcesPage() {
+  if (!publicationRouteEnabled("/sources/")) return <PublicationOffline />;
   const currentGroups = SOURCE_GROUPS.filter((group) => group.kind === "current");
   const evidenceGaps = SOURCE_GROUPS.find((group) => group.kind === "gap")?.entries ?? [];
 

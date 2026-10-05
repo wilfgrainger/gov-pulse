@@ -33,3 +33,9 @@ describe("edition archive reader", () => {
     expect(markup.indexOf("Archived 2026-07-03")).toBeLessThan(markup.indexOf("Archived 2026-07-02"));
   });
 });
+
+// Exercise the enabled-publication behavior independently of the production pause.
+vi.mock("@/config/publications.json", async (importOriginal) => {
+  const { default: config } = await importOriginal<{ default: { publications: Record<string, { enabled: boolean }> } }>();
+  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, enabled: true }])), ons: { enabled: true } } } };
+});

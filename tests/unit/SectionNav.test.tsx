@@ -80,7 +80,7 @@ describe("SectionNav", () => {
     const tools = screen.getByRole("navigation", { name: "More tools" });
     expect(within(tools).getByRole("link", { name: "Release calendar" })).toHaveAttribute("href", "/calendar");
     expect(within(tools).getByRole("link", { name: "Cost of living" })).toHaveAttribute("href", "/cost-of-living");
-    expect(within(tools).queryByRole("link", { name: "Public money" })).not.toBeInTheDocument();
+    expect(within(tools).getByRole("link", { name: "Public money" })).toHaveAttribute("href", "/money");
     expect(within(tools).getByRole("link", { name: "Editions" })).toHaveAttribute("href", "/editions");
   });
 
@@ -128,4 +128,10 @@ describe("SectionNav", () => {
 
     expect(screen.queryByRole("link", { name: "Employment" })).not.toBeInTheDocument();
   });
+});
+
+// Exercise the enabled-publication behavior independently of the production pause.
+vi.mock("@/config/publications.json", async (importOriginal) => {
+  const { default: config } = await importOriginal<{ default: { publications: Record<string, { enabled: boolean }> } }>();
+  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, enabled: true }])), ons: { enabled: true } } } };
 });

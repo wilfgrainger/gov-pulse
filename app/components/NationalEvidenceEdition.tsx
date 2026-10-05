@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { publicationRouteEnabled } from "@/contracts/publication-policy";
 import { useEffect, useState } from "react";
 import { fetchMetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import {
@@ -195,7 +196,7 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
               <h3 id="more-evidence-title" className="font-display mt-2 text-3xl leading-tight">Go deeper by topic.</h3>
             </div>
             <ul className="grid gap-3 sm:grid-cols-2">
-              {DIRECT_EVIDENCE_LINKS.map((item) => (
+              {DIRECT_EVIDENCE_LINKS.filter((item) => publicationRouteEnabled(item.href)).map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} prefetch={false} className="editorial-lift group flex min-h-28 items-start justify-between gap-4 bg-white p-5 transition-colors hover:bg-[#f9fbfc] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black british-538-border">
 

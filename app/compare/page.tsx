@@ -1,3 +1,5 @@
+import PublicationOffline from "@/app/components/PublicationOffline";
+import { publicationRouteEnabled } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
 import ComparisonStudio from "@/app/components/ComparisonStudio";
 import SectionNav from "@/app/components/SectionNav";
@@ -11,6 +13,7 @@ import { parseWorkspace } from "@/app/lib/comparisonWorkspace";
 export const metadata: Metadata = { title: "Comparison studio", description: "Compare published public measures over the same date window, with source-aware charts and portable citations." };
 
 export default async function ComparePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  if (!publicationRouteEnabled("/compare/")) return <PublicationOffline />;
   const snapshot = await readServerMetricsSnapshot();
   const catalog = snapshot?.meta.measureCatalog as MeasureCatalog | undefined;
   const params = process.env.STATIC_EXPORT === "true" ? {} : await searchParams;
