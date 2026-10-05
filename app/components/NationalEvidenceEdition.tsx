@@ -78,7 +78,7 @@ function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?:
         <div className="mt-auto flex flex-wrap items-end justify-between gap-3 border-t border-black/10 pt-4 text-xs">
           <div className="space-y-1 text-gray-600">
             <p>{signal.period ?? "No current period"}</p>
-            <p>{signal.geography}{signal.publishedAt ? ` · Published ${signal.publishedAt}` : ""}</p>
+            <p>{signal.geography}{signal.publishedAt ? ` · ${signal.dateLabel ?? "Published"} ${signal.publishedAt}` : ""}</p>
           </div>
           <StateBadge state={signal.state} />
         </div>
@@ -125,10 +125,13 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
 
         <section aria-labelledby="at-a-glance-title" className="mt-9 md:mt-12">
           <div className="border-b border-black/20 pb-5">
-            <p className="eyebrow">National signals</p>
+            <p className="eyebrow">Six topics</p>
             <h3 id="at-a-glance-title" className="font-display mt-2 text-3xl leading-tight md:text-5xl">The country at a glance</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
+              Prices, jobs, debt, rents, the NHS waiting list and contracts. A card without verified evidence says so.
+            </p>
           </div>
-          <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul data-testid="topic-cards" className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {edition.signals.map((signal, index) => (
               <SignalCard key={signal.id} signal={signal} index={index} />
             ))}
