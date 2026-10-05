@@ -1,11 +1,17 @@
 // @vitest-environment node
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import worker from "@/worker/public-data-entry";
 import offlineSeed from "@/worker/offline-pages-entry";
 import { PUBLICATION_CONFIG } from "@/contracts/publication-policy";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 
-afterEach(() => vi.unstubAllGlobals());
+const contractsEnabledByDefault = PUBLICATION_CONFIG.publications.governmentContracts.enabled;
+
+beforeEach(() => { PUBLICATION_CONFIG.publications.governmentContracts.enabled = false; });
+afterEach(() => {
+  PUBLICATION_CONFIG.publications.governmentContracts.enabled = contractsEnabledByDefault;
+  vi.unstubAllGlobals();
+});
 
 describe("disabled public deliveries", () => {
   it("restores GDP alone while keeping other stored data and catalog values private", async () => {

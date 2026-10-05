@@ -21,6 +21,29 @@ const STATE_LABELS: Record<EvidenceState, string> = {
   unavailable: "Unavailable",
 };
 
+function AwardNoticeContext() {
+  if (!publicationRouteEnabled("/money/")) return null;
+
+  return (
+    <section aria-labelledby="award-notice-context-title" className="mt-12 border-y-2 border-foreground bg-surface-warm md:mt-16">
+      <div className="grid gap-6 p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:p-8">
+        <div>
+          <p className="eyebrow">Public money · procurement records</p>
+          <h3 id="award-notice-context-title" className="font-display mt-2 max-w-3xl text-3xl leading-tight md:text-4xl">
+            Contract awards show commitments, not cash paid.
+          </h3>
+          <p className="mt-4 max-w-3xl text-sm leading-6 text-gray-700 md:text-base">
+            Published notice values can cover several years, include framework ceilings or multiple lots, and change later. Check the original notice before comparing an award with public expenditure.
+          </p>
+        </div>
+        <Link href="/money/" prefetch={false} className="v3-primary-action shrink-0">
+          Explore public-money records <span aria-hidden="true">→</span>
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 function StateBadge({ state }: { state: EvidenceState }) {
   const tone =
     state === "current"
@@ -188,6 +211,8 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
             ))}
           </ul>
         </section>
+
+        <AwardNoticeContext />
 
         <section id="more-evidence" aria-labelledby="more-evidence-title" className="mt-12 border-y border-black/20 py-8 md:mt-16">
           <div className="grid gap-6 lg:grid-cols-[17rem_1fr]">

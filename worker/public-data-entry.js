@@ -18,7 +18,7 @@ import {
   publicSnapshot,
 } from "./public-snapshot.js";
 import { readInternationalComparison } from "./international-comparison-publication.js";
-import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
+import { assertSameHttpsHost, MAX_RESPONSE_BYTES, readResponseJson } from "./response-limits.js";
 import { listEditionSummaries, readEdition } from "./edition-archive.js";
 import {
   FIND_A_TENDER_USER_AGENT,
@@ -36,7 +36,7 @@ const DEFAULT_SEED_URL =
 const PUBLIC_CACHE_FRESH_SECONDS = 300;
 const COMPARISON_CACHE_FRESH_SECONDS = 300;
 const CONTRACT_HISTORY_CACHE_SECONDS = 300;
-const CONTRACT_HISTORY_MAX_BYTES = 512 * 1024;
+const CONTRACT_HISTORY_MAX_BYTES = MAX_RESPONSE_BYTES.json;
 const FIND_A_TENDER_RECORD_PACKAGE_BASE =
   "https://www.find-tender.service.gov.uk/api/1.0/ocdsRecordPackages/";
 const FIND_A_TENDER_RELEASE_PACKAGE_BASE =

@@ -1,10 +1,10 @@
 # Publication controls
 
-Edit `config/publications.json`. Each publication has an `enabled` boolean;
-all are currently `false` while the evidence is reverified. Toggle one source
-to `true` in a reviewed PR, then merge to `main`. Config changes trigger the
-normal validated production deployment. No secrets or dashboard access are
-needed to change publication visibility.
+Edit `config/publications.json`. Each publication has an independent `enabled`
+boolean. Keep a source disabled until its publisher edition and reader-facing
+output have been reverified; then enable only that source in a reviewed PR.
+Config changes trigger the normal validated production deployment. No secrets
+or dashboard access are needed to change publication visibility.
 
 The same source switch controls topic pages, current JSON/CSV downloads,
 public snapshots, embedded page data, catalog records and discovery. The

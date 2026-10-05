@@ -11,12 +11,12 @@ vi.mock("@/app/lib/serverMetricsSnapshot", () => ({ readServerMetricsSnapshot: v
 vi.mock("@/app/components/SectionNav", () => ({ default: () => null }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
-describe("offline publication pages", () => {
-  it("replaces the homepage without loading a snapshot", async () => {
+describe("source-specific publication switches", () => {
+  it("keeps the public edition available for the verified contracts source", async () => {
     render(await Home());
-    expect(screen.getByRole("heading", { name: /data publications are temporarily offline/i })).toBeInTheDocument();
-    expect(readServerMetricsSnapshot).not.toHaveBeenCalled();
-    expect(screen.queryByText("Latest figures")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Latest figures" })).toBeInTheDocument();
+    expect(readServerMetricsSnapshot).toHaveBeenCalledOnce();
+    expect(screen.getByRole("link", { name: /Explore public-money records/ })).toHaveAttribute("href", "/money");
   });
   it.each(["gdp", "early-years", "election-polls", "uk-in-context"])("blocks dynamic and static evidence on %s", async (id) => {
     render(await SectionPage({ params: Promise.resolve({ id }) }));
@@ -29,7 +29,13 @@ describe("offline publication pages", () => {
     expect(response.status).toBe(503);
     expect(readServerMetricsSnapshot).not.toHaveBeenCalled();
   });
-  it("does not publish stored figures or stories in the RSS feed", () => {
-    expect(renderRssFeed(BUILD_METRICS_SNAPSHOT)).not.toContain("<item>");
+  it("publishes only the enabled contracts destination in RSS", () => {
+    const feed = renderRssFeed(BUILD_METRICS_SNAPSHOT);
+    const items = feed.split("<item>").slice(1).map((item) => item.split("</item>")[0]);
+    expect(items).toHaveLength(1);
+    expect(items[0]).toContain("/section/government-contracts/");
+    expect(feed).not.toContain("/section/election-polls/");
+    expect(feed).not.toContain("/section/national-debt/");
+    expect(feed).not.toContain("/stories/");
   });
 });
