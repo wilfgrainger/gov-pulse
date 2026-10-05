@@ -58,6 +58,12 @@ body {
   color: var(--foreground);
 }
 
+/* Light publication surfaces default back to ink. :where() deliberately keeps
+   specificity at zero so an explicit text utility can always override it. */
+:where(.bg-white, .bg-surface, .bg-surface-warm) {
+  color: var(--ink);
+}
+
 ::selection {
   background: rgb(232 53 46 / 0.35);
   color: #fff;
