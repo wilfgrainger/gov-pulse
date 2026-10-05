@@ -37,6 +37,11 @@
   --teal: var(--domain-health);
   --gold: var(--domain-prices);
   --blue: var(--domain-economy);
+  --chart-series: #315f8f;
+  --chart-accent: #e8352e;
+  --chart-grid: #d7d0c4;
+  --chart-axis: #202832;
+  --chart-muted: #5f6771;
   --font-editorial: var(--font-display-file), "Avenir Next", "Segoe UI", sans-serif;
   --edition-max: 76rem;
   --edition-gutter: clamp(1rem, 2.5vw, 1.5rem);
