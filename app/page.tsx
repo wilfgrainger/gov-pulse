@@ -16,11 +16,11 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <a href="#national-signals" className="sr-only z-[100] bg-black px-4 py-3 text-white focus:not-sr-only focus:fixed focus:left-3 focus:top-3">
+      <a href="#national-signals" className="sr-only z-[100] bg-[var(--accent)] px-4 py-3 text-white focus:not-sr-only focus:fixed focus:left-3 focus:top-3">
         Skip to the latest evidence
       </a>
 
-      <div className="sticky top-0 z-50 bg-white">
+      <div className="premium-sticky-chrome sticky top-0 z-50">
         <SectionNav sections={SECTIONS} />
       </div>
 
@@ -29,7 +29,7 @@ export default async function Home() {
         <NationalEvidenceEdition initialEdition={initialEdition} />
 
         <div className="mx-auto max-w-7xl px-4 pb-12 md:px-6 md:pb-16">
-          <div className="my-8 border-b border-black/15 pb-8">
+          <div className="my-8 border-b border-[var(--line)] pb-8">
             <SocialShare />
           </div>
         </div>
