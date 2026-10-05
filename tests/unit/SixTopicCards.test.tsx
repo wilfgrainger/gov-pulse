@@ -65,6 +65,7 @@ describe("Six topic cards", () => {
     for (const card of others) {
       expect(card.getAttribute("data-evidence-state")).toBe("unavailable");
       expect(card.textContent).toContain("Current value unavailable");
+      expect(card.textContent).toContain("No older value is substituted.");
       expect(card.textContent).not.toMatch(/(^|\D)0(\.0)?%/);
     }
   });
