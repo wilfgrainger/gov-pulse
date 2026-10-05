@@ -14,6 +14,7 @@ Updated 5 October 2026.
 | #203 six topic cards | Local six-card suites; PR validation classify, quality and full-quality on `8bd3628` | Passed. Merged as `de9d4b6`. |
 | #205 contract dossier | Local money/contracts suites; PR validation classify, quality and full-quality on `366bc62` | Passed. Squash-merged as `0450dcb`. |
 | #206 Look up a place | Local `placeLookup` unit tests; PR validation classify, quality and full-quality on `6226d4b` | 6 passed locally. Squash-merged as `75153d9`. |
+| #207 Compare one indicator | Local `oneIndicatorCompare` unit tests; PR validation classify, quality and full-quality on `d37ed53` | 7 passed locally. Squash-merged as `0a9ee2f`. |
 
 ## Features
 
@@ -26,7 +27,7 @@ Updated 5 October 2026.
 | 5 | Six topic cards | Merged. Homepage grid is six cards: prices, jobs, debt, rents, NHS waiting list, contracts. Unavailable cards say unavailable, never zero. NHS stays unavailable. |
 | 6 | Contract dossier | Merged. Notice-first lead, exclusion coverage on totals, framework badges, buyer/supplier dossier routes. `governmentContracts` stays disabled. |
 | 7 | Look up a place | Merged. Explore is the Look up door; published geographies only; postcodes fail closed. |
-| 8 | Compare, one indicator | In progress. One-indicator Compare door; overlay peers only when definitions match; country peers unavailable. |
+| 8 | Compare, one indicator | Merged. One-indicator Compare door; overlay peers only when definitions match; country peers unavailable while UK-in-context is offline. |
 | 9 | Polling table | Not started |
 | 10 | Edition page and read API | Not started |
 
@@ -72,9 +73,10 @@ Updated 5 October 2026.
 - Overlay peers require `compareEligibility === "overlay"` (shared definition, unit, cadence and geography).
 - Country peers stay unavailable while `internationalComparison` / UK-in-context is offline. No invented peer table.
 - Comparison studio remains below for multi-measure workspaces. NHS stays unavailable. `governmentContracts` stays disabled.
+- Local `oneIndicatorCompare` suite 7 passed; PR validation green on `d37ed53`; squash-merged as `0a9ee2f`.
 
 ## Next
 
-1. Finish feature 8 (Compare, one indicator): tests, PR, merge when green.
-2. Then feature 9 (Polling table).
+1. Feature 9 (Polling table).
+2. Feature 10 (Edition page and read API).
 3. Do not invent NHS figures. Do not mark NHS optional. `governmentContracts` stays disabled unless this progress note says otherwise.
