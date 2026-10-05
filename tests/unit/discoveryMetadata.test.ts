@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { DATA_SOURCES } from "@/app/lib/config";
 import {
   PUBLIC_SECTION_IDS,
@@ -158,4 +158,10 @@ describe("section discovery contract", () => {
     expect(feed).toContain('export const dynamic = "force-static"');
     expect(feed).toContain('"content-type": "application/rss+xml; charset=utf-8"');
   });
+});
+
+// Exercise the enabled-publication behavior independently of the production pause.
+vi.mock("@/config/publications.json", async (importOriginal) => {
+  const { default: config } = await importOriginal<{ default: { publications: Record<string, { enabled: boolean }> } }>();
+  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, enabled: true }])), ons: { enabled: true } } } };
 });

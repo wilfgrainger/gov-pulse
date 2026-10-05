@@ -124,7 +124,7 @@ describe("government contracts publication", () => {
     expect(merged.meta.verifiedSections).not.toContain("governmentContracts");
   });
 
-  it("retains collection and deployment while public-money navigation is withdrawn", () => {
+  it("retains collection and deployment independently of the public visibility switch", () => {
     const sectionContent = source("app/lib/sectionContent.ts");
     const sections = source("app/lib/sections.ts");
     const presentation = source("app/lib/nationalEvidence.ts");
@@ -133,7 +133,7 @@ describe("government contracts publication", () => {
 
     expect(sectionContent).toMatch(/["']government-contracts["']:\s*\{/);
     expect(sectionContent).toContain("GovernmentContracts");
-    expect(sections).not.toMatch(/id:\s*["']government-contracts["']/);
+    expect(sections).toMatch(/id:\s*["']government-contracts["']/);
     expect(presentation).not.toContain('href: "/section/government-contracts"');
     expect(edition).toContain("DIRECT_EVIDENCE_LINKS");
     expect(workflow).toContain("Deploy Cloudflare data Worker");

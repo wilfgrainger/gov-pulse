@@ -8,6 +8,7 @@ on:
       - ".nvmrc"
       - "app/**"
       - "contracts/**"
+      - "config/**"
       - "data/**"
       - "next.config.*"
       - "package.json"
@@ -141,6 +142,21 @@ jobs:
 
       - name: Verify deployed revision and reader routes
         run: npm run test:release -- "https://public-data.org/" "${{ github.sha }}"
+
+      - name: Check publication controls
+        id: publication-controls
+        run: node --input-type=module -e 'import {anyPublicationEnabled} from "./contracts/publication-policy.js"; console.log(`paused=${!anyPublicationEnabled()}`)' >> "$GITHUB_OUTPUT"
+
+      - name: Withdraw the public Pages seed while all publications are offline
+        if: steps.publication-controls.outputs.paused == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          mkdir -p out-paused
+          cp worker/offline-pages-entry.js out-paused/_worker.js
+          echo 'Data publications are temporarily offline.' > out-paused/index.html
+          npx wrangler pages deploy out-paused --project-name public-data-org --branch main --commit-hash "$GITHUB_SHA"
 
       - name: Fetch complete publication for bounded Pages seed fallback
         id: pages-seed-candidate

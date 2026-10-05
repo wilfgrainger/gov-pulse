@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { publicationRouteEnabled } from "@/contracts/publication-policy";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { CategoryGroup } from "../lib/sections";
@@ -18,7 +19,8 @@ const QUICK_LINK_IDS = [
   "crime-stats",
 ] as const;
 
-export default function SectionNav({ sections }: { sections: CategoryGroup[] }) {
+export default function SectionNav({ sections: configuredSections }: { sections: CategoryGroup[] }) {
+  const sections = useMemo(() => configuredSections.map((group) => ({ ...group, sections: group.sections.filter((section) => publicationRouteEnabled(`/section/${section.id}/`)) })).filter((group) => group.sections.length), [configuredSections]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -203,8 +205,9 @@ export default function SectionNav({ sections }: { sections: CategoryGroup[] }) 
                   ["Briefing", "/briefing/"],
                   ["Release calendar", "/calendar/"],
                   ["Cost of living", "/cost-of-living/"],
+                  ["Public money", "/money/"],
                   ["Editions", "/editions/"],
-                ].map(([label, href]) => (
+                ].filter(([, href]) => publicationRouteEnabled(href)).map(([label, href]) => (
                   <li key={href}>
                     <Link
                       href={href}

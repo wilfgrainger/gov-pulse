@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import SourcesPage, { SOURCE_GROUPS } from "@/app/sources/page";
@@ -103,4 +104,10 @@ describe("SourcesPage", () => {
     expect(screen.getByText(/No map, ranking or value is displayed/i)).toBeInTheDocument();
     expect(screen.getByText(/No coefficient or relationship strength is displayed/i)).toBeInTheDocument();
   });
+});
+
+// Exercise the enabled-publication behavior independently of the production pause.
+vi.mock("@/config/publications.json", async (importOriginal) => {
+  const { default: config } = await importOriginal<{ default: { publications: Record<string, { enabled: boolean }> } }>();
+  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, enabled: true }])), ons: { enabled: true } } } };
 });

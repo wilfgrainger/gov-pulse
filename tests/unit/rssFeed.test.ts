@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { GET, renderRssFeed } from "@/app/feed.xml/route";
 import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
 import { SITE_DISCOVERY } from "@/app/lib/discovery";
@@ -163,4 +163,10 @@ describe("RSS publication feed", () => {
     expect(description).toContain("https://www.ons.gov.uk/prices/new");
     expect(description).not.toContain("not previously reported → unavailable");
   });
+});
+
+// Exercise the enabled-publication behavior independently of the production pause.
+vi.mock("@/config/publications.json", async (importOriginal) => {
+  const { default: config } = await importOriginal<{ default: { publications: Record<string, { enabled: boolean }> } }>();
+  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, enabled: true }])), ons: { enabled: true } } } };
 });

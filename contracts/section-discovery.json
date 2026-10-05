@@ -87,9 +87,9 @@
     },
     "government-contracts": {
       "title": "UK government contracts",
-      "description": "Government-contracts evidence is temporarily withdrawn while the procurement data is reverified before republication.",
+      "description": "Inspect comparable disclosed procurement awards when this publication is enabled and its source records pass verification.",
       "category": "Public money",
-      "kind": "withdrawn",
+      "kind": "dataset",
       "sourceKey": "governmentContracts",
       "sameAs": ["https://www.find-tender.service.gov.uk/"]
     },

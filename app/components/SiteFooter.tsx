@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { publicationRouteEnabled } from "@/contracts/publication-policy";
 import { SECTIONS } from "../lib/sections";
 import BrandLogo from "./BrandLogo";
 
@@ -8,6 +9,7 @@ const publicationLinks = [
   ["Latest briefing", "/briefing/"],
   ["Release calendar", "/calendar/"],
   ["Cost-of-living lens", "/cost-of-living/"],
+  ["Public-money dossiers", "/money/"],
   ["Edition archive", "/editions/"],
   ["Sources and methods", "/sources"],
   ["About", "/about"],
@@ -67,7 +69,7 @@ export default function SiteFooter() {
             </p>
           </div>
 
-          {SECTIONS.map((group) => (
+          {SECTIONS.map((group) => ({ ...group, sections: group.sections.filter((section) => publicationRouteEnabled(`/section/${section.id}/`)) })).filter((group) => group.sections.length).map((group) => (
             <nav key={group.category} aria-label={`${group.category} footer links`}>
               <h2 className="eyebrow eyebrow-on-dark">{group.category}</h2>
               <ul className="mt-4 space-y-2 text-sm text-slate-200">
@@ -89,7 +91,7 @@ export default function SiteFooter() {
           <nav aria-label="Publication information">
             <h2 className="eyebrow eyebrow-on-dark">Publication</h2>
             <ul className="mt-4 space-y-2 text-sm text-slate-200">
-              {publicationLinks.map(([label, href]) => (
+              {publicationLinks.filter(([, href]) => publicationRouteEnabled(href)).map(([label, href]) => (
                 <li key={href}>
                   <Link
                     href={href}

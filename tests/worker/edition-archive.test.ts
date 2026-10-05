@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { archiveEdition, EDITION_CONTENT_PREFIX, EDITION_INDEX_KEY, EDITION_SUMMARY_CORRECTION_PREFIX, EDITION_SUMMARY_PREFIX, listEditionSummaries, readEdition, reconcileEditionSummaryFromRetainedPrior, reconcileRetainedEditionSummaries } from "../../worker/edition-archive.js";
 import { catalogRevisionIdentity } from "../../worker/measure-catalog.js";
 import publicDataWorker, { editionResponse, editionsResponse } from "../../worker/public-data-entry.js";
@@ -196,7 +196,7 @@ describe("content-addressed edition archive", () => {
     expect(reread?.summary).toEqual(repaired.summary);
     expect(indexed[0]).toMatchObject({ ...repaired.summary, asOf: current.catalog.generatedAt });
     expect(detail.summary).toEqual(repaired.summary);
-    expect(detailResponse.headers.get("Cache-Control")).toBe("public, max-age=60, s-maxage=60");
+    expect(detailResponse.headers.get("Cache-Control")).toBe("no-store");
     expect(originalRecord.value.summary).toEqual(current.summary);
 
     await expect(
@@ -414,4 +414,10 @@ describe("content-addressed edition archive", () => {
     expect(detail.status).toBe(200);
     expect(unknown.status).toBe(404);
   });
+});
+
+// Exercise the enabled-publication behavior independently of the production pause.
+vi.mock("@/config/publications.json", async (importOriginal) => {
+  const { default: config } = await importOriginal<{ default: { publications: Record<string, { enabled: boolean }> } }>();
+  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, enabled: true }])), ons: { enabled: true } } } };
 });

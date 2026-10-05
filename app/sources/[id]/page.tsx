@@ -1,3 +1,5 @@
+import PublicationOffline from "@/app/components/PublicationOffline";
+import { publicationRouteEnabled } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -78,6 +80,7 @@ export async function generateMetadata({ params, searchParams }: SourcePageProps
 
 export default async function SourceDetailPage({ params, searchParams }: SourcePageProps) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
+  if (!publicationRouteEnabled(`/sources/${id}/`)) return <PublicationOffline />;
   if (!/^[A-Za-z0-9._-]{1,160}$/.test(id)) notFound();
   const measureId = selectedMeasureId(query.measure);
   if (measureId === null) notFound();
