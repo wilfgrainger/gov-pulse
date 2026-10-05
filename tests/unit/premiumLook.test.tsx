@@ -11,10 +11,17 @@ const socialScript = readFileSync(resolve(process.cwd(), "scripts/generate-socia
 afterEach(() => cleanup());
 
 describe("Premium look", () => {
-  it("locks ink paper, single vermillion accent, and Familjen display tokens", () => {
+  it("locks ink paper, editorial subject colours, and Familjen display tokens", () => {
     expect(editionLook).toMatch(/--background:\s*#0c0f12/);
     expect(editionLook).toMatch(/--surface:\s*#f6f2ea/);
     expect(editionLook).toMatch(/--accent:\s*#e8352e/);
+    expect(editionLook).toMatch(/--domain-economy:\s*#[0-9a-f]{6}/i);
+    expect(editionLook).toMatch(/--domain-prices:\s*#[0-9a-f]{6}/i);
+    expect(editionLook).toMatch(/--domain-health:\s*#[0-9a-f]{6}/i);
+    expect(editionLook).toMatch(/--domain-population:\s*#[0-9a-f]{6}/i);
+    expect(editionLook).toMatch(/--domain-public-money:\s*#[0-9a-f]{6}/i);
+    const domainColours = [...editionLook.matchAll(/--domain-[a-z-]+:\s*(#[0-9a-f]{6})/gi)].map((match) => match[1].toLowerCase());
+    expect(new Set(domainColours).size).toBeGreaterThanOrEqual(5);
     expect(editionLook).toContain("var(--font-display-file)");
     expect(editionLook).toContain("font-variant-numeric: tabular-nums");
     expect(editionLook).toMatch(/--reading-measure:\s*[0-9.]+rem/);
