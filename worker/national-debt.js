@@ -34,7 +34,7 @@ function parseCsvColumns(line) {
   const columns = [];
   let current = "";
   let quoted = false;
-  for (let index = 0; index __LT__ line.length; index += 1) {
+  for (let index = 0; index < line.length; index += 1) {
     const character = line[index];
     if (character === '"') {
       if (quoted && line[index + 1] === '"') { current += '"'; index += 1; }
@@ -181,7 +181,7 @@ async function buildNationalDebt(fetchImpl = fetch) {
   reconcileDebtWithBulletin(debt, debtToGdp, publicationDate, nextReleaseDate, bulletinCheck);
   const debtByPeriod = new Map(debtPoints.map((point) => [point.period, point]));
   const aligned = debtGdpPoints.filter((point) => debtByPeriod.has(point.period)).slice(-TEN_YEARS_MONTHLY);
-  if (aligned.length __LT__ 13 || aligned.at(-1).period !== debt.period) {
+  if (aligned.length < 13 || aligned.at(-1).period !== debt.period) {
     throw new Error("ONS national debt series did not expose a comparable annual history");
   }
   const history = aligned.map((ratioPoint) => ({
