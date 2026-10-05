@@ -28,7 +28,7 @@ Updated 5 October 2026.
 | 6 | Contract dossier | Merged. Notice-first lead, exclusion coverage on totals, framework badges, buyer/supplier dossier routes. `governmentContracts` stays disabled. |
 | 7 | Look up a place | Merged. Explore is the Look up door; published geographies only; postcodes fail closed. |
 | 8 | Compare, one indicator | Merged. One-indicator Compare door; overlay peers only when definitions match; country peers unavailable while UK-in-context is offline. |
-| 9 | Polling table | In progress on this branch. Aligned party-column table; no average; shares require a source URL; corrections are separate rows; betting markets absent from the table. `electionPolling` stays disabled. |
+| 9 | Polling table | In progress on PR #209. Aligned party-column table; no average; shares require a source URL; corrections are separate rows; betting markets absent from the table. `electionPolling` stays disabled. |
 | 10 | Edition page and read API | Not started |
 
 ## Lead and history evidence
