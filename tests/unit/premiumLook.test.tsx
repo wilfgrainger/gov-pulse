@@ -40,6 +40,8 @@ describe("Premium look", () => {
     expect(container.querySelector(".premium-hero")).toBeTruthy();
     expect(container.querySelector(".premium-hero__meta")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Britain, in evidence." })).toBeInTheDocument();
+    expect(editionLook).toContain(".home-front-page");
+    expect(editionLook).toContain(".front-page-edition-bar");
   });
 
   it("matches social cards to the ink masthead", () => {
