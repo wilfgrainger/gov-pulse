@@ -128,6 +128,28 @@ describe("measure library", () => {
     expect(screen.queryByRole("link", { name: /Central government receipts/i })).not.toBeInTheDocument();
   });
 
+
+  it("defaults to an atlas view, can switch to list view, and separates unavailable definitions", () => {
+    const unavailable: MeasureLibraryItem = {
+      ...MEASURES.find((measure) => measure.id === "waitingPathwaysEstimate")!,
+      publisher: "NHS England",
+      availability: "unavailable",
+      observationPeriod: null,
+      record: null,
+      availabilityReason: "The source section is unavailable in this edition.",
+    };
+    render(<MeasureLibrary measures={[item, unavailable]} />);
+
+    expect(screen.getByRole("button", { name: "Atlas view" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("measure-results")).toHaveAttribute("data-view", "atlas");
+    expect(screen.getByRole("heading", { name: "Verified and retained measures" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Unavailable in this edition" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "List view" }));
+    expect(screen.getByRole("button", { name: "List view" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("measure-results")).toHaveAttribute("data-view", "list");
+  });
+
   it("keeps unavailable definitions discoverable without publishing a value", () => {
     const unavailable: MeasureLibraryItem = {
       ...MEASURES.find((measure) => measure.id === "waitingPathwaysEstimate")!,
