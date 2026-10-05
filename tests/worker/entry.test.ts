@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { FINANCES_BULLETIN_URL } from "@/worker/economy-evidence";
 import { SECTION_BUILDERS } from "@/worker/section-builders";
 
 const debtCsv = `Title,PS: Net Debt (excluding public sector banks): £bn: CPNSA
@@ -34,6 +35,12 @@ const debtGdpCsv = `Title,PS: Net Debt (excluding public sector banks) as a % of
 2026 MAY,95.1
 `;
 const debtSeriesHtml = `<main><p>Release date: 19 June 2026</p></main>`;
+const debtEditionUrl = FINANCES_BULLETIN_URL.replace("/latest", "/may2026");
+const debtBulletinHtml = `
+  <h1>Public sector finances, UK: May 2026</h1>
+  <p>Release date: 19 June 2026</p>
+  <p>Public sector net debt - the amount owed to the UK private sector and overseas, less liquid assets - was provisionally estimated at £2,984.3 billion at the end of May 2026, £174.3 billion more than a year earlier. Debt at the end of May 2026 was equivalent to 95.1% of GDP.</p>
+`;
 const migrationDatasetHtml = `<a href="/file?uri=%2Fpeoplepopulationandcommunity%2Fpopulationandmigration%2Finternationalmigration%2Fdatasets%2Flongterminternationalimmigrationemigrationandnetmigrationflowsprovisional%2Fyearendingdecember2025%2Fmay2026publicationspreadsheet.xlsx">Latest</a>`;
 const migrationBulletinHtml = `<h1>Long-term international migration, provisional: year ending December 2025</h1><p>Release date: 21 May 2026</p><p>At 171,000, long-term international net migration for year ending (YE) December 2025 has nearly halved from YE December 2024 (updated to 331,000).</p><p>The provisional estimate for total long-term immigration YE December 2025 is 813,000.</p><p>The provisional estimate for total long-term emigration in the most recent period is 642,000.</p><h3>Long-term immigration, emigration and net migration</h3><div data-url="/visualisations/test/fig02/index.html"></div>`;
 const migrationHistoryCsv = `date,Net migration,Immigration,Emigration,Net_estimate,Immigration_estimate,Emigration_estimate
@@ -55,12 +62,18 @@ describe("national debt section builder", () => {
       vi.fn(async (url: string) => ({
         ok: true,
         status: 200,
-        text: async () =>
-          url.includes("format=csv")
-            ? url.includes("hf6x")
-              ? debtGdpCsv
-              : debtCsv
-            : debtSeriesHtml,
+        text: async () => {
+          if (url.includes("format=csv")) {
+            return url.includes("hf6x") ? debtGdpCsv : debtCsv;
+          }
+          if (url === FINANCES_BULLETIN_URL) {
+            return `<a href="${debtEditionUrl}">Latest release</a>`;
+          }
+          if (url === debtEditionUrl) {
+            return debtBulletinHtml;
+          }
+          return debtSeriesHtml;
+        },
       }))
     );
   });
