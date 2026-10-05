@@ -43,18 +43,13 @@ function socialCard(section) {
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="${escapeXml(section.title)}">
-  <defs>
-    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#172234"/>
-      <stop offset="1" stop-color="#294466"/>
-    </linearGradient>
-  </defs>
-  <rect width="1200" height="630" fill="url(#background)"/>
-  <rect x="72" y="62" width="1056" height="4" fill="#f2c94c"/>
-  <text x="72" y="124" fill="#d8e2ef" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="2">${escapeXml(section.category.toUpperCase())} · UK PUBLIC EVIDENCE</text>
-  <text x="72" y="250" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="64" font-weight="700">${title}</text>
-  <text x="72" y="548" fill="#d8e2ef" font-family="Arial, Helvetica, sans-serif" font-size="30">Clear dates · named sources · material caveats</text>
-  <text x="1128" y="590" text-anchor="end" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700">public-data.org</text>
+  <rect width="1200" height="630" fill="#0c0f12"/>
+  <rect x="0" y="0" width="1200" height="8" fill="#e8352e"/>
+  <rect x="72" y="88" width="72" height="3" fill="#e8352e"/>
+  <text x="72" y="140" fill="#9aa3ad" font-family="Georgia, 'Times New Roman', serif" font-size="26" font-weight="700" letter-spacing="3">${escapeXml(section.category.toUpperCase())} · UK PUBLIC EVIDENCE</text>
+  <text x="72" y="270" fill="#ebe6dc" font-family="Georgia, 'Times New Roman', serif" font-size="68" font-weight="700">${title}</text>
+  <text x="72" y="548" fill="#9aa3ad" font-family="Arial, Helvetica, sans-serif" font-size="28">Clear dates · named sources · material caveats</text>
+  <text x="1128" y="590" text-anchor="end" fill="#ebe6dc" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700">public-data<tspan fill="#e8352e">.org</tspan></text>
 </svg>
 `;
 }
