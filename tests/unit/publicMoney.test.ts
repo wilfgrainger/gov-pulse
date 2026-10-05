@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDossier, filteredAwardCoverage, parsePublicMoneyUrlState, serializePublicAwardsCsv, serializePublicMoneyUrlState, type PublicAward } from "@/app/lib/publicMoney";
+import { buildDossier, contractCoverageLine, dossierHref, filteredAwardCoverage, frameworkValueLabel, parsePublicMoneyUrlState, serializePublicAwardsCsv, serializePublicMoneyUrlState, sumContractExclusions, type PublicAward } from "@/app/lib/publicMoney";
 
 const award = (key: string, amount: number, supplier = "Example Ltd"): PublicAward => ({
   rank: 1, key, ocid: `ocds-h6vhtk-${key}`, releaseId: "123456-2026", awardId: key, title: `Award ${key}`, buyer: "Department A", suppliers: [supplier], supplierNations: ["Other/Unknown"],
@@ -161,5 +161,45 @@ describe("notice-level public-money dossiers", () => {
     expect(csv).toContain("GBP only; value in one uniquely linked contract is not confirmed expenditure");
     expect(buildDossier([contractValue], contractValue.key)?.caveats.join(" "))
       .toMatch(/value in one uniquely linked contract is not an invoice/i);
+  });
+});
+
+
+describe("contract dossier coverage helpers", () => {
+  it("sums exclusions fail-closed when a field is missing", () => {
+    expect(
+      sumContractExclusions({
+        excludedMissingValue: 1,
+        excludedAmbiguousContractValue: 2,
+        excludedNonGbp: 3,
+        excludedMissingBuyer: 4,
+        excludedMissingSupplier: 5,
+        excludedMalformed: 6,
+      }),
+    ).toBe(21);
+    expect(
+      sumContractExclusions({
+        excludedMissingValue: 1,
+        excludedAmbiguousContractValue: 2,
+        excludedNonGbp: 3,
+        excludedMissingBuyer: 4,
+        excludedMissingSupplier: 5,
+      }),
+    ).toBeNull();
+  });
+
+  it("builds a coverage line only when both sides are known", () => {
+    expect(contractCoverageLine(881, 34)).toBe(
+      "881 of 915 awards · 34 excluded for missing or non-comparable values",
+    );
+    expect(contractCoverageLine(881, null)).toBeNull();
+  });
+
+  it("builds dossier hrefs and framework labels", () => {
+    expect(dossierHref({ kind: "buyer", basis: "publisher-id", identity: "GB-NHS-QOQ" })).toBe(
+      "/money?dossier=buyer%3Apublisher-id%3AGB-NHS-QOQ",
+    );
+    expect(frameworkValueLabel(true)).toMatch(/framework maximum/i);
+    expect(frameworkValueLabel(false)).toMatch(/single award/i);
   });
 });
