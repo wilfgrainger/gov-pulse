@@ -10,14 +10,19 @@ import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
 
 vi.mock("@/app/lib/serverMetricsSnapshot", () => ({ readServerMetricsSnapshot: vi.fn(async () => null) }));
 vi.mock("@/app/components/SectionNav", () => ({ default: () => null }));
+vi.mock("@/app/components/NationalEvidenceEdition", () => ({ default: () => <div>National evidence</div> }));
+vi.mock("@/app/components/HomepageIntro", () => ({ default: () => <h1>Britain, in evidence.</h1> }));
+vi.mock("@/app/components/SocialShare", () => ({ default: () => null }));
+vi.mock("@/app/components/SiteFooter", () => ({ default: () => null }));
+vi.mock("@/app/components/NationalDebtCounter", () => ({ default: () => <div>National debt counter</div> }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 describe("source-specific publication switches", () => {
-  it("pauses the public edition before reading stored evidence", async () => {
+  it("opens the public edition once nationalDebt is enabled", async () => {
     render(await Home());
-    expect(screen.getByRole("heading", { name: /temporarily offline/i })).toBeInTheDocument();
-    expect(readServerMetricsSnapshot).not.toHaveBeenCalled();
-    expect(screen.queryByRole("link", { name: /Explore public-money records/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /temporarily offline/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Britain, in evidence/i })).toBeInTheDocument();
+    expect(readServerMetricsSnapshot).toHaveBeenCalled();
   });
   it("withdraws public-money dossiers before reading stored awards", async () => {
     render(await PublicMoneyPage());
@@ -31,18 +36,24 @@ describe("source-specific publication switches", () => {
     expect(readServerMetricsSnapshot).not.toHaveBeenCalled();
     expect(screen.queryByRole("link", { name: /download/i })).not.toBeInTheDocument();
   });
+  it("keeps the national debt section available while other publications stay paused", async () => {
+    render(await SectionPage({ params: Promise.resolve({ id: "national-debt" }) }));
+    expect(screen.queryByRole("heading", { name: /temporarily (offline|unavailable)/i })).not.toBeInTheDocument();
+    expect(screen.getByText("National debt counter")).toBeInTheDocument();
+    expect(readServerMetricsSnapshot).toHaveBeenCalled();
+  });
   it("blocks downloads before reading evidence", async () => {
     const response = await GET(new Request("https://public-data.org/data/sections/gdpTracker.json"), { params: Promise.resolve({ file: "gdpTracker.json" }) });
     expect(response.status).toBe(503);
     expect(readServerMetricsSnapshot).not.toHaveBeenCalled();
   });
-  it("removes all paused publications from RSS", () => {
+  it("publishes only enabled nationalDebt entries in RSS", () => {
     const feed = renderRssFeed(BUILD_METRICS_SNAPSHOT);
     const items = feed.split("<item>").slice(1).map((item) => item.split("</item>")[0]);
-    expect(items).toHaveLength(0);
+    expect(items.length).toBeGreaterThan(0);
+    expect(feed).toContain("/section/national-debt/");
     expect(feed).not.toContain("/section/government-contracts/");
     expect(feed).not.toContain("/section/election-polls/");
-    expect(feed).not.toContain("/section/national-debt/");
     expect(feed).not.toContain("/stories/");
   });
 });
