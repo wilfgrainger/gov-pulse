@@ -5,6 +5,7 @@ import {
   SECTION_BUILDERS,
   validDebtPayload,
 } from "@/worker/section-builders";
+import { FINANCES_BULLETIN_URL } from "@/worker/economy-evidence";
 import {
   DEBT_GDP_SERIES_URL,
   DEBT_SERIES_URL,
@@ -39,9 +40,21 @@ const ratioCsv = `Title,Value
 2026 APR,94.1
 2026 MAY,95.1`;
 const debtPage = `<main><p>Release date: 19 June 2026</p></main>`;
+const debtEditionUrl = FINANCES_BULLETIN_URL.replace("/latest", "/may2026");
+const debtBulletinHtml = `
+  <h1>Public sector finances, UK: May 2026</h1>
+  <p>Release date: 19 June 2026</p>
+  <p>Public sector net debt - the amount owed to the UK private sector and overseas, less liquid assets - was provisionally estimated at £2,984.3 billion at the end of May 2026, £174.3 billion more than a year earlier. Debt at the end of May 2026 was equivalent to 95.1% of GDP.</p>
+`;
 
 function fetchFixture(input: RequestInfo | URL) {
   const url = String(input);
+  if (url === FINANCES_BULLETIN_URL) {
+    return Promise.resolve(new Response(`<a href="${debtEditionUrl}">Latest release</a>`));
+  }
+  if (url === debtEditionUrl) {
+    return Promise.resolve(new Response(debtBulletinHtml));
+  }
   if (url === DEBT_SERIES_URL) return Promise.resolve(new Response(debtPage));
   if (url.includes("hf6x")) return Promise.resolve(new Response(ratioCsv));
   if (url.includes("hf6w")) return Promise.resolve(new Response(debtCsv));
@@ -89,6 +102,8 @@ describe("national debt section builder", () => {
           publisher: "Office for National Statistics",
           debtUrl: DEBT_SERIES_URL,
           debtToGdpUrl: DEBT_GDP_SERIES_URL,
+          bulletinUrl: debtEditionUrl,
+          landingUrl: FINANCES_BULLETIN_URL,
         },
         __observation: {
           status: "current",
