@@ -12,15 +12,17 @@ const fixture = {
 };
 
 describe("publication switches", () => {
-  it("keeps every publication paused and fails closed for unknown identifiers", () => {
-    expect(anyPublicationEnabled()).toBe(false);
+  it("enables only nationalDebt and fails closed for unknown identifiers", () => {
+    expect(anyPublicationEnabled()).toBe(true);
+    expect(publicationEnabled("nationalDebt")).toBe(true);
     for (const id of [...Object.keys(FEED_REGISTRY), ...Object.keys(PUBLICATION_SOURCE_REGISTRY), "earlyYears", "editionArchive"]) {
       expect(PUBLICATION_CONFIG.publications).toHaveProperty(id);
-      expect(publicationEnabled(id)).toBe(false);
+      expect(publicationEnabled(id)).toBe(id === "nationalDebt");
     }
     expect(publicationEnabled("unexpected", config)).toBe(false);
     expect(sectionPublication("gdp")).toBe("gdpTracker");
     expect(sectionPublication("government-contracts")).toBe("governmentContracts");
+    expect(sectionPublication("national-debt")).toBe("nationalDebt");
   });
   it("restores one source without exposing disabled sources in data, catalogs or revision summaries", () => {
     const output = filterPublicationSnapshot(fixture, config)!;
@@ -34,7 +36,7 @@ describe("publication switches", () => {
     expect(JSON.stringify(output)).not.toContain("999");
     expect(fixture.taxRevenue.value).toBe(999);
   });
-  it("does not publish data when all switches are off, even from a populated stored snapshot", () => {
+  it("does not publish data when the stored snapshot has no enabled sources", () => {
     expect(filterPublicationSnapshot(fixture)).toBeNull();
   });
   it("redacts archived changes for disabled or unknown measures", () => {

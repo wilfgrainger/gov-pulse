@@ -32,7 +32,7 @@
       ]
     },
     "nationalDebt": {
-      "enabled": false,
+      "enabled": true,
       "sections": [
         "national-debt"
       ]

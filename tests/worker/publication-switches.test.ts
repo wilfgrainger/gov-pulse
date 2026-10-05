@@ -41,7 +41,6 @@ describe("disabled public deliveries", () => {
     expect(await page.text()).toContain("Data publications are temporarily offline");
   });
   it.each([
-    "/data/metrics-snapshot.json",
     "/data/international-comparison.json",
     "/data/editions.json",
     "/data/edition.json?edition=example",
@@ -60,9 +59,43 @@ describe("disabled public deliveries", () => {
     expect(upstream).not.toHaveBeenCalled();
   });
 
-  it("keeps the health contract available and distinguishes a deliberate pause", async () => {
-    const response = await worker.fetch(new Request("https://public-data.org/data/health.json"), {});
+  it("serves the metrics snapshot only for the enabled nationalDebt publication", async () => {
+    const now = new Date().toISOString();
+    const snapshot = {
+      nationalDebt: { debtToGdp: 93.8, observationPeriod: "2026 AUG" },
+      taxRevenue: { value: 998877 },
+      meta: {
+        registryVersion: FEED_REGISTRY_VERSION,
+        generatedAt: now,
+        sources: {
+          nationalDebt: { status: "ok", cacheState: "fresh", fetchedAt: now },
+          taxRevenue: { status: "ok", cacheState: "fresh", fetchedAt: now },
+        },
+      },
+    };
+    const getWithMetadata = vi.fn(async () => ({
+      value: JSON.stringify(snapshot),
+      metadata: {
+        registryVersion: FEED_REGISTRY_VERSION,
+        generatedAt: now,
+        validUntil: new Date(Date.now() + 3600000).toISOString(),
+      },
+    }));
+    const response = await worker.fetch(
+      new Request("https://public-data.org/data/metrics-snapshot.json"),
+      { METRICS_CACHE: { getWithMetadata } }
+    );
     expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ status: "publication-paused", ready: false });
+    const body = await response.json();
+    expect(body.nationalDebt).toEqual({ debtToGdp: 93.8, observationPeriod: "2026 AUG" });
+    expect(body.taxRevenue).toBeUndefined();
+    expect(Object.keys(body.meta.sources)).toEqual(["nationalDebt"]);
+    expect(JSON.stringify(body)).not.toContain("998877");
+  });
+
+  it("leaves health off the deliberate pause once any publication is enabled", async () => {
+    const response = await worker.fetch(new Request("https://public-data.org/data/health.json"), {});
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({ status: "unhealthy", ready: false });
   });
 });
