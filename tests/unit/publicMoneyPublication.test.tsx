@@ -122,7 +122,7 @@ describe("verified public-money publication", () => {
     render(await PublicMoneyPage());
 
     expect(screen.getByRole("heading", { name: "Public money dossiers" })).toBeInTheDocument();
-    expect(screen.getByText("Current complete window: 2026-09-27 to 2026-10-03. Find a Tender award-stage releases from seven complete UTC day shards collected by public-data.org"))
+    expect(screen.getByText(/Current complete window: 2026-09-27 to 2026-10-03\. Notices updated in this period, not money spent that week\. Find a Tender award-stage releases from seven complete UTC day shards collected by public-data\.org/))
       .toBeInTheDocument();
     expect(screen.getByText("100 records from 2026-09-27 to 2026-10-03; 881 comparable awards; first notice 092585-2026"))
       .toBeInTheDocument();
