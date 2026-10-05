@@ -169,7 +169,7 @@ describe("national evidence presentation", () => {
   it("flags a stored figure when another verified section knows of a newer ONS release", () => {
     const payload = snapshot();
     payload.sentimentPulse.series.unemployment.publishedAt = "2026-07-20T06:00:00.000Z";
-    Object.assign(payload, { taxRevenue: { headline: { releaseDate: "2026-07-21" } });
+    Object.assign(payload, { taxRevenue: { headline: { releaseDate: "2026-07-21" } } });
     Object.assign(payload.meta.sources, { taxRevenue: currentSource() });
     const edition = selectNationalEvidenceEdition(payload);
     expect(edition.signals.find((signal) => signal.id === "unemployment")?.state).toBe("update-due");
