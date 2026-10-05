@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import PublicationOffline from "@/app/components/PublicationOffline";
 import HomepageIntro from "@/app/components/HomepageIntro";
 
-const editionLook = readFileSync(resolve(process.cwd(), "app/edition-look.css"), "utf8");
+const editionLook = ["edition-look.css","edition-look-tokens.css","edition-look-chrome.css","edition-look-cards.css","edition-look-states.css"].map((f) => readFileSync(resolve(process.cwd(), "app", f), "utf8")).join("\n");
 const socialScript = readFileSync(resolve(process.cwd(), "scripts/generate-social-cards.mjs"), "utf8");
 
 describe("Premium look", () => {
