@@ -16,6 +16,13 @@ const bodyFont = localFont({
   display: "swap",
 });
 
+const displayFont = localFont({
+  src: "../public/fonts/familjen-grotesk-latin.woff2",
+  weight: "100 900",
+  variable: "--font-display-file",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   robots: { index: anyPublicationEnabled(), follow: true },
   metadataBase: new URL(SITE_DISCOVERY.origin),
@@ -84,7 +91,7 @@ export default async function RootLayout({
   const initialSnapshot = await readServerMetricsSnapshot();
 
   return (
-    <html lang="en" className={bodyFont.variable} data-scroll-behavior="smooth">
+    <html lang="en" className={`${bodyFont.variable} ${displayFont.variable}`} data-scroll-behavior="smooth">
       <body>
         <script
           type="application/ld+json"

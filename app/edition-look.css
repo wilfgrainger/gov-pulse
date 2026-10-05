@@ -12,7 +12,7 @@
   --accent-soft: #f6e4e1;
   --accent-on-dark: #f6e4e1;
   --accent-vivid: #c53d2d;
-  --font-editorial: "Familjen Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+  --font-editorial: var(--font-display-file), "Avenir Next", "Segoe UI", sans-serif;
 }
 
 body {
