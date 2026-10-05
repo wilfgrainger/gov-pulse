@@ -17,6 +17,9 @@ describe("Premium look", () => {
     expect(editionLook).toMatch(/--accent:\s*#e8352e/);
     expect(editionLook).toContain("var(--font-display-file)");
     expect(editionLook).toContain("font-variant-numeric: tabular-nums");
+    expect(editionLook).toMatch(/--reading-measure:\s*[0-9.]+rem/);
+    expect(editionLook).toContain("--section-rhythm:");
+    expect(editionLook).toContain(".editorial-prose");
     expect(editionLook).toContain(".premium-lead");
     expect(editionLook).toContain(".edition-masthead-shell");
     expect(editionLook).toContain("prefers-reduced-motion");
