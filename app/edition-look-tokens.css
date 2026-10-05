@@ -1,0 +1,100 @@
+:root {
+  --background: #0c0f12;
+  --surface: #f6f2ea;
+  --surface-warm: #efe9de;
+  --foreground: #ebe6dc;
+  --ink: #12151a;
+  --muted: #9aa3ad;
+  --line: #2c343e;
+  --line-strong: #3d4654;
+  --line-on-paper: #d9d2c4;
+  --accent: #e8352e;
+  --accent-soft: #3a1614;
+  --accent-on-dark: #ff6b63;
+  --accent-vivid: #e8352e;
+  --teal: #e8352e;
+  --gold: #e8352e;
+  --blue: #e8352e;
+  --font-editorial: var(--font-display-file), "Avenir Next", "Segoe UI", sans-serif;
+  --edition-max: 76rem;
+  --edition-gutter: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+body {
+  background:
+    radial-gradient(1200px 480px at 100% -10%, rgb(232 53 46 / 0.12), transparent 55%),
+    var(--background);
+  color: var(--foreground);
+}
+
+::selection {
+  background: rgb(232 53 46 / 0.35);
+  color: #fff;
+}
+
+:where(a, button, input, summary):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.page-title {
+  font-family: var(--font-editorial);
+  font-size: clamp(2.75rem, 8vw, 5.5rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.92;
+  color: var(--foreground);
+}
+
+.section-title {
+  font-family: var(--font-editorial);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: inherit;
+}
+
+.font-display {
+  font-family: var(--font-editorial);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+.headline-figure,
+.font-tabular,
+.font-mono {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.headline-figure {
+  font-family: var(--font-editorial);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.eyebrow-on-dark {
+  color: var(--accent-on-dark);
+}
+
+.dashboard-card,
+.evidence-article,
+.v3-evidence-article {
+  background: var(--surface);
+  color: var(--ink);
+  border: 0;
+  border-top: 1px solid var(--ink);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.dashboard-card > div:first-child {
+  border-color: var(--line-on-paper) !important;
+}

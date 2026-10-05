@@ -1,0 +1,110 @@
+.premium-lead {
+  display: grid;
+  gap: 1.25rem;
+  background: var(--surface);
+  color: var(--ink);
+  border-top: 3px solid var(--accent);
+  padding: 1.5rem;
+}
+
+@media (min-width: 48rem) {
+  .premium-lead {
+    grid-template-columns: minmax(0, 1.35fr) minmax(14rem, 0.65fr);
+    gap: 2rem;
+    padding: 2rem 2.25rem;
+  }
+}
+
+.premium-lead .headline-figure {
+  font-size: clamp(3.5rem, 12vw, 7rem);
+  line-height: 0.88;
+  color: var(--ink);
+}
+
+.premium-lead__rail {
+  border-top: 1px solid var(--line-on-paper);
+  padding-top: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+@media (min-width: 48rem) {
+  .premium-lead__rail {
+    border-top: 0;
+    border-left: 1px solid var(--line-on-paper);
+    padding-top: 0;
+    padding-left: 1.25rem;
+  }
+}
+
+#topic-cards,
+[data-testid="topic-cards"] {
+  display: grid;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  list-style: none;
+  padding: 0;
+  margin: 1.25rem 0 0;
+}
+
+#topic-cards > li,
+[data-testid="topic-cards"] > li {
+  background: var(--background);
+  margin: 0;
+}
+
+@media (min-width: 40rem) {
+  [data-testid="topic-cards"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  [data-testid="topic-cards"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  [data-testid="topic-cards"] > li:has([data-evidence-state="current"]):first-of-type {
+    grid-column: span 2;
+  }
+}
+
+[data-testid="signal-card"],
+.signal-card {
+  box-shadow: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  border-top: 2px solid transparent !important;
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  transform: none !important;
+}
+
+[data-testid="signal-card"]:hover,
+.signal-card:hover,
+.editorial-lift:hover,
+.v3-source-card:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  background: var(--surface-warm) !important;
+  border-top-color: var(--accent) !important;
+}
+
+[data-testid="signal-card"][data-evidence-state="current"] {
+  border-top-color: var(--accent) !important;
+}
+
+[data-testid="signal-card"][data-evidence-state="unavailable"] {
+  border-top-color: var(--line-on-paper) !important;
+  opacity: 0.92;
+}
+
+.british-538-border {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.british-538-badge {
+  border-radius: 0;
+}
