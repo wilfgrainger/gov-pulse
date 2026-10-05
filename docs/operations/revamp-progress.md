@@ -9,7 +9,7 @@ Updated 5 October 2026.
 | #197 edition look | GitHub quality check on `7a50464` | Passed, merged as `9eb9500` |
 | Debt generator reconciliation | `npx vitest run tests/worker/national-debt.test.ts tests/worker/national-debt-generator.test.ts tests/unit/publication-policy.test.ts` | 13 passed locally on the fixture commit; live ONS generator tips still read August 2026 as HF6W 2985.5 and HF6X 93.8 |
 | Enable nationalDebt only | Publication policy, page switches, worker switches, debt generator fixtures | Merged as `923e63d`. Deploy run 37306636970 succeeded. |
-| Machine feeds (bulletin as a check) | `npx vitest run tests/worker/national-debt.test.ts tests/worker/national-debt-generator.test.ts tests/worker/national-debt-bulletin.test.ts` | 16 passed locally. Generator HF6W/HF6X tips must match the ONS public-sector-finances bulletin or the collector fails closed. |
+| #199 machine feeds (bulletin as a check) | Local debt suite including entry mocks; PR validation full-quality on `812158eb` | 21 related tests passed locally. Merged as `c219817`. |
 
 ## Features
 
@@ -17,7 +17,7 @@ Updated 5 October 2026.
 |---|---|---|
 | 1 | Edition look | Merged. Masthead doors and display face are on `main`. |
 | 2 | Enable debt only | Merged. `config/publications.json` sets `nationalDebt` to true. Every other publication stays false. NHS stays unavailable. |
-| 3 | Machine feeds | On this branch. Debt generator figures are cross-checked against the ONS public-sector-finances bulletin. Bulletin is a check only; published figures still come from HF6W/HF6X. |
+| 3 | Machine feeds | Merged. Debt generator HF6W/HF6X tips are cross-checked against the ONS public-sector-finances bulletin. Bulletin is a check only; published figures still come from the generator. Fail closed on mismatch. |
 | 4 | Lead card and history card | Not started |
 | 5 | Six topic cards | Not started |
 | 6 | Contract dossier | Not started |
@@ -36,6 +36,5 @@ Updated 5 October 2026.
 
 ## Next
 
-1. Merge this pull request after the quality check is green.
-2. Start feature 4 (Lead card and history card) only after machine feeds is signed off on `main`.
-3. Do not invent NHS figures. Do not mark NHS optional.
+1. Start feature 4 (Lead card and history card).
+2. Do not invent NHS figures. Do not mark NHS optional.
