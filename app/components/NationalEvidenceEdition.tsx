@@ -38,8 +38,18 @@ function AwardNoticeContext() {
   );
 }
 
+const SIGNAL_DOMAIN: Record<string, "economy" | "prices" | "health" | "population" | "public-money" | "politics" | "society"> = {
+  inflation: "prices",
+  unemployment: "economy",
+  "national-debt": "public-money",
+  "private-rents": "prices",
+  "nhs-waiting-list": "health",
+  "government-contracts": "public-money",
+};
+
 function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?: number }) {
   const unavailable = signal.state === "unavailable" || !signal.value;
+  const domain = SIGNAL_DOMAIN[signal.id] ?? "society";
 
   return (
     <li id={signal.anchorId ?? undefined} className="scroll-mt-24">
@@ -49,6 +59,7 @@ function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?:
         prefetch={false}
         data-testid="signal-card"
         data-evidence-state={signal.state}
+        data-domain={domain}
         className="editorial-lift group flex h-full min-h-64 flex-col bg-[var(--surface)] p-5 text-[var(--ink)] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] md:p-6"
       >
         <div className="flex items-start justify-between gap-3">
@@ -70,7 +81,7 @@ function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?:
         </div>
 
         {!unavailable && signal.history.length > 1 ? (
-          <div className="mb-5 text-[var(--accent)]"><TrendSparkline label={signal.title} points={signal.history} /></div>
+          <div className="mb-5 text-[var(--card-accent,var(--accent))]"><TrendSparkline label={signal.title} points={signal.history} /></div>
         ) : (
           <p className="my-5 text-xs text-gray-600">{unavailable ? "Source check pending" : "Comparable trend unavailable"}</p>
         )}
