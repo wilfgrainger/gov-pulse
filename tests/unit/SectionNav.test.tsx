@@ -36,12 +36,17 @@ describe("SectionNav", () => {
     cleanup();
   });
 
-  it("marks the current quick link for assistive technology", () => {
+  it("keeps four primary publication doors and moves topic links behind Topics", () => {
     render(<SectionNav sections={sections} />);
 
-    const currentLinks = screen.getAllByRole("link", { name: "GDP" });
-    expect(currentLinks).toHaveLength(1);
-    expect(currentLinks[0]).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Latest" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Explore" })).toHaveAttribute("href", "/explore/");
+    expect(screen.getByRole("link", { name: "Compare" })).toHaveAttribute("href", "/compare/");
+    expect(screen.getByRole("link", { name: "Briefing" })).toHaveAttribute("href", "/briefing/");
+    expect(screen.queryByRole("link", { name: "GDP" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Topics" }));
+    expect(screen.getByRole("link", { name: "GDP" })).toHaveAttribute("aria-current", "page");
   });
 
   it("provides a direct public-data.org home link", () => {
@@ -63,7 +68,7 @@ describe("SectionNav", () => {
     expect(toggleButton).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("heading", { name: "Choose a public question." })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Employment" })).toHaveAttribute("href", "/section/employment");
-    expect(screen.getAllByRole("link", { name: "GDP" })).toHaveLength(2);
+    expect(screen.getAllByRole("link", { name: "GDP" })).toHaveLength(1);
 
     fireEvent.keyDown(window, { key: "Escape" });
 
