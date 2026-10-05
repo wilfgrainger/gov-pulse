@@ -6,12 +6,20 @@ import { createClientMetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
 import { BRAND_NAME, SITE_DESCRIPTION, SITE_SOCIAL_DESCRIPTION, SITE_TITLE } from "@/app/lib/siteCopy";
 import "./globals.css";
+import "./edition-look.css";
 import { anyPublicationEnabled } from "@/contracts/publication-policy";
 
 const bodyFont = localFont({
   src: "../public/fonts/inter-latin.woff2",
   weight: "100 900",
   variable: "--font-body",
+  display: "swap",
+});
+
+const displayFont = localFont({
+  src: "../public/fonts/familjen-grotesk-latin.woff2",
+  weight: "100 900",
+  variable: "--font-display-file",
   display: "swap",
 });
 
@@ -83,7 +91,7 @@ export default async function RootLayout({
   const initialSnapshot = await readServerMetricsSnapshot();
 
   return (
-    <html lang="en" className={bodyFont.variable} data-scroll-behavior="smooth">
+    <html lang="en" className={`${bodyFont.variable} ${displayFont.variable}`} data-scroll-behavior="smooth">
       <body>
         <script
           type="application/ld+json"

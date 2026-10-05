@@ -95,7 +95,6 @@ export default function SectionNav({ sections: configuredSections }: { sections:
 
   return (
     <header role="banner" className="w-full">
-      <BritishDatelineTicker />
       <nav className="publication-masthead border-b border-[#aab4bf] bg-white" aria-label="public-data.org navigation">
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2 md:px-6 md:py-3">
         <Link
@@ -106,10 +105,9 @@ export default function SectionNav({ sections: configuredSections }: { sections:
         >
           <BrandLogo compact />
         </Link>
-        <Link href="/explore/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/explore' ? 'page' : undefined} className={`hidden min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 sm:inline-flex ${focusClasses}`}>Explore data</Link>
-        <Link href="/measure/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/measure' ? 'page' : undefined} className={`hidden min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 xl:inline-flex ${focusClasses}`}>Measure library</Link>
-        <Link href="/compare/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/compare' ? 'page' : undefined} className={`hidden min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 xl:inline-flex ${focusClasses}`}>Compare</Link>
-        <Link href="/briefing/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/briefing' ? 'page' : undefined} className={`hidden min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 xl:inline-flex ${focusClasses}`}>Briefing</Link>
+        <Link href="/" prefetch={false} aria-current={pathname === "/" ? "page" : undefined} className={`inline-flex min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 ${focusClasses}`}>Latest</Link>
+        <Link href="/explore/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/explore' ? 'page' : undefined} className={`inline-flex min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 ${focusClasses}`}>Look up</Link>
+        <Link href="/compare/" prefetch={false} aria-current={pathname?.replace(/\/$/, '') === '/compare' ? 'page' : undefined} className={`inline-flex min-h-11 items-center whitespace-nowrap text-sm font-semibold underline underline-offset-4 ${focusClasses}`}>Compare</Link>
 
         <PublicationFreshnessIndicator />
 
