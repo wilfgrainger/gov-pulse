@@ -67,6 +67,49 @@ function filterOptions(items: MeasureLibraryItem[], key: Exclude<keyof Filters, 
     .map((value) => ({ value, label: value }));
 }
 
+function PrimaryFilterGroup({
+  label,
+  filterKey,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  filterKey: "topic" | "availability";
+  options: Array<{ value: string; label: string }>;
+  value: string;
+  onChange: (key: "topic" | "availability", value: string) => void;
+}) {
+  const allLabel = filterKey === "topic" ? "All topics" : "All availability";
+
+  return (
+    <fieldset className="measure-filter-group">
+      <legend>{label}</legend>
+      <div className="measure-filter-chips">
+        <button
+          type="button"
+          className="measure-filter-chip"
+          aria-pressed={!value}
+          onClick={() => onChange(filterKey, "")}
+        >
+          {allLabel}
+        </button>
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            className="measure-filter-chip"
+            aria-pressed={value === option.value}
+            onClick={() => onChange(filterKey, value === option.value ? "" : option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
 function MeasureMiniTrend({ record }: { record: MeasureRecord | null }) {
   const points = record?.points.slice(-12) ?? [];
   const numeric = points.filter((point) => point.value !== null);
@@ -194,20 +237,49 @@ export default function MeasureLibrary({ measures, initialSearch = "" }: { measu
           </div>
           <label className="grid gap-1 text-sm font-semibold">
             <span>Search measures</span>
-            <input value={filters.q} onChange={(event) => changeFilter("q", event.target.value)} type="search" className="min-h-11 w-full border border-foreground bg-white px-3 sm:w-80" placeholder="Name, definition, source or gap" />
+            <input value={filters.q} onChange={(event) => changeFilter("q", event.target.value)} type="search" className="min-h-11 w-full border border-foreground bg-white px-3 text-[var(--ink)] sm:w-80" placeholder="Name, definition, source or gap" />
           </label>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {(["topic", "publisher", "geography", "cadence", "unit", "availability"] as const).map((key) => (
-            <label key={key} className="grid min-w-0 gap-1 text-xs font-bold capitalize">
-              <span>{key === "cadence" ? "Frequency" : key}</span>
-              <select value={filters[key]} onChange={(event) => changeFilter(key, event.target.value)} className="min-h-10 w-full min-w-0 border border-foreground bg-white px-2 text-sm font-normal">
-                <option value="">All {FILTER_PLURALS[key]}</option>
-                {filterOptions(measures, key).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </label>
-          ))}
+        <div className="measure-filter-primary">
+          <PrimaryFilterGroup
+            label="Topic"
+            filterKey="topic"
+            options={filterOptions(measures, "topic")}
+            value={filters.topic}
+            onChange={changeFilter}
+          />
+          <PrimaryFilterGroup
+            label="Availability"
+            filterKey="availability"
+            options={filterOptions(measures, "availability")}
+            value={filters.availability}
+            onChange={changeFilter}
+          />
         </div>
+        <details
+          className="measure-filter-disclosure"
+          open={Boolean(filters.publisher || filters.geography || filters.cadence || filters.unit) || undefined}
+        >
+          <summary>
+            <span>Advanced filters</span>
+            <span aria-hidden="true">＋</span>
+          </summary>
+          <div className="measure-filter-advanced">
+            {(["publisher", "geography", "cadence", "unit"] as const).map((key) => (
+              <label key={key} className="grid min-w-0 gap-1 text-xs font-bold capitalize">
+                <span>{key === "cadence" ? "Frequency" : key}</span>
+                <select
+                  value={filters[key]}
+                  onChange={(event) => changeFilter(key, event.target.value)}
+                  className="min-h-11 w-full min-w-0 border border-foreground bg-white px-2 text-sm font-normal text-[var(--ink)]"
+                >
+                  <option value="">All {FILTER_PLURALS[key]}</option>
+                  {filterOptions(measures, key).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </label>
+            ))}
+          </div>
+        </details>
       </div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-gray-600" role="status">Showing {filtered.length} of {measures.length} measures. Unavailable definitions remain discoverable but are separated from published evidence.</p>
