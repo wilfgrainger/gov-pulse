@@ -37,12 +37,12 @@ describe("national evidence signal evidenceClass", () => {
     const edition = selectNationalEvidenceEdition(minimalSnapshot());
     const bySignal = Object.fromEntries(edition.signals.map((signal) => [signal.id, signal.evidenceClass]));
 
-    expect(bySignal.gdp).toBe(DATA_SOURCES.gdpTracker.evidenceClass);
     expect(bySignal.inflation).toBe(DATA_SOURCES.sentimentPulse.evidenceClass);
     expect(bySignal.unemployment).toBe(DATA_SOURCES.employmentStats.evidenceClass);
     expect(bySignal["national-debt"]).toBe(DATA_SOURCES.nationalDebt.evidenceClass);
     expect(bySignal["nhs-waiting-list"]).toBe(DATA_SOURCES.nhsStats.evidenceClass);
-    expect(bySignal["net-migration"]).toBe(DATA_SOURCES.migrationStats.evidenceClass);
+    expect(bySignal["private-rents"]).toBe(DATA_SOURCES.housePriceIndex.evidenceClass);
+    expect(bySignal["government-contracts"]).toBe(DATA_SOURCES.governmentContracts.evidenceClass);
   });
 
   it("only uses evidence classes that are objective evidence types, never a synthesized score", () => {
