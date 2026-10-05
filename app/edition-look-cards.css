@@ -438,3 +438,98 @@
     margin-top: 0;
   }
 }
+
+
+/* Briefing change cards: editorial meaning first, machine/audit identities on demand. */
+.briefing-change-list {
+  display: grid;
+  gap: 1px;
+  margin-top: 1.5rem;
+  background: var(--line-on-paper);
+  list-style: none;
+  padding: 0;
+}
+
+.briefing-change-card {
+  display: grid;
+  gap: 1rem 1.5rem;
+  background: #fff;
+  padding: 1.25rem;
+}
+
+.briefing-change-card__meta {
+  color: #646b74;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.briefing-change-badge {
+  display: inline-flex;
+  margin-bottom: 0.65rem;
+  border: 1px solid currentColor;
+  padding: 0.22rem 0.42rem;
+  color: var(--domain-economy);
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+
+.briefing-change-card[data-change-type="revision"] .briefing-change-badge {
+  color: var(--domain-prices);
+}
+
+.briefing-change-card[data-change-type="method-change"] .briefing-change-badge,
+.briefing-change-card[data-change-type="metadata-change"] .briefing-change-badge {
+  color: var(--domain-population);
+}
+
+.briefing-change-card__heading {
+  color: #6a717b;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.briefing-change-card__title {
+  margin-top: 0.2rem;
+  font-family: var(--font-editorial);
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+}
+
+.briefing-change-card__description {
+  margin-top: 0.65rem;
+  max-width: var(--reading-measure);
+  color: #444d58;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.briefing-technical-record {
+  margin-top: 1rem;
+  border-top: 1px solid var(--line-on-paper);
+  padding-top: 0.55rem;
+  color: #646b74;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.briefing-technical-record summary {
+  min-height: 2.75rem;
+  cursor: pointer;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.briefing-technical-record p + p {
+  margin-top: 0.3rem;
+}
+
+@media (min-width: 40rem) {
+  .briefing-change-card {
+    grid-template-columns: minmax(9rem, 0.28fr) minmax(0, 1fr);
+    padding: 1.5rem;
+  }
+}
