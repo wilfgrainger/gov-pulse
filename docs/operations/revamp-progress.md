@@ -22,7 +22,7 @@ Updated 5 October 2026.
 | 3 | Machine feeds | Merged. Debt generator HF6W/HF6X tips are cross-checked against the ONS public-sector-finances bulletin. Bulletin is a check only; published figures still come from the generator. Fail closed on mismatch. |
 | 4 | Lead card and history card | Merged. Homepage lead and history are separate white cards. Debt section mirrors the same lead/history split. Fail closed when history has fewer than two verified points. |
 | 5 | Six topic cards | Merged. Homepage grid is six cards: prices, jobs, debt, rents, NHS waiting list, contracts. Unavailable cards say unavailable, never zero. NHS stays unavailable. |
-| 6 | Contract dossier | Not started |
+| 6 | Contract dossier | In progress. Notice-first lead, exclusion line on totals, framework badges, buyer/supplier dossier routes. Not merged yet. |
 | 7 | Look up a place | Not started |
 | 8 | Compare, one indicator | Not started |
 | 9 | Polling table | Not started |
@@ -46,7 +46,16 @@ Updated 5 October 2026.
 - Local tests: `npx vitest run` 170 files, 1090 tests passed before the PR split. Focused suites, `tsc --noEmit`, ESLint on changed files, static architecture and source ownership checks passed on the tip.
 - Known gap: `tests/e2e/smoke.spec.ts` still expects 7 signal cards (it was already stale at 8). It is not run in PR validation and will be updated with the homepage rebuild.
 
+## Contract dossier evidence
+
+- `GovernmentContracts` leads with the highest-ranked Find a Tender notice (title, buyer, supplier, value basis, procedure, framework flag, notice link), not a money headline.
+- Any ranked money total requires `contractCoverageLine` from complete exclusion counters. Incomplete exclusions withhold the totals.
+- Framework awards use an amber badge and row treatment: "Framework maximum (ceiling, not committed spend)".
+- Buyer and supplier publisher IDs open `/money/buyer/[id]` and `/money/supplier/[id]`, which redirect into the existing dossier URL state.
+- Window copy states notices updated, not money spent that week. Caveats and no-waste policy stay. `governmentContracts` publication stays disabled.
+- Local focused suites: GovernmentContracts, publicMoney, PublicMoneyExplorer, publicMoneyPublication, plus contracts publication/contract/chart tests. `tsc --noEmit`, source ownership and architecture checks passed.
+
 ## Next
 
-1. Start feature 6 (Contract dossier): lead with the notice, not a money total; buyer and supplier pages; exclusion line beside any total; framework maxima distinct; seven-day window labelled as notices updated.
+1. Merge feature 6 only when PR validation is green, then start feature 7 (Look up a place).
 2. Do not invent NHS figures. Do not mark NHS optional.
