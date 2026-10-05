@@ -50,9 +50,10 @@ const SIGNAL_DOMAIN: Record<string, "economy" | "prices" | "health" | "populatio
 function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?: number }) {
   const unavailable = signal.state === "unavailable" || !signal.value;
   const domain = SIGNAL_DOMAIN[signal.id] ?? "society";
+  const cardSize = unavailable ? "compact" : signal.history.length > 1 && index < 3 ? "feature" : "standard";
 
   return (
-    <li id={signal.anchorId ?? undefined} className="scroll-mt-24">
+    <li id={signal.anchorId ?? undefined} className={`scroll-mt-24 editorial-mosaic__item editorial-mosaic__item--${cardSize}`}>
       <Reveal delay={Math.min(index, 5) * 0.05} y={10} className="h-full">
       <Link
         href={signal.href}
@@ -60,6 +61,7 @@ function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?:
         data-testid="signal-card"
         data-evidence-state={signal.state}
         data-domain={domain}
+        data-card-size={cardSize}
         className="editorial-lift group flex h-full min-h-64 flex-col bg-[var(--surface)] p-5 text-[var(--ink)] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] md:p-6"
       >
         <div className="flex items-start justify-between gap-3">
@@ -146,7 +148,7 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
               Prices, jobs, debt, rents, the NHS waiting list and contracts. A card without verified evidence says so.
             </p>
           </div>
-          <ul data-testid="topic-cards" className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul data-testid="topic-cards" className="editorial-mosaic">
             {edition.signals.map((signal, index) => (
               <SignalCard key={signal.id} signal={signal} index={index} />
             ))}
