@@ -80,6 +80,15 @@ describe("Six topic cards", () => {
     expect(nhs?.textContent).not.toMatch(/pathways/);
   });
 
+
+  it("uses editorial card sizes based on evidence richness", () => {
+    render(<NationalEvidenceEdition initialEdition={selectNationalEvidenceEdition(debtOnlySnapshot())} />);
+    const cards = within(screen.getByTestId("topic-cards")).getAllByTestId("signal-card");
+    const debt = cards.find((card) => card.getAttribute("href") === "/section/national-debt");
+    expect(debt?.getAttribute("data-card-size")).toBe("feature");
+    expect(cards.filter((card) => card !== debt).every((card) => card.getAttribute("data-card-size") === "compact")).toBe(true);
+  });
+
   it("keeps debt as the lead while the other topics are unavailable", () => {
     const edition = selectNationalEvidenceEdition(debtOnlySnapshot());
     expect(edition.lead?.id).toBe("national-debt");
