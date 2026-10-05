@@ -127,7 +127,10 @@ describe("government contracts publication", () => {
   it("retains collection and deployment independently of the public visibility switch", () => {
     const sectionContent = source("app/lib/sectionContent.ts");
     const sections = source("app/lib/sections.ts");
-    const presentation = source("app/lib/nationalEvidence.ts");
+    const presentation = [
+      source("app/lib/nationalEvidence.ts"),
+      source("app/lib/nationalEvidenceSupport.ts"),
+    ].join("\n");
     const edition = source("app/components/NationalEvidenceEdition.tsx");
     const workflow = source(".github/workflows/deploy.yml");
 
