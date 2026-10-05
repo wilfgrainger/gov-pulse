@@ -27,6 +27,7 @@ describe("Premium look", () => {
     expect(editionLook).toMatch(/--reading-measure:\s*[0-9.]+rem/);
     expect(editionLook).toContain("--section-rhythm:");
     expect(editionLook).toContain(".editorial-prose");
+    expect(editionLook).toMatch(/:where\(\.bg-white, \.bg-surface, \.bg-surface-warm\)\s*\{[^}]*color:\s*var\(--ink\)/s);
     expect(editionLook).toContain(".premium-lead");
     expect(editionLook).toContain(".edition-masthead-shell");
     expect(editionLook).toContain("prefers-reduced-motion");
