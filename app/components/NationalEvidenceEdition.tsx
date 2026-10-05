@@ -78,14 +78,14 @@ function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?:
             {unavailable ? "Current value unavailable" : signal.value}
           </p>
           <p className="mt-2 text-sm leading-6 text-gray-700">
-            {signal.comparison ?? "Open the evidence page for the latest source information."}
+            {unavailable ? "No older value is substituted. Open the evidence page to see what is being checked." : signal.comparison ?? "Open the evidence page for the latest source information."}
           </p>
         </div>
 
         {!unavailable && signal.history.length > 1 ? (
           <div className="mb-5 text-[var(--card-accent,var(--accent))]"><TrendSparkline label={signal.title} points={signal.history} /></div>
         ) : (
-          <p className="my-5 text-xs text-gray-600">{unavailable ? "Source check pending" : "Comparable trend unavailable"}</p>
+          <p className="my-5 text-xs text-gray-600">{unavailable ? "Evidence source is being reverified" : "Comparable trend unavailable"}</p>
         )}
 
         <div className="mt-auto flex flex-wrap items-end justify-between gap-3 border-t border-black/10 pt-4 text-xs">
