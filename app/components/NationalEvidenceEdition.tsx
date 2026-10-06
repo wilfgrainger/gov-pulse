@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { publicationRouteEnabled } from "@/contracts/publication-policy";
+import { publicationRoutePublished } from "@/contracts/publication-policy";
 import { useEffect, useState } from "react";
 import { fetchMetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import {
@@ -16,7 +16,7 @@ import Reveal from "./Reveal";
 import TrendSparkline from "./TrendSparkline";
 
 function AwardNoticeContext() {
-  if (!publicationRouteEnabled("/money/")) return null;
+  if (!publicationRoutePublished("/money/")) return null;
 
   return (
     <section aria-labelledby="award-notice-context-title" className="mt-12 border-y-2 border-foreground bg-surface-warm md:mt-16">
@@ -147,7 +147,7 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
               <h3 id="more-evidence-title" className="font-display mt-2 text-3xl leading-tight">Go deeper by topic.</h3>
             </div>
             <ul className="grid gap-px bg-[var(--line)] sm:grid-cols-2">
-              {DIRECT_EVIDENCE_LINKS.filter((item) => publicationRouteEnabled(item.href)).map((item) => (
+              {DIRECT_EVIDENCE_LINKS.filter((item) => publicationRoutePublished(item.href)).map((item) => (
                 <li key={item.href} className="bg-background">
                   <Link href={item.href} prefetch={false} className="editorial-lift group flex min-h-28 items-start justify-between gap-4 bg-[var(--surface)] p-5 text-[var(--ink)] transition-colors hover:bg-[var(--surface-warm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]">
                     <span>
