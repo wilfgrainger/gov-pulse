@@ -49,6 +49,13 @@ import {
   runKey,
   terminalKey,
 } from "./publication-run-store.js";
+import {
+  EXTERNAL_SECTIONS,
+  GENERIC_SECTIONS,
+  PUBLISHED_SECTIONS,
+  jobsForDay,
+  refreshJobs,
+} from "./publication-plan.js";
 
 const PUBLICATION_SECTION_PREFIX = "v12:publication:section:";
 const PUBLICATION_HISTORY_TTL_SECONDS = 14 * 24 * 60 * 60;
@@ -76,30 +83,6 @@ const BOOTSTRAP_FINALISE_RETRY_SECONDS = 60;
 const DAILY_CRON = "17 3 * * *";
 const BETTING_CRON = "47 */3 * * *";
 
-const GENERIC_SECTIONS = Object.freeze([
-  "gdpTracker",
-  "sentimentPulse",
-  "employmentStats",
-  "taxRevenue",
-  "nationalDebt",
-  "migrationStats",
-  "housePriceIndex",
-  "realWages",
-  "crimeStatistics",
-]);
-const EXTERNAL_SECTIONS = Object.freeze([
-  "electionPolling",
-  "nhsStats",
-  "bettingOdds",
-  "releaseCalendar",
-  "nhsReleaseCalendar",
-]);
-const PUBLISHED_SECTIONS = Object.freeze([
-  ...GENERIC_SECTIONS,
-  ...EXTERNAL_SECTIONS,
-]);
-const REQUIRED_SECTION_SET = new Set(REQUIRED_PUBLISHED_SECTION_IDS);
-
 function isRecord(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -120,52 +103,6 @@ function hasComparisonBatchFragment(terminal, batch) {
     isRecord(fragment.meta) &&
     isRecord(fragment.measures) &&
     batch.measureIds.every((id) => isRecord(fragment.measures[id]));
-}
-
-function sectionRefreshJobs(runId, sections, type) {
-  return sections.map((section) => ({
-    type,
-    section,
-    runId,
-    jobId: `${type === "refresh-section" ? "section" : "external"}:${section}`,
-  }));
-}
-
-function refreshJobs(runId, scope = "daily", options = {}) {
-  if (scope === "betting") {
-    return sectionRefreshJobs(runId, ["bettingOdds"], "refresh-external-section");
-  }
-
-  const genericSections =
-    scope === "bootstrap"
-      ? GENERIC_SECTIONS.filter((section) => REQUIRED_SECTION_SET.has(section))
-      : GENERIC_SECTIONS;
-  const externalSections =
-    scope === "bootstrap"
-      ? EXTERNAL_SECTIONS.filter((section) => REQUIRED_SECTION_SET.has(section))
-      : EXTERNAL_SECTIONS;
-  const jobs = [
-    ...sectionRefreshJobs(runId, genericSections, "refresh-section"),
-    ...sectionRefreshJobs(runId, externalSections, "refresh-external-section"),
-  ];
-
-  if (scope === "daily" || (scope === "bootstrap" && options.includeContracts === true)) {
-    jobs.push({
-      type: "refresh-contracts",
-      runId,
-      jobId: "contracts",
-      ...(scope === "bootstrap" && options.includeContracts === true ? { force: true } : {}),
-    });
-  }
-  return jobs;
-}
-
-function jobsForDay(runId = "manual") {
-  return refreshJobs(runId, "daily").map((job) =>
-    job.type === "refresh-contracts"
-      ? { type: job.type }
-      : { type: job.type, section: job.section }
-  );
 }
 
 async function fetchSeedSnapshot(env, fetchImpl = fetch) {
