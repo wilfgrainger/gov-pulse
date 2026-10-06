@@ -1,5 +1,5 @@
 import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationRoutePublished } from "@/contracts/publication-policy";
+import { publicRouteAvailable } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -76,7 +76,7 @@ function comparablePointChange(measure: NonNullable<Awaited<ReturnType<typeof fi
 
 export default async function MeasureDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  if (!publicationRoutePublished(`/measure/${id}/`)) return <PublicationOffline />;
+  if (!publicRouteAvailable(`/measure/${id}/`)) return <PublicationOffline />;
   const { definition, measure, reason } = await findMeasure(id);
   if (!definition) notFound();
   const comparisonWindow = measure?.points.length
