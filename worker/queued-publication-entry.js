@@ -22,7 +22,6 @@ import {
 import { samePublicationEvidence } from "../contracts/publication-evidence.js";
 import { buildPublicationDiagnostics } from "../contracts/publication-diagnostics.js";
 import { FEED_REGISTRY } from "./feed-registry.js";
-import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
 import {
   INTERNATIONAL_COMPARISON_KEY,
   INTERNATIONAL_COMPARISON_REFRESH_BATCHES,
@@ -59,9 +58,9 @@ import {
   storeExternalSection,
   storeSectionFragment,
 } from "./publication-collection-runner.js";
+import { fetchPublicationSeedSnapshot } from "./publication-recovery.js";
 
 const PUBLICATION_HISTORY_TTL_SECONDS = 14 * 24 * 60 * 60;
-const DEFAULT_SEED_URL = "https://public-data-org.pages.dev/data/metrics-snapshot.json";
 const PUBLICATION_QUEUE_MAX_RETRIES = 3;
 const FINALISE_DELAY_SECONDS = 20 * 60;
 const FINALISE_RETRY_SECONDS = 5 * 60;
@@ -107,23 +106,6 @@ function hasComparisonBatchFragment(terminal, batch) {
     batch.measureIds.every((id) => isRecord(fragment.measures[id]));
 }
 
-async function fetchSeedSnapshot(env, fetchImpl = fetch) {
-  const url = String(env?.STATIC_SNAPSHOT_SEED_URL || DEFAULT_SEED_URL).trim();
-  if (!url) return null;
-  try {
-    const response = await fetchImpl(url, {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(8_000),
-    });
-    if (!response.ok) return null;
-    assertSameHttpsHost(response, url, "Pages seed");
-    const payload = await readResponseJson(response, { label: "Pages seed JSON" });
-    return isSnapshot(payload) ? payload : null;
-  } catch {
-    return null;
-  }
-}
-
 async function publicationFragments(env, now = new Date()) {
   const records = [];
   for (const section of PUBLISHED_SECTIONS) {
@@ -158,7 +140,7 @@ function missingRequiredSections(snapshot) {
 async function publishFromCaches(env, options = {}) {
   const now = options.now ?? new Date();
   const current = await readCurrentPublication(env);
-  const seed = current ?? (await fetchSeedSnapshot(env, options.fetchImpl ?? fetch));
+  const seed = current ?? (await fetchPublicationSeedSnapshot(env, options.fetchImpl ?? fetch));
   const fragments = await publicationFragments(env, now);
   const contractsRecord = await kvGet(env, CONTRACT_CURRENT_RECORD_KEY);
   const merged = mergePublication(seed, fragments, contractsRecord, now);
