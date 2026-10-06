@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  PRODUCT_CAPABILITIES,
   PUBLICATION_CONFIG,
-  anyPublicationPublished,
+  anyEvidencePublished,
   filterPublicationSnapshot,
   filterPublicationSummary,
   publicationDecision,
   publicationHeld,
   publicationPublished,
+  productCapabilityAvailable,
+  publicRouteAvailable,
   publicationRetired,
   publicationState,
   sectionPublication,
@@ -86,7 +89,12 @@ const fixture = {
 
 describe("publication decisions", () => {
   it("publishes nationalDebt and the archive, holds active feeds, retires old products, and fails closed for unknown identifiers", () => {
-    expect(anyPublicationPublished()).toBe(true);
+    expect(anyEvidencePublished()).toBe(true);
+    expect(productCapabilityAvailable("home")).toBe(true);
+    expect(productCapabilityAvailable("calendar")).toBe(false);
+    expect(publicRouteAvailable("/")).toBe(true);
+    expect(publicRouteAvailable("/compare/")).toBe(true);
+    expect(publicRouteAvailable("/calendar/")).toBe(false);
     expect(publicationPublished("nationalDebt")).toBe(true);
     expect(publicationPublished("editionArchive")).toBe(true);
     expect(publicationHeld("gdpTracker")).toBe(true);
@@ -111,6 +119,30 @@ describe("publication decisions", () => {
     expect(sectionPublication("gdp")).toBe("gdpTracker");
     expect(sectionPublication("government-contracts")).toBe("governmentContracts");
     expect(sectionPublication("national-debt")).toBe("nationalDebt");
+  });
+
+  it("keeps route capability independent from evidence publication decisions", () => {
+    const heldEvidence = {
+      version: 2,
+      publications: {
+        nationalDebt: {
+          state: "held",
+          reasonCode: "test-held",
+          reason: "Held for the test.",
+          sections: ["national-debt"],
+        },
+        editionArchive: {
+          state: "published",
+          reasonCode: "archive",
+          reason: "Archive remains published.",
+        },
+      },
+    } as const;
+
+    expect(anyEvidencePublished(heldEvidence)).toBe(false);
+    expect(publicRouteAvailable("/", heldEvidence, PRODUCT_CAPABILITIES)).toBe(true);
+    expect(publicRouteAvailable("/section/national-debt/", heldEvidence, PRODUCT_CAPABILITIES)).toBe(false);
+    expect(publicRouteAvailable("/editions/", heldEvidence, PRODUCT_CAPABILITIES)).toBe(true);
   });
 
   it("publishes one source without exposing held sources in data, catalogues or revision summaries", () => {
