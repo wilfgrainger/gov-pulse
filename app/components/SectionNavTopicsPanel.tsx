@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { CategoryGroup } from "../lib/sections";
-import { publicationRoutePublished } from "@/contracts/publication-policy";
+import { publicRouteAvailable } from "@/contracts/publication-policy";
 
 type Props = {
   sections: CategoryGroup[];
@@ -47,7 +47,7 @@ export default function SectionNavTopicsPanel({
               ["Cost of living", "/cost-of-living/"],
               ["Public money", "/money/"],
               ["Editions", "/editions/"],
-            ].filter(([, href]) => publicationRoutePublished(href)).map(([label, href]) => (
+            ].filter(([, href]) => publicRouteAvailable(href)).map(([label, href]) => (
               <li key={href}>
                 <Link
                   href={href}
