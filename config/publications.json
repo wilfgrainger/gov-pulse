@@ -1,143 +1,195 @@
 {
-  "version": 1,
+  "version": 2,
   "publications": {
     "pmApproval": {
-      "enabled": false,
+      "state": "retired",
+      "reasonCode": "retired-unreproducible",
+      "reason": "The former approval product has no reproducible current primary-poll series.",
       "sections": [
         "pm-approval"
       ]
     },
     "electionPolling": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "Verified polling collection may continue while public exposure is re-baselined.",
       "sections": [
         "election-polls"
       ]
     },
     "bettingOdds": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "Market collection may continue while public exposure is re-baselined.",
       "sections": [
         "betting-odds"
       ]
     },
     "polarizationMeter": {
-      "enabled": false,
+      "state": "retired",
+      "reasonCode": "retired-unreproducible",
+      "reason": "The former derived polarisation score is retired until its inputs and method are reproducible.",
       "sections": [
         "govt-approval"
       ]
     },
     "trendLines": {
-      "enabled": false,
+      "state": "retired",
+      "reasonCode": "retired-unreproducible",
+      "reason": "The former hard-coded satisfaction trend is retired.",
       "sections": [
         "gov-trust-trend"
       ]
     },
     "nationalDebt": {
-      "enabled": true,
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified national debt evidence is approved for public release.",
       "sections": [
         "national-debt"
       ]
     },
     "gdpTracker": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "Verified GDP collection may continue while public exposure is re-baselined.",
       "sections": [
         "gdp"
       ]
     },
     "sentimentPulse": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "Verified economic-series collection may continue while public exposure is re-baselined.",
       "sections": [
         "economy"
       ]
     },
     "taxRevenue": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "Verified receipts collection may continue while public exposure is re-baselined.",
       "sections": [
         "tax"
       ]
     },
     "governmentContracts": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "Verified procurement collection may continue while public exposure is re-baselined.",
       "sections": [
         "government-contracts"
       ]
     },
     "employmentStats": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "Verified labour-market collection may continue while public exposure is re-baselined.",
       "sections": [
         "employment"
       ]
     },
     "crimeStatistics": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "Verified crime collection may continue while public exposure is re-baselined.",
       "sections": [
         "crime-stats"
       ]
     },
     "nhsStats": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "NHS evidence remains held from public release while the supported collection path is resolved.",
       "sections": [
         "nhs"
       ]
     },
     "migrationStats": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "Verified migration collection may continue while public exposure is re-baselined.",
       "sections": [
         "migration"
       ]
     },
     "housePriceIndex": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "Verified house-price collection may continue while public exposure is re-baselined.",
       "sections": [
         "house-price-index"
       ]
     },
     "realWages": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "Verified earnings collection may continue while public exposure is re-baselined.",
       "sections": [
         "real-wages"
       ]
     },
     "earlyYears": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "Dated early-years evidence remains held while the public product is re-baselined.",
       "sections": [
         "early-years"
       ]
     },
     "geographicHeatmap": {
-      "enabled": false,
+      "state": "retired",
+      "reasonCode": "retired-unreproducible",
+      "reason": "The former mixed-geography regional comparison is retired.",
       "sections": [
         "uk-regions"
       ]
     },
     "echoChamberMap": {
-      "enabled": false,
+      "state": "retired",
+      "reasonCode": "retired-unreproducible",
+      "reason": "The former policy relationship matrix is retired until its method is reproducible.",
       "sections": [
         "policy-links"
       ]
     },
     "politicalCompass": {
-      "enabled": false
+      "state": "retired",
+      "reasonCode": "retired-out-of-scope",
+      "reason": "The interactive self-assessment is retired from the public-evidence product."
     },
     "releaseCalendar": {
-      "enabled": false
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "Release-calendar publication is held while the public product is re-baselined."
     },
     "nhsReleaseCalendar": {
-      "enabled": false
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "NHS release-calendar publication is held while the public product is re-baselined."
     },
     "internationalComparison": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "International comparison evidence is held while the public product is re-baselined.",
       "sections": [
         "uk-in-context"
       ]
     },
     "editionArchive": {
-      "enabled": true
+      "state": "published",
+      "reasonCode": "published-accountability",
+      "reason": "The public edition archive remains available for publication accountability."
     },
     "storyHouseholdBudgets": {
-      "enabled": false
+      "state": "held",
+      "reasonCode": "product-hold",
+      "reason": "The household-budgets story is held until its underlying evidence is republished."
     },
     "storyPublicFinances": {
-      "enabled": false
+      "state": "held",
+      "reasonCode": "product-hold",
+      "reason": "The public-finances story is held until its underlying evidence is republished."
     }
   }
 }
