@@ -3,7 +3,7 @@ import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
 import { DATA_SOURCES } from "@/app/lib/config";
 import { isCompatibleMetricsSnapshot, type MetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import { publicSnapshot } from "@/worker/public-snapshot";
-import { publicationEnabled, filterPublicationSnapshot } from "@/contracts/publication-policy";
+import { publicationPublished, filterPublicationSnapshot } from "@/contracts/publication-policy";
 
 export type DiscoveryKind = "dataset" | "tool" | "withdrawn";
 
@@ -57,7 +57,7 @@ export function serializeJsonLd(value: unknown) {
 }
 
 export function getBuildPublication(section: SectionDiscovery, rawSnapshot: unknown = BUILD_METRICS_SNAPSHOT) {
-  if (!publicationEnabled(section.sourceKey)) return null;
+  if (!publicationPublished(section.sourceKey)) return null;
   const snapshot = filterPublicationSnapshot(publicSnapshot(rawSnapshot));
   if (!isCompatibleMetricsSnapshot(snapshot)) {
     return null;
