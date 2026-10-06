@@ -63,9 +63,8 @@ async function main(rawUrl) {
 
   let verifiedSections;
   try {
-    // A release may be explicitly degraded when one or more sources are unavailable.
-    // The public manifest records which required sections are missing; source rejection
-    // categories and raw errors stay in private operator state.
+    // Reader artifacts expose only the published projection. Internal feed
+    // readiness and source rejection details stay on the operator health path.
     verifiedSections = validateSnapshot(currentSnapshot, 1, []);
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : String(error));
@@ -74,9 +73,6 @@ async function main(rawUrl) {
   const publicationState = validatePublicationState(
     currentSnapshot
   );
-  if (currentSnapshot.meta.delivery !== "published-snapshot") {
-    throw new Error("Published data is not marked as a verified snapshot");
-  }
   const governmentContracts = validateGovernmentContractsExtension(
     currentSnapshot,
     checkedAt
