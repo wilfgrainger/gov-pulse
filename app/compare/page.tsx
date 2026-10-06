@@ -1,5 +1,5 @@
 import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationRoutePublished } from "@/contracts/publication-policy";
+import { publicRouteAvailable } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
 import ComparisonStudio from "@/app/components/ComparisonStudio";
 import OneIndicatorCompare from "@/app/components/OneIndicatorCompare";
@@ -14,7 +14,7 @@ import { parseWorkspace } from "@/app/lib/comparisonWorkspace";
 export const metadata: Metadata = { title: "Compare UK public measures | public-data.org", description: "Compare one published indicator at a time. Overlay only when definitions match. Country peers stay unavailable while UK-in-context is offline." };
 
 export default async function ComparePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  if (!publicationRoutePublished("/compare/")) return <PublicationOffline />;
+  if (!publicRouteAvailable("/compare/")) return <PublicationOffline />;
   const snapshot = await readServerMetricsSnapshot();
   const catalog = snapshot?.meta.measureCatalog as MeasureCatalog | undefined;
   const params = process.env.STATIC_EXPORT === "true" ? {} : await searchParams;
