@@ -5,11 +5,11 @@ import offlineSeed from "@/worker/offline-pages-entry";
 import { PUBLICATION_CONFIG } from "@/contracts/publication-policy";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 
-const contractsEnabledByDefault = PUBLICATION_CONFIG.publications.governmentContracts.enabled;
+const contractsStateByDefault = PUBLICATION_CONFIG.publications.governmentContracts.state;
 
-beforeEach(() => { PUBLICATION_CONFIG.publications.governmentContracts.enabled = false; });
+beforeEach(() => { PUBLICATION_CONFIG.publications.governmentContracts.state = "held"; });
 afterEach(() => {
-  PUBLICATION_CONFIG.publications.governmentContracts.enabled = contractsEnabledByDefault;
+  PUBLICATION_CONFIG.publications.governmentContracts.state = contractsStateByDefault;
   vi.unstubAllGlobals();
 });
 
@@ -20,7 +20,7 @@ describe("disabled public deliveries", () => {
       sources: { gdpTracker: { status: "ok", cacheState: "fresh", fetchedAt: now }, taxRevenue: { status: "ok", cacheState: "fresh", fetchedAt: now } },
       measureCatalog: { measures: { growth: { sourceId: "gdpTracker", value: 0.5 }, receipts: { sourceId: "taxRevenue", value: 998877 } } },
     } };
-    PUBLICATION_CONFIG.publications.gdpTracker.enabled = true;
+    PUBLICATION_CONFIG.publications.gdpTracker.state = "published";
     try {
       const getWithMetadata = vi.fn(async () => ({ value: JSON.stringify(snapshot), metadata: { registryVersion: FEED_REGISTRY_VERSION, generatedAt: now, validUntil: new Date(Date.now() + 3600000).toISOString() } }));
       const response = await worker.fetch(new Request("https://public-data.org/data/metrics-snapshot.json"), { METRICS_CACHE: { getWithMetadata } });
@@ -30,7 +30,7 @@ describe("disabled public deliveries", () => {
       expect(body.taxRevenue).toBeUndefined();
       expect(Object.keys(body.meta.sources)).toEqual(["gdpTracker"]);
       expect(JSON.stringify(body)).not.toContain("998877");
-    } finally { PUBLICATION_CONFIG.publications.gdpTracker.enabled = false; }
+    } finally { PUBLICATION_CONFIG.publications.gdpTracker.state = "held"; }
   });
 
   it("closes old fallback assets and data paths without serving the former static seed", async () => {
@@ -68,7 +68,7 @@ describe("disabled public deliveries", () => {
     expect(await detail.json()).not.toMatchObject({ code: "publication_disabled" });
   });
 
-  it("serves the metrics snapshot only for the enabled nationalDebt publication", async () => {
+  it("serves the metrics snapshot only for the published nationalDebt publication", async () => {
     const now = new Date().toISOString();
     const snapshot = {
       nationalDebt: { debtToGdp: 93.8, observationPeriod: "2026 AUG" },
@@ -102,7 +102,7 @@ describe("disabled public deliveries", () => {
     expect(JSON.stringify(body)).not.toContain("998877");
   });
 
-  it("leaves health off the deliberate pause once any publication is enabled", async () => {
+  it("leaves health off the deliberate pause once any publication is published", async () => {
     const response = await worker.fetch(new Request("https://public-data.org/data/health.json"), {});
     expect(response.status).toBe(503);
     expect(await response.json()).toMatchObject({ status: "unhealthy", ready: false });
