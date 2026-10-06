@@ -197,10 +197,11 @@ describe("Cloudflare deployment bootstrap", () => {
   it("does not accept an empty ready artifact as a prepared publication", async () => {
     const fetchImpl = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
       meta: {
-        delivery: "published-snapshot",
-        publicationState: "ready",
-        missingRequiredSections: [],
         sources: {},
+        publicProjection: {
+          state: "published",
+          publishedSections: [],
+        },
       },
     }), {
       status: 200,
@@ -666,10 +667,11 @@ describe("Cloudflare deployment bootstrap", () => {
         new Response(
           JSON.stringify({
             meta: {
-              delivery: "published-snapshot",
-              publicationState: "ready",
-              missingRequiredSections: [],
               sources: {},
+              publicProjection: {
+                state: "published",
+                publishedSections: [],
+              },
             },
           }),
           {
