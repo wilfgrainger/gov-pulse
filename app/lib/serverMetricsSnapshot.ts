@@ -2,7 +2,7 @@ import { connection } from "next/server";
 import { cache } from "react";
 import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
 import { publicSnapshot } from "@/worker/public-snapshot";
-import { anyPublicationPublished, filterPublicationSnapshot } from "@/contracts/publication-policy";
+import { anyEvidencePublished, filterPublicationSnapshot } from "@/contracts/publication-policy";
 import {
   isCompatibleMetricsSnapshot,
   requestSnapshot,
@@ -14,7 +14,7 @@ const PRODUCTION_SNAPSHOT_URL =
 
 export const readServerMetricsSnapshot = cache(
   async (): Promise<MetricsSnapshot | null> => {
-    if (!anyPublicationPublished()) return null;
+    if (!anyEvidencePublished()) return null;
     // Cloudflare Pages is retained only as the deterministic seed/fallback build.
     // It is not the production custom-domain renderer after the web Worker cutover.
     if (process.env.STATIC_EXPORT === "true") {
