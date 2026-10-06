@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
-import { currentPublicationManifest } from "./publication-manifest.mjs";
 
 const DEFAULT_QUEUE_NAME = "public-data-jobs";
 const DEFAULT_HEALTH_URL = "https://public-data.org/data/health.json";
@@ -71,7 +70,7 @@ async function readHealth(fetchImpl, healthUrl) {
   return responseJson(response, "Cloudflare data health check");
 }
 
-async function hasPreparedPublication(fetchImpl, healthUrl, health) {
+async function hasPreparedPublication(fetchImpl, healthUrl) {
   const snapshotUrl = new URL(
     "/data/metrics-snapshot.json",
     healthUrl,
@@ -87,13 +86,20 @@ async function hasPreparedPublication(fetchImpl, healthUrl, health) {
     ) {
       return false;
     }
+
     const snapshot = await response.json();
     const meta = snapshot?.meta;
     const sources = meta?.sources;
+    const projection = meta?.publicProjection;
     if (
       !sources || typeof sources !== "object" || Array.isArray(sources) ||
+      !projection || typeof projection !== "object" || Array.isArray(projection) ||
+      projection.state !== "published" ||
+      !Array.isArray(projection.publishedSections) ||
       Object.prototype.hasOwnProperty.call(meta, "publicationDiagnostics") ||
       Object.prototype.hasOwnProperty.call(meta, "measureCatalogDiagnostics") ||
+      Object.prototype.hasOwnProperty.call(meta, "publicationState") ||
+      Object.prototype.hasOwnProperty.call(meta, "missingRequiredSections") ||
       Object.values(sources).some((source) =>
         source && typeof source === "object" &&
           Object.prototype.hasOwnProperty.call(source, "error")
@@ -101,19 +107,12 @@ async function hasPreparedPublication(fetchImpl, healthUrl, health) {
     ) {
       return false;
     }
-    const expectedMissing = isDegradedPublicationHealth(health)
-      ? [...health.missingRequiredSections].sort()
-      : [];
-    const { missingRequiredSections: currentMissing } =
-      currentPublicationManifest(snapshot);
-    const actualMissing = Array.isArray(meta.missingRequiredSections)
-      ? [...meta.missingRequiredSections].sort()
-      : null;
+
+    const sourceIds = Object.keys(sources).sort();
+    const publishedIds = [...projection.publishedSections].sort();
     return (
-      meta.delivery === "published-snapshot" &&
-      JSON.stringify(currentMissing) === JSON.stringify(expectedMissing) &&
-      JSON.stringify(actualMissing) === JSON.stringify(expectedMissing) &&
-      meta.publicationState === (expectedMissing.length ? "degraded" : "ready")
+      sourceIds.length > 0 &&
+      JSON.stringify(sourceIds) === JSON.stringify(publishedIds)
     );
   } catch {
     return false;
