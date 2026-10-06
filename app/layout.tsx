@@ -7,7 +7,7 @@ import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
 import { BRAND_NAME, SITE_DESCRIPTION, SITE_SOCIAL_DESCRIPTION, SITE_TITLE } from "@/app/lib/siteCopy";
 import "./globals.css";
 import "./edition-look.css";
-import { anyPublicationEnabled } from "@/contracts/publication-policy";
+import { anyPublicationPublished } from "@/contracts/publication-policy";
 
 const bodyFont = localFont({
   src: "../public/fonts/inter-latin.woff2",
@@ -24,7 +24,7 @@ const displayFont = localFont({
 });
 
 export const metadata: Metadata = {
-  robots: { index: anyPublicationEnabled(), follow: true },
+  robots: { index: anyPublicationPublished(), follow: true },
   metadataBase: new URL(SITE_DISCOVERY.origin),
   title: {
     default: SITE_TITLE,
