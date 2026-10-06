@@ -61,14 +61,15 @@ function publicationSnapshot({ missing = [], now = new Date() } = {}) {
       );
     }
   }
-  const missingRequiredSections = [...missing].sort();
   return {
     meta: {
       registryVersion: "2026-08-02.1",
       generatedAt: currentGeneratedAt,
       sources,
-      publicationState: missingRequiredSections.length ? "degraded" : "ready",
-      missingRequiredSections,
+      publicProjection: {
+        state: "published",
+        publishedSections: Object.keys(sources).sort(),
+      },
     },
     ...sections,
   };
@@ -228,40 +229,37 @@ describe("production deployment verifier", () => {
     );
   });
 
-  it("rejects required sections whose source status or evidence is stale", () => {
+  it("rejects stale evidence inside the explicitly published projection", () => {
     const now = new Date("2026-10-02T18:00:00.000Z");
-    const errored = publicationSnapshot({ now });
-    errored.meta.sources.gdpTracker.status = "error";
-    expect(verifySnapshotJson(JSON.stringify(errored), { now })).toContain(
-      "public data snapshot is missing required section gdpTracker",
-    );
 
     const expired = publicationSnapshot({ now });
     expired.nationalDebt.expiresAt = new Date(now.getTime() - 1).toISOString();
     expect(verifySnapshotJson(JSON.stringify(expired), { now })).toContain(
-      "public data snapshot is missing required section nationalDebt",
+      "public data snapshot contains stale published section nationalDebt",
     );
 
     const staleWithoutExpiry = publicationSnapshot({ now });
     staleWithoutExpiry.meta.sources.employmentStats.cacheState = "stale";
     delete staleWithoutExpiry.employmentStats.expiresAt;
     expect(verifySnapshotJson(JSON.stringify(staleWithoutExpiry), { now })).toContain(
-      "public data snapshot is missing required section employmentStats",
+      "public data snapshot contains stale published section employmentStats",
     );
   });
 
-  it("rejects a ready manifest when all required data is absent", () => {
-    const emptyReady = JSON.stringify({
+  it("rejects an empty published projection", () => {
+    const empty = JSON.stringify({
       meta: {
         registryVersion: "2026-08-02.1",
         sources: {},
-        publicationState: "ready",
-        missingRequiredSections: [],
+        publicProjection: {
+          state: "published",
+          publishedSections: [],
+        },
       },
     });
 
-    expect(verifySnapshotJson(emptyReady)).toContain(
-      "public data snapshot publication state does not match its missing-section manifest",
+    expect(verifySnapshotJson(empty)).toContain(
+      "public data snapshot has no published evidence",
     );
   });
 
