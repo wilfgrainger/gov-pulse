@@ -5,14 +5,12 @@ import {
   isSnapshot,
   mergePublication,
   readCurrentPublication,
-  refreshSectionPayload,
 } from "./publication-entry.js";
 import {
   CURRENT_RECORD_KEY as CONTRACT_CURRENT_RECORD_KEY,
   refreshGovernmentContracts,
 } from "./government-contracts-cloudflare.js";
 import { REQUIRED_PUBLISHED_SECTION_IDS } from "./feed-registry.js";
-import { collectExternalSection } from "./live-feed-collectors.js";
 import {
   currentSectionRecord,
   filterCurrentSnapshot,
@@ -56,8 +54,12 @@ import {
   jobsForDay,
   refreshJobs,
 } from "./publication-plan.js";
+import {
+  PUBLICATION_SECTION_PREFIX,
+  storeExternalSection,
+  storeSectionFragment,
+} from "./publication-collection-runner.js";
 
-const PUBLICATION_SECTION_PREFIX = "v12:publication:section:";
 const PUBLICATION_HISTORY_TTL_SECONDS = 14 * 24 * 60 * 60;
 const DEFAULT_SEED_URL = "https://public-data-org.pages.dev/data/metrics-snapshot.json";
 const PUBLICATION_QUEUE_MAX_RETRIES = 3;
@@ -120,24 +122,6 @@ async function fetchSeedSnapshot(env, fetchImpl = fetch) {
   } catch {
     return null;
   }
-}
-
-async function storeSectionFragment(section, env, ctx) {
-  if (!GENERIC_SECTIONS.includes(section)) {
-    throw new Error(`Section '${section}' is outside the generic publication set`);
-  }
-  const record = await refreshSectionPayload(section, env, ctx);
-  await kvPut(env, `${PUBLICATION_SECTION_PREFIX}${section}`, record);
-  return record;
-}
-
-async function storeExternalSection(section, env, options = {}) {
-  if (!EXTERNAL_SECTIONS.includes(section)) {
-    throw new Error(`Section '${section}' is outside the external publication set`);
-  }
-  const record = await collectExternalSection(section, options);
-  await kvPut(env, `${PUBLICATION_SECTION_PREFIX}${section}`, record);
-  return record;
 }
 
 async function publicationFragments(env, now = new Date()) {
