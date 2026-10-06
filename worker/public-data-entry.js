@@ -2,7 +2,7 @@ import queuedWorker, {
   DAILY_CRON,
   enqueueInternationalComparisonRefresh,
 } from "./queued-publication-entry.js";
-import { PUBLICATION_CONFIG, publicationPublished, anyPublicationPublished, filterPublicationSnapshot, filterPublicationCatalog, filterPublicationSummary } from "../contracts/publication-policy.js";
+import { PUBLICATION_CONFIG, publicationPublished, anyEvidencePublished, filterPublicationSnapshot, filterPublicationCatalog, filterPublicationSummary } from "../contracts/publication-policy.js";
 import { isSnapshot, readCurrentPublication } from "./publication-entry.js";
 import {
   FEED_REGISTRY_VERSION,
@@ -465,9 +465,9 @@ const publicDataWorker = {
       return json({ error: "Method not allowed" }, { status: 405 });
     }
     try {
-      if (!anyPublicationPublished() && url.pathname === HEALTH_PATH) return json({ status: "publication-paused", ready: false }, { head: request.method === "HEAD" });
+      if (!anyEvidencePublished() && url.pathname === HEALTH_PATH) return json({ status: "publication-paused", ready: false }, { head: request.method === "HEAD" });
       const gate = url.pathname === COMPARISON_PATH ? "internationalComparison" : [EDITION_PATH, EDITIONS_PATH].includes(url.pathname) ? "editionArchive" : url.pathname === CONTRACT_HISTORY_PATH ? "governmentContracts" : null;
-      if (url.pathname !== HEALTH_PATH && (gate ? !publicationPublished(gate) : !anyPublicationPublished())) return json({ error: "Data publication is offline for verification", code: "publication_disabled" }, { status: 503, head: request.method === "HEAD" });
+      if (url.pathname !== HEALTH_PATH && (gate ? !publicationPublished(gate) : !anyEvidencePublished())) return json({ error: "Data publication is offline for verification", code: "publication_disabled" }, { status: 503, head: request.method === "HEAD" });
       if (url.pathname === HEALTH_PATH) return healthResponse(request, env);
       if (url.pathname === COMPARISON_PATH) return comparisonResponse(request, env);
       if (url.pathname === EDITIONS_PATH) return editionsResponse(request, env);
