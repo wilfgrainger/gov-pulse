@@ -11,6 +11,7 @@ import { REQUIRED_PUBLISHED_SECTION_IDS, FEED_REGISTRY } from "./feed-registry.j
 import { currentSectionRecord, filterCurrentSnapshot } from "./publication-currentness.js";
 import { PUBLIC_SNAPSHOT_KEY, buildPublicSnapshotArtifact } from "./public-snapshot.js";
 import { samePublicationEvidence } from "../contracts/publication-evidence.js";
+import { filterPublicationSnapshot } from "../contracts/publication-policy.js";
 import { buildPublicationDiagnostics } from "../contracts/publication-diagnostics.js";
 import { archiveEdition, reconcileRetainedEditionSummaries } from "./edition-archive.js";
 import { kvGet, kvPut, kvPutText } from "./publication-run-store.js";
@@ -106,12 +107,18 @@ async function publishFromCaches(env, options = {}) {
     publication,
     Object.keys(FEED_REGISTRY),
   );
-  const publicArtifact = buildPublicSnapshotArtifact(publication, now);
+
+  const publicProjection = filterPublicationSnapshot(publication);
+  const publicArtifact = publicProjection
+    ? buildPublicSnapshotArtifact(publicProjection, now)
+    : null;
 
   await kvPut(env, PUBLICATION_CURRENT_KEY, publication);
-  await kvPutText(env, PUBLIC_SNAPSHOT_KEY, publicArtifact.body, {
-    metadata: publicArtifact.metadata,
-  });
+  if (publicArtifact) {
+    await kvPutText(env, PUBLIC_SNAPSHOT_KEY, publicArtifact.body, {
+      metadata: publicArtifact.metadata,
+    });
+  }
   if (changed) {
     await kvPut(
       env,
