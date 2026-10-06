@@ -1,5 +1,5 @@
 import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationRoutePublished } from "@/contracts/publication-policy";
+import { publicRouteAvailable } from "@/contracts/publication-policy";
 import HomepageIntro from "./components/HomepageIntro";
 import NationalEvidenceEdition from "./components/NationalEvidenceEdition";
 import SectionNav from "./components/SectionNav";
@@ -10,7 +10,7 @@ import { readServerMetricsSnapshot } from "./lib/serverMetricsSnapshot";
 import { SECTIONS } from "./lib/sections";
 
 export default async function Home() {
-  if (!publicationRoutePublished("/")) return <PublicationOffline />;
+  if (!publicRouteAvailable("/")) return <PublicationOffline />;
   const snapshot = await readServerMetricsSnapshot();
   const initialEdition = selectNationalEvidenceEdition(snapshot);
 
