@@ -54,12 +54,13 @@ function preparedSnapshot(now = new Date()) {
   }
   return {
     meta: {
-      delivery: "published-snapshot",
       registryVersion: "2026-08-02.1",
       generatedAt: now.toISOString(),
-      publicationState: "ready",
-      missingRequiredSections: [],
       sources,
+      publicProjection: {
+        state: "published",
+        publishedSections: Object.keys(sources).sort(),
+      },
     },
     ...sections,
   };
@@ -69,8 +70,7 @@ function degradedPreparedSnapshot(now = new Date()) {
   const snapshot = preparedSnapshot(now);
   delete snapshot.nhsStats;
   delete snapshot.meta.sources.nhsStats;
-  snapshot.meta.publicationState = "degraded";
-  snapshot.meta.missingRequiredSections = ["nhsStats"];
+  snapshot.meta.publicProjection.publishedSections = Object.keys(snapshot.meta.sources).sort();
   return snapshot;
 }
 
