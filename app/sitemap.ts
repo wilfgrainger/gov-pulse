@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { publicationRouteEnabled } from "@/contracts/publication-policy";
+import { publicationRoutePublished } from "@/contracts/publication-policy";
 import {
   PUBLIC_SECTION_IDS,
   SECTION_DISCOVERY,
@@ -46,7 +46,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  const sectionRoutes: MetadataRoute.Sitemap = PUBLIC_SECTION_IDS.filter((id) => publicationRouteEnabled(sectionPath(id))).map((id) => {
+  const sectionRoutes: MetadataRoute.Sitemap = PUBLIC_SECTION_IDS.filter((id) => publicationRoutePublished(sectionPath(id))).map((id) => {
     const publication = getBuildPublication(SECTION_DISCOVERY[id]);
     return {
       url: absoluteUrl(sectionPath(id)),
@@ -56,5 +56,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     };
   });
 
-  return [...staticRoutes.filter((entry) => publicationRouteEnabled(new URL(entry.url).pathname)), ...sectionRoutes];
+  return [...staticRoutes.filter((entry) => publicationRoutePublished(new URL(entry.url).pathname)), ...sectionRoutes];
 }
