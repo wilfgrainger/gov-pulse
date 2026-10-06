@@ -344,22 +344,12 @@ export async function buildStaticSnapshot(options) {
     );
   }
 
-  const contractsPath = resolve(projectRoot, "data/contracts/find-a-tender-awards.json");
-  let contractsPayload = null;
-  if (ingestRecords.has("governmentContracts")) {
-    contractsPayload = ingestRecords.get("governmentContracts")?.data;
-  } else {
-    try {
-      const raw = await readFile(contractsPath, "utf8");
-      const candidate = JSON.parse(raw);
-      if (candidate && Array.isArray(candidate.awards) && candidate.awards.length === 100) {
-        const { buildCompleteContractsRecord } = await import("./generate-contracts-seed.mjs");
-        contractsPayload = buildCompleteContractsRecord(now);
-      }
-    } catch {
-      // Optional contracts fixture is unavailable; fallback or omit.
-    }
-  }
+  // Government contracts may enter a static artifact only through an already
+  // accepted ingest record. Recovery must never manufacture or refresh public
+  // evidence from committed templates or fixtures.
+  const contractsPayload = ingestRecords.has("governmentContracts")
+    ? ingestRecords.get("governmentContracts")?.data
+    : null;
 
   if (contractsPayload) {
     snapshot.governmentContracts = contractsPayload;
