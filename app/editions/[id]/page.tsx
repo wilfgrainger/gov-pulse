@@ -1,5 +1,5 @@
 import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationRouteEnabled } from "@/contracts/publication-policy";
+import { publicationRoutePublished } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -64,7 +64,7 @@ function EditionChanges({ edition }: { edition: ArchivedEdition }) {
 
 export default async function EditionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  if (!publicationRouteEnabled(`/editions/${id}/`)) return <PublicationOffline />;
+  if (!publicationRoutePublished(`/editions/${id}/`)) return <PublicationOffline />;
   const staticFallback = id === STATIC_FALLBACK_ARCHIVE_ID;
   if (!staticFallback && !/^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/.test(id)) notFound();
   if (!staticFallback) await connection();
