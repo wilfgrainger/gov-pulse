@@ -1,5 +1,5 @@
 import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationRoutePublished } from "@/contracts/publication-policy";
+import { publicRouteAvailable } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
 import ReleaseCalendar from "@/app/components/ReleaseCalendar";
 import WatchlistBoard from "@/app/components/WatchlistBoard";
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CalendarPage() {
-  if (!publicationRoutePublished("/calendar/")) return <PublicationOffline />;
+  if (!publicRouteAvailable("/calendar/")) return <PublicationOffline />;
   const snapshot = await readServerMetricsSnapshot();
   const catalog = snapshot?.meta.measureCatalog as MeasureCatalog | undefined;
   const events = buildReleaseEvents(snapshot);
