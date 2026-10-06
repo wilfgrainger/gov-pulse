@@ -85,6 +85,37 @@ function withPublicationState(snapshot) {
   return normalized;
 }
 
+function isPublicProjectionSnapshot(snapshot) {
+  if (!isSnapshot(snapshot) || snapshot.meta.registryVersion !== FEED_REGISTRY_VERSION) {
+    return false;
+  }
+  const projection = snapshot.meta.publicProjection;
+  if (
+    !projection ||
+    typeof projection !== "object" ||
+    Array.isArray(projection) ||
+    projection.state !== "published" ||
+    !Array.isArray(projection.publishedSections)
+  ) {
+    return false;
+  }
+  const sourceIds = Object.keys(snapshot.meta.sources).sort();
+  const publishedIds = [...projection.publishedSections].sort();
+  return (
+    sourceIds.length > 0 &&
+    publishedIds.every((id) => typeof id === "string") &&
+    JSON.stringify(sourceIds) === JSON.stringify(publishedIds)
+  );
+}
+
+function publicProjectionIsCurrent(snapshot, now = new Date()) {
+  if (!isPublicProjectionSnapshot(snapshot)) return false;
+  const current = filterCurrentSnapshot(snapshot, now);
+  if (!current?.meta?.sources) return false;
+  return JSON.stringify(Object.keys(current.meta.sources).sort()) ===
+    JSON.stringify(Object.keys(snapshot.meta.sources).sort());
+}
+
 function isCompleteSnapshot(snapshot) {
   if (!isSnapshot(snapshot) || snapshot.meta.registryVersion !== FEED_REGISTRY_VERSION) {
     return false;
@@ -164,16 +195,13 @@ async function readPreparedPublicArtifact(env, now = new Date()) {
     return null;
   }
 
-  const currentSnapshot = withPublicationState(
-    filterCurrentSnapshot(publicSnapshot(preparedSnapshot), now)
-  );
-  if (!isCompleteSnapshot(currentSnapshot)) return null;
+  if (!publicProjectionIsCurrent(preparedSnapshot, now)) return null;
 
   return {
-    body: JSON.stringify(currentSnapshot),
+    body: JSON.stringify(preparedSnapshot),
     validUntil: earliestDeadline(
       record.metadata.validUntil,
-      snapshotValidityDeadline(currentSnapshot, now),
+      snapshotValidityDeadline(preparedSnapshot, now),
     ),
     generatedAt:
       typeof record.metadata?.generatedAt === "string"
@@ -201,13 +229,8 @@ async function fetchSeedSnapshot(env, fetchImpl = fetch, now = new Date()) {
       return null;
     }
     assertSameHttpsHost(response, url, "Pages seed");
-    const candidate = withPublicationState(
-      filterCurrentSnapshot(
-        await readResponseJson(response, { label: "Pages seed JSON" }),
-        now,
-      )
-    );
-    return isCompleteSnapshot(candidate) ? candidate : null;
+    const candidate = await readResponseJson(response, { label: "Pages seed JSON" });
+    return publicProjectionIsCurrent(candidate, now) ? candidate : null;
   } catch {
     return null;
   }
@@ -223,29 +246,31 @@ async function currentPublicArtifact(env, options = {}) {
       filterCurrentSnapshot(await readCurrentPublication(env), now)
     );
     if (isCompleteSnapshot(current)) {
-      const snapshot = publicSnapshot(current);
-      return {
-        body: JSON.stringify(snapshot),
-        validUntil: snapshotValidityDeadline(current, now) === null
-          ? null
-          : new Date(snapshotValidityDeadline(current, now)).toISOString(),
-        generatedAt: snapshot.meta.generatedAt ?? "current",
-        delivery: "cloudflare-kv-migration",
-      };
+      const projection = filterPublicationSnapshot(current);
+      if (projection && publicProjectionIsCurrent(projection, now)) {
+        const snapshot = publicSnapshot(projection);
+        return {
+          body: JSON.stringify(snapshot),
+          validUntil: snapshotValidityDeadline(snapshot, now) === null
+            ? null
+            : new Date(snapshotValidityDeadline(snapshot, now)).toISOString(),
+          generatedAt: snapshot.meta.generatedAt ?? "current",
+          delivery: "cloudflare-kv-migration",
+        };
+      }
     }
   } catch {
-    // A current Pages seed is the bounded bootstrap and outage fallback.
+    // A current Pages artifact is the bounded bootstrap and outage fallback.
   }
 
   const seed = await fetchSeedSnapshot(env, options.fetchImpl ?? fetch, now);
   if (seed) {
-    const snapshot = publicSnapshot(seed);
     return {
-      body: JSON.stringify(snapshot),
+      body: JSON.stringify(seed),
       validUntil: snapshotValidityDeadline(seed, now) === null
         ? null
         : new Date(snapshotValidityDeadline(seed, now)).toISOString(),
-      generatedAt: snapshot.meta.generatedAt ?? "current",
+      generatedAt: seed.meta.generatedAt ?? "current",
       delivery: "pages-fallback",
     };
   }
@@ -273,9 +298,15 @@ async function snapshotResponse(request, env) {
       { status: 503 }
     );
   }
-  const snapshot = filterPublicationSnapshot(JSON.parse(result.body));
-  if (!snapshot) return json({ error: "Data publication is offline for verification", code: "publication_disabled" }, { status: 503, head: request.method === "HEAD" });
-  result.body = JSON.stringify(snapshot);
+  let snapshot;
+  try {
+    snapshot = JSON.parse(result.body);
+  } catch {
+    return json({ error: "Verified public data is temporarily unavailable" }, { status: 503, head: request.method === "HEAD" });
+  }
+  if (!isPublicProjectionSnapshot(snapshot)) {
+    return json({ error: "Data publication is offline for verification", code: "publication_disabled" }, { status: 503, head: request.method === "HEAD" });
+  }
 
   const digest = await crypto.subtle.digest(
     "SHA-256",
@@ -408,39 +439,31 @@ async function contractHistoryResponse(request, url) {
 }
 
 async function healthResponse(request, env) {
-  if (!env?.METRICS_CACHE?.getWithMetadata) {
+  if (!env?.METRICS_CACHE?.get) {
     return json(
       { status: "unhealthy", ready: false },
       { status: 503, head: request.method === "HEAD" }
     );
   }
 
-  const prepared = await readPreparedPublicArtifact(env);
-  if (!prepared) {
+  const internal = withPublicationState(
+    filterCurrentSnapshot(await readCurrentPublication(env), new Date())
+  );
+  if (!internal || !isCompleteSnapshot(internal)) {
     return json(
       { status: "bootstrapping", ready: false },
       { head: request.method === "HEAD" }
     );
   }
 
-  let snapshot;
-  try {
-    snapshot = JSON.parse(prepared.body);
-  } catch {
-    return json(
-      { status: "bootstrapping", ready: false },
-      { head: request.method === "HEAD" }
-    );
-  }
-
-  if (snapshot.meta?.publicationState === "degraded") {
+  if (internal.meta.publicationState === "degraded") {
     return json(
       {
         status: "degraded",
         ready: false,
         degraded: true,
         missingRequiredSections:
-          snapshot.meta.missingRequiredSections ?? [],
+          internal.meta.missingRequiredSections ?? [],
       },
       { head: request.method === "HEAD" }
     );
