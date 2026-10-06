@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { isSnapshot } from "../worker/publication-entry.js";
 import { filterCurrentSnapshot } from "../worker/publication-currentness.js";
 import { FEED_REGISTRY_VERSION } from "../worker/feed-registry.js";
-import { PUBLIC_SNAPSHOT_KEY } from "../worker/public-snapshot.js";
+import { PUBLIC_SNAPSHOT_KEY, publicSnapshot } from "../worker/public-snapshot.js";
 
 const DEFAULT_NAMESPACE_ID = "f950b17f36a447dca7bb339cba8818de";
 const DEFAULT_KEY = PUBLIC_SNAPSHOT_KEY;
@@ -36,9 +36,10 @@ export function validateAcceptedArtifact(value, now = new Date()) {
     Object.prototype.hasOwnProperty.call(value.meta, "measureCatalogDiagnostics") ||
     Object.values(value.meta.sources).some((source) =>
       isRecord(source) && Object.prototype.hasOwnProperty.call(source, "error")
-    )
+    ) ||
+    JSON.stringify(publicSnapshot(value)) !== JSON.stringify(value)
   ) {
-    throw new Error("Cloudflare accepted artifact contains private publication diagnostics");
+    throw new Error("Cloudflare accepted artifact contains private publication metadata");
   }
 
   const current = filterCurrentSnapshot(value, now);
