@@ -583,7 +583,7 @@ export const FEED_CATALOG = deepFreeze({
       publicationPeriod: "Latest complete Oddschecker snapshot inside a four-hour observation window",
       unit: "Decimal odds and raw reciprocal percentage",
       revisionStatus: "Continuously repriced rather than statistically revised",
-      caveat: "Each named market remains separate. Raw reciprocal percentages are not normalized to 100%; liquidity, provider coverage, bookmaker margins and market rules affect them.",
+      caveat: "public-data.org shows each named market separately, calculates 100 divided by decimal odds and does not normalize prices to 100%. The results are neither official statistics nor official forecasts. Liquidity, provider coverage, bookmaker margins and market rules affect them; stale, embedded or incomplete prices are unavailable.",
     },
   }),
   crimeStatistics: defineFeed({
@@ -597,7 +597,7 @@ export const FEED_CATALOG = deepFreeze({
       publicationPeriod: "Latest verified ONS Crime in England and Wales edition and current MoJ quarterly court publication, shown separately",
       unit: "Estimated incidents, recorded offences or median days, as labelled",
       revisionStatus: "Official source publications may be revised; each module retains its own release and observation period",
-      caveat: "Crime Survey estimates, police-recorded offences and court timeliness measure different phenomena and are never added into one total.",
+      caveat: "Crime Survey estimates, police-recorded offences and court timeliness measure different phenomena and are never added into one total. Regional rankings remain unavailable until one versioned geography and population method is reproducible. Geography is England and Wales.",
     },
   }),
   governmentContracts: defineFeed({
