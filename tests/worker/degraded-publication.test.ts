@@ -106,7 +106,13 @@ describe("degraded public publication", () => {
       env
     );
     expect(data.status).toBe(200);
-    expect((await data.json()).meta.publicationState).toBe("degraded");
+    const publicData = await data.json();
+    expect(publicData.meta).not.toHaveProperty("publicationState");
+    expect(publicData.meta).not.toHaveProperty("missingRequiredSections");
+    expect(publicData.meta.publicProjection).toMatchObject({
+      state: "published",
+    });
+    expect(publicData.meta.publicProjection.publishedSections).not.toContain("employmentStats");
 
     const health = await publicWorker.fetch(
       new Request("https://public-data.org/data/health.json"),
