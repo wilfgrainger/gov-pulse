@@ -22,6 +22,19 @@ vi.mock("@/config/publications.json", async (importOriginal) => {
   return { default: { ...config, publications: { ...config.publications, governmentContracts: { ...config.publications.governmentContracts, state: "published" } } } };
 });
 
+vi.mock("@/config/product-capabilities.json", async (importOriginal) => {
+  const { default: config } = await importOriginal<{ default: { capabilities: Record<string, { available: boolean }> } }>();
+  return {
+    default: {
+      ...config,
+      capabilities: {
+        ...config.capabilities,
+        publicMoney: { ...config.capabilities.publicMoney, available: true },
+      },
+    },
+  };
+});
+
 const { snapshotState } = vi.hoisted(() => ({ snapshotState: { value: null as unknown } }));
 
 vi.mock("@/app/components/SectionNav", () => ({ default: () => null }));
