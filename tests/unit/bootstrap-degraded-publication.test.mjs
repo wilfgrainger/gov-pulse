@@ -47,10 +47,11 @@ function preparedSnapshot(missingSections = [], now = new Date()) {
   }
   return {
     meta: {
-      delivery: "published-snapshot",
-      publicationState: missingSections.length ? "degraded" : "ready",
-      missingRequiredSections: [...missingSections].sort(),
       sources,
+      publicProjection: {
+        state: "published",
+        publishedSections: Object.keys(sources).sort(),
+      },
     },
     ...sections,
   };
