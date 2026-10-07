@@ -113,7 +113,5 @@ export function hasRequiredHistoryShape(section, data, now = Date.now()) {
 }
 
 export function validatePublicProjection(snapshot) {
-  return validatePublicArtifact(snapshot, {
-    registryVersion: FEED_REGISTRY_VERSION,
-  });
+  return validatePublicArtifact(snapshot);
 }
