@@ -43,6 +43,10 @@ function acceptedArtifact() {
           },
         ])
       ),
+      publicProjection: {
+        state: "published",
+        publishedSections: [...REQUIRED_PUBLISHED_SECTION_IDS].sort(),
+      },
     },
     ...sections,
   };
@@ -57,7 +61,7 @@ describe("Cloudflare Pages accepted-artifact recovery", () => {
     );
   });
 
-  it("uses canonical currentness to withhold an expired section without inventing a replacement", () => {
+  it("rejects an accepted artifact once any published section has expired", () => {
     const candidate = acceptedArtifact();
     candidate.meta.sources.sentimentPulse.fetchedAt =
       "2026-07-31T20:59:59.000Z";
@@ -65,9 +69,9 @@ describe("Cloudflare Pages accepted-artifact recovery", () => {
       measure.validUntil = "2026-08-01T00:00:00.000Z";
     }
 
-    const current = validateAcceptedArtifact(candidate, NOW);
-    expect(current).not.toHaveProperty("sentimentPulse");
-    expect(current.meta.sources).not.toHaveProperty("sentimentPulse");
+    expect(() => validateAcceptedArtifact(candidate, NOW)).toThrow(
+      /not a current accepted public artifact/i
+    );
   });
 
   it("rejects deployment-only or private metadata instead of sanitizing it during recovery", () => {
@@ -76,7 +80,7 @@ describe("Cloudflare Pages accepted-artifact recovery", () => {
     candidate.meta.sources.gdpTracker.backend = "private-worker";
 
     expect(() => validateAcceptedArtifact(candidate, NOW)).toThrow(
-      /private publication metadata/i
+      /not a current accepted public artifact/i
     );
   });
 
@@ -85,7 +89,7 @@ describe("Cloudflare Pages accepted-artifact recovery", () => {
     candidate.meta.sources.gdpTracker.error = "private upstream response";
 
     expect(() => validateAcceptedArtifact(candidate, NOW)).toThrow(
-      /private publication metadata/i
+      /not a current accepted public artifact/i
     );
   });
 });
