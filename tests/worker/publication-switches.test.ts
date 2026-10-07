@@ -5,11 +5,21 @@ import offlineSeed from "@/worker/offline-pages-entry";
 import { PUBLICATION_CONFIG } from "@/contracts/publication-policy";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 
-const contractsStateByDefault = PUBLICATION_CONFIG.publications.governmentContracts.state;
+const originalStates = Object.fromEntries(
+  Object.entries(PUBLICATION_CONFIG.publications).map(([id, entry]) => [id, entry.state])
+);
 
-beforeEach(() => { PUBLICATION_CONFIG.publications.governmentContracts.state = "held"; });
+beforeEach(() => {
+  for (const [id, entry] of Object.entries(PUBLICATION_CONFIG.publications)) {
+    entry.state = ["nationalDebt", "editionArchive"].includes(id)
+      ? "published"
+      : "held";
+  }
+});
 afterEach(() => {
-  PUBLICATION_CONFIG.publications.governmentContracts.state = contractsStateByDefault;
+  for (const [id, state] of Object.entries(originalStates)) {
+    PUBLICATION_CONFIG.publications[id].state = state;
+  }
   vi.unstubAllGlobals();
 });
 
