@@ -1,4 +1,5 @@
 import { FEED_REGISTRY_VERSION } from "../../worker/feed-registry.js";
+import { validatePublicArtifact } from "../../contracts/public-artifact.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -112,37 +113,7 @@ export function hasRequiredHistoryShape(section, data, now = Date.now()) {
 }
 
 export function validatePublicProjection(snapshot) {
-  const meta = snapshot?.meta;
-  if (!isRecord(meta) || !isRecord(meta.sources)) {
-    throw new Error("Published snapshot does not contain a source manifest");
-  }
-  if (
-    Object.prototype.hasOwnProperty.call(meta, "publicationDiagnostics") ||
-    Object.prototype.hasOwnProperty.call(meta, "measureCatalogDiagnostics") ||
-    Object.prototype.hasOwnProperty.call(meta, "publicationState") ||
-    Object.prototype.hasOwnProperty.call(meta, "missingRequiredSections") ||
-    Object.values(meta.sources).some((source) =>
-      isRecord(source) && Object.prototype.hasOwnProperty.call(source, "error")
-    )
-  ) {
-    throw new Error("Published snapshot exposes private publication state");
-  }
-
-  const projection = meta.publicProjection;
-  if (
-    !isRecord(projection) ||
-    projection.state !== "published" ||
-    !Array.isArray(projection.publishedSections) ||
-    projection.publishedSections.some((section) => typeof section !== "string")
-  ) {
-    throw new Error("Published snapshot does not contain a valid public projection");
-  }
-
-  const sourceIds = Object.keys(meta.sources).sort();
-  const projectionIds = [...projection.publishedSections].sort();
-  if (JSON.stringify(sourceIds) !== JSON.stringify(projectionIds)) {
-    throw new Error("Published snapshot public projection does not match its source manifest");
-  }
-
-  return { publishedSections: projectionIds };
+  return validatePublicArtifact(snapshot, {
+    registryVersion: FEED_REGISTRY_VERSION,
+  });
 }
