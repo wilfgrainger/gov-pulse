@@ -21,6 +21,7 @@ import {
 import { readInternationalComparison } from "./international-comparison-publication.js";
 import { assertSameHttpsHost, MAX_RESPONSE_BYTES, readResponseJson } from "./response-limits.js";
 import { listEditionSummaries, readEdition } from "./edition-archive.js";
+import { fetchPublicationSeedSnapshot } from "./publication-recovery.js";
 import {
   FIND_A_TENDER_USER_AGENT,
   normalizeContractReleaseHistory,
@@ -32,8 +33,6 @@ const COMPARISON_PATH = "/data/international-comparison.json";
 const EDITIONS_PATH = "/data/editions.json";
 const EDITION_PATH = "/data/edition.json";
 const CONTRACT_HISTORY_PATH = "/data/contracts/history.json";
-const DEFAULT_SEED_URL =
-  "https://public-data-org.pages.dev/data/metrics-snapshot.json";
 const PUBLIC_CACHE_FRESH_SECONDS = 300;
 const COMPARISON_CACHE_FRESH_SECONDS = 300;
 const CONTRACT_HISTORY_CACHE_SECONDS = 300;
@@ -218,29 +217,7 @@ async function readPreparedPublicArtifact(env, now = new Date()) {
 }
 
 async function fetchSeedSnapshot(env, fetchImpl = fetch, now = new Date()) {
-  const url = String(env?.STATIC_SNAPSHOT_SEED_URL || DEFAULT_SEED_URL).trim();
-  if (!url) return null;
-
-  try {
-    const response = await fetchImpl(url, {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(8_000),
-    });
-    if (!response.ok) {
-      try {
-        await response.body?.cancel();
-      } catch {
-        // Releasing a failed fallback response is best effort only.
-      }
-      return null;
-    }
-    assertSameHttpsHost(response, url, "Pages seed");
-    const candidate = await readResponseJson(response, { label: "Pages seed JSON" });
-    const normalized = normalizePublicProjectionSnapshot(candidate, now);
-    return normalized && publicProjectionIsCurrent(normalized, now) ? normalized : null;
-  } catch {
-    return null;
-  }
+  return fetchPublicationSeedSnapshot(env, fetchImpl, now);
 }
 
 async function currentPublicArtifact(env, options = {}) {
