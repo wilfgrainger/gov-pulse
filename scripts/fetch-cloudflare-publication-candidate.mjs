@@ -1,11 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { isSnapshot } from "../worker/publication-entry.js";
-import { filterCurrentSnapshot } from "../worker/publication-currentness.js";
-import { FEED_REGISTRY_VERSION } from "../worker/feed-registry.js";
-import { PUBLIC_SNAPSHOT_KEY, buildPublicProjection, publicSnapshot } from "../worker/public-snapshot.js";
-import { validatePublicProjection } from "./lib/publication-validation.mjs";
+import { PUBLIC_SNAPSHOT_KEY } from "../worker/public-snapshot.js";
+import { acceptedRecoveryArtifact } from "../worker/publication-recovery.js";
 
 const DEFAULT_NAMESPACE_ID = "f950b17f36a447dca7bb339cba8818de";
 const DEFAULT_KEY = PUBLIC_SNAPSHOT_KEY;
@@ -17,53 +14,14 @@ function required(name, value) {
   return normalized;
 }
 
-function isRecord(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
 export function validateAcceptedArtifact(value, now = new Date()) {
-  if (
-    !isRecord(value) ||
-    !isRecord(value.meta) ||
-    value.meta.registryVersion !== FEED_REGISTRY_VERSION ||
-    !isRecord(value.meta.sources) ||
-    !isSnapshot(value)
-  ) {
-    throw new Error("Cloudflare accepted artifact has an invalid publication shape");
+  const accepted = acceptedRecoveryArtifact(value, now);
+  if (!accepted) {
+    throw new Error(
+      "Cloudflare accepted artifact is not a current accepted public artifact"
+    );
   }
-
-  if (
-    Object.prototype.hasOwnProperty.call(value.meta, "publicationDiagnostics") ||
-    Object.prototype.hasOwnProperty.call(value.meta, "measureCatalogDiagnostics") ||
-    Object.values(value.meta.sources).some((source) =>
-      isRecord(source) && Object.prototype.hasOwnProperty.call(source, "error")
-    ) ||
-    JSON.stringify(publicSnapshot(value)) !== JSON.stringify(value)
-  ) {
-    throw new Error("Cloudflare accepted artifact contains private publication metadata");
-  }
-
-  let normalized;
-  try {
-    normalized = buildPublicProjection(value, now);
-  } catch {
-    throw new Error("Cloudflare accepted artifact has no current source-owned evidence approved for publication");
-  }
-
-  validatePublicProjection(normalized);
-
-  const current = filterCurrentSnapshot(normalized, now);
-  if (!current || !isSnapshot(current)) {
-    throw new Error("Cloudflare accepted artifact has no current source-owned evidence");
-  }
-
-  const sourceIds = Object.keys(normalized.meta.sources).sort();
-  const currentIds = Object.keys(current.meta.sources).sort();
-  if (JSON.stringify(sourceIds) !== JSON.stringify(currentIds)) {
-    throw new Error("Cloudflare accepted artifact contains stale published evidence");
-  }
-
-  return normalized;
+  return accepted;
 }
 
 export async function fetchCandidate({
