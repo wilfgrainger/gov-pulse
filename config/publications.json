@@ -10,9 +10,9 @@
       ]
     },
     "electionPolling": {
-      "state": "held",
-      "reasonCode": "rework-publication-hold",
-      "reason": "Verified polling collection may continue while public exposure is re-baselined.",
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified primary pollster publication contract is approved for public release.",
       "sections": [
         "election-polls"
       ]
@@ -50,49 +50,49 @@
       ]
     },
     "gdpTracker": {
-      "state": "held",
-      "reasonCode": "rework-publication-hold",
-      "reason": "Verified GDP collection may continue while public exposure is re-baselined.",
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified ONS GDP source and collector contract are approved for public release.",
       "sections": [
         "gdp"
       ]
     },
     "sentimentPulse": {
-      "state": "held",
-      "reasonCode": "rework-publication-hold",
-      "reason": "Verified economic-series collection may continue while public exposure is re-baselined.",
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified ONS CPI, ONS unemployment and Bank of England Bank Rate sources are approved for public release.",
       "sections": [
         "economy"
       ]
     },
     "taxRevenue": {
-      "state": "held",
-      "reasonCode": "rework-publication-hold",
-      "reason": "Verified receipts collection may continue while public exposure is re-baselined.",
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified ONS public-sector-finance receipts source and collector contract are approved for public release.",
       "sections": [
         "tax"
       ]
     },
     "governmentContracts": {
-      "state": "held",
-      "reasonCode": "rework-publication-hold",
-      "reason": "Verified procurement collection may continue while public exposure is re-baselined.",
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified Find a Tender collection and bounded award-publication contract are approved for public release.",
       "sections": [
         "government-contracts"
       ]
     },
     "employmentStats": {
-      "state": "held",
-      "reasonCode": "rework-publication-hold",
-      "reason": "Verified labour-market collection may continue while public exposure is re-baselined.",
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified ONS labour-market source and collector contract are approved for public release.",
       "sections": [
         "employment"
       ]
     },
     "crimeStatistics": {
-      "state": "held",
-      "reasonCode": "rework-publication-hold",
-      "reason": "Verified crime collection may continue while public exposure is re-baselined.",
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified ONS, Home Office and Ministry of Justice crime evidence contracts are approved for public release.",
       "sections": [
         "crime-stats"
       ]
@@ -106,25 +106,25 @@
       ]
     },
     "migrationStats": {
-      "state": "held",
-      "reasonCode": "rework-publication-hold",
-      "reason": "Verified migration collection may continue while public exposure is re-baselined.",
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified ONS long-term migration source and collector contract are approved for public release.",
       "sections": [
         "migration"
       ]
     },
     "housePriceIndex": {
-      "state": "held",
-      "reasonCode": "rework-publication-hold",
-      "reason": "Verified house-price collection may continue while public exposure is re-baselined.",
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified ONS private-rent and UK HPI source and collector contract are approved for public release.",
       "sections": [
         "house-price-index"
       ]
     },
     "realWages": {
-      "state": "held",
-      "reasonCode": "rework-publication-hold",
-      "reason": "Verified earnings collection may continue while public exposure is re-baselined.",
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified ONS real-earnings source and collector contract are approved for public release.",
       "sections": [
         "real-wages"
       ]
