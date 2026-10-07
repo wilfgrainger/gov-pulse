@@ -15,7 +15,7 @@ import {
 } from "./publication-currentness.js";
 import {
   PUBLIC_SNAPSHOT_KEY,
-  publicSnapshot,
+  buildPublicProjection,
 } from "./public-snapshot.js";
 import { readInternationalComparison } from "./international-comparison-publication.js";
 import { assertSameHttpsHost, MAX_RESPONSE_BYTES, readResponseJson } from "./response-limits.js";
@@ -116,6 +116,26 @@ function publicProjectionIsCurrent(snapshot, now = new Date()) {
     JSON.stringify(Object.keys(snapshot.meta.sources).sort());
 }
 
+function normalizePublicProjectionSnapshot(snapshot, now = new Date()) {
+  if (!isSnapshot(snapshot) || snapshot.meta.registryVersion !== FEED_REGISTRY_VERSION) {
+    return null;
+  }
+  try {
+    if (isPublicProjectionSnapshot(snapshot)) {
+      const current = filterCurrentSnapshot(snapshot, now);
+      if (!current?.meta?.sources || Object.keys(current.meta.sources).length === 0) return null;
+      current.meta.publicProjection = {
+        state: "published",
+        publishedSections: Object.keys(current.meta.sources).sort(),
+      };
+      return buildPublicProjection(current, now);
+    }
+    return buildPublicProjection(snapshot, now);
+  } catch {
+    return null;
+  }
+}
+
 function isCompleteSnapshot(snapshot) {
   if (!isSnapshot(snapshot) || snapshot.meta.registryVersion !== FEED_REGISTRY_VERSION) {
     return false;
@@ -195,10 +215,11 @@ async function readPreparedPublicArtifact(env, now = new Date()) {
     return null;
   }
 
-  if (!publicProjectionIsCurrent(preparedSnapshot, now)) return null;
+  const normalized = normalizePublicProjectionSnapshot(preparedSnapshot, now);
+  if (!normalized || !publicProjectionIsCurrent(normalized, now)) return null;
 
   return {
-    body: JSON.stringify(preparedSnapshot),
+    body: JSON.stringify(normalized),
     validUntil: earliestDeadline(
       record.metadata.validUntil,
       snapshotValidityDeadline(preparedSnapshot, now),
@@ -230,7 +251,8 @@ async function fetchSeedSnapshot(env, fetchImpl = fetch, now = new Date()) {
     }
     assertSameHttpsHost(response, url, "Pages seed");
     const candidate = await readResponseJson(response, { label: "Pages seed JSON" });
-    return publicProjectionIsCurrent(candidate, now) ? candidate : null;
+    const normalized = normalizePublicProjectionSnapshot(candidate, now);
+    return normalized && publicProjectionIsCurrent(normalized, now) ? normalized : null;
   } catch {
     return null;
   }
@@ -246,9 +268,8 @@ async function currentPublicArtifact(env, options = {}) {
       filterCurrentSnapshot(await readCurrentPublication(env), now)
     );
     if (isCompleteSnapshot(current)) {
-      const projection = filterPublicationSnapshot(current);
-      if (projection && publicProjectionIsCurrent(projection, now)) {
-        const snapshot = publicSnapshot(projection);
+      const snapshot = normalizePublicProjectionSnapshot(current, now);
+      if (snapshot && publicProjectionIsCurrent(snapshot, now)) {
         return {
           body: JSON.stringify(snapshot),
           validUntil: snapshotValidityDeadline(snapshot, now) === null
