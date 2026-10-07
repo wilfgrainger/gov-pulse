@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import { isPublicArtifact } from "../contracts/public-artifact.js";
+import { FEED_REGISTRY_VERSION } from "../worker/feed-registry.js";
 
 const DEFAULT_QUEUE_NAME = "public-data-jobs";
 const DEFAULT_HEALTH_URL = "https://public-data.org/data/health.json";
@@ -88,32 +90,9 @@ async function hasPreparedPublication(fetchImpl, healthUrl) {
     }
 
     const snapshot = await response.json();
-    const meta = snapshot?.meta;
-    const sources = meta?.sources;
-    const projection = meta?.publicProjection;
-    if (
-      !sources || typeof sources !== "object" || Array.isArray(sources) ||
-      !projection || typeof projection !== "object" || Array.isArray(projection) ||
-      projection.state !== "published" ||
-      !Array.isArray(projection.publishedSections) ||
-      Object.prototype.hasOwnProperty.call(meta, "publicationDiagnostics") ||
-      Object.prototype.hasOwnProperty.call(meta, "measureCatalogDiagnostics") ||
-      Object.prototype.hasOwnProperty.call(meta, "publicationState") ||
-      Object.prototype.hasOwnProperty.call(meta, "missingRequiredSections") ||
-      Object.values(sources).some((source) =>
-        source && typeof source === "object" &&
-          Object.prototype.hasOwnProperty.call(source, "error")
-      )
-    ) {
-      return false;
-    }
-
-    const sourceIds = Object.keys(sources).sort();
-    const publishedIds = [...projection.publishedSections].sort();
-    return (
-      sourceIds.length > 0 &&
-      JSON.stringify(sourceIds) === JSON.stringify(publishedIds)
-    );
+    return isPublicArtifact(snapshot, {
+      registryVersion: FEED_REGISTRY_VERSION,
+    });
   } catch {
     return false;
   }
