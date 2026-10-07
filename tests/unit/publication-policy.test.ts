@@ -192,7 +192,22 @@ describe("publication decisions", () => {
   });
 
   it("does not publish data when the stored snapshot has no published sources", () => {
-    expect(filterPublicationSnapshot(fixture)).toBeNull();
+    const allHeld = {
+      version: 2,
+      publications: {
+        gdpTracker: {
+          state: "held",
+          reasonCode: "test-held",
+          reason: "Held for the test.",
+        },
+        taxRevenue: {
+          state: "held",
+          reasonCode: "test-held",
+          reason: "Held for the test.",
+        },
+      },
+    } as const;
+    expect(filterPublicationSnapshot(fixture, allHeld)).toBeNull();
   });
 
   it("redacts archived changes for held, retired or unknown measures", () => {
