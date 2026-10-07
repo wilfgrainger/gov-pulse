@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   validateAcceptedArtifact,
 } from "../../scripts/fetch-cloudflare-publication-candidate.mjs";
@@ -88,4 +88,20 @@ describe("Cloudflare Pages accepted-artifact recovery", () => {
       /private publication metadata/i
     );
   });
+});
+
+
+vi.mock("../../config/publications.json", async (importOriginal) => {
+  const { default: config } = await importOriginal();
+  return {
+    default: {
+      ...config,
+      publications: Object.fromEntries(
+        Object.entries(config.publications).map(([id, entry]) => [
+          id,
+          { ...entry, state: "published" },
+        ])
+      ),
+    },
+  };
 });
