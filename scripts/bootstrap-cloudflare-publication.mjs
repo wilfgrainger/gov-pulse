@@ -529,6 +529,7 @@ async function bootstrapCloudflarePublication(options = {}) {
       result.contractsRefresh = {
         status: "success",
         sourceRequestsMade,
+        collected: Number.isSafeInteger(sourceRequestsMade) && sourceRequestsMade > 0,
         published: await hasContractsPublication(fetchImpl, healthUrl, run),
       };
     }
@@ -700,7 +701,7 @@ async function main() {
     : "";
   console.log(
     result.triggered
-      ? `Cloudflare publication bootstrap completed after ${result.attempts} attempt${result.attempts === 1 ? "" : "s"}.${result.comparisonRefresh ? ` Comparison refresh status=${result.comparisonRefresh.status}${result.comparisonRefresh.completedAt ? ` completedAt=${result.comparisonRefresh.completedAt}` : ""}.` : ""}${result.contractsRefresh ? ` Contracts refresh job=${result.contractsRefresh.status}, published=${result.contractsRefresh.published}.` : ""}${sourceDiagnostics}`
+      ? `Cloudflare publication bootstrap completed after ${result.attempts} attempt${result.attempts === 1 ? "" : "s"}.${result.comparisonRefresh ? ` Comparison refresh status=${result.comparisonRefresh.status}${result.comparisonRefresh.completedAt ? ` completedAt=${result.comparisonRefresh.completedAt}` : ""}.` : ""}${result.contractsRefresh ? ` Contracts refresh job=${result.contractsRefresh.status}, collected=${result.contractsRefresh.collected}, published=${result.contractsRefresh.published}.` : ""}${sourceDiagnostics}`
       : "Cloudflare prepared publication was already deployable; bootstrap skipped."
   );
 }
