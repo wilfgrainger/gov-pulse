@@ -5,7 +5,7 @@ import { isCompatibleMetricsSnapshot, type MetricsSnapshot } from "@/app/lib/met
 import { publicSnapshot } from "@/worker/public-snapshot";
 import { publicationPublished, filterPublicationSnapshot } from "@/contracts/publication-policy";
 
-export type DiscoveryKind = "dataset" | "tool" | "withdrawn";
+export type DiscoveryKind = "dataset" | "tool";
 
 export interface SectionDiscovery {
   title: string;
@@ -144,14 +144,6 @@ export function structuredDataForSection(id: string) {
       "@type": "WebApplication",
       applicationCategory: "EducationalApplication",
       operatingSystem: "Any",
-    };
-  }
-
-  if (section.kind === "withdrawn") {
-    return {
-      ...common,
-      "@type": "Article",
-      articleSection: section.category,
     };
   }
 
