@@ -90,7 +90,9 @@ describe("degraded public publication", () => {
     const artifact = buildPublicSnapshotArtifact(snapshot, now);
     const env = {
       METRICS_CACHE: {
-        get: vi.fn(async () => null),
+        get: vi.fn(async (key: string) =>
+          key === PUBLICATION_CURRENT_KEY ? snapshot : null
+        ),
         getWithMetadata: vi.fn(async (key: string) =>
           key === PUBLIC_SNAPSHOT_KEY
             ? { value: artifact.body, metadata: artifact.metadata }
@@ -146,7 +148,9 @@ describe("degraded public publication", () => {
     legacy.meta.sources.gdpTracker.error = "private source response detail";
     const env = {
       METRICS_CACHE: {
-        get: vi.fn(async () => null),
+        get: vi.fn(async (key: string) =>
+          key === PUBLICATION_CURRENT_KEY ? legacy : null
+        ),
         getWithMetadata: vi.fn(async (key: string) =>
           key === PUBLIC_SNAPSHOT_KEY
             ? {
