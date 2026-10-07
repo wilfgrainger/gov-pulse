@@ -6,14 +6,6 @@
     "description": "Independent UK public evidence with clear dates, definitions and direct source routes."
   },
   "sections": {
-    "pm-approval": {
-      "title": "Prime minister approval",
-      "description": "Why public-data.org currently withdraws prime minister approval evidence until a reproducible primary-poll series is available.",
-      "category": "Politics",
-      "kind": "withdrawn",
-      "sourceKey": "pmApproval",
-      "sameAs": []
-    },
     "election-polls": {
       "title": "UK election polling",
       "description": "Latest verified Great Britain voting-intention polls, shown individually with fieldwork, sample and primary-source links.",
@@ -31,23 +23,9 @@
       "category": "Politics",
       "kind": "dataset",
       "sourceKey": "bettingOdds",
-      "sameAs": ["https://www.oddschecker.com/politics"]
-    },
-    "govt-approval": {
-      "title": "Political polarisation measure",
-      "description": "Why the former political polarisation score is withdrawn until its inputs, formula and uncertainty are reproducible.",
-      "category": "Politics",
-      "kind": "withdrawn",
-      "sourceKey": "polarizationMeter",
-      "sameAs": []
-    },
-    "gov-trust-trend": {
-      "title": "Government satisfaction trend",
-      "description": "Why the former hard-coded government satisfaction series and event annotations are withdrawn.",
-      "category": "Politics",
-      "kind": "withdrawn",
-      "sourceKey": "trendLines",
-      "sameAs": []
+      "sameAs": [
+        "https://www.oddschecker.com/politics"
+      ]
     },
     "national-debt": {
       "title": "UK national debt",
@@ -55,7 +33,9 @@
       "category": "Economy",
       "kind": "dataset",
       "sourceKey": "nationalDebt",
-      "sameAs": ["https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance"]
+      "sameAs": [
+        "https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance"
+      ]
     },
     "gdp": {
       "title": "UK GDP growth",
@@ -63,7 +43,9 @@
       "category": "Economy",
       "kind": "dataset",
       "sourceKey": "gdpTracker",
-      "sameAs": ["https://www.ons.gov.uk/economy/grossdomesticproductgdp"]
+      "sameAs": [
+        "https://www.ons.gov.uk/economy/grossdomesticproductgdp"
+      ]
     },
     "economy": {
       "title": "UK inflation, Bank Rate and unemployment",
@@ -83,7 +65,9 @@
       "category": "Economy",
       "kind": "dataset",
       "sourceKey": "taxRevenue",
-      "sameAs": ["https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance"]
+      "sameAs": [
+        "https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance"
+      ]
     },
     "government-contracts": {
       "title": "UK government contracts",
@@ -91,7 +75,9 @@
       "category": "Public money",
       "kind": "dataset",
       "sourceKey": "governmentContracts",
-      "sameAs": ["https://www.find-tender.service.gov.uk/"]
+      "sameAs": [
+        "https://www.find-tender.service.gov.uk/"
+      ]
     },
     "employment": {
       "title": "UK employment and unemployment",
@@ -99,7 +85,9 @@
       "category": "Economy",
       "kind": "dataset",
       "sourceKey": "employmentStats",
-      "sameAs": ["https://www.ons.gov.uk/employmentandlabourmarket"]
+      "sameAs": [
+        "https://www.ons.gov.uk/employmentandlabourmarket"
+      ]
     },
     "crime-stats": {
       "title": "Crime in England and Wales",
@@ -119,7 +107,9 @@
       "category": "Society",
       "kind": "dataset",
       "sourceKey": "nhsStats",
-      "sameAs": ["https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/"]
+      "sameAs": [
+        "https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/"
+      ]
     },
     "migration": {
       "title": "UK long-term international migration",
@@ -127,7 +117,9 @@
       "category": "Society",
       "kind": "dataset",
       "sourceKey": "migrationStats",
-      "sameAs": ["https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration"]
+      "sameAs": [
+        "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration"
+      ]
     },
     "house-price-index": {
       "title": "UK House Price Index",
@@ -135,7 +127,9 @@
       "category": "Economy",
       "kind": "dataset",
       "sourceKey": "housePriceIndex",
-      "sameAs": ["https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/privaterentandhousepricesuk/latest"]
+      "sameAs": [
+        "https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/privaterentandhousepricesuk/latest"
+      ]
     },
     "real-wages": {
       "title": "UK real wages (CPIH-adjusted)",
@@ -143,7 +137,9 @@
       "category": "Economy",
       "kind": "dataset",
       "sourceKey": "realWages",
-      "sameAs": ["https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/averageweeklyearningsingreatbritain/latest"]
+      "sameAs": [
+        "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/averageweeklyearningsingreatbritain/latest"
+      ]
     },
     "early-years": {
       "title": "Early years evidence in England",
@@ -155,22 +151,6 @@
         "https://www.gov.uk/government/statistics/cover-of-vaccination-evaluated-rapidly-cover-programme-annual-reports/vaccination-coverage-statistics-for-children-aged-up-to-5-years-england-cover-programme-report-april-2024-to-march-2025",
         "https://explore-education-statistics.service.gov.uk/find-statistics/early-years-foundation-stage-profile-results/2024-25"
       ]
-    },
-    "uk-regions": {
-      "title": "UK regional comparison",
-      "description": "Why the former mixed-geography regional comparison is withdrawn until a reproducible official dataset is available.",
-      "category": "Data",
-      "kind": "withdrawn",
-      "sourceKey": "geographicHeatmap",
-      "sameAs": []
-    },
-    "policy-links": {
-      "title": "Policy relationship matrix",
-      "description": "Why the former policy relationship matrix is withdrawn until its survey inputs and method are reproducible.",
-      "category": "Data",
-      "kind": "withdrawn",
-      "sourceKey": "echoChamberMap",
-      "sameAs": []
     }
   }
 }
