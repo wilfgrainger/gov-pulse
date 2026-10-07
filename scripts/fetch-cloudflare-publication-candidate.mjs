@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { isSnapshot } from "../worker/publication-entry.js";
 import { filterCurrentSnapshot } from "../worker/publication-currentness.js";
 import { FEED_REGISTRY_VERSION } from "../worker/feed-registry.js";
-import { PUBLIC_SNAPSHOT_KEY, publicSnapshot } from "../worker/public-snapshot.js";
+import { PUBLIC_SNAPSHOT_KEY, buildPublicProjection, publicSnapshot } from "../worker/public-snapshot.js";
 import { validatePublicProjection } from "./lib/publication-validation.mjs";
 
 const DEFAULT_NAMESPACE_ID = "f950b17f36a447dca7bb339cba8818de";
@@ -43,20 +43,27 @@ export function validateAcceptedArtifact(value, now = new Date()) {
     throw new Error("Cloudflare accepted artifact contains private publication metadata");
   }
 
-  validatePublicProjection(value);
+  let normalized;
+  try {
+    normalized = buildPublicProjection(value, now);
+  } catch {
+    throw new Error("Cloudflare accepted artifact has no current source-owned evidence approved for publication");
+  }
 
-  const current = filterCurrentSnapshot(value, now);
+  validatePublicProjection(normalized);
+
+  const current = filterCurrentSnapshot(normalized, now);
   if (!current || !isSnapshot(current)) {
     throw new Error("Cloudflare accepted artifact has no current source-owned evidence");
   }
 
-  const sourceIds = Object.keys(value.meta.sources).sort();
+  const sourceIds = Object.keys(normalized.meta.sources).sort();
   const currentIds = Object.keys(current.meta.sources).sort();
   if (JSON.stringify(sourceIds) !== JSON.stringify(currentIds)) {
     throw new Error("Cloudflare accepted artifact contains stale published evidence");
   }
 
-  return value;
+  return normalized;
 }
 
 export async function fetchCandidate({
