@@ -752,12 +752,6 @@ describe("Cloudflare deployment bootstrap", () => {
     let now = Date.parse("2026-10-04T12:01:00.000Z");
     let queuedMessage;
     const snapshot = preparedSnapshot();
-    snapshot.governmentContracts = { summary: { awardCount: 0 }, awards: [] };
-    snapshot.meta.sources.governmentContracts = {
-      status: "ok",
-      cacheState: "fresh",
-      fetchedAt: new Date().toISOString(),
-    };
     const run = {
       status: "published",
       createdAt: "2026-10-04T12:00:00.000Z",
@@ -816,7 +810,8 @@ describe("Cloudflare deployment bootstrap", () => {
     expect(result.contractsRefresh).toMatchObject({
       status: "success",
       sourceRequestsMade: 28,
-      published: true,
+      collected: true,
+      published: false,
     });
   });
 
