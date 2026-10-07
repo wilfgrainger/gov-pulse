@@ -88,7 +88,7 @@ const fixture = {
 };
 
 describe("publication decisions", () => {
-  it("publishes nationalDebt and the archive, holds active feeds, retires old products, and fails closed for unknown identifiers", () => {
+  it("publishes the verified first wave, holds unresolved feeds, retires old products, and fails closed for unknown identifiers", () => {
     expect(anyEvidencePublished()).toBe(true);
     expect(productCapabilityAvailable("home")).toBe(true);
     expect(productCapabilityAvailable("calendar")).toBe(false);
@@ -96,8 +96,12 @@ describe("publication decisions", () => {
     expect(publicRouteAvailable("/compare/")).toBe(true);
     expect(publicRouteAvailable("/calendar/")).toBe(false);
     expect(publicationPublished("nationalDebt")).toBe(true);
+    expect(publicationPublished("gdpTracker")).toBe(true);
+    expect(publicationPublished("housePriceIndex")).toBe(true);
+    expect(publicationPublished("electionPolling")).toBe(true);
     expect(publicationPublished("editionArchive")).toBe(true);
-    expect(publicationHeld("gdpTracker")).toBe(true);
+    expect(publicationHeld("nhsStats")).toBe(true);
+    expect(publicationHeld("bettingOdds")).toBe(true);
     expect(publicationRetired("pmApproval")).toBe(true);
     expect(publicationState("unexpected")).toBeNull();
     expect(publicationDecision("nationalDebt")).toMatchObject({
@@ -105,7 +109,20 @@ describe("publication decisions", () => {
       reasonCode: "published-verified",
     });
 
-    const published = new Set(["nationalDebt", "editionArchive"]);
+    const published = new Set([
+      "sentimentPulse",
+      "gdpTracker",
+      "employmentStats",
+      "nationalDebt",
+      "taxRevenue",
+      "migrationStats",
+      "housePriceIndex",
+      "realWages",
+      "electionPolling",
+      "crimeStatistics",
+      "governmentContracts",
+      "editionArchive",
+    ]);
     for (const id of [
       ...Object.keys(FEED_REGISTRY),
       ...Object.keys(PUBLICATION_SOURCE_REGISTRY),
