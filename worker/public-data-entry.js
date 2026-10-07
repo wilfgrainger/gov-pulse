@@ -3,6 +3,7 @@ import queuedWorker, {
   enqueueInternationalComparisonRefresh,
 } from "./queued-publication-entry.js";
 import { PUBLICATION_CONFIG, publicationPublished, anyEvidencePublished, filterPublicationSnapshot, filterPublicationCatalog, filterPublicationSummary } from "../contracts/publication-policy.js";
+import { isPublicArtifact } from "../contracts/public-artifact.js";
 import { isSnapshot, readCurrentPublication } from "./publication-entry.js";
 import {
   FEED_REGISTRY_VERSION,
@@ -86,25 +87,9 @@ function withPublicationState(snapshot) {
 }
 
 function isPublicProjectionSnapshot(snapshot) {
-  if (!isSnapshot(snapshot) || snapshot.meta.registryVersion !== FEED_REGISTRY_VERSION) {
-    return false;
-  }
-  const projection = snapshot.meta.publicProjection;
-  if (
-    !projection ||
-    typeof projection !== "object" ||
-    Array.isArray(projection) ||
-    projection.state !== "published" ||
-    !Array.isArray(projection.publishedSections)
-  ) {
-    return false;
-  }
-  const sourceIds = Object.keys(snapshot.meta.sources).sort();
-  const publishedIds = [...projection.publishedSections].sort();
   return (
-    sourceIds.length > 0 &&
-    publishedIds.every((id) => typeof id === "string") &&
-    JSON.stringify(sourceIds) === JSON.stringify(publishedIds)
+    isSnapshot(snapshot) &&
+    isPublicArtifact(snapshot, { registryVersion: FEED_REGISTRY_VERSION })
   );
 }
 
