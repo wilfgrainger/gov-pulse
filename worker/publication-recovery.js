@@ -1,4 +1,6 @@
 import { isSnapshot } from "./publication-entry.js";
+import { isPublicArtifact } from "../contracts/public-artifact.js";
+import { FEED_REGISTRY_VERSION } from "./feed-registry.js";
 import { filterCurrentSnapshot } from "./publication-currentness.js";
 import { publicSnapshot } from "./public-snapshot.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
@@ -7,21 +9,9 @@ const DEFAULT_PUBLICATION_SEED_URL =
   "https://public-data-org.pages.dev/data/metrics-snapshot.json";
 
 function isPublicProjection(value) {
-  if (!isSnapshot(value)) return false;
-  const projection = value.meta?.publicProjection;
-  if (
-    !projection ||
-    typeof projection !== "object" ||
-    Array.isArray(projection) ||
-    projection.state !== "published" ||
-    !Array.isArray(projection.publishedSections)
-  ) return false;
-  const sourceIds = Object.keys(value.meta.sources).sort();
-  const projectedIds = [...projection.publishedSections].sort();
   return (
-    sourceIds.length > 0 &&
-    projectedIds.every((id) => typeof id === "string") &&
-    JSON.stringify(sourceIds) === JSON.stringify(projectedIds)
+    isSnapshot(value) &&
+    isPublicArtifact(value, { registryVersion: FEED_REGISTRY_VERSION })
   );
 }
 
