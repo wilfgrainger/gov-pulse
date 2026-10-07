@@ -1,14 +1,6 @@
 {
   "version": 2,
   "publications": {
-    "pmApproval": {
-      "state": "retired",
-      "reasonCode": "retired-unreproducible",
-      "reason": "The former approval product has no reproducible current primary-poll series.",
-      "sections": [
-        "pm-approval"
-      ]
-    },
     "electionPolling": {
       "state": "published",
       "reasonCode": "published-verified",
@@ -23,22 +15,6 @@
       "reason": "Market collection may continue while public exposure is re-baselined.",
       "sections": [
         "betting-odds"
-      ]
-    },
-    "polarizationMeter": {
-      "state": "retired",
-      "reasonCode": "retired-unreproducible",
-      "reason": "The former derived polarisation score is retired until its inputs and method are reproducible.",
-      "sections": [
-        "govt-approval"
-      ]
-    },
-    "trendLines": {
-      "state": "retired",
-      "reasonCode": "retired-unreproducible",
-      "reason": "The former hard-coded satisfaction trend is retired.",
-      "sections": [
-        "gov-trust-trend"
       ]
     },
     "nationalDebt": {
@@ -136,27 +112,6 @@
       "sections": [
         "early-years"
       ]
-    },
-    "geographicHeatmap": {
-      "state": "retired",
-      "reasonCode": "retired-unreproducible",
-      "reason": "The former mixed-geography regional comparison is retired.",
-      "sections": [
-        "uk-regions"
-      ]
-    },
-    "echoChamberMap": {
-      "state": "retired",
-      "reasonCode": "retired-unreproducible",
-      "reason": "The former policy relationship matrix is retired until its method is reproducible.",
-      "sections": [
-        "policy-links"
-      ]
-    },
-    "politicalCompass": {
-      "state": "retired",
-      "reasonCode": "retired-out-of-scope",
-      "reason": "The interactive self-assessment is retired from the public-evidence product."
     },
     "releaseCalendar": {
       "state": "held",
