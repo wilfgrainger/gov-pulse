@@ -248,10 +248,11 @@ describe("Cloudflare public data route", () => {
     });
   });
 
-  it("uses the Pages snapshot only as a complete bootstrap fallback", async () => {
+  it("uses Pages only as a copy of an already accepted public artifact", async () => {
     const now = new Date();
+    const accepted = buildPublicSnapshotArtifact(snapshot(now), now);
     const fetchImpl = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(snapshot(now)), {
+      new Response(accepted.body, {
         status: 200,
         headers: { "Content-Type": "application/json" },
       })
@@ -262,6 +263,25 @@ describe("Cloudflare public data route", () => {
     });
 
     expect(result?.delivery).toBe("pages-fallback");
+    expect(result?.snapshot.meta.publicProjection.state).toBe("published");
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it("rejects an internal snapshot as a Pages fallback instead of rebuilding it", async () => {
+    const now = new Date();
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(snapshot(now)), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+
+    const result = await currentPublicSnapshot(environment(null), {
+      now,
+      fetchImpl,
+    });
+
+    expect(result).toBeNull();
     expect(fetchImpl).toHaveBeenCalledOnce();
   });
 
