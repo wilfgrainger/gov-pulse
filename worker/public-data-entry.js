@@ -460,17 +460,19 @@ async function contractHistoryResponse(request, url) {
 }
 
 async function healthResponse(request, env) {
-  if (!env?.METRICS_CACHE?.get) {
+  if (!env?.METRICS_CACHE?.get || !env?.METRICS_CACHE?.getWithMetadata) {
     return json(
       { status: "unhealthy", ready: false },
       { status: 503, head: request.method === "HEAD" }
     );
   }
 
+  const now = new Date();
+  const prepared = await readPreparedPublicArtifact(env, now);
   const internal = withPublicationState(
-    filterCurrentSnapshot(await readCurrentPublication(env), new Date())
+    filterCurrentSnapshot(await readCurrentPublication(env), now)
   );
-  if (!internal || !isCompleteSnapshot(internal)) {
+  if (!prepared || !internal || !isCompleteSnapshot(internal)) {
     return json(
       { status: "bootstrapping", ready: false },
       { head: request.method === "HEAD" }
