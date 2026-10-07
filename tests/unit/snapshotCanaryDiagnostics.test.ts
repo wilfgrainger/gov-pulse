@@ -5,6 +5,19 @@ import { validatePublicationState } from "@/scripts/snapshot-canary.mjs";
 
 function publication(sections = ["nationalDebt"]) {
   return {
+    ...Object.fromEntries(
+      sections.map((section) => [
+        section,
+        {
+          __observation: {
+            status: "current",
+            period: "September 2026",
+            observedAt: "2026-09-30",
+          },
+          value: section,
+        },
+      ])
+    ),
     meta: {
       sources: Object.fromEntries(
         sections.map((section) => [
