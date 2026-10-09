@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
-import { currentPublicationManifest } from "./publication-manifest.mjs";
+import { isPublicArtifact } from "../contracts/public-artifact.js";
+import { FEED_REGISTRY_VERSION } from "../worker/feed-registry.js";
 
 const DEFAULT_QUEUE_NAME = "public-data-jobs";
 const DEFAULT_HEALTH_URL = "https://public-data.org/data/health.json";
@@ -71,7 +72,7 @@ async function readHealth(fetchImpl, healthUrl) {
   return responseJson(response, "Cloudflare data health check");
 }
 
-async function hasPreparedPublication(fetchImpl, healthUrl, health) {
+async function hasPreparedPublication(fetchImpl, healthUrl) {
   const snapshotUrl = new URL(
     "/data/metrics-snapshot.json",
     healthUrl,
@@ -87,34 +88,11 @@ async function hasPreparedPublication(fetchImpl, healthUrl, health) {
     ) {
       return false;
     }
+
     const snapshot = await response.json();
-    const meta = snapshot?.meta;
-    const sources = meta?.sources;
-    if (
-      !sources || typeof sources !== "object" || Array.isArray(sources) ||
-      Object.prototype.hasOwnProperty.call(meta, "publicationDiagnostics") ||
-      Object.prototype.hasOwnProperty.call(meta, "measureCatalogDiagnostics") ||
-      Object.values(sources).some((source) =>
-        source && typeof source === "object" &&
-          Object.prototype.hasOwnProperty.call(source, "error")
-      )
-    ) {
-      return false;
-    }
-    const expectedMissing = isDegradedPublicationHealth(health)
-      ? [...health.missingRequiredSections].sort()
-      : [];
-    const { missingRequiredSections: currentMissing } =
-      currentPublicationManifest(snapshot);
-    const actualMissing = Array.isArray(meta.missingRequiredSections)
-      ? [...meta.missingRequiredSections].sort()
-      : null;
-    return (
-      meta.delivery === "published-snapshot" &&
-      JSON.stringify(currentMissing) === JSON.stringify(expectedMissing) &&
-      JSON.stringify(actualMissing) === JSON.stringify(expectedMissing) &&
-      meta.publicationState === (expectedMissing.length ? "degraded" : "ready")
-    );
+    return isPublicArtifact(snapshot, {
+      registryVersion: FEED_REGISTRY_VERSION,
+    });
   } catch {
     return false;
   }
@@ -530,6 +508,7 @@ async function bootstrapCloudflarePublication(options = {}) {
       result.contractsRefresh = {
         status: "success",
         sourceRequestsMade,
+        collected: Number.isSafeInteger(sourceRequestsMade) && sourceRequestsMade > 0,
         published: await hasContractsPublication(fetchImpl, healthUrl, run),
       };
     }
@@ -701,7 +680,7 @@ async function main() {
     : "";
   console.log(
     result.triggered
-      ? `Cloudflare publication bootstrap completed after ${result.attempts} attempt${result.attempts === 1 ? "" : "s"}.${result.comparisonRefresh ? ` Comparison refresh status=${result.comparisonRefresh.status}${result.comparisonRefresh.completedAt ? ` completedAt=${result.comparisonRefresh.completedAt}` : ""}.` : ""}${result.contractsRefresh ? ` Contracts refresh job=${result.contractsRefresh.status}, published=${result.contractsRefresh.published}.` : ""}${sourceDiagnostics}`
+      ? `Cloudflare publication bootstrap completed after ${result.attempts} attempt${result.attempts === 1 ? "" : "s"}.${result.comparisonRefresh ? ` Comparison refresh status=${result.comparisonRefresh.status}${result.comparisonRefresh.completedAt ? ` completedAt=${result.comparisonRefresh.completedAt}` : ""}.` : ""}${result.contractsRefresh ? ` Contracts refresh job=${result.contractsRefresh.status}, collected=${result.contractsRefresh.collected}, published=${result.contractsRefresh.published}.` : ""}${sourceDiagnostics}`
       : "Cloudflare prepared publication was already deployable; bootstrap skipped."
   );
 }

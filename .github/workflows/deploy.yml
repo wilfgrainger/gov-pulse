@@ -145,7 +145,7 @@ jobs:
 
       - name: Check publication controls
         id: publication-controls
-        run: node --input-type=module -e 'import {anyPublicationEnabled} from "./contracts/publication-policy.js"; console.log(`paused=${!anyPublicationEnabled()}`)' >> "$GITHUB_OUTPUT"
+        run: node --input-type=module -e 'import {anyEvidencePublished} from "./contracts/publication-policy.js"; console.log(`paused=${!anyEvidencePublished()}`)' >> "$GITHUB_OUTPUT"
 
       - name: Withdraw the public Pages seed while all publications are offline
         if: steps.publication-controls.outputs.paused == 'true'

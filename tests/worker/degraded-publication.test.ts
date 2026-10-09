@@ -90,7 +90,9 @@ describe("degraded public publication", () => {
     const artifact = buildPublicSnapshotArtifact(snapshot, now);
     const env = {
       METRICS_CACHE: {
-        get: vi.fn(async () => null),
+        get: vi.fn(async (key: string) =>
+          key === PUBLICATION_CURRENT_KEY ? snapshot : null
+        ),
         getWithMetadata: vi.fn(async (key: string) =>
           key === PUBLIC_SNAPSHOT_KEY
             ? { value: artifact.body, metadata: artifact.metadata }
@@ -106,7 +108,13 @@ describe("degraded public publication", () => {
       env
     );
     expect(data.status).toBe(200);
-    expect((await data.json()).meta.publicationState).toBe("degraded");
+    const publicData = await data.json();
+    expect(publicData.meta).not.toHaveProperty("publicationState");
+    expect(publicData.meta).not.toHaveProperty("missingRequiredSections");
+    expect(publicData.meta.publicProjection).toMatchObject({
+      state: "published",
+    });
+    expect(publicData.meta.publicProjection.publishedSections).not.toContain("employmentStats");
 
     const health = await publicWorker.fetch(
       new Request("https://public-data.org/data/health.json"),
@@ -140,7 +148,9 @@ describe("degraded public publication", () => {
     legacy.meta.sources.gdpTracker.error = "private source response detail";
     const env = {
       METRICS_CACHE: {
-        get: vi.fn(async () => null),
+        get: vi.fn(async (key: string) =>
+          key === PUBLICATION_CURRENT_KEY ? legacy : null
+        ),
         getWithMetadata: vi.fn(async (key: string) =>
           key === PUBLIC_SNAPSHOT_KEY
             ? {
@@ -231,8 +241,8 @@ describe("degraded public publication", () => {
   });
 });
 
-// Exercise the enabled-publication behavior independently of the production pause.
+// Exercise the published-publication behavior independently of the production pause.
 vi.mock("@/config/publications.json", async (importOriginal) => {
-  const { default: config } = await importOriginal<{ default: { publications: Record<string, { enabled: boolean }> } }>();
-  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, enabled: true }])), ons: { enabled: true } } } };
+  const { default: config } = await importOriginal<{ default: { publications: Record<string, { state: string }> } }>();
+  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, state: "published" }])), ons: { state: "published" } } } };
 });

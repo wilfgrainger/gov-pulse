@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   PUBLIC_DOWNLOAD_SECTION_IDS,
   PUBLIC_SECTION_PATHS,
+  RETIRED_SECTION_PATHS,
   verifyHealthJson,
   verifyEvidenceFeed,
   verifyGdpHtml,
@@ -61,14 +62,15 @@ function publicationSnapshot({ missing = [], now = new Date() } = {}) {
       );
     }
   }
-  const missingRequiredSections = [...missing].sort();
   return {
     meta: {
       registryVersion: "2026-08-02.1",
       generatedAt: currentGeneratedAt,
       sources,
-      publicationState: missingRequiredSections.length ? "degraded" : "ready",
-      missingRequiredSections,
+      publicProjection: {
+        state: "published",
+        publishedSections: Object.keys(sources).sort(),
+      },
     },
     ...sections,
   };
@@ -152,7 +154,11 @@ function validResponses(home = validHtml) {
     validSitemap,
     validRobots,
     validFeed,
-  ].map(okResponse);
+  ].map(okResponse).concat(RETIRED_SECTION_PATHS.map(() => notFoundResponse()));
+}
+
+function notFoundResponse() {
+  return { ok: false, status: 404, text: async () => "" };
 }
 
 describe("production deployment verifier", () => {
@@ -182,6 +188,33 @@ describe("production deployment verifier", () => {
     expect(verifySitemapXml(validSitemap)).toEqual([]);
     expect(verifyRobotsTxt(validRobots)).toEqual([]);
     expect(verifyEvidenceFeed(validFeed)).toEqual([]);
+  });
+
+  it("requires retired product routes to be gone rather than kept alive as withdrawn pages", async () => {
+    expect(RETIRED_SECTION_PATHS).toEqual([
+      "section/pm-approval/",
+      "section/govt-approval/",
+      "section/gov-trust-trend/",
+      "section/uk-regions/",
+      "section/policy-links/",
+    ]);
+    for (const path of RETIRED_SECTION_PATHS) expect(PUBLIC_SECTION_PATHS).not.toContain(path);
+
+    const responses = validResponses();
+    responses[responses.length - RETIRED_SECTION_PATHS.length] = okResponse(validSectionHtml("section/pm-approval/"));
+    const fetchImpl = vi.fn();
+    for (const response of responses) fetchImpl.mockResolvedValueOnce(response);
+
+    await expect(
+      verifyProduction({
+        url: "https://example.test/",
+        expectedRevision: revision,
+        attempts: 1,
+        delayMs: 0,
+        fetchImpl,
+        log: { info: vi.fn(), warn: vi.fn() },
+      }),
+    ).rejects.toThrow("retired route https://example.test/section/pm-approval/ returned HTTP 200 instead of 404");
   });
 
   it("requires UK in context in the public route and sitemap contracts", () => {
@@ -228,40 +261,37 @@ describe("production deployment verifier", () => {
     );
   });
 
-  it("rejects required sections whose source status or evidence is stale", () => {
+  it("rejects stale evidence inside the explicitly published projection", () => {
     const now = new Date("2026-10-02T18:00:00.000Z");
-    const errored = publicationSnapshot({ now });
-    errored.meta.sources.gdpTracker.status = "error";
-    expect(verifySnapshotJson(JSON.stringify(errored), { now })).toContain(
-      "public data snapshot is missing required section gdpTracker",
-    );
 
     const expired = publicationSnapshot({ now });
     expired.nationalDebt.expiresAt = new Date(now.getTime() - 1).toISOString();
     expect(verifySnapshotJson(JSON.stringify(expired), { now })).toContain(
-      "public data snapshot is missing required section nationalDebt",
+      "public data snapshot contains stale published section nationalDebt",
     );
 
     const staleWithoutExpiry = publicationSnapshot({ now });
     staleWithoutExpiry.meta.sources.employmentStats.cacheState = "stale";
     delete staleWithoutExpiry.employmentStats.expiresAt;
     expect(verifySnapshotJson(JSON.stringify(staleWithoutExpiry), { now })).toContain(
-      "public data snapshot is missing required section employmentStats",
+      "public data snapshot contains stale published section employmentStats",
     );
   });
 
-  it("rejects a ready manifest when all required data is absent", () => {
-    const emptyReady = JSON.stringify({
+  it("rejects an empty published projection", () => {
+    const empty = JSON.stringify({
       meta: {
         registryVersion: "2026-08-02.1",
         sources: {},
-        publicationState: "ready",
-        missingRequiredSections: [],
+        publicProjection: {
+          state: "published",
+          publishedSections: [],
+        },
       },
     });
 
-    expect(verifySnapshotJson(emptyReady)).toContain(
-      "public data snapshot publication state does not match its missing-section manifest",
+    expect(verifySnapshotJson(empty)).toContain(
+      "public data snapshot has no published evidence",
     );
   });
 
@@ -387,22 +417,27 @@ describe("production deployment verifier", () => {
     );
     expect(fetchImpl).toHaveBeenNthCalledWith(
       7,
-      "https://example.test/gov-metrics/section/pm-approval/",
+      "https://example.test/gov-metrics/section/election-polls/",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     expect(fetchImpl).toHaveBeenNthCalledWith(
-      43,
+      38,
       "https://example.test/gov-metrics/sitemap.xml",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     expect(fetchImpl).toHaveBeenNthCalledWith(
-      44,
+      39,
       "https://example.test/gov-metrics/robots.txt",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     expect(fetchImpl).toHaveBeenNthCalledWith(
-      45,
+      40,
       "https://example.test/gov-metrics/feed.xml",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      41,
+      "https://example.test/gov-metrics/section/pm-approval/",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     expect(log.info).toHaveBeenCalledOnce();
@@ -428,7 +463,7 @@ describe("production deployment verifier", () => {
     ).resolves.toBeUndefined();
 
     expect(fetchImpl).toHaveBeenCalledTimes(
-      (PUBLIC_SECTION_PATHS.length + PUBLIC_DOWNLOAD_SECTION_IDS.length * 2 + 9) * 2,
+      (PUBLIC_SECTION_PATHS.length + PUBLIC_DOWNLOAD_SECTION_IDS.length * 2 + RETIRED_SECTION_PATHS.length + 9) * 2,
     );
     expect(log.warn).toHaveBeenCalledOnce();
     expect(log.info).toHaveBeenCalledOnce();

@@ -11,14 +11,6 @@ export interface CategoryGroup {
   sections: SectionItem[];
 }
 
-export const WITHDRAWN_SECTION_IDS = [
-  "pm-approval",
-  "govt-approval",
-  "gov-trust-trend",
-  "uk-regions",
-  "policy-links",
-] as const;
-
 export const SECTIONS: CategoryGroup[] = [
   {
     category: "Politics",

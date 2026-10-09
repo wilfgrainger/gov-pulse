@@ -248,10 +248,11 @@ describe("Cloudflare public data route", () => {
     });
   });
 
-  it("uses the Pages snapshot only as a complete bootstrap fallback", async () => {
+  it("uses Pages only as a copy of an already accepted public artifact", async () => {
     const now = new Date();
+    const accepted = buildPublicSnapshotArtifact(snapshot(now), now);
     const fetchImpl = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(snapshot(now)), {
+      new Response(accepted.body, {
         status: 200,
         headers: { "Content-Type": "application/json" },
       })
@@ -262,6 +263,25 @@ describe("Cloudflare public data route", () => {
     });
 
     expect(result?.delivery).toBe("pages-fallback");
+    expect(result?.snapshot.meta.publicProjection.state).toBe("published");
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it("rejects an internal snapshot as a Pages fallback instead of rebuilding it", async () => {
+    const now = new Date();
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(snapshot(now)), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+
+    const result = await currentPublicSnapshot(environment(null), {
+      now,
+      fetchImpl,
+    });
+
+    expect(result).toBeNull();
     expect(fetchImpl).toHaveBeenCalledOnce();
   });
 
@@ -279,8 +299,8 @@ describe("Cloudflare public data route", () => {
   });
 });
 
-// Exercise the enabled-publication behavior independently of the production pause.
+// Exercise the published-publication behavior independently of the production pause.
 vi.mock("@/config/publications.json", async (importOriginal) => {
-  const { default: config } = await importOriginal<{ default: { publications: Record<string, { enabled: boolean }> } }>();
-  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, enabled: true }])), ons: { enabled: true } } } };
+  const { default: config } = await importOriginal<{ default: { publications: Record<string, { state: string }> } }>();
+  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, state: "published" }])), ons: { state: "published" } } } };
 });

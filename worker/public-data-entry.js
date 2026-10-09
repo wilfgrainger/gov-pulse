@@ -2,7 +2,8 @@ import queuedWorker, {
   DAILY_CRON,
   enqueueInternationalComparisonRefresh,
 } from "./queued-publication-entry.js";
-import { PUBLICATION_CONFIG, publicationEnabled, anyPublicationEnabled, filterPublicationSnapshot, filterPublicationCatalog, filterPublicationSummary } from "../contracts/publication-policy.js";
+import { PUBLICATION_CONFIG, publicationPublished, anyEvidencePublished, filterPublicationSnapshot, filterPublicationCatalog, filterPublicationSummary } from "../contracts/publication-policy.js";
+import { isPublicArtifact } from "../contracts/public-artifact.js";
 import { isSnapshot, readCurrentPublication } from "./publication-entry.js";
 import {
   FEED_REGISTRY_VERSION,
@@ -15,11 +16,12 @@ import {
 } from "./publication-currentness.js";
 import {
   PUBLIC_SNAPSHOT_KEY,
-  publicSnapshot,
+  buildPublicProjection,
 } from "./public-snapshot.js";
 import { readInternationalComparison } from "./international-comparison-publication.js";
 import { assertSameHttpsHost, MAX_RESPONSE_BYTES, readResponseJson } from "./response-limits.js";
 import { listEditionSummaries, readEdition } from "./edition-archive.js";
+import { fetchPublicationSeedSnapshot } from "./publication-recovery.js";
 import {
   FIND_A_TENDER_USER_AGENT,
   normalizeContractReleaseHistory,
@@ -31,8 +33,6 @@ const COMPARISON_PATH = "/data/international-comparison.json";
 const EDITIONS_PATH = "/data/editions.json";
 const EDITION_PATH = "/data/edition.json";
 const CONTRACT_HISTORY_PATH = "/data/contracts/history.json";
-const DEFAULT_SEED_URL =
-  "https://public-data-org.pages.dev/data/metrics-snapshot.json";
 const PUBLIC_CACHE_FRESH_SECONDS = 300;
 const COMPARISON_CACHE_FRESH_SECONDS = 300;
 const CONTRACT_HISTORY_CACHE_SECONDS = 300;
@@ -83,6 +83,41 @@ function withPublicationState(snapshot) {
     missingRequiredSections.length > 0 ? "degraded" : "ready";
   normalized.meta.missingRequiredSections = missingRequiredSections;
   return normalized;
+}
+
+function isPublicProjectionSnapshot(snapshot) {
+  return (
+    isSnapshot(snapshot) &&
+    isPublicArtifact(snapshot, { registryVersion: FEED_REGISTRY_VERSION })
+  );
+}
+
+function publicProjectionIsCurrent(snapshot, now = new Date()) {
+  if (!isPublicProjectionSnapshot(snapshot)) return false;
+  const current = filterCurrentSnapshot(snapshot, now);
+  if (!current?.meta?.sources) return false;
+  return JSON.stringify(Object.keys(current.meta.sources).sort()) ===
+    JSON.stringify(Object.keys(snapshot.meta.sources).sort());
+}
+
+function normalizePublicProjectionSnapshot(snapshot, now = new Date()) {
+  if (!isSnapshot(snapshot) || snapshot.meta.registryVersion !== FEED_REGISTRY_VERSION) {
+    return null;
+  }
+  try {
+    if (isPublicProjectionSnapshot(snapshot)) {
+      const current = filterCurrentSnapshot(snapshot, now);
+      if (!current?.meta?.sources || Object.keys(current.meta.sources).length === 0) return null;
+      current.meta.publicProjection = {
+        state: "published",
+        publishedSections: Object.keys(current.meta.sources).sort(),
+      };
+      return buildPublicProjection(current, now);
+    }
+    return buildPublicProjection(snapshot, now);
+  } catch {
+    return null;
+  }
 }
 
 function isCompleteSnapshot(snapshot) {
@@ -164,16 +199,14 @@ async function readPreparedPublicArtifact(env, now = new Date()) {
     return null;
   }
 
-  const currentSnapshot = withPublicationState(
-    filterCurrentSnapshot(publicSnapshot(preparedSnapshot), now)
-  );
-  if (!isCompleteSnapshot(currentSnapshot)) return null;
+  const normalized = normalizePublicProjectionSnapshot(preparedSnapshot, now);
+  if (!normalized || !publicProjectionIsCurrent(normalized, now)) return null;
 
   return {
-    body: JSON.stringify(currentSnapshot),
+    body: JSON.stringify(normalized),
     validUntil: earliestDeadline(
       record.metadata.validUntil,
-      snapshotValidityDeadline(currentSnapshot, now),
+      snapshotValidityDeadline(preparedSnapshot, now),
     ),
     generatedAt:
       typeof record.metadata?.generatedAt === "string"
@@ -184,33 +217,7 @@ async function readPreparedPublicArtifact(env, now = new Date()) {
 }
 
 async function fetchSeedSnapshot(env, fetchImpl = fetch, now = new Date()) {
-  const url = String(env?.STATIC_SNAPSHOT_SEED_URL || DEFAULT_SEED_URL).trim();
-  if (!url) return null;
-
-  try {
-    const response = await fetchImpl(url, {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(8_000),
-    });
-    if (!response.ok) {
-      try {
-        await response.body?.cancel();
-      } catch {
-        // Releasing a failed fallback response is best effort only.
-      }
-      return null;
-    }
-    assertSameHttpsHost(response, url, "Pages seed");
-    const candidate = withPublicationState(
-      filterCurrentSnapshot(
-        await readResponseJson(response, { label: "Pages seed JSON" }),
-        now,
-      )
-    );
-    return isCompleteSnapshot(candidate) ? candidate : null;
-  } catch {
-    return null;
-  }
+  return fetchPublicationSeedSnapshot(env, fetchImpl, now);
 }
 
 async function currentPublicArtifact(env, options = {}) {
@@ -223,29 +230,30 @@ async function currentPublicArtifact(env, options = {}) {
       filterCurrentSnapshot(await readCurrentPublication(env), now)
     );
     if (isCompleteSnapshot(current)) {
-      const snapshot = publicSnapshot(current);
-      return {
-        body: JSON.stringify(snapshot),
-        validUntil: snapshotValidityDeadline(current, now) === null
-          ? null
-          : new Date(snapshotValidityDeadline(current, now)).toISOString(),
-        generatedAt: snapshot.meta.generatedAt ?? "current",
-        delivery: "cloudflare-kv-migration",
-      };
+      const snapshot = normalizePublicProjectionSnapshot(current, now);
+      if (snapshot && publicProjectionIsCurrent(snapshot, now)) {
+        return {
+          body: JSON.stringify(snapshot),
+          validUntil: snapshotValidityDeadline(snapshot, now) === null
+            ? null
+            : new Date(snapshotValidityDeadline(snapshot, now)).toISOString(),
+          generatedAt: snapshot.meta.generatedAt ?? "current",
+          delivery: "cloudflare-kv-migration",
+        };
+      }
     }
   } catch {
-    // A current Pages seed is the bounded bootstrap and outage fallback.
+    // A current Pages artifact is the bounded bootstrap and outage fallback.
   }
 
   const seed = await fetchSeedSnapshot(env, options.fetchImpl ?? fetch, now);
   if (seed) {
-    const snapshot = publicSnapshot(seed);
     return {
-      body: JSON.stringify(snapshot),
+      body: JSON.stringify(seed),
       validUntil: snapshotValidityDeadline(seed, now) === null
         ? null
         : new Date(snapshotValidityDeadline(seed, now)).toISOString(),
-      generatedAt: snapshot.meta.generatedAt ?? "current",
+      generatedAt: seed.meta.generatedAt ?? "current",
       delivery: "pages-fallback",
     };
   }
@@ -273,9 +281,15 @@ async function snapshotResponse(request, env) {
       { status: 503 }
     );
   }
-  const snapshot = filterPublicationSnapshot(JSON.parse(result.body));
-  if (!snapshot) return json({ error: "Data publication is offline for verification", code: "publication_disabled" }, { status: 503, head: request.method === "HEAD" });
-  result.body = JSON.stringify(snapshot);
+  let snapshot;
+  try {
+    snapshot = JSON.parse(result.body);
+  } catch {
+    return json({ error: "Verified public data is temporarily unavailable" }, { status: 503, head: request.method === "HEAD" });
+  }
+  if (!isPublicProjectionSnapshot(snapshot)) {
+    return json({ error: "Data publication is offline for verification", code: "publication_disabled" }, { status: 503, head: request.method === "HEAD" });
+  }
 
   const digest = await crypto.subtle.digest(
     "SHA-256",
@@ -408,39 +422,33 @@ async function contractHistoryResponse(request, url) {
 }
 
 async function healthResponse(request, env) {
-  if (!env?.METRICS_CACHE?.getWithMetadata) {
+  if (!env?.METRICS_CACHE?.get || !env?.METRICS_CACHE?.getWithMetadata) {
     return json(
       { status: "unhealthy", ready: false },
       { status: 503, head: request.method === "HEAD" }
     );
   }
 
-  const prepared = await readPreparedPublicArtifact(env);
-  if (!prepared) {
+  const now = new Date();
+  const prepared = await readPreparedPublicArtifact(env, now);
+  const internal = withPublicationState(
+    filterCurrentSnapshot(await readCurrentPublication(env), now)
+  );
+  if (!prepared || !internal || !isCompleteSnapshot(internal)) {
     return json(
       { status: "bootstrapping", ready: false },
       { head: request.method === "HEAD" }
     );
   }
 
-  let snapshot;
-  try {
-    snapshot = JSON.parse(prepared.body);
-  } catch {
-    return json(
-      { status: "bootstrapping", ready: false },
-      { head: request.method === "HEAD" }
-    );
-  }
-
-  if (snapshot.meta?.publicationState === "degraded") {
+  if (internal.meta.publicationState === "degraded") {
     return json(
       {
         status: "degraded",
         ready: false,
         degraded: true,
         missingRequiredSections:
-          snapshot.meta.missingRequiredSections ?? [],
+          internal.meta.missingRequiredSections ?? [],
       },
       { head: request.method === "HEAD" }
     );
@@ -465,9 +473,9 @@ const publicDataWorker = {
       return json({ error: "Method not allowed" }, { status: 405 });
     }
     try {
-      if (!anyPublicationEnabled() && url.pathname === HEALTH_PATH) return json({ status: "publication-paused", ready: false }, { head: request.method === "HEAD" });
+      if (!anyEvidencePublished() && url.pathname === HEALTH_PATH) return json({ status: "publication-paused", ready: false }, { head: request.method === "HEAD" });
       const gate = url.pathname === COMPARISON_PATH ? "internationalComparison" : [EDITION_PATH, EDITIONS_PATH].includes(url.pathname) ? "editionArchive" : url.pathname === CONTRACT_HISTORY_PATH ? "governmentContracts" : null;
-      if (url.pathname !== HEALTH_PATH && (gate ? !publicationEnabled(gate) : !anyPublicationEnabled())) return json({ error: "Data publication is offline for verification", code: "publication_disabled" }, { status: 503, head: request.method === "HEAD" });
+      if (url.pathname !== HEALTH_PATH && (gate ? !publicationPublished(gate) : !anyEvidencePublished())) return json({ error: "Data publication is offline for verification", code: "publication_disabled" }, { status: 503, head: request.method === "HEAD" });
       if (url.pathname === HEALTH_PATH) return healthResponse(request, env);
       if (url.pathname === COMPARISON_PATH) return comparisonResponse(request, env);
       if (url.pathname === EDITIONS_PATH) return editionsResponse(request, env);

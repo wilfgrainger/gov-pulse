@@ -1,5 +1,5 @@
 import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationRouteEnabled } from "@/contracts/publication-policy";
+import { publicRouteAvailable } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PageHeader from "@/app/components/PageHeader";
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function GuidedStoryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  if (!publicationRouteEnabled(`/stories/${slug}/`)) return <PublicationOffline />;
+  if (!publicRouteAvailable(`/stories/${slug}/`)) return <PublicationOffline />;
   const story = stories.find((candidate) => candidate.slug === slug);
   if (!story) notFound();
   const snapshot = await readServerMetricsSnapshot();

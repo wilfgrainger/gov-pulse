@@ -54,12 +54,13 @@ function preparedSnapshot(now = new Date()) {
   }
   return {
     meta: {
-      delivery: "published-snapshot",
       registryVersion: "2026-08-02.1",
       generatedAt: now.toISOString(),
-      publicationState: "ready",
-      missingRequiredSections: [],
       sources,
+      publicProjection: {
+        state: "published",
+        publishedSections: Object.keys(sources).sort(),
+      },
     },
     ...sections,
   };
@@ -69,8 +70,7 @@ function degradedPreparedSnapshot(now = new Date()) {
   const snapshot = preparedSnapshot(now);
   delete snapshot.nhsStats;
   delete snapshot.meta.sources.nhsStats;
-  snapshot.meta.publicationState = "degraded";
-  snapshot.meta.missingRequiredSections = ["nhsStats"];
+  snapshot.meta.publicProjection.publishedSections = Object.keys(snapshot.meta.sources).sort();
   return snapshot;
 }
 
@@ -197,10 +197,11 @@ describe("Cloudflare deployment bootstrap", () => {
   it("does not accept an empty ready artifact as a prepared publication", async () => {
     const fetchImpl = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
       meta: {
-        delivery: "published-snapshot",
-        publicationState: "ready",
-        missingRequiredSections: [],
         sources: {},
+        publicProjection: {
+          state: "published",
+          publishedSections: [],
+        },
       },
     }), {
       status: 200,
@@ -666,10 +667,11 @@ describe("Cloudflare deployment bootstrap", () => {
         new Response(
           JSON.stringify({
             meta: {
-              delivery: "published-snapshot",
-              publicationState: "ready",
-              missingRequiredSections: [],
               sources: {},
+              publicProjection: {
+                state: "published",
+                publishedSections: [],
+              },
             },
           }),
           {
@@ -750,12 +752,6 @@ describe("Cloudflare deployment bootstrap", () => {
     let now = Date.parse("2026-10-04T12:01:00.000Z");
     let queuedMessage;
     const snapshot = preparedSnapshot();
-    snapshot.governmentContracts = { summary: { awardCount: 0 }, awards: [] };
-    snapshot.meta.sources.governmentContracts = {
-      status: "ok",
-      cacheState: "fresh",
-      fetchedAt: new Date().toISOString(),
-    };
     const run = {
       status: "published",
       createdAt: "2026-10-04T12:00:00.000Z",
@@ -814,7 +810,8 @@ describe("Cloudflare deployment bootstrap", () => {
     expect(result.contractsRefresh).toMatchObject({
       status: "success",
       sourceRequestsMade: 28,
-      published: true,
+      collected: true,
+      published: false,
     });
   });
 
