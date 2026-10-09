@@ -1,7 +1,4 @@
-import {
-  BETTING_CRON,
-  DAILY_CRON,
-} from "./publication-schedule.js";
+import { BETTING_CRON } from "./publication-schedule.js";
 import { enqueuePublicationRun } from "./publication-run-lifecycle.js";
 import {
   BOOTSTRAP_CONTRACTS_DEADLINE_SECONDS,

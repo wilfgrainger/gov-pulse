@@ -237,11 +237,8 @@ test("all section pages render cleanly without global feed telemetry", async ({ 
   await assertPulseApp(page);
 
   for (const path of [
-    "/section/pm-approval",
     "/section/election-polls",
     "/section/betting-odds",
-    "/section/govt-approval",
-    "/section/gov-trust-trend",
     "/section/national-debt",
     "/section/gdp",
     "/section/economy",
@@ -253,8 +250,6 @@ test("all section pages render cleanly without global feed telemetry", async ({ 
     "/section/nhs",
     "/section/migration",
     "/section/early-years",
-    "/section/uk-regions",
-    "/section/policy-links",
   ]) {
     await page.goto(`.${path}`);
     await expect(page.locator("main")).toBeVisible();
@@ -284,18 +279,30 @@ test("all section pages render cleanly without global feed telemetry", async ({ 
   expect(errors).toEqual([]);
 });
 
+test("retired product routes are removed rather than kept alive as withdrawn pages", async ({ page }) => {
+  // See docs/history/2026-10-07-retired-product-ledger.md.
+  for (const path of [
+    "/section/pm-approval/",
+    "/section/govt-approval/",
+    "/section/gov-trust-trend/",
+    "/section/uk-regions/",
+    "/section/policy-links/",
+  ]) {
+    const response = await page.goto(`.${path}`);
+    expect(response?.status(), path).toBe(404);
+  }
+});
+
 test("topic and feature routes stay usable at a 200% zoom-equivalent width with reduced motion", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop-chrome", "Route-wide zoom audit runs once in the desktop project");
   await page.setViewportSize({ width: 640, height: 900 });
   await page.emulateMedia({ reducedMotion: "reduce" });
 
   const routes = [
-    "/section/pm-approval", "/section/election-polls", "/section/betting-odds",
-    "/section/govt-approval", "/section/gov-trust-trend", "/section/national-debt",
+    "/section/election-polls", "/section/betting-odds", "/section/national-debt",
     "/section/gdp", "/section/economy", "/section/tax", "/section/employment",
     "/section/uk-in-context", "/section/government-contracts", "/section/crime-stats",
-    "/section/nhs", "/section/migration", "/section/early-years", "/section/uk-regions",
-    "/section/policy-links", "/measure", "/compare", "/briefing", "/calendar",
+    "/section/nhs", "/section/migration", "/section/early-years", "/measure", "/compare", "/briefing", "/calendar",
     "/cost-of-living", "/money", "/editions", "/sources",
   ];
 
