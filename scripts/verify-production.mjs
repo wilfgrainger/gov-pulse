@@ -5,11 +5,8 @@ const DEFAULT_ATTEMPTS = 12;
 const DEFAULT_DELAY_MS = 10_000;
 const REQUEST_TIMEOUT_MS = 10_000;
 export const PUBLIC_SECTION_PATHS = [
-  "section/pm-approval/",
   "section/election-polls/",
   "section/betting-odds/",
-  "section/govt-approval/",
-  "section/gov-trust-trend/",
   "section/national-debt/",
   "section/gdp/",
   "section/economy/",
@@ -21,6 +18,13 @@ export const PUBLIC_SECTION_PATHS = [
   "section/nhs/",
   "section/migration/",
   "section/early-years/",
+];
+// Retired products are removed rather than kept alive as withdrawn pages
+// (docs/history/2026-10-07-retired-product-ledger.md); their old URLs must 404.
+export const RETIRED_SECTION_PATHS = [
+  "section/pm-approval/",
+  "section/govt-approval/",
+  "section/gov-trust-trend/",
   "section/uk-regions/",
   "section/policy-links/",
 ];
@@ -409,6 +413,7 @@ export async function verifyProduction({
     path,
     url: new URL(path, rootUrl).toString(),
   }));
+  const retiredUrls = RETIRED_SECTION_PATHS.map((path) => new URL(path, rootUrl).toString());
   const downloadUrls = PUBLIC_DOWNLOAD_SECTION_IDS.flatMap((section) =>
     ["json", "csv"].map((extension) => ({
       section,
@@ -439,6 +444,7 @@ export async function verifyProduction({
         fetchText(sitemapUrl, fetchImpl),
         fetchText(robotsUrl, fetchImpl),
         fetchText(feedUrl, fetchImpl),
+        ...retiredUrls.map((retiredUrl) => fetchResult(retiredUrl, fetchImpl)),
       ]);
       const sectionHtml = remaining.slice(0, sectionUrls.length);
       const downloadResults = remaining.slice(
@@ -448,6 +454,7 @@ export async function verifyProduction({
       const sitemapXml = remaining[sectionUrls.length + downloadUrls.length];
       const robotsTxt = remaining[sectionUrls.length + downloadUrls.length + 1];
       const feedXml = remaining[sectionUrls.length + downloadUrls.length + 2];
+      const retiredResults = remaining.slice(sectionUrls.length + downloadUrls.length + 3);
       let snapshotGeneratedAt;
       try {
         snapshotGeneratedAt = JSON.parse(snapshotJson)?.meta?.generatedAt;
@@ -480,11 +487,16 @@ export async function verifyProduction({
         ...verifySitemapXml(sitemapXml),
         ...verifyRobotsTxt(robotsTxt),
         ...verifyEvidenceFeed(feedXml, { allowedMissingSections }),
+        ...retiredUrls.flatMap((retiredUrl, index) =>
+          retiredResults[index]?.status === 404
+            ? []
+            : [`retired route ${retiredUrl} returned HTTP ${retiredResults[index]?.status ?? "unknown"} instead of 404`],
+        ),
       ];
 
       if (failures.length === 0) {
         log.info(
-          `Verified ${rootUrl} serves revision ${expectedRevision}, verified ready or explicitly degraded public data, the international comparison publication, all public section routes including UK in context, discovery metadata, sitemap, robots and RSS.`,
+          `Verified ${rootUrl} serves revision ${expectedRevision}, verified ready or explicitly degraded public data, the international comparison publication, all public section routes including UK in context, retired routes returning 404, discovery metadata, sitemap, robots and RSS.`,
         );
         return;
       }
