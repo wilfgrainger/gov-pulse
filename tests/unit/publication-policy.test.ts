@@ -88,7 +88,7 @@ const fixture = {
 };
 
 describe("publication decisions", () => {
-  it("publishes the verified first wave, holds unresolved feeds, retires old products, and fails closed for unknown identifiers", () => {
+  it("publishes the verified first wave, holds unresolved feeds, removes retired products, and fails closed for unknown identifiers", () => {
     expect(anyEvidencePublished()).toBe(true);
     expect(productCapabilityAvailable("home")).toBe(true);
     expect(productCapabilityAvailable("calendar")).toBe(false);
@@ -102,7 +102,9 @@ describe("publication decisions", () => {
     expect(publicationPublished("editionArchive")).toBe(true);
     expect(publicationHeld("nhsStats")).toBe(true);
     expect(publicationHeld("bettingOdds")).toBe(true);
-    expect(publicationRetired("pmApproval")).toBe(true);
+    // Retired products are removed from the active policy (see docs/history/2026-10-07-retired-product-ledger.md).
+    expect(publicationState("pmApproval")).toBeNull();
+    expect(publicationRetired("pmApproval")).toBe(false);
     expect(publicationState("unexpected")).toBeNull();
     expect(publicationDecision("nationalDebt")).toMatchObject({
       state: "published",

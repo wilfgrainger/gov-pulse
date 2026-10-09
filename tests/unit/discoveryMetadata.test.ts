@@ -81,10 +81,8 @@ describe("section discovery contract", () => {
       name: "UK in context",
       url: "https://public-data.org/section/uk-in-context/",
     });
-    expect(structuredDataForSection("pm-approval")).toMatchObject({
-      "@type": "Article",
-      articleSection: "Politics",
-    });
+    // Retired products are removed rather than described as withdrawn articles.
+    expect(structuredDataForSection("pm-approval")).toBeNull();
   });
 
   it("uses the primary source publication date rather than retrieval or snapshot generation time", () => {
