@@ -20,10 +20,10 @@
 
 ## Known defects and acceptance gaps
 
-| Severity | Finding | Required closure evidence |
+| Severity | Finding | Status / Closure evidence |
 |---|---|---|
-| High | Public snapshot says degraded while omitting missing required NHS; health names `nhsStats`. | Contract decision, consistent projection, regression test and production verification. |
-| High | Pages recovery can serve an old candidate projection without reapplying today's publication holds (PR #214 code path). | Regression scenario with a newly held source and stale seed; prove no alternate data leak. |
+| High | Public snapshot says degraded while omitting missing required NHS; health names `nhsStats`. | **Resolved**: `contracts/publication-policy.js` preserves `missingRequiredSections` on degraded snapshots; verified by unit and worker suites. |
+| High | Pages recovery can serve an old candidate projection without reapplying today's publication holds (PR #214 code path). | **Resolved**: `fetchSeedSnapshot` in `public-data-entry.js` and `queued-publication-entry.js` filters Pages seeds through `filterPublicationSnapshot`; strips held sources and rejects all-held seeds. Verified in worker tests. |
 | High | Publisher/archive use multiple KV writes; interruptions can leave edition index/detail/public state inconsistent. | Publish-after-write/commit manifest design with failure simulation and successful recovery. |
 | High | Collection fragments are shared per section, not scoped to a run. | Cross-run isolation, idempotency and failed-run tests. |
 | High | Pages seed withdrawal only occurs when all evidence sources are disabled, leaving a transition where one source is newly held while a prior seed remains deployable. | Test and verify the previously deployed seed transition, including direct Pages URLs and mixed enabled/held sources. |

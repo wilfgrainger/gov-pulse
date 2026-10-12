@@ -22,6 +22,7 @@ import {
   buildPublicSnapshotArtifact,
 } from "./public-snapshot.js";
 import { samePublicationEvidence } from "../contracts/publication-evidence.js";
+import { filterPublicationSnapshot } from "../contracts/publication-policy.js";
 import { buildPublicationDiagnostics } from "../contracts/publication-diagnostics.js";
 import { FEED_REGISTRY } from "./feed-registry.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
@@ -197,7 +198,7 @@ function jobsForDay(runId = "manual") {
   );
 }
 
-async function fetchSeedSnapshot(env, fetchImpl = fetch) {
+async function fetchSeedSnapshot(env, fetchImpl = fetch, now = new Date()) {
   const url = String(env?.STATIC_SNAPSHOT_SEED_URL || DEFAULT_SEED_URL).trim();
   if (!url) return null;
   try {
@@ -208,7 +209,10 @@ async function fetchSeedSnapshot(env, fetchImpl = fetch) {
     if (!response.ok) return null;
     assertSameHttpsHost(response, url, "Pages seed");
     const payload = await readResponseJson(response, { label: "Pages seed JSON" });
-    return isSnapshot(payload) ? payload : null;
+    if (!isSnapshot(payload)) return null;
+    const current = filterCurrentSnapshot(payload, now);
+    if (!current) return null;
+    return filterPublicationSnapshot(current);
   } catch {
     return null;
   }
@@ -266,7 +270,7 @@ function missingRequiredSections(snapshot) {
 async function publishFromCaches(env, options = {}) {
   const now = options.now ?? new Date();
   const current = await readCurrentPublication(env);
-  const seed = current ?? (await fetchSeedSnapshot(env, options.fetchImpl ?? fetch));
+  const seed = current ?? (await fetchSeedSnapshot(env, options.fetchImpl ?? fetch, now));
   const fragments = await publicationFragments(env, now);
   const contractsRecord = await kvGet(env, CONTRACT_CURRENT_RECORD_KEY);
   const merged = mergePublication(seed, fragments, contractsRecord, now);

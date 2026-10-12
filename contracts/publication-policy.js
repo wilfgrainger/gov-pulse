@@ -79,7 +79,7 @@ function filterPublicationSnapshot(input, config = PUBLICATION_CONFIG) {
   if (Object.keys(sources).length === 0) return null;
   const snapshot = { meta: { registryVersion: input.meta.registryVersion, generatedAt: input.meta.generatedAt, sources,
     ...(input.meta.publicationState ? { publicationState: input.meta.publicationState } : {}),
-    ...(input.meta.missingRequiredSections ? { missingRequiredSections: input.meta.missingRequiredSections.filter((id) => publicationEnabled(id, config)) } : {}),
+    ...(input.meta.missingRequiredSections ? { missingRequiredSections: [...input.meta.missingRequiredSections] } : {}),
     verifiedSections: (input.meta.verifiedSections ?? []).filter((id) => Object.hasOwn(sources, id)),
     measureCatalog: filterPublicationCatalog(input.meta.measureCatalog, config),
     ...(publicationEnabled("editionArchive", config) && input.meta.editionSummary ? { editionSummary: filterPublicationSummary(input.meta.editionSummary, config, input.meta.measureCatalog) } : {}),
