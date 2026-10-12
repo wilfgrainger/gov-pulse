@@ -25,8 +25,10 @@ export default async function Home() {
       </div>
 
       <main id="main-content">
-        <HomepageIntro />
-        <NationalEvidenceEdition initialEdition={initialEdition} />
+        <div className="home-front-page">
+          <HomepageIntro />
+          <NationalEvidenceEdition initialEdition={initialEdition} />
+        </div>
 
         <div className="mx-auto max-w-7xl px-4 pb-12 md:px-6 md:pb-16">
           <div className="my-8 border-b border-[var(--line)] pb-8">

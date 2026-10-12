@@ -9,6 +9,12 @@ function changeHeading(kind: string) {
   return "Method or definition change";
 }
 
+function changeBadge(kind: string) {
+  if (kind === "new-observation") return "NEW DATA";
+  if (kind === "revision") return "REVISION";
+  return "METHOD CHANGE";
+}
+
 function changeDescription(change: NonNullable<MetricsSnapshot["meta"]["editionSummary"]>["changes"][number], unit: string) {
   if (change.kind === "method-change") return "Definition or method changed; values are not treated as like-for-like.";
   if (change.kind === "metadata-change") return `Source metadata changed: ${(change.changedFields ?? []).join(", ") || "details not recorded"}. No numeric change is inferred.`;
@@ -34,10 +40,30 @@ export default function BriefingEdition({ snapshot }: { snapshot: MetricsSnapsho
     <section aria-labelledby="edition-changes-heading" className="border-y-2 border-foreground bg-white p-5 md:p-8">
       <p className="eyebrow">Verified publication record</p>
       <h2 id="edition-changes-heading" className="mt-2 text-3xl font-black">What changed in the accepted edition</h2>
-      {summary?.changes.length ? <ol className="mt-6 list-none divide-y divide-line p-0">{summary.changes.map((change, index) => <li key={`${change.measureId}-${change.period}-${change.kind}-${index}`} className="grid gap-2 py-4 sm:grid-cols-[minmax(10rem,0.35fr)_minmax(0,1fr)]">
-        <p className="font-bold">{changeHeading(change.kind)}<span className="block text-xs font-normal text-gray-600">{change.period ?? "Measure definition"} · {change.observedAt ?? "date unavailable"}{catalog?.measures[change.measureId] ? ` · ${catalog.measures[change.measureId].geography.label}` : ""}</span></p>
-        <div><p className="font-semibold">{catalog?.measures[change.measureId]?.label ?? change.measureId}: {changeDescription(change, catalog?.measures[change.measureId]?.unit ?? "")}</p><p className="mt-1 text-xs text-gray-600">Source edition {change.previousSourceEditionId ?? "no earlier catalog"} → {change.nextSourceEditionId}; revision {change.previousRevisionId ?? "none"} → {change.nextRevisionId}.</p><p className="text-xs text-gray-600">Source publication date {change.previousSourcePublishedAt?.slice(0, 10) ?? "not recorded"} → {change.nextSourcePublishedAt?.slice(0, 10) ?? catalog?.measures[change.measureId]?.publishedAt.slice(0, 10) ?? "not recorded"}.</p><SourceChangeLinks change={change} fallbackUrl={catalog?.measures[change.measureId]?.sourceUrl}/><Link href={`/measure/${encodeURIComponent(change.measureId)}/`} className="mt-2 inline-block text-sm font-bold underline">Inspect measure record →</Link></div>
-      </li>)}</ol> : <p role="status" className="mt-4 max-w-3xl text-sm leading-6 text-gray-700">{!summary ? "No comparable previous publication is archived for this edition. This briefing does not infer change from a missing baseline." : summary.previousEditionId === summary.id ? "The accepted edition is unchanged; no evidence changes were recorded." : summary.previousEditionId === null ? "No comparable previous publication is archived for this edition. This briefing does not infer change from a missing baseline." : summary.previousEditionId ? `No evidence changes were recorded against previous edition ${summary.previousEditionId}.` : "This stored edition does not record whether a comparable previous publication was available. No changes are inferred."}</p>}
+      {summary?.changes.length ? <ol className="briefing-change-list">{summary.changes.map((change, index) => {
+        const measure = catalog?.measures[change.measureId];
+        const badge = changeBadge(change.kind);
+        return <li key={`${change.measureId}-${change.period}-${change.kind}-${index}`} className="briefing-change-card" data-change-type={change.kind}>
+          <div className="briefing-change-card__meta">
+            <span className="briefing-change-badge" data-change-badge={badge}>{badge}</span>
+            <p>{change.period ?? "Measure definition"} · {change.observedAt ?? "date unavailable"}{measure ? ` · ${measure.geography.label}` : ""}</p>
+          </div>
+          <div>
+            <p className="briefing-change-card__heading">{changeHeading(change.kind)}</p>
+            <h3 className="briefing-change-card__title">{measure?.label ?? change.measureId}</h3>
+            <p className="briefing-change-card__description">{changeDescription(change, measure?.unit ?? "")}</p>
+            <SourceChangeLinks change={change} fallbackUrl={measure?.sourceUrl}/>
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+              <Link href={`/measure/${encodeURIComponent(change.measureId)}/`} className="text-sm font-bold underline underline-offset-4">Inspect measure record →</Link>
+            </div>
+            <details className="briefing-technical-record">
+              <summary>Technical change record</summary>
+              <p>Source edition {change.previousSourceEditionId ?? "no earlier catalog"} → {change.nextSourceEditionId}; revision {change.previousRevisionId ?? "none"} → {change.nextRevisionId}.</p>
+              <p>Source publication date {change.previousSourcePublishedAt?.slice(0, 10) ?? "not recorded"} → {change.nextSourcePublishedAt?.slice(0, 10) ?? measure?.publishedAt.slice(0, 10) ?? "not recorded"}.</p>
+            </details>
+          </div>
+        </li>;
+      })}</ol> : <p role="status" className="mt-4 max-w-3xl text-sm leading-6 text-gray-700">{!summary ? "No comparable previous publication is archived for this edition. This briefing does not infer change from a missing baseline." : summary.previousEditionId === summary.id ? "The accepted edition is unchanged; no evidence changes were recorded." : summary.previousEditionId === null ? "No comparable previous publication is archived for this edition. This briefing does not infer change from a missing baseline." : summary.previousEditionId ? `No evidence changes were recorded against previous edition ${summary.previousEditionId}.` : "This stored edition does not record whether a comparable previous publication was available. No changes are inferred."}</p>}
       {summary ? <p className="mt-5 border-t border-line pt-4 font-mono text-xs text-gray-600">Edition {summary.id} · published {summary.publishedAt.slice(0, 10)} · {summary.sourceEditionIds.length} source editions</p> : null}
       {summary ? <Link href={`/editions/${encodeURIComponent(summary.id)}`} className="mt-3 inline-block text-sm font-bold underline">Inspect this immutable archived edition →</Link> : <Link href="/editions/" className="mt-3 inline-block text-sm font-bold underline">Browse historical editions →</Link>}
     </section>

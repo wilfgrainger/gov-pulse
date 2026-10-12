@@ -205,6 +205,9 @@ describe("canonical evidence figure model", () => {
     expect(markup).toContain("Source: ONS Labour Force Survey estimate");
     expect(markup).toContain("sampling uncertainty and revision");
     expect(markup).toContain("Download selected observations:");
+    expect(markup).toContain('data-chart-language="public-data"');
+    expect(markup).toContain("var(--chart-series, #315f8f)");
+    expect(markup).toContain("Latest observation");
     expect(markup).toContain(">CSV</button>");
     expect(markup).toContain(">JSON</button>");
   });

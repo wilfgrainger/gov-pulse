@@ -20,7 +20,7 @@ export default function PageHeader({
     <header className="page-header v3-page-header px-4 py-8 md:px-6 md:py-10">
       <div className={`relative mx-auto max-w-7xl ${context ? "grid gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(16rem,0.55fr)] lg:items-center lg:gap-10" : ""}`}>
         <div>
-          <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+          <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
             <Link
               href="/"
               prefetch={false}
@@ -33,7 +33,7 @@ export default function PageHeader({
           </nav>
           <p className="eyebrow mb-4">{eyebrow}</p>
           <h1 className="page-title section-title max-w-5xl">{title}</h1>
-          <p className="mt-4 max-w-3xl text-base leading-7 text-[#565f6b] md:text-lg md:leading-8">
+          <p className="editorial-prose editorial-prose--wide mt-5 text-[var(--muted)]">
             {subtitle}
           </p>
         </div>

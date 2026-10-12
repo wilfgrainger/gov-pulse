@@ -21,5 +21,7 @@ describe("PageHeader", () => {
     expect(screen.getByRole("heading", { name: "Election polling" })).toBeInTheDocument();
     expect(screen.getByRole("complementary", { name: "Polling evidence guide" })).toBeInTheDocument();
     expect(screen.getByText(/14-day evidence window/i)).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Breadcrumb" })).toHaveClass("text-[var(--muted)]");
+    expect(screen.getByText("Verified pollster releases, shown one at a time.")).toHaveClass("text-[var(--muted)]");
   });
 });

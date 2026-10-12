@@ -137,3 +137,60 @@
     padding-top: 1rem;
   }
 }
+
+
+/* Homepage cover + edition form one continuous publication front page. */
+.home-front-page {
+  border-bottom: 1px solid var(--line);
+}
+
+.home-front-page .v3-home-cover {
+  border-bottom: 0;
+}
+
+.home-front-page #national-signals > div {
+  padding-top: 0;
+}
+
+.front-page-edition-bar {
+  display: grid;
+  gap: 0.9rem 1.5rem;
+  align-items: end;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 1rem 0 1.1rem;
+}
+
+.front-page-edition-bar__status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.front-page-edition-bar__status span {
+  border: 1px solid var(--line-strong);
+  padding: 0.32rem 0.5rem;
+}
+
+.front-page-edition-bar__status strong {
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.front-page-edition-bar__date {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.6875rem;
+}
+
+@media (min-width: 48rem) {
+  .front-page-edition-bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .front-page-edition-bar__date {
+    grid-column: 1 / -1;
+  }
+}

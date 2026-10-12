@@ -10,15 +10,6 @@ import EvidenceSearch from "./EvidenceSearch";
 import PublicationFreshnessIndicator from "./PublicationFreshnessIndicator";
 import SectionNavTopicsPanel from "./SectionNavTopicsPanel";
 
-const QUICK_LINK_IDS = [
-  "gdp",
-  "economy",
-  "nhs",
-  "migration",
-  "election-polls",
-  "crime-stats",
-] as const;
-
 export default function SectionNav({ sections: configuredSections }: { sections: CategoryGroup[] }) {
   const sections = useMemo(() => configuredSections.map((group) => ({ ...group, sections: group.sections.filter((section) => publicationRouteEnabled(`/section/${section.id}/`)) })).filter((group) => group.sections.length), [configuredSections]);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -28,12 +19,6 @@ export default function SectionNav({ sections: configuredSections }: { sections:
   const menuToggleRef = useRef<HTMLButtonElement>(null);
   const searchToggleRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
-
-  const allSections = useMemo(() => sections.flatMap((group) => group.sections), [sections]);
-  const quickLinks = QUICK_LINK_IDS.flatMap((id) => {
-    const section = allSections.find((item) => item.id === id);
-    return section ? [section] : [];
-  });
 
   const isActive = (id: string) => pathname?.replace(/\/$/, "") === `/section/${id}`;
 
@@ -105,19 +90,12 @@ export default function SectionNav({ sections: configuredSections }: { sections:
 
           <div className="edition-doors order-3 w-full md:order-none md:w-auto md:justify-self-center">
             <Link href="/" prefetch={false} aria-current={pathname === "/" ? "page" : undefined} className={`edition-door ${focusClasses}`}>Latest</Link>
-            <Link href="/explore/" prefetch={false} aria-current={pathname?.replace(/\/$/, "") === "/explore" ? "page" : undefined} className={`edition-door ${focusClasses}`}>Look up</Link>
+            <Link href="/explore/" prefetch={false} aria-current={pathname?.replace(/\/$/, "") === "/explore" ? "page" : undefined} className={`edition-door ${focusClasses}`}>Explore</Link>
             <Link href="/compare/" prefetch={false} aria-current={pathname?.replace(/\/$/, "") === "/compare" ? "page" : undefined} className={`edition-door ${focusClasses}`}>Compare</Link>
+            <Link href="/briefing/" prefetch={false} aria-current={pathname?.replace(/\/$/, "") === "/briefing" ? "page" : undefined} className={`edition-door ${focusClasses}`}>Briefing</Link>
           </div>
 
           <div className="ml-auto flex items-center gap-1 justify-self-end sm:gap-2">
-            <Link
-              href="/sources"
-              prefetch={false}
-              className={`hidden min-h-11 items-center px-2 text-sm font-semibold text-[var(--muted)] underline decoration-white/20 underline-offset-4 hover:text-[var(--accent-on-dark)] sm:inline-flex ${focusClasses}`}
-              aria-current={pathname === "/sources" ? "page" : undefined}
-            >
-              Sources
-            </Link>
             <button
               ref={searchToggleRef}
               type="button"
@@ -142,34 +120,6 @@ export default function SectionNav({ sections: configuredSections }: { sections:
               <span>Topics</span>
               <span aria-hidden="true" className={`text-base transition-transform ${menuOpen ? "rotate-45" : ""}`}>+</span>
             </button>
-          </div>
-        </div>
-
-        <div className="edition-quick-rail hidden md:block">
-          <div className="mx-auto flex max-w-7xl items-center overflow-x-auto px-6 text-xs">
-            <Link
-              href="/"
-              prefetch={false}
-              className={`inline-flex min-h-11 shrink-0 items-center border-r border-[var(--line)] pr-4 font-semibold transition-colors hover:text-[var(--accent-on-dark)] ${focusClasses}`}
-              aria-current={pathname === "/" ? "page" : undefined}
-            >
-              Latest
-            </Link>
-            {quickLinks.map((section) => (
-              <Link
-                key={section.id}
-                href={`/section/${section.id}`}
-                prefetch={false}
-                className={`inline-flex min-h-11 shrink-0 items-center whitespace-nowrap border-r border-[var(--line)] px-3 font-medium transition-colors last:border-r-0 hover:text-[var(--accent-on-dark)] ${focusClasses} ${
-                  isActive(section.id)
-                    ? "bg-[var(--accent)] font-semibold text-white hover:bg-[var(--accent)] hover:text-white"
-                    : "text-[var(--muted)]"
-                }`}
-                aria-current={isActive(section.id) ? "page" : undefined}
-              >
-                {section.shortLabel ?? section.label}
-              </Link>
-            ))}
           </div>
         </div>
 

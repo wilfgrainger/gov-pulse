@@ -138,17 +138,46 @@
   color: var(--foreground);
 }
 
-.edition-quick-rail {
+
+
+/* Missing evidence is a publication state, not a broken-card treatment. */
+.evidence-unavailable-shell {
+  position: relative;
+  overflow: hidden;
+}
+
+.evidence-unavailable-shell::after {
+  content: "FAIL CLOSED · NO SUBSTITUTE VALUE";
+  display: block;
+  margin-top: 1.4rem;
   border-top: 1px solid var(--line);
-  background: #080a0c;
-}
-
-.edition-quick-rail a {
+  padding-top: 0.8rem;
   color: var(--muted);
-  border-color: var(--line) !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
 }
 
-.edition-quick-rail a[aria-current="page"] {
-  background: var(--accent) !important;
-  color: #fff !important;
+[data-testid="signal-card"][data-evidence-state="unavailable"] {
+  background: #ece9e2 !important;
+  color: #3f4751 !important;
+}
+
+[data-testid="signal-card"][data-evidence-state="unavailable"] .headline-figure,
+[data-testid="signal-card"][data-evidence-state="unavailable"] h4 {
+  color: #3f4751;
+}
+
+[data-testid="signal-card"][data-evidence-state="unavailable"]::before {
+  content: "REVERIFYING";
+  display: block;
+  width: fit-content;
+  margin-bottom: 0.8rem;
+  border: 1px solid #7a828c;
+  padding: 0.2rem 0.42rem;
+  color: #5b6470;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
 }

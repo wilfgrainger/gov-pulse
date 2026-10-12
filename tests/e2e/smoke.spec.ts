@@ -56,7 +56,7 @@ async function assertPulseApp(page: Parameters<typeof test>[0]["page"]) {
   await expect(page.getByRole("link", { name: /Explore the data/i })).toBeVisible();
   await expect(page.getByRole("link", { name: "Read the latest briefing" })).toBeVisible();
   await expect(page.locator("header").getByRole("link", { name: "Sources and dates" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Latest figures" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What changed in Britain" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "The country at a glance" })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Go deeper by topic/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Number, period, source." })).toHaveCount(0);

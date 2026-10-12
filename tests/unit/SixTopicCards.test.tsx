@@ -65,6 +65,7 @@ describe("Six topic cards", () => {
     for (const card of others) {
       expect(card.getAttribute("data-evidence-state")).toBe("unavailable");
       expect(card.textContent).toContain("Current value unavailable");
+      expect(card.textContent).toContain("No older value is substituted.");
       expect(card.textContent).not.toMatch(/(^|\D)0(\.0)?%/);
     }
   });
@@ -78,6 +79,15 @@ describe("Six topic cards", () => {
     expect(nhs?.textContent).toContain("NHS waiting list");
     expect(nhs?.textContent).toContain("England");
     expect(nhs?.textContent).not.toMatch(/pathways/);
+  });
+
+
+  it("uses editorial card sizes based on evidence richness", () => {
+    render(<NationalEvidenceEdition initialEdition={selectNationalEvidenceEdition(debtOnlySnapshot())} />);
+    const cards = within(screen.getByTestId("topic-cards")).getAllByTestId("signal-card");
+    const debt = cards.find((card) => card.getAttribute("href") === "/section/national-debt");
+    expect(debt?.getAttribute("data-card-size")).toBe("feature");
+    expect(cards.filter((card) => card !== debt).every((card) => card.getAttribute("data-card-size") === "compact")).toBe(true);
   });
 
   it("keeps debt as the lead while the other topics are unavailable", () => {
