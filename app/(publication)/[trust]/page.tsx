@@ -140,10 +140,16 @@ export default async function TrustPageRoute({
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:block focus:bg-white focus:p-4"
+      >
+        Skip to page content
+      </a>
       <div className="sticky top-0 z-50 bg-white">
         <SectionNav sections={SECTIONS} />
       </div>
-      <main>
+      <main id="main-content">
         <header className="border-b border-black/15 px-4 py-10 md:px-6 md:py-14">
           <div className="mx-auto max-w-5xl">
             <p className="text-sm font-semibold text-accent">{page.eyebrow}</p>
