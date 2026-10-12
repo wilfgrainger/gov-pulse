@@ -148,4 +148,46 @@ describe("partial publication finalisation", () => {
       result.publicationResult?.publication
     );
   });
+
+  it("isolates run-scoped fragments so concurrent or separate runs do not cross-contaminate", async () => {
+    const startedAt = new Date("2026-07-18T03:17:00.000Z");
+    const current = currentSnapshot();
+
+    const run1Gdp = { headline: { monthlyGrowth: 0.8, period: "June 2026" } };
+    const run2Gdp = { headline: { monthlyGrowth: 0.1, period: "June 2026" } };
+
+    const { env, store } = kvEnv({
+      [PUBLICATION_CURRENT_KEY]: current,
+    });
+    const { run: run1 } = await createRun(env, startedAt);
+    const { run: run2 } = await createRun(env, new Date("2026-07-18T03:18:00.000Z"));
+
+    store.set(`${RUN_PREFIX}${run1.runId}:section:gdpTracker`, {
+      section: "gdpTracker",
+      data: run1Gdp,
+      source: { status: "ok", cacheState: "fresh", fetchedAt: "2026-07-18T03:20:00.000Z" },
+      fetchedAt: "2026-07-18T03:20:00.000Z",
+    });
+    store.set(`${RUN_PREFIX}${run2.runId}:section:gdpTracker`, {
+      section: "gdpTracker",
+      data: run2Gdp,
+      source: { status: "ok", cacheState: "fresh", fetchedAt: "2026-07-18T03:21:00.000Z" },
+      fetchedAt: "2026-07-18T03:21:00.000Z",
+    });
+
+    for (const jobId of run1.expectedJobIds) {
+      store.set(`${RUN_PREFIX}${run1.runId}:terminal:${jobId}`, {
+        runId: run1.runId,
+        jobId,
+        status: "success",
+      });
+    }
+
+    const result1 = await finaliseRun(run1.runId, env, {
+      now: new Date("2026-07-18T03:43:00.000Z"),
+    });
+
+    expect(result1.publicationResult?.publication.gdpTracker).toEqual(run1Gdp);
+    expect(result1.publicationResult?.publication.gdpTracker).not.toEqual(run2Gdp);
+  });
 });

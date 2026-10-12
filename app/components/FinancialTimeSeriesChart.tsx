@@ -234,7 +234,10 @@ export default function FinancialTimeSeriesChart({
               .join(" · ")}
           </p>
         ) : null}
-        <ClientOnlyChart heightClass={heightClass}>
+        <ClientOnlyChart
+          heightClass={heightClass}
+          fallbackLabel="Interactive chart unavailable without JavaScript. The published observation history is provided in the data table below."
+        >
           <ResponsiveContainer
             width="100%"
             height="100%"
