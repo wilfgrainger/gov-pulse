@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { GET, renderRssFeed } from "@/app/feed.xml/route";
+import { GET } from "@/app/feed.xml/route";
+import { renderRssFeed } from "@/app/lib/rssFeed";
 import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
 import { SITE_DISCOVERY } from "@/app/lib/discovery";
 import type { MetricsSnapshot } from "@/app/lib/metricsSnapshot";

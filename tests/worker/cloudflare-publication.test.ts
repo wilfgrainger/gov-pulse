@@ -26,7 +26,8 @@ import {
 } from "@/worker/government-contracts-cloudflare";
 import { ukNationFromPostcode } from "@/contracts/government-contracts";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
-import { archiveEdition, readEdition } from "@/worker/edition-archive";
+import { archiveEdition, EDITION_INDEX_KEY, readEdition } from "@/worker/edition-archive";
+import { PUBLIC_SNAPSHOT_KEY } from "@/worker/public-snapshot";
 import { catalogRevisionIdentity } from "@/worker/measure-catalog";
 
 const REQUIRED = [
@@ -246,6 +247,23 @@ describe("Cloudflare data publication", () => {
     expect(env.METRICS_CACHE.get).not.toHaveBeenCalled();
     expect(env.METRICS_CACHE.put).not.toHaveBeenCalled();
     expect(waitUntil).not.toHaveBeenCalled();
+  });
+
+  it("does not publish a current snapshot when immutable edition archival fails", async () => {
+    const current = snapshot();
+    const { env, store } = kvEnv({ [PUBLICATION_CURRENT_KEY]: current });
+    const write = env.METRICS_CACHE.put;
+    env.METRICS_CACHE.put = vi.fn(async (key, value, options) => {
+      if (key === EDITION_INDEX_KEY) throw new Error("simulated archive index failure");
+      return write(key, value, options);
+    });
+
+    await expect(publishFromCaches(env, {
+      now: new Date("2026-07-18T03:30:00.000Z"),
+    })).rejects.toThrow("simulated archive index failure");
+
+    expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(current);
+    expect(store.has(PUBLIC_SNAPSHOT_KEY)).toBe(false);
   });
 
   it("overlays current fragments while retaining current last-known-good evidence", async () => {

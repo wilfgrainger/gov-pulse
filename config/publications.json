@@ -134,10 +134,10 @@
       "enabled": true
     },
     "storyHouseholdBudgets": {
-      "enabled": false
+      "enabled": true
     },
     "storyPublicFinances": {
-      "enabled": false
+      "enabled": true
     }
   }
 }

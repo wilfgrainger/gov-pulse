@@ -1,6 +1,8 @@
 import PUBLICATION_CONFIG from "../config/publications.json" with { type: "json" };
 import definitions from "./measure-definitions.json" with { type: "json" };
 
+const NON_SOURCE_PUBLICATION_IDS = new Set(["editionArchive", "storyHouseholdBudgets", "storyPublicFinances"]);
+
 /** @typedef {{publications: Record<string, {enabled: boolean, sections?: string[]}>}} PublicationConfig */
 /** @param {string} id @param {PublicationConfig} config */
 function publicationEnabled(id, config = PUBLICATION_CONFIG) {
@@ -9,6 +11,10 @@ function publicationEnabled(id, config = PUBLICATION_CONFIG) {
 /** @param {PublicationConfig} config */
 function anyPublicationEnabled(config = PUBLICATION_CONFIG) {
   return Object.values(config.publications).some((entry) => entry.enabled === true);
+}
+/** @param {PublicationConfig} config */
+function anyEvidenceSourceEnabled(config = PUBLICATION_CONFIG) {
+  return Object.entries(config.publications).some(([id, entry]) => !NON_SOURCE_PUBLICATION_IDS.has(id) && entry.enabled === true);
 }
 /** @param {string} id @param {PublicationConfig} config */
 function sectionPublication(id, config = PUBLICATION_CONFIG) {
@@ -25,8 +31,33 @@ function publicationRouteEnabled(path, config = PUBLICATION_CONFIG) {
   if (parts[0] === "measure" && parts[1]) return publicationEnabled(definitions.measures.find((entry) => entry.id === parts[1])?.section ?? "", config);
   if (parts[0] === "sources" && parts[1]) return publicationEnabled(parts[1], config);
   if (parts[0] === "calendar") return publicationEnabled("releaseCalendar", config) || publicationEnabled("nhsReleaseCalendar", config);
-  if (["explore", "measure", "compare", "briefing", "cost-of-living", "sources"].includes(parts[0]) || parts.length === 0) return anyPublicationEnabled(config);
+  if (["explore", "measure", "compare", "briefing", "cost-of-living", "sources"].includes(parts[0]) || parts.length === 0) return anyEvidenceSourceEnabled(config);
   return true;
+}
+
+/**
+ * Whether the application has a reader-facing route for this path.
+ *
+ * This is deliberately separate from publicationRouteEnabled: a held dataset
+ * can still have a useful methodology, search, calendar or comparison page.
+ * The publication policy continues to control whether evidence is returned.
+ * @param {string} path
+ * @param {PublicationConfig} config
+ */
+function productRouteAvailable(path, config = PUBLICATION_CONFIG) {
+  const pathname = path.split("?")[0].replace(/\/$/, "");
+  const parts = pathname.split("/").filter(Boolean);
+  if (parts.length === 0) return true;
+  if (parts[0] === "feed.xml") return true;
+  if (parts[0] === "section") return Boolean(parts[1] && sectionPublication(parts[1], config));
+  if (parts[0] === "sources" && parts[1]) return Object.hasOwn(config.publications, parts[1]);
+  if (parts[0] === "measure" && parts[1]) return definitions.measures.some((entry) => entry.id === parts[1]);
+  if (parts[0] === "editions") return publicationEnabled("editionArchive", config);
+  if (parts[0] === "stories") return publicationRouteEnabled(path, config);
+  if (["explore", "measure", "compare", "briefing", "cost-of-living", "sources", "calendar", "money"].includes(parts[0]) && parts.length === 1) {
+    return true;
+  }
+  return false;
 }
 
 /** @param {any} catalog @param {PublicationConfig} config */
@@ -57,4 +88,4 @@ function filterPublicationSnapshot(input, config = PUBLICATION_CONFIG) {
   return snapshot;
 }
 
-export { PUBLICATION_CONFIG, publicationEnabled, anyPublicationEnabled, sectionPublication, publicationRouteEnabled, filterPublicationCatalog, filterPublicationSummary, filterPublicationSnapshot };
+export { PUBLICATION_CONFIG, publicationEnabled, anyPublicationEnabled, anyEvidenceSourceEnabled, sectionPublication, publicationRouteEnabled, productRouteAvailable, filterPublicationCatalog, filterPublicationSummary, filterPublicationSnapshot };

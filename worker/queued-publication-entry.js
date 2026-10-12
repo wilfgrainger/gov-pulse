@@ -299,14 +299,14 @@ async function publishFromCaches(env, options = {}) {
         });
       }
     } catch (error) {
-      publication.meta.editionArchiveStatus = "unavailable";
       console.error("Publication edition archive failed", {
         editionId: publication.meta.measureCatalog.editionId,
         error: error instanceof Error ? error.message : String(error),
       });
+      throw error;
     }
   } else {
-    publication.meta.editionArchiveStatus = "unavailable";
+    throw new Error("Publication snapshot has no archivable measure edition");
   }
   publication.meta.delivery = "published-snapshot";
   publication.meta.publicationDiagnostics = buildPublicationDiagnostics(

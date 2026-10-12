@@ -18,6 +18,13 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
+  if (!publicationRouteEnabled(`/stories/${slug}/`)) {
+    return {
+      title: "Data publications are temporarily offline",
+      description: "Authored story publications are temporarily unavailable.",
+      robots: { index: false, follow: false },
+    };
+  }
   const story = stories.find((candidate) => candidate.slug === slug);
   return story ? { title: story.title, description: story.introduction, alternates: { canonical: `https://public-data.org/stories/${slug}/` } } : {};
 }

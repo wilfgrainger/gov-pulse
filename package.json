@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "build:check": "node scripts/generate-build-snapshot-module.mjs --optional-missing && node scripts/check-build-output.mjs",
     "start": "next start",
     "lint": "eslint",
