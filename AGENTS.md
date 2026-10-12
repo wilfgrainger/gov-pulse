@@ -3,12 +3,11 @@
 ## Product scope
 
 Build an ambitious, FiveThirtyEight-inspired UK evidence publication. The active
-round-two objective and execution sequence are in
-`docs/superpowers/plans/2026-10-02-publication-reinvention-round-2.md`. Its ten
-priorities are the product scope. Earlier plans, audits and design documents
-are historical context, not competing instructions. Architecture descriptions
-in this guide describe the current implementation; change them when the product
-needs a better design.
+objective and execution sequence are in `docs/v1/MASTER-DELIVERY-PLAN.md`. Its
+ten priorities are the product scope. The three reinvention plans under
+`docs/superpowers/plans/` are historical implementation evidence, not competing
+instructions. Architecture descriptions in this guide describe the current
+implementation; change them when the product needs a better design.
 
 Keep public evidence accurate and useful. Claims identify what was measured,
 period, geography, unit, publication date, primary source and material caveat.
