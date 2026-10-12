@@ -39,13 +39,14 @@ function publicationSnapshot(missing: string[] = [], now = new Date()) {
       });
     }
   }
-  const missingRequiredSections = [...missing].sort();
   return {
     meta: {
       registryVersion: "2026-08-02.1",
       sources,
-      publicationState: missingRequiredSections.length ? "degraded" : "ready",
-      missingRequiredSections,
+      publicProjection: {
+        state: "published",
+        publishedSections: Object.keys(sources).sort(),
+      },
     },
     ...sections,
   };
@@ -63,23 +64,19 @@ describe("degraded publication release contract", () => {
     expect(verifyHealthJson(health, { allowDegraded: true })).toEqual([]);
   });
 
-  it("accepts a snapshot missing only the section declared unavailable", () => {
+  it("accepts a published subset independently of degraded health", () => {
     const now = new Date("2026-10-02T18:00:00.000Z");
     const snapshot = JSON.stringify(publicationSnapshot(["migrationStats"], now));
 
-    expect(
-      verifySnapshotJson(snapshot, { allowedMissingSections: ["migrationStats"], now }),
-    ).toEqual([]);
+    expect(verifySnapshotJson(snapshot, { now })).toEqual([]);
   });
 
-  it("still rejects an undeclared missing required section", () => {
+  it("rejects a projection that claims evidence which is not exposed", () => {
     const payload = publicationSnapshot(["migrationStats"]);
-    delete payload.meta.missingRequiredSections;
-    delete payload.meta.publicationState;
-    const snapshot = JSON.stringify(payload);
+    payload.meta.publicProjection.publishedSections.push("migrationStats");
 
-    expect(verifySnapshotJson(snapshot)).toContain(
-      "public data snapshot is missing required section migrationStats",
+    expect(verifySnapshotJson(JSON.stringify(payload))).toContain(
+      "public data snapshot public projection is invalid",
     );
   });
 

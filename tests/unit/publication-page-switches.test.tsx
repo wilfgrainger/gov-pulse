@@ -9,6 +9,28 @@ import { GET } from "@/app/data/sections/[file]/route";
 import { renderRssFeed } from "@/app/feed.xml/route";
 import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
 
+vi.mock("@/config/publications.json", async (importOriginal) => {
+  const { default: config } = await importOriginal<{
+    default: { publications: Record<string, { state: string }> };
+  }>();
+  return {
+    default: {
+      ...config,
+      publications: Object.fromEntries(
+        Object.entries(config.publications).map(([id, entry]) => [
+          id,
+          {
+            ...entry,
+            state: ["nationalDebt", "editionArchive"].includes(id)
+              ? "published"
+              : "held",
+          },
+        ])
+      ),
+    },
+  };
+});
+
 vi.mock("@/app/lib/serverMetricsSnapshot", () => ({ readServerMetricsSnapshot: vi.fn(async () => null) }));
 vi.mock("@/app/components/SectionNav", () => ({ default: () => null }));
 vi.mock("@/app/components/NationalEvidenceEdition", () => ({ default: () => <div>National evidence</div> }));

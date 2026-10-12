@@ -1,5 +1,5 @@
 import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationEnabled } from "@/contracts/publication-policy";
+import { publicationPublished } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
 import PublicMoneyExplorer from "@/app/components/PublicMoneyExplorer";
 import PageHeader from "@/app/components/PageHeader";
@@ -11,14 +11,14 @@ import { isCurrentGovernmentContractsPayload } from "@/contracts/government-cont
 import { sumContractExclusions, type PublicAward } from "@/app/lib/publicMoney";
 
 export const metadata: Metadata = {
-  robots: { index: publicationEnabled("governmentContracts"), follow: true },
+  robots: { index: publicationPublished("governmentContracts"), follow: true },
   title: "Public money dossiers",
   description:
     "Inspect corrected government award notices and their disclosed value, buyer, supplier, revision and source links.",
 };
 
 export default async function PublicMoneyPage() {
-  if (!publicationEnabled("governmentContracts")) {
+  if (!publicationPublished("governmentContracts")) {
     return <PublicationOffline title="Public money is temporarily unavailable" />;
   }
 

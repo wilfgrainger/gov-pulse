@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { DATA_SOURCES } from "@/app/lib/config";
 import { DATA_SOURCE_DETAILS } from "@/app/lib/dataSourceDetails";
+import { sourceLinksForFeed } from "@/contracts/source-catalog.js";
 import type { MetricsResult } from "@/app/lib/useMetrics";
 import EvidenceClassBadge from "./EvidenceClassBadge";
 
@@ -18,42 +19,6 @@ interface MetricsStatusProps {
     | "observationStatus"
   >;
 }
-
-const SOURCE_URLS: Record<string, string> = {
-  "Verified primary pollster publications":
-    "https://yougov.com/en-gb/topics/topic/British_Politics",
-  "British Polling Council disclosure rules":
-    "https://www.britishpollingcouncil.org/objects-and-rules/",
-  "Oddschecker public politics markets": "https://www.oddschecker.com/politics",
-  "ONS Public Sector Finances":
-    "https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance",
-  "ONS GDP monthly estimate":
-    "https://www.ons.gov.uk/economy/grossdomesticproductgdp/bulletins/gdpmonthlyestimateuk",
-  "ONS CPI D7G7":
-    "https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7g7/mm23",
-  "Bank of England Bank Rate IUDBEDR":
-    "https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp",
-  "ONS unemployment MGSX":
-    "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/unemployment/timeseries/mgsx/lms",
-  "Cabinet Office Find a Tender OCDS award releases":
-    "https://www.find-tender.service.gov.uk/",
-  "ONS UK labour market bulletin":
-    "https://www.ons.gov.uk/employmentandlabourmarket",
-  "ONS Crime Survey for England and Wales":
-    "https://www.ons.gov.uk/peoplepopulationandcommunity/crimeandjustice",
-  "Home Office Police Recorded Crime":
-    "https://www.gov.uk/government/collections/crime-statistics",
-  "Ministry of Justice Criminal Court Statistics":
-    "https://www.gov.uk/government/collections/criminal-court-statistics",
-  "NHS England RTT statistical press notice":
-    "https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/",
-  "ONS Long-term international migration":
-    "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration",
-  "UKHSA COVER childhood vaccination statistics":
-    "https://www.gov.uk/government/statistics/cover-of-vaccination-evaluated-rapidly-cover-programme-annual-reports/vaccination-coverage-statistics-for-children-aged-up-to-5-years-england-cover-programme-report-april-2024-to-march-2025",
-  "DfE School Readiness":
-    "https://explore-education-statistics.service.gov.uk/find-statistics/early-years-foundation-stage-profile-results/2024-25",
-};
 
 function formatCheckDate(value: Date | null) {
   if (!value || Number.isNaN(value.getTime())) return null;
@@ -74,6 +39,7 @@ function formatCheckDate(value: Date | null) {
 export default function MetricsStatus({ section, status, showCurrentness = true }: MetricsStatusProps) {
   const meta = DATA_SOURCES[section];
   const detail = DATA_SOURCE_DETAILS[section];
+  const sourceLinks = sourceLinksForFeed(section);
   if (!meta || !detail) return null;
 
   const automatedUnavailable =
@@ -170,24 +136,21 @@ export default function MetricsStatus({ section, status, showCurrentness = true 
           <div>
             <h2 className="font-semibold text-foreground">Primary publications</h2>
             <ul className="mt-1 list-none space-y-1 p-0">
-              {meta.sources.map((source) => {
-                const url = SOURCE_URLS[source];
-                return (
-                  <li key={source}>
-                    {url ? (
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-semibold underline decoration-1 underline-offset-4 hover:text-accent"
-                        aria-label={`Open ${source} source website`}
-                      >
-                        {source}
-                      </a>
-                    ) : <span className="font-semibold">{source}</span>}
-                  </li>
-                );
-              })}
+              {sourceLinks.length > 0 ? sourceLinks.map((source) => (
+                <li key={`${source.sourceId}:${source.url}`}>
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-semibold underline decoration-1 underline-offset-4 hover:text-accent"
+                    aria-label={`Open ${source.label} source website`}
+                  >
+                    {source.label}
+                  </a>
+                </li>
+              )) : meta.sources.map((source) => (
+                <li key={source}><span className="font-semibold">{source}</span></li>
+              ))}
             </ul>
           </div>
           <div>

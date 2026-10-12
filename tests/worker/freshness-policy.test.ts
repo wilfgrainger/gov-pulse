@@ -1,11 +1,17 @@
 // @vitest-environment node
 
 import { describe, expect, it } from "vitest";
-import { sectionDescriptors } from "@/worker/index";
+import { FEED_REGISTRY } from "@/worker/feed-registry";
 import {
   applyFreshnessPolicy,
   SECTION_FRESH_TTL_SECONDS,
 } from "@/worker/freshness-policy";
+
+function registryDescriptors() {
+  return Object.fromEntries(
+    Object.keys(FEED_REGISTRY).map((section) => [section, { source: section, freshTtlSeconds: 0 }]),
+  ) as Record<string, { source: string; freshTtlSeconds: number }>;
+}
 
 describe("worker freshness policy", () => {
   it("matches the publication-aware retrieval windows", () => {
@@ -25,11 +31,12 @@ describe("worker freshness policy", () => {
     });
   });
 
-  it("applies every configured window to the production Worker descriptors", () => {
+  it("applies every configured window to the feed-registry section descriptors", () => {
+    const descriptors = applyFreshnessPolicy(registryDescriptors());
     for (const [section, freshTtlSeconds] of Object.entries(
       SECTION_FRESH_TTL_SECONDS
     )) {
-      expect(sectionDescriptors[section].freshTtlSeconds).toBe(
+      expect(descriptors[section].freshTtlSeconds).toBe(
         freshTtlSeconds
       );
     }
@@ -42,7 +49,7 @@ describe("worker freshness policy", () => {
 
     expect(() =>
       applyFreshnessPolicy({
-        ...sectionDescriptors,
+        ...registryDescriptors(),
         newlyAddedSection: { source: "Test", freshTtlSeconds: 100 },
       })
     ).toThrow(/section 'newlyAddedSection' is missing a freshness policy/i);

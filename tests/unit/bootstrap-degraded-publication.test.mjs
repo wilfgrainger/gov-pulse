@@ -2,7 +2,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import { bootstrapCloudflarePublication } from "../../scripts/bootstrap-cloudflare-publication.mjs";
-import { REQUIRED_PUBLISHED_SECTION_IDS } from "../../worker/feed-registry.js";
+import { FEED_REGISTRY_VERSION, REQUIRED_PUBLISHED_SECTION_IDS } from "../../worker/feed-registry.js";
 
 const SHA = "c".repeat(40);
 
@@ -47,10 +47,12 @@ function preparedSnapshot(missingSections = [], now = new Date()) {
   }
   return {
     meta: {
-      delivery: "published-snapshot",
-      publicationState: missingSections.length ? "degraded" : "ready",
-      missingRequiredSections: [...missingSections].sort(),
+      registryVersion: FEED_REGISTRY_VERSION,
       sources,
+      publicProjection: {
+        state: "published",
+        publishedSections: Object.keys(sources).sort(),
+      },
     },
     ...sections,
   };

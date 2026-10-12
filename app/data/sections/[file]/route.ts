@@ -2,7 +2,7 @@ import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
 import { SECTION_DOWNLOAD_IDS, sectionCsv, sectionDistribution } from "@/app/lib/sectionDownloads";
 import { filterCurrentSnapshot } from "@/worker/publication-currentness";
 import type { MetricsSnapshot } from "@/app/lib/metricsSnapshot";
-import { publicationEnabled } from "@/contracts/publication-policy";
+import { publicationPublished } from "@/contracts/publication-policy";
 
 export function generateStaticParams() {
   return SECTION_DOWNLOAD_IDS.flatMap((section) => [
@@ -18,7 +18,7 @@ export async function GET(_request: Request, context: { params: Promise<{ file: 
   if (!section || !SECTION_DOWNLOAD_IDS.some((id) => id === section)) {
     return new Response("Unknown section or format", { status: 404 });
   }
-  if (!publicationEnabled(section)) return new Response("Data publication is offline for verification", { status: 503, headers: { "Cache-Control": "no-store", "Content-Type": "text/plain; charset=utf-8" } });
+  if (!publicationPublished(section)) return new Response("Data publication is offline for verification", { status: 503, headers: { "Cache-Control": "no-store", "Content-Type": "text/plain; charset=utf-8" } });
   const candidate = await readServerMetricsSnapshot();
   const current = candidate && filterCurrentSnapshot(candidate, new Date()) as MetricsSnapshot | null;
   const distribution = current ? sectionDistribution(current, section) : null;

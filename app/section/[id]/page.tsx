@@ -20,7 +20,7 @@ import { filterCurrentSnapshot } from "@/worker/publication-currentness";
 import type { MetricsSnapshot } from "../../lib/metricsSnapshot";
 import PublicMoneyPage, { metadata as publicMoneyMetadata } from "../../money/page";
 import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationRouteEnabled } from "@/contracts/publication-policy";
+import { publicRouteAvailable } from "@/contracts/publication-policy";
 
 export function generateStaticParams() {
   return Object.keys(SECTION_CONTENT).map((id) => ({ id }));
@@ -32,7 +32,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  if (!publicationRouteEnabled(`/section/${id}/`)) return { ...publicMoneyMetadata, title: "Data publication temporarily offline" };
+  if (!publicRouteAvailable(`/section/${id}/`)) return { ...publicMoneyMetadata, title: "Data publication temporarily offline" };
   const discovery = SECTION_DISCOVERY[id];
   if (!discovery) return {};
 
@@ -75,11 +75,11 @@ export default async function SectionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  if (id === "government-contracts" && !publicationRouteEnabled(`/section/${id}/`)) return await PublicMoneyPage();
+  if (id === "government-contracts" && !publicRouteAvailable(`/section/${id}/`)) return await PublicMoneyPage();
   const section = SECTION_CONTENT[id as keyof typeof SECTION_CONTENT];
 
   if (!section) notFound();
-  if (!publicationRouteEnabled(`/section/${id}/`)) return <PublicationOffline title={`${section.title} is temporarily offline`} />;
+  if (!publicRouteAvailable(`/section/${id}/`)) return <PublicationOffline title={`${section.title} is temporarily offline`} />;
 
   const SectionComponent = section.component;
   const structuredData = structuredDataForSection(id);

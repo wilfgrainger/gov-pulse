@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 import { cache } from "react";
-import { publicationEnabled } from "@/contracts/publication-policy";
+import { publicationPublished } from "@/contracts/publication-policy";
 import {
   isInternationalComparisonPublication,
   type InternationalComparisonPublication,
@@ -11,7 +11,7 @@ const PRODUCTION_COMPARISON_URL =
 
 export const readServerInternationalComparison = cache(
   async (): Promise<InternationalComparisonPublication | null> => {
-    if (!publicationEnabled("internationalComparison")) return null;
+    if (!publicationPublished("internationalComparison")) return null;
     if (process.env.STATIC_EXPORT === "true") return null;
 
     await connection();

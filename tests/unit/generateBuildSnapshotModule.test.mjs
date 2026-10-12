@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
-import { publicCandidate } from "../../scripts/fetch-cloudflare-publication-candidate.mjs";
+import { publicSnapshot } from "../../worker/public-snapshot.js";
 import {
   generateBuildSnapshotModule,
   validateBuildSnapshot,
@@ -128,7 +128,7 @@ describe("build snapshot module generator", () => {
     );
     sections.electionPolling = { value: "=HYPERLINK(\"bad\")" };
 
-    const candidate = publicCandidate(
+    const candidate = publicSnapshot(
       {
         meta: {
           registryVersion: FEED_REGISTRY_VERSION,
@@ -141,8 +141,7 @@ describe("build snapshot module generator", () => {
           sources,
         },
         ...sections,
-      },
-      new Date(now)
+      }
     );
 
     expect(candidate.meta.publicationMode).toBeUndefined();

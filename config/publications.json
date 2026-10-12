@@ -1,143 +1,150 @@
 {
-  "version": 1,
+  "version": 2,
   "publications": {
-    "pmApproval": {
-      "enabled": false,
-      "sections": [
-        "pm-approval"
-      ]
-    },
     "electionPolling": {
-      "enabled": false,
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified primary pollster publication contract is approved for public release.",
       "sections": [
         "election-polls"
       ]
     },
     "bettingOdds": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "Market collection may continue while public exposure is re-baselined.",
       "sections": [
         "betting-odds"
       ]
     },
-    "polarizationMeter": {
-      "enabled": false,
-      "sections": [
-        "govt-approval"
-      ]
-    },
-    "trendLines": {
-      "enabled": false,
-      "sections": [
-        "gov-trust-trend"
-      ]
-    },
     "nationalDebt": {
-      "enabled": true,
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified national debt evidence is approved for public release.",
       "sections": [
         "national-debt"
       ]
     },
     "gdpTracker": {
-      "enabled": false,
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified ONS GDP source and collector contract are approved for public release.",
       "sections": [
         "gdp"
       ]
     },
     "sentimentPulse": {
-      "enabled": false,
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified ONS CPI, ONS unemployment and Bank of England Bank Rate sources are approved for public release.",
       "sections": [
         "economy"
       ]
     },
     "taxRevenue": {
-      "enabled": false,
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified ONS public-sector-finance receipts source and collector contract are approved for public release.",
       "sections": [
         "tax"
       ]
     },
     "governmentContracts": {
-      "enabled": false,
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified Find a Tender collection and bounded award-publication contract are approved for public release.",
       "sections": [
         "government-contracts"
       ]
     },
     "employmentStats": {
-      "enabled": false,
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified ONS labour-market source and collector contract are approved for public release.",
       "sections": [
         "employment"
       ]
     },
     "crimeStatistics": {
-      "enabled": false,
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified ONS, Home Office and Ministry of Justice crime evidence contracts are approved for public release.",
       "sections": [
         "crime-stats"
       ]
     },
     "nhsStats": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "NHS evidence remains held from public release while the supported collection path is resolved.",
       "sections": [
         "nhs"
       ]
     },
     "migrationStats": {
-      "enabled": false,
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified ONS long-term migration source and collector contract are approved for public release.",
       "sections": [
         "migration"
       ]
     },
     "housePriceIndex": {
-      "enabled": false,
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified ONS private-rent and UK HPI source and collector contract are approved for public release.",
       "sections": [
         "house-price-index"
       ]
     },
     "realWages": {
-      "enabled": false,
+      "state": "published",
+      "reasonCode": "published-verified",
+      "reason": "Verified ONS real-earnings source and collector contract are approved for public release.",
       "sections": [
         "real-wages"
       ]
     },
     "earlyYears": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "Dated early-years evidence remains held while the public product is re-baselined.",
       "sections": [
         "early-years"
       ]
     },
-    "geographicHeatmap": {
-      "enabled": false,
-      "sections": [
-        "uk-regions"
-      ]
-    },
-    "echoChamberMap": {
-      "enabled": false,
-      "sections": [
-        "policy-links"
-      ]
-    },
-    "politicalCompass": {
-      "enabled": false
-    },
     "releaseCalendar": {
-      "enabled": false
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "Release-calendar publication is held while the public product is re-baselined."
     },
     "nhsReleaseCalendar": {
-      "enabled": false
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "NHS release-calendar publication is held while the public product is re-baselined."
     },
     "internationalComparison": {
-      "enabled": false,
+      "state": "held",
+      "reasonCode": "rework-publication-hold",
+      "reason": "International comparison evidence is held while the public product is re-baselined.",
       "sections": [
         "uk-in-context"
       ]
     },
     "editionArchive": {
-      "enabled": true
+      "state": "published",
+      "reasonCode": "published-accountability",
+      "reason": "The public edition archive remains available for publication accountability."
     },
     "storyHouseholdBudgets": {
-      "enabled": false
+      "state": "held",
+      "reasonCode": "product-hold",
+      "reason": "The household-budgets story is held until its underlying evidence is republished."
     },
     "storyPublicFinances": {
-      "enabled": false
+      "state": "held",
+      "reasonCode": "product-hold",
+      "reason": "The public-finances story is held until its underlying evidence is republished."
     }
   }
 }

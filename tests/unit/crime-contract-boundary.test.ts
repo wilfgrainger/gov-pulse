@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const contractPath = "contracts/crime-statistics.js";
 const collectorPath = "worker/live-crime-collector.js";
-const justicePath = "data/crime/moj-court-publication.js";
+const retiredJusticePath = "data/crime/moj-court-publication.js";
 
 function source(path: string) {
   return fs.readFileSync(path, "utf8");
@@ -27,18 +27,18 @@ describe("modular official-publication boundary", () => {
     expect(wrapper).not.toContain("year ending December 2025");
   });
 
-  it("keeps the current MoJ module separate from the ONS collector", () => {
-    const justice = source(justicePath);
+  it("does not embed dated MoJ court figures in the collector or repository", () => {
+    // Retired: justice evidence stays unavailable until a current MoJ edition
+    // is collected and verified (docs/history/2026-10-07-retired-product-ledger.md).
     const collector = source(collectorPath);
-    expect(justice).toContain("January to March 2026");
-    expect(justice).toContain("52 days");
+    expect(fs.existsSync(retiredJusticePath)).toBe(false);
     expect(collector).not.toContain("MOJ_COURT_PUBLICATION");
     expect(collector).toContain("not presented as current evidence");
     expect(collector).toContain("modulesValidatedIndependently: true");
   });
 
   it("records a bounded dependency-free footprint", () => {
-    const sources = [contractPath, collectorPath, justicePath].map(source);
+    const sources = [contractPath, collectorPath].map(source);
     const rawBytes = sources.reduce(
       (total, contents) => total + Buffer.byteLength(contents),
       0
