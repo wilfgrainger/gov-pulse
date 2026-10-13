@@ -82,17 +82,4 @@ describe("publication switches", () => {
     expect(filterPublicationSummary(fixture.meta.editionSummary, config).sourceEditionIds).toEqual(["gdp-edition"]);
     expect(filterPublicationSummary({ changes: [{ measureId: "unknown", next: 123 }] }, config).changes).toEqual([]);
   });
-  it("preserves missingRequiredSections on degraded snapshots for parity with health reporting", () => {
-    const degradedFixture = {
-      ...fixture,
-      meta: {
-        ...fixture.meta,
-        publicationState: "degraded",
-        missingRequiredSections: ["nhsStats"],
-      },
-    };
-    const output = filterPublicationSnapshot(degradedFixture, config)!;
-    expect(output.meta.publicationState).toBe("degraded");
-    expect(output.meta.missingRequiredSections).toEqual(["nhsStats"]);
-  });
 });

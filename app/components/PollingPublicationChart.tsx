@@ -201,10 +201,7 @@ export default function PollingPublicationChart<PartyKey extends string>({
         aria-label={`Scatter plot of individual poll publications for ${visiblePartyOrder.map((key) => partyMeta[key].label).join(", ") || "no selected parties"}. Period shown: ${range}. No average, uncertainty interval or trend line is shown. See the data table below for exact per-poll values and sample counts.`}
         className="border-t border-black/10 pt-3"
       >
-        <ClientOnlyChart
-          heightClass="h-[340px]"
-          fallbackLabel="Interactive scatter plot unavailable without JavaScript. Complete polling results are listed in the data table below."
-        >
+        <ClientOnlyChart heightClass="h-[340px]">
           <ResponsiveContainer
             width="100%"
             height="100%"

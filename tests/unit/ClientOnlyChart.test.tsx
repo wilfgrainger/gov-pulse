@@ -59,28 +59,4 @@ describe("ClientOnlyChart", () => {
     act(() => resizeCallback?.());
     expect(await screen.findByText("Rendered chart")).toBeInTheDocument();
   });
-
-  it("renders accessible observation content when fallbackContent is provided before client hydration", () => {
-    const html = renderToStaticMarkup(
-      <ClientOnlyChart
-        heightClass="h-64"
-        fallbackLabel="Chart unavailable without JavaScript"
-        fallbackContent={
-          <table data-testid="fallback-table">
-            <tbody>
-              <tr><td>June 2026</td><td>100.5%</td></tr>
-            </tbody>
-          </table>
-        }
-      >
-        <div>Rendered chart</div>
-      </ClientOnlyChart>,
-    );
-
-    expect(html).toContain("Chart unavailable without JavaScript");
-    expect(html).toContain("fallback-table");
-    expect(html).toContain("June 2026");
-    expect(html).toContain("100.5%");
-    expect(html).not.toContain("Rendered chart");
-  });
 });

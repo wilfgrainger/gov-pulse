@@ -299,6 +299,7 @@ async function publishFromCaches(env, options = {}) {
   const now = options.now ?? new Date();
   const current = await readCurrentPublication(env);
   const seed = current ?? (await fetchSeedSnapshot(env, options.fetchImpl ?? fetch, now));
+  const fragments = await publicationFragments(env, now);
   const fragments = await publicationFragments(env, now, options.runId);
   const contractsRecord = await kvGet(env, CONTRACT_CURRENT_RECORD_KEY);
   const merged = mergePublication(seed, fragments, contractsRecord, now);
@@ -651,6 +652,7 @@ async function finaliseRun(runId, env, options = {}) {
   let publicationResult = null;
   if (complete || successful.length > 0) {
     try {
+      publicationResult = await publishFromCaches(env, { ...options, now });
       publicationResult = await publishFromCaches(env, { ...options, now, runId: run.runId });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

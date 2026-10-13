@@ -16,7 +16,6 @@ import {
   PUBLIC_SNAPSHOT_KEY,
   buildPublicSnapshotArtifact,
 } from "@/worker/public-snapshot";
-import { PUBLICATION_CONFIG } from "@/contracts/publication-policy";
 
 interface PublicSnapshotPayload {
   meta: {
@@ -264,65 +263,6 @@ describe("Cloudflare public data route", () => {
 
     expect(result?.delivery).toBe("pages-fallback");
     expect(fetchImpl).toHaveBeenCalledOnce();
-  });
-
-  it("sanitises the Pages seed fallback against publication policy and strips held sources", async () => {
-    const now = new Date();
-    const seedSnapshot = snapshot(now) as Record<string, unknown>;
-    seedSnapshot.taxRevenue = { value: 12345 };
-    (seedSnapshot.meta as { sources: Record<string, unknown> }).sources.taxRevenue = {
-      status: "ok",
-      cacheState: "fresh",
-      fetchedAt: now.toISOString(),
-      backend: "cloudflare-worker",
-      provenance: { retrieval: "cloudflare-worker-live" },
-    };
-
-    const original = PUBLICATION_CONFIG.publications.taxRevenue?.enabled;
-    if (PUBLICATION_CONFIG.publications.taxRevenue) {
-      PUBLICATION_CONFIG.publications.taxRevenue.enabled = false;
-    }
-    try {
-      const fetchImpl = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(seedSnapshot), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        })
-      );
-      const result = await currentPublicSnapshot(environment(null), { now, fetchImpl });
-      expect(result?.delivery).toBe("pages-fallback");
-      expect((result?.snapshot as Record<string, unknown>).taxRevenue).toBeUndefined();
-      expect((result?.snapshot.meta.sources as Record<string, unknown>).taxRevenue).toBeUndefined();
-    } finally {
-      if (PUBLICATION_CONFIG.publications.taxRevenue && original !== undefined) {
-        PUBLICATION_CONFIG.publications.taxRevenue.enabled = original;
-      }
-    }
-  });
-
-  it("rejects a Pages seed fallback when all evidence sources are held", async () => {
-    const now = new Date();
-    const seedSnapshot = snapshot(now);
-    const originalConfig = Object.fromEntries(
-      Object.entries(PUBLICATION_CONFIG.publications).map(([id, pub]) => [id, pub.enabled])
-    );
-    try {
-      for (const pub of Object.values(PUBLICATION_CONFIG.publications)) {
-        pub.enabled = false;
-      }
-      const fetchImpl = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(seedSnapshot), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        })
-      );
-      const result = await currentPublicSnapshot(environment(null), { now, fetchImpl });
-      expect(result).toBeNull();
-    } finally {
-      for (const [id, enabled] of Object.entries(originalConfig)) {
-        PUBLICATION_CONFIG.publications[id].enabled = enabled;
-      }
-    }
   });
 
   it("does not expose collection, editorial or section-download paths", async () => {

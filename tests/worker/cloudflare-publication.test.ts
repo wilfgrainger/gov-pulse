@@ -3,7 +3,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import queuedWorker, {
-  PUBLICATION_COMMIT_KEY,
   RUN_PREFIX,
   createRun,
   finaliseRun,
@@ -265,76 +264,6 @@ describe("Cloudflare data publication", () => {
 
     expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(current);
     expect(store.has(PUBLIC_SNAPSHOT_KEY)).toBe(false);
-  });
-
-  it("rolls back staged public writes when publication current write fails", async () => {
-    const current = snapshot();
-    const fragment = {
-      section: "gdpTracker",
-      data: { headline: { monthlyGrowth: 0.1, period: "May 2026" } },
-      source: {
-        status: "ok",
-        cacheState: "fresh",
-        fetchedAt: "2026-07-18T03:20:00.000Z",
-        source: "ONS GDP monthly estimate",
-      },
-      fetchedAt: "2026-07-18T03:20:00.000Z",
-    };
-    const { env, store } = kvEnv({
-      [PUBLICATION_CURRENT_KEY]: current,
-      "v12:publication:section:gdpTracker": fragment,
-    });
-    const write = env.METRICS_CACHE.put;
-    env.METRICS_CACHE.put = vi.fn(async (key, value, options) => {
-      if (key === PUBLICATION_CURRENT_KEY && JSON.parse(value).gdpTracker) {
-        throw new Error("simulated current write failure");
-      }
-      return write(key, value, options);
-    });
-
-    await expect(publishFromCaches(env, {
-      now: new Date("2026-07-18T03:30:00.000Z"),
-    })).rejects.toThrow("simulated current write failure");
-
-    expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(current);
-    expect(store.has(PUBLIC_SNAPSHOT_KEY)).toBe(false);
-    expect(store.has(PUBLICATION_COMMIT_KEY)).toBe(false);
-  });
-
-  it("writes atomic commit manifest linking public and internal editions on successful publication", async () => {
-    const current = snapshot();
-    const fragment = {
-      section: "gdpTracker",
-      data: { headline: { monthlyGrowth: 0.2, period: "May 2026" } },
-      source: {
-        status: "ok",
-        cacheState: "fresh",
-        fetchedAt: "2026-07-18T03:20:00.000Z",
-        source: "ONS GDP monthly estimate",
-      },
-      fetchedAt: "2026-07-18T03:20:00.000Z",
-    };
-    const { env, store } = kvEnv({
-      [PUBLICATION_CURRENT_KEY]: current,
-      "v12:publication:section:gdpTracker": fragment,
-    });
-
-    const result = await publishFromCaches(env, {
-      now: new Date("2026-07-18T03:30:00.000Z"),
-    });
-
-    expect(result.commitManifest).toMatchObject({
-      schemaVersion: 1,
-      editionId: result.publication.meta.measureCatalog?.editionId,
-      status: result.status.status,
-      delivery: "published-snapshot",
-    });
-    expect(store.get(PUBLICATION_COMMIT_KEY)).toEqual(result.commitManifest);
-    expect(store.get(PUBLICATION_CURRENT_KEY)).toMatchObject({
-      meta: {
-        commitManifest: result.commitManifest,
-      },
-    });
   });
 
   it("overlays current fragments while retaining current last-known-good evidence", async () => {

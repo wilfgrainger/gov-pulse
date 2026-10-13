@@ -201,12 +201,12 @@ async function fetchSeedSnapshot(env, fetchImpl = fetch, now = new Date()) {
       return null;
     }
     assertSameHttpsHost(response, url, "Pages seed");
-    const raw = await readResponseJson(response, { label: "Pages seed JSON" });
-    const current = filterCurrentSnapshot(raw, now);
-    if (!current) return null;
-    const policyFiltered = filterPublicationSnapshot(current);
-    if (!policyFiltered) return null;
-    const candidate = withPublicationState(policyFiltered);
+    const candidate = withPublicationState(
+      filterCurrentSnapshot(
+        await readResponseJson(response, { label: "Pages seed JSON" }),
+        now,
+      )
+    );
     return isCompleteSnapshot(candidate) ? candidate : null;
   } catch {
     return null;

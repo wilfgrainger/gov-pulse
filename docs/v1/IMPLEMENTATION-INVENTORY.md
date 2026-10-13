@@ -31,35 +31,6 @@ Some implementation exists for all ten priorities: **10/10 have at least partial
 - A stale Pages seed can bypass new policy if recovery serves its projection unchanged. PR #214 has this latent code path. At audit time, public Pages snapshot returned 503, so no live held-source exposure was observed; direct KV inspection was unavailable.
 - No code feature state authorizes evidence activation. Keep all current publication holds.
 
-## Historical plan reconciliation (W0.02)
-
-The three earlier reinvention plans under `docs/superpowers/plans/` contain valuable implementation history, but are superseded for execution by [the master delivery plan](MASTER-DELIVERY-PLAN.md):
-
-1. **`2026-10-01-publication-reinvention.md` (Round 1)**:
-   - *Status*: Superseded.
-   - *Retained / Merged*: Lead history cards (PR #204), Contract dossier (PR #205), Place lookup (PR #206), One indicator compare (PR #207/#208), Polling table without averages (PR #209), Edition archive and read API (PR #210/#211), and Premium look (PR #212).
-   - *Retired*: The artificial Cloudflare Free tier operations budget ceiling (which previously constrained feature ambition) was explicitly retired in Round 2 and remains retired.
-
-2. **`2026-10-02-publication-reinvention-round-2.md` (Round 2)**:
-   - *Status*: Foundation carried forward; superseded as the active sequence by the V1 master plan.
-   - *Retained / Merged*: The ten reader priorities (P01–P10), fail-closed source verification, explicit unavailable states, semantic HTML/accessibility commitments, and no-synthetic-index invariant. Tasks 1–11 delivered code assets and test suites.
-   - *Open work carried into V1 Waves 1–5*: Tasks 12–16 (full populated comparison studio, live reader assurance, multi-viewport review, and ten-priority production sign-off) are mapped into V1 Waves 1, 2, 4, and 5.
-
-3. **`2026-10-03-publication-reinvention-round-two.md` (Round 2 execution record)**:
-   - *Status*: Historical execution ledger; superseded.
-   - *Carried forward*: Deployed receipts (e.g. 9 October live verification of `2ef54a4` and 12 October baseline of `5b67730`) are preserved in `docs/operations/revamp-progress.md` and `docs/v1/RELEASE-READINESS.md`.
-
-## Repository-wide duplication, orphan, and boundary audit (W0.03)
-
-- **Source and measure ownership**: Verified by `scripts/check-source-ownership.mjs` across 12 active sources, 5 withdrawn sources, and 5 withdrawn routes. Membership is owned by `worker/feed-registry.js` with public route mapping in `contracts/public-surfaces.json` and definitions in `contracts/measure-definitions.json`.
-- **Legacy ingestion retirement**: Verified by `tests/unit/legacy-ingestion-retirement.test.ts`. Unused legacy scrapers, synthetic models, and unbounded collectors are cleanly retired.
-- **Worker module typing**: Added `"type": "module"` to `worker/package.json` to ensure clean ES module parsing across the toolchain.
-- **Identified fragile boundaries to resolve in Wave 1**:
-  1. *Readiness contract mismatch*: `/data/health.json` and `/data/metrics-snapshot.json` degraded state parity (Defect 1).
-  2. *Pages fallback policy bypass*: Unfiltered seed consumption in worker recovery paths (Defect 2).
-  3. *Multi-KV publication atomicity*: Lack of an atomic commit manifest across publication artifacts (Defect 3).
-  4. *No-JS chart fallback*: `ClientOnlyChart` rendering a loading skeleton instead of accessible observation tables.
-
 ## Historical record handling
 
 The 1 October, 2 October round-two, and 3 October round-two plans contain useful implementation detail, but their old checkboxes and snapshots are not current proof. They remain preserved as historical evidence and are superseded for execution by [the master plan](MASTER-DELIVERY-PLAN.md). The prior `docs/operations/revamp-progress.md` remains the concise record of signed-off work and prior checks.
