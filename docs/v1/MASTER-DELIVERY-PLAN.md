@@ -82,6 +82,8 @@ Tasks: W0.01 record release, PR/CI, public route, configuration and endpoint evi
 
 Owners A02, A04, A13, A15. Agree canonical source/measure identity; publication decisions and fail-closed migration; public/private route ownership; currentness and revision semantics; immutable edition commit/recovery behavior; useful PR #214 changes; demonstrated duplication retirement; existing CI/release contracts; and an interface contract for feature work.
 
+**Current result:** Canonical domain ownership verified via `scripts/check-source-ownership.mjs` and `scripts/check-static-architecture.mjs`; fail-closed snapshot/health parity enforced (`contracts/publication-policy.js`); Pages seed policy filtering verified without held-evidence leaks (`worker/public-data-entry.js`); run-scoped fragment isolation implemented (`worker/queued-publication-entry.js`); staged publish-after-write with atomic `PUBLICATION_COMMIT_KEY` manifest and rollback protection implemented and verified with failure simulations (`tests/worker/cloudflare-publication.test.ts`); accessible server-rendered chart fallback delivered (`app/components/ClientOnlyChart.tsx`); full test suite (175 files, 1,134 tests) and lint passing 100%. **Wave 1 exit criteria are satisfied.** Active execution transitions to **Wave 2 — Complete the ten reader capabilities**.
+
 **Gate:** one owner per public evidence concept; no held evidence leaks; existing APIs remain compatible or have tested migration; named disposition for obsolete implementations; integration branch passes required `quality` check.
 
 ### Wave 2 — Complete the ten reader capabilities
