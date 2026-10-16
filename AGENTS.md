@@ -54,9 +54,11 @@ need and authorization.
 Deliver the complete user-requested outcome. Keep implementation clear and
 maintainable, but do not use simplicity, token economy or process as a reason to
 shrink design ambition, defer features, or limit architecture, routes, files,
-measures or validation. This repository's Cave Pony guidance controls response
-length only. No agent persona, team, recurring review ceremony or fixed commit
-cadence is required.
+measures or validation. Use `.agents/skills/caveman/SKILL.md` for concise routine
+chat responses by default, until the user asks for normal mode. Caveman controls
+communication style only; provide the detail the user requests and retain exact
+code, evidence, caveats and verification results. No agent persona, team,
+recurring review ceremony or fixed commit cadence is required.
 
 Run checks that meaningfully cover changed behavior and the affected production
 build mode. The required code gate is the quality aggregate in
