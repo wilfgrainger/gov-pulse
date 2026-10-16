@@ -10,7 +10,10 @@ const { readServerMetricsSnapshot, readEditionSummaries } = vi.hoisted(() => ({
 vi.mock("@/app/lib/serverMetricsSnapshot", () => ({ readServerMetricsSnapshot }));
 vi.mock("@/app/lib/serverEditionArchive", () => ({ readEditionSummaries }));
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.unstubAllEnvs();
+});
 
 const measure = (id: string, publisher: string, sourceUrl: string, value: number) => ({
   id,
@@ -102,6 +105,23 @@ describe("SourceDetailPage", () => {
     expect(screen.getByText("CPI inflation")).toBeInTheDocument();
     expect(screen.getByText("Official Bank Rate")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Primary publication" })).toHaveLength(2);
+  });
+
+  it("renders static source pages without resolving request-only search parameters", async () => {
+    vi.stubEnv("STATIC_EXPORT", "true");
+    const requestOnlySearchParams = {
+      then() {
+        throw new Error("Static source pages must not read search parameters");
+      },
+    } as unknown as Promise<{ measure?: string | string[] }>;
+
+    const page = await SourceDetailPage({
+      params: Promise.resolve({ id: "sentimentPulse" }),
+      searchParams: requestOnlySearchParams,
+    });
+    render(page);
+
+    expect(screen.getByRole("heading", { level: 1, name: "Series-level economic indicators" })).toBeInTheDocument();
   });
 });
 

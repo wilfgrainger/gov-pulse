@@ -1,7 +1,8 @@
 import { vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import SourcesPage, { SOURCE_GROUPS } from "@/app/sources/page";
+import SourcesPage from "@/app/sources/page";
+import { SOURCE_GROUPS } from "@/app/lib/sourceGroups";
 
 afterEach(() => {
   cleanup();

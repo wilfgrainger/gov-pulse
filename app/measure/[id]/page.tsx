@@ -1,5 +1,5 @@
-import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationRouteEnabled } from "@/contracts/publication-policy";
+import EvidenceHoldNotice from "@/app/components/EvidenceHoldNotice";
+import { publicationEnabled } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -18,13 +18,17 @@ import { sourceHistoryHref } from "@/app/lib/sourceHistory";
 
 async function findMeasure(id: string) {
   const definition = MEASURES.find((item) => item.id === id) ?? null;
+  if (!definition) return { definition, measure: null, reason: null };
+  if (!publicationEnabled(definition.section)) {
+    return { definition, measure: null, reason: "This source is held from publication; no observation is shown." };
+  }
   const snapshot = await readServerMetricsSnapshot();
   const measure = snapshot?.meta.measureCatalog
     ? measureForDisplay(snapshot.meta.measureCatalog, id, new Date())
     : null;
-  const source = definition ? snapshot?.meta.sources[definition.section] : null;
+  const source = snapshot?.meta.sources[definition.section];
   const status = source && typeof source === "object" ? (source as { status?: string }).status : undefined;
-  const reason = !definition ? null : measure?.availability === "historical"
+  const reason = measure?.availability === "historical"
     ? "This verified publication is outside its current validity window. The chart is retained as historical evidence."
     : measure ? null
       : !snapshot ? "No current national evidence edition is available."
@@ -76,9 +80,9 @@ function comparablePointChange(measure: NonNullable<Awaited<ReturnType<typeof fi
 
 export default async function MeasureDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  if (!publicationRouteEnabled(`/measure/${id}/`)) return <PublicationOffline />;
   const { definition, measure, reason } = await findMeasure(id);
   if (!definition) notFound();
+  const evidenceHeld = !publicationEnabled(definition.section);
   const comparisonWindow = measure?.points.length
     ? { start: measure.points[0].observedAt, end: measure.points.at(-1)!.observedAt }
     : measure?.observationPeriod ?? { start: "2020-01-01", end: new Date().toISOString().slice(0, 10) };
@@ -91,6 +95,7 @@ export default async function MeasureDetailPage({ params }: { params: Promise<{ 
     <main id="measure-evidence">
       <PageHeader eyebrow={`${measure ? measure.evidenceClass.replaceAll("-", " ") : definition.topic} · ${measure?.availability ?? "unavailable"}`} title={measure?.label ?? definition.label} subtitle={measure?.basis ?? definition.basis} current="Measure library" />
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-12">
+        {evidenceHeld ? <div className="mb-6"><EvidenceHoldNotice id="measure-publication-held" /></div> : null}
         {measure ? <>
           {measure.availability === "historical" ? <p role="status" className="mb-6 border-l-4 border-[#8a5a12] bg-surface-warm p-4 text-sm">This verified publication is retained as historical evidence; it is outside its current validity window.</p> : null}
           <section aria-labelledby="measure-latest-title" className="measure-lead mb-6 grid gap-4 border-y-2 border-foreground bg-[#e8f2ef] p-5 sm:p-6 min-[54rem]:grid-cols-[minmax(0,1fr)_minmax(16rem,0.7fr)] min-[54rem]:items-center">

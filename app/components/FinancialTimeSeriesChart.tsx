@@ -234,7 +234,35 @@ export default function FinancialTimeSeriesChart({
               .join(" · ")}
           </p>
         ) : null}
-        <ClientOnlyChart heightClass={heightClass}>
+        <ClientOnlyChart
+          heightClass={heightClass}
+          fallbackLabel="Interactive chart unavailable without JavaScript. The published observation history is provided in the data table below."
+          fallbackContent={
+            <div className="flex h-full flex-col justify-center gap-3">
+              <p className="max-w-3xl text-sm leading-6 text-gray-700">
+                The interactive chart requires JavaScript. Without it, the
+                published figures remain available in the observation table
+                below.
+              </p>
+              {latest ? (
+                <p className="max-w-3xl text-sm leading-6 text-gray-700">
+                  <span className="font-semibold text-[#14243b]">
+                    Latest published values for {latest.period}:
+                  </span>{" "}
+                  {series
+                    .map((entry) => {
+                      const value = latest[entry.key];
+                      return `${entry.label} ${typeof value === "number" ? valueFormatter(value) : "not available"}`;
+                    })
+                    .join("; ")}
+                </p>
+              ) : null}
+              <p className="max-w-3xl text-xs leading-5 text-gray-600">
+                Observation window: {range}.
+              </p>
+            </div>
+          }
+        >
           <ResponsiveContainer
             width="100%"
             height="100%"

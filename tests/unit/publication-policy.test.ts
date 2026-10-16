@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { publicationEnabled, anyPublicationEnabled, filterPublicationSnapshot, filterPublicationSummary, sectionPublication, PUBLICATION_CONFIG } from "@/contracts/publication-policy";
+import { readFileSync } from "node:fs";
+import { publicationEnabled, anyPublicationEnabled, filterPublicationSnapshot, filterPublicationSummary, sectionPublication, publicationRouteEnabled, productRouteAvailable, PUBLICATION_CONFIG } from "@/contracts/publication-policy";
+import * as publicationPolicy from "@/contracts/publication-policy";
 import { FEED_REGISTRY, PUBLICATION_SOURCE_REGISTRY } from "@/worker/feed-registry";
 
 const config = { publications: { gdpTracker: { enabled: true }, taxRevenue: { enabled: false }, editionArchive: { enabled: true } } };
@@ -26,6 +28,41 @@ describe("publication switches", () => {
     expect(sectionPublication("government-contracts")).toBe("governmentContracts");
     expect(sectionPublication("national-debt")).toBe("nationalDebt");
   });
+  it("keeps authored story publication switches separate from their evidence sources", () => {
+    expect(publicationRouteEnabled("/stories/household-budgets/" )).toBe(true);
+    expect(publicationRouteEnabled("/stories/public-finances/" )).toBe(true);
+    const approvedStories = { publications: { storyHouseholdBudgets: { enabled: true }, storyPublicFinances: { enabled: true }, realWages: { enabled: false }, gdpTracker: { enabled: false } } };
+    expect(publicationRouteEnabled("/stories/household-budgets/", approvedStories)).toBe(true);
+    expect(publicationRouteEnabled("/stories/public-finances/", approvedStories)).toBe(true);
+    expect(publicationEnabled("realWages")).toBe(false);
+    expect(publicationEnabled("gdpTracker")).toBe(false);
+    expect(publicationEnabled("taxRevenue")).toBe(false);
+  });
+  it("withdraws the static data seed when only authored stories remain enabled", () => {
+    const storiesOnly = { publications: {
+      storyHouseholdBudgets: { enabled: true },
+      storyPublicFinances: { enabled: true },
+      nationalDebt: { enabled: false },
+      editionArchive: { enabled: false },
+    } };
+    expect(anyPublicationEnabled(storiesOnly)).toBe(true);
+    expect(publicationPolicy.anyEvidenceSourceEnabled?.(storiesOnly)).toBe(false);
+    expect(publicationPolicy.anyEvidenceSourceEnabled?.({ publications: { editionArchive: { enabled: true }, nationalDebt: { enabled: false } } })).toBe(false);
+
+    const deployWorkflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+    expect(deployWorkflow).toContain("anyEvidenceSourceEnabled");
+    expect(deployWorkflow).not.toContain("paused=${!anyPublicationEnabled()}");
+  });
+  it("keeps registered product routes available while evidence publication remains held", () => {
+    const heldConfig = { publications: { electionPolling: { enabled: false, sections: ["election-polls"] }, governmentContracts: { enabled: false, sections: ["government-contracts"] }, editionArchive: { enabled: true } } };
+    expect(publicationRouteEnabled("/section/election-polls/", heldConfig)).toBe(false);
+    expect(productRouteAvailable("/section/election-polls/", heldConfig)).toBe(true);
+    expect(productRouteAvailable("/money/", heldConfig)).toBe(true);
+    expect(productRouteAvailable("/calendar/", heldConfig)).toBe(true);
+    expect(productRouteAvailable("/measure/debt-ratio/", heldConfig)).toBe(true);
+    expect(productRouteAvailable("/section/not-registered/", heldConfig)).toBe(false);
+    expect(productRouteAvailable("/sources/not-registered/", heldConfig)).toBe(false);
+  });
   it("restores one source without exposing disabled sources in data, catalogs or revision summaries", () => {
     const output = filterPublicationSnapshot(fixture, config)!;
     expect(output.gdpTracker).toEqual({ value: 0.5 });
@@ -44,5 +81,18 @@ describe("publication switches", () => {
   it("redacts archived changes for disabled or unknown measures", () => {
     expect(filterPublicationSummary(fixture.meta.editionSummary, config).sourceEditionIds).toEqual(["gdp-edition"]);
     expect(filterPublicationSummary({ changes: [{ measureId: "unknown", next: 123 }] }, config).changes).toEqual([]);
+  });
+  it("preserves missingRequiredSections on degraded snapshots for parity with health reporting", () => {
+    const degradedFixture = {
+      ...fixture,
+      meta: {
+        ...fixture.meta,
+        publicationState: "degraded",
+        missingRequiredSections: ["nhsStats"],
+      },
+    };
+    const output = filterPublicationSnapshot(degradedFixture, config)!;
+    expect(output.meta.publicationState).toBe("degraded");
+    expect(output.meta.missingRequiredSections).toEqual(["nhsStats"]);
   });
 });

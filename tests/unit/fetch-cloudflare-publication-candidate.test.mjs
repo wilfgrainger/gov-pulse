@@ -83,8 +83,42 @@ describe("Cloudflare Pages publication candidate", () => {
 
     expect(candidate.meta).not.toHaveProperty("publicationMode");
     expect(candidate.meta).not.toHaveProperty("freeTierBudget");
-    expect(Object.keys(candidate.meta.sources)).toHaveLength(
-      REQUIRED_PUBLISHED_SECTION_IDS.length
-    );
+    expect(Object.keys(candidate.meta.sources)).toEqual(["nationalDebt"]);
+  });
+
+  it("applies the public publication switches after validating the complete candidate", () => {
+    const fullSnapshot = completeSnapshot();
+    fullSnapshot.meta.measureCatalog = {
+      schemaVersion: 2,
+      editionId: "complete-edition",
+      measures: {
+        debt: { sourceId: "nationalDebt", sourceEditionId: "debt-source-edition" },
+        gdp: { sourceId: "gdpTracker", sourceEditionId: "gdp-source-edition" },
+      },
+    };
+    fullSnapshot.meta.editionSummary = {
+      id: "complete-edition",
+      publishedAt: FETCHED_AT,
+      previousEditionId: "previous-edition",
+      sourceEditionIds: ["debt-source-edition", "gdp-source-edition"],
+      changes: [
+        { measureId: "debt", nextSourceEditionId: "debt-source-edition" },
+        { measureId: "gdp", nextSourceEditionId: "gdp-source-edition" },
+      ],
+    };
+
+    const candidate = publicCandidate(fullSnapshot, NOW);
+
+    expect(Object.keys(candidate.meta.sources)).toEqual(["nationalDebt"]);
+    expect(candidate).toHaveProperty("nationalDebt");
+    expect(candidate).not.toHaveProperty("gdpTracker");
+    expect(JSON.stringify(candidate)).not.toContain("gdpTracker");
+    expect(Object.keys(candidate.meta.measureCatalog.measures)).toEqual(["debt"]);
+    expect(candidate.meta.editionSummary.changes).toEqual([
+      { measureId: "debt", nextSourceEditionId: "debt-source-edition" },
+    ]);
+    expect(candidate.meta.editionSummary.sourceEditionIds).toEqual([
+      "debt-source-edition",
+    ]);
   });
 });

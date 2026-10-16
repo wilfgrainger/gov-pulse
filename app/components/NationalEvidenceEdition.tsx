@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { publicationRouteEnabled } from "@/contracts/publication-policy";
+import { productRouteAvailable } from "@/contracts/publication-policy";
 import { useEffect, useState } from "react";
 import { fetchMetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import {
@@ -16,7 +16,7 @@ import Reveal from "./Reveal";
 import TrendSparkline from "./TrendSparkline";
 
 function AwardNoticeContext() {
-  if (!publicationRouteEnabled("/money/")) return null;
+  if (!productRouteAvailable("/money/")) return null;
 
   return (
     <section aria-labelledby="award-notice-context-title" className="mt-12 border-y-2 border-foreground bg-surface-warm md:mt-16">
@@ -27,7 +27,7 @@ function AwardNoticeContext() {
             Contract awards show commitments, not cash paid.
           </h3>
           <p className="mt-4 max-w-3xl text-sm leading-6 text-gray-700 md:text-base">
-            Published notice values can cover several years, include framework ceilings or multiple lots, and change later. Check the original notice before comparing an award with public expenditure.
+            A disclosed notice value can cover several years, include framework ceilings or multiple lots, and change later. Check the original notice before comparing an award with public expenditure.
           </p>
         </div>
         <Link href="/money/" prefetch={false} className="v3-primary-action shrink-0">
@@ -147,13 +147,13 @@ export default function NationalEvidenceEdition({ initialEdition }: { initialEdi
               <h3 id="more-evidence-title" className="font-display mt-2 text-3xl leading-tight">Go deeper by topic.</h3>
             </div>
             <ul className="grid gap-px bg-[var(--line)] sm:grid-cols-2">
-              {DIRECT_EVIDENCE_LINKS.filter((item) => publicationRouteEnabled(item.href)).map((item) => (
-                <li key={item.href} className="bg-background">
+              {DIRECT_EVIDENCE_LINKS.filter((item) => productRouteAvailable(item.href)).map((item) => (
+                <li id={item.href === "/section/gdp" ? "gdp" : undefined} key={item.href} className="bg-background">
                   <Link href={item.href} prefetch={false} className="editorial-lift group flex min-h-28 items-start justify-between gap-4 bg-[var(--surface)] p-5 text-[var(--ink)] transition-colors hover:bg-[var(--surface-warm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]">
-                    <span>
-                      <span className="text-lg font-semibold">{item.label}</span>
+                    <div>
+                      <h4 className="text-lg font-semibold">{item.label}</h4>
                       <span className="mt-2 block text-sm leading-6 text-[#51565f]">{item.description}</span>
-                    </span>
+                    </div>
                     <span aria-hidden="true" className="text-[var(--accent)] transition-transform group-hover:translate-x-1">→</span>
                   </Link>
                 </li>

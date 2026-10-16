@@ -145,7 +145,7 @@ jobs:
 
       - name: Check publication controls
         id: publication-controls
-        run: node --input-type=module -e 'import {anyPublicationEnabled} from "./contracts/publication-policy.js"; console.log(`paused=${!anyPublicationEnabled()}`)' >> "$GITHUB_OUTPUT"
+        run: node --input-type=module -e 'import {anyEvidenceSourceEnabled} from "./contracts/publication-policy.js"; console.log(`paused=${!anyEvidenceSourceEnabled()}`)' >> "$GITHUB_OUTPUT"
 
       - name: Withdraw the public Pages seed while all publications are offline
         if: steps.publication-controls.outputs.paused == 'true'
@@ -187,12 +187,12 @@ jobs:
           --commit-hash "$GITHUB_SHA"
           --commit-message "Seed fallback $GITHUB_SHA"
 
-      - name: Verify Pages seed evidence download
+      - name: Verify Pages seed publication snapshot
         if: steps.pages-seed-candidate.outcome == 'success'
         run: >-
           curl --fail --silent --show-error
           --retry 20 --retry-all-errors --retry-delay 5
-          https://public-data-org.pages.dev/data/sections/gdpTracker.json
+          https://public-data-org.pages.dev/data/metrics-snapshot.json
           --output /dev/null
 
   recover-evidence:

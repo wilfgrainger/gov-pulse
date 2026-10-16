@@ -1,4 +1,5 @@
 import {
+  PUBLICATION_COMMIT_KEY,
   PUBLICATION_CURRENT_KEY,
   PUBLICATION_HISTORY_PREFIX,
   PUBLICATION_STATUS_KEY,
@@ -11,7 +12,7 @@ import {
   CURRENT_RECORD_KEY as CONTRACT_CURRENT_RECORD_KEY,
   refreshGovernmentContracts,
 } from "./government-contracts-cloudflare.js";
-import { REQUIRED_PUBLISHED_SECTION_IDS } from "./feed-registry.js";
+import { FEED_REGISTRY, FEED_REGISTRY_VERSION, REQUIRED_PUBLISHED_SECTION_IDS } from "./feed-registry.js";
 import { collectExternalSection } from "./live-feed-collectors.js";
 import {
   currentSectionRecord,
@@ -22,8 +23,8 @@ import {
   buildPublicSnapshotArtifact,
 } from "./public-snapshot.js";
 import { samePublicationEvidence } from "../contracts/publication-evidence.js";
+import { filterPublicationSnapshot } from "../contracts/publication-policy.js";
 import { buildPublicationDiagnostics } from "../contracts/publication-diagnostics.js";
-import { FEED_REGISTRY } from "./feed-registry.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
 import {
   INTERNATIONAL_COMPARISON_KEY,
@@ -113,6 +114,18 @@ async function kvPutText(env, key, value, options) {
   await env.METRICS_CACHE.put(key, value, options);
 }
 
+async function kvGetWithMetadata(env, key, type = "json") {
+  return env?.METRICS_CACHE?.getWithMetadata
+    ? env.METRICS_CACHE.getWithMetadata(key, type)
+    : null;
+}
+
+async function kvDelete(env, key) {
+  if (env?.METRICS_CACHE?.delete) {
+    await env.METRICS_CACHE.delete(key);
+  }
+}
+
 function runIdFor(now) {
   return now.toISOString().replaceAll(":", "-");
 }
@@ -197,7 +210,7 @@ function jobsForDay(runId = "manual") {
   );
 }
 
-async function fetchSeedSnapshot(env, fetchImpl = fetch) {
+async function fetchSeedSnapshot(env, fetchImpl = fetch, now = new Date()) {
   const url = String(env?.STATIC_SNAPSHOT_SEED_URL || DEFAULT_SEED_URL).trim();
   if (!url) return null;
   try {
@@ -208,17 +221,25 @@ async function fetchSeedSnapshot(env, fetchImpl = fetch) {
     if (!response.ok) return null;
     assertSameHttpsHost(response, url, "Pages seed");
     const payload = await readResponseJson(response, { label: "Pages seed JSON" });
-    return isSnapshot(payload) ? payload : null;
+    if (!isSnapshot(payload)) return null;
+    const current = filterCurrentSnapshot(payload, now);
+    if (!current) return null;
+    return filterPublicationSnapshot(current);
   } catch {
     return null;
   }
 }
 
-async function storeSectionFragment(section, env, ctx) {
+async function storeSectionFragment(section, env, ctx, runId = null) {
   if (!GENERIC_SECTIONS.includes(section)) {
     throw new Error(`Section '${section}' is outside the generic publication set`);
   }
   const record = await refreshSectionPayload(section, env, ctx);
+  if (typeof runId === "string" && runId.trim()) {
+    await kvPut(env, `${RUN_PREFIX}${runId}:section:${section}`, record, {
+      expirationTtl: RUN_TTL_SECONDS,
+    });
+  }
   await kvPut(env, `${PUBLICATION_SECTION_PREFIX}${section}`, record);
   return record;
 }
@@ -228,14 +249,25 @@ async function storeExternalSection(section, env, options = {}) {
     throw new Error(`Section '${section}' is outside the external publication set`);
   }
   const record = await collectExternalSection(section, options);
+  if (typeof options.runId === "string" && options.runId.trim()) {
+    await kvPut(env, `${RUN_PREFIX}${options.runId}:section:${section}`, record, {
+      expirationTtl: RUN_TTL_SECONDS,
+    });
+  }
   await kvPut(env, `${PUBLICATION_SECTION_PREFIX}${section}`, record);
   return record;
 }
 
-async function publicationFragments(env, now = new Date()) {
+async function publicationFragments(env, now = new Date(), runId = null) {
   const records = [];
   for (const section of PUBLISHED_SECTIONS) {
-    const record = await kvGet(env, `${PUBLICATION_SECTION_PREFIX}${section}`);
+    let record = null;
+    if (typeof runId === "string" && runId.trim()) {
+      record = await kvGet(env, `${RUN_PREFIX}${runId}:section:${section}`);
+    }
+    if (!record) {
+      record = await kvGet(env, `${PUBLICATION_SECTION_PREFIX}${section}`);
+    }
     if (
       record?.section === section &&
       isRecord(record.data) &&
@@ -266,8 +298,8 @@ function missingRequiredSections(snapshot) {
 async function publishFromCaches(env, options = {}) {
   const now = options.now ?? new Date();
   const current = await readCurrentPublication(env);
-  const seed = current ?? (await fetchSeedSnapshot(env, options.fetchImpl ?? fetch));
-  const fragments = await publicationFragments(env, now);
+  const seed = current ?? (await fetchSeedSnapshot(env, options.fetchImpl ?? fetch, now));
+  const fragments = await publicationFragments(env, now, options.runId);
   const contractsRecord = await kvGet(env, CONTRACT_CURRENT_RECORD_KEY);
   const merged = mergePublication(seed, fragments, contractsRecord, now);
   const currentCandidate = filterCurrentSnapshot(merged, now);
@@ -299,14 +331,14 @@ async function publishFromCaches(env, options = {}) {
         });
       }
     } catch (error) {
-      publication.meta.editionArchiveStatus = "unavailable";
       console.error("Publication edition archive failed", {
         editionId: publication.meta.measureCatalog.editionId,
         error: error instanceof Error ? error.message : String(error),
       });
+      throw error;
     }
   } else {
-    publication.meta.editionArchiveStatus = "unavailable";
+    throw new Error("Publication snapshot has no archivable measure edition");
   }
   publication.meta.delivery = "published-snapshot";
   publication.meta.publicationDiagnostics = buildPublicationDiagnostics(
@@ -314,19 +346,6 @@ async function publishFromCaches(env, options = {}) {
     Object.keys(FEED_REGISTRY),
   );
   const publicArtifact = buildPublicSnapshotArtifact(publication, now);
-
-  await kvPut(env, PUBLICATION_CURRENT_KEY, publication);
-  await kvPutText(env, PUBLIC_SNAPSHOT_KEY, publicArtifact.body, {
-    metadata: publicArtifact.metadata,
-  });
-  if (changed) {
-    await kvPut(
-      env,
-      `${PUBLICATION_HISTORY_PREFIX}${now.toISOString().replaceAll(":", "-")}`,
-      publication,
-      { expirationTtl: PUBLICATION_HISTORY_TTL_SECONDS }
-    );
-  }
 
   const status = {
     status:
@@ -339,8 +358,88 @@ async function publishFromCaches(env, options = {}) {
     includedSections: Object.keys(publication.meta.sources).sort(),
     ...(missingRequired.length > 0 ? { missingRequired } : {}),
   };
-  await kvPut(env, PUBLICATION_STATUS_KEY, status);
-  return { publication, status, changed };
+
+  const commitManifest = {
+    schemaVersion: 1,
+    editionId: publication.meta.measureCatalog?.editionId ?? null,
+    generatedAt: publication.meta.generatedAt,
+    publishedAt: now.toISOString(),
+    status: status.status,
+    missingRequired,
+    registryVersion: FEED_REGISTRY_VERSION,
+    validUntil: publicArtifact.metadata?.validUntil ?? null,
+    delivery: publication.meta.delivery,
+  };
+  publication.meta.commitManifest = commitManifest;
+
+  // Staged publish-after-write with rollback protection
+  const previousPublicRecord = await kvGetWithMetadata(env, PUBLIC_SNAPSHOT_KEY, "text");
+  const previousCurrentRecord = current;
+  const previousStatusRecord = await kvGet(env, PUBLICATION_STATUS_KEY);
+
+  let publicArtifactWritten = false;
+  let currentWritten = false;
+  let statusWritten = false;
+
+  try {
+    if (changed) {
+      await kvPut(
+        env,
+        `${PUBLICATION_HISTORY_PREFIX}${now.toISOString().replaceAll(":", "-")}`,
+        publication,
+        { expirationTtl: PUBLICATION_HISTORY_TTL_SECONDS }
+      );
+    }
+
+    await kvPutText(env, PUBLIC_SNAPSHOT_KEY, publicArtifact.body, {
+      metadata: {
+        ...publicArtifact.metadata,
+        editionId: publication.meta.measureCatalog?.editionId ?? null,
+      },
+    });
+    publicArtifactWritten = true;
+
+    await kvPut(env, PUBLICATION_CURRENT_KEY, publication);
+    currentWritten = true;
+
+    await kvPut(env, PUBLICATION_STATUS_KEY, status);
+    statusWritten = true;
+
+    await kvPut(env, PUBLICATION_COMMIT_KEY, commitManifest);
+  } catch (error) {
+    try {
+      if (statusWritten) {
+        if (previousStatusRecord) {
+          await kvPut(env, PUBLICATION_STATUS_KEY, previousStatusRecord);
+        } else {
+          await kvDelete(env, PUBLICATION_STATUS_KEY);
+        }
+      }
+      if (currentWritten) {
+        if (previousCurrentRecord) {
+          await kvPut(env, PUBLICATION_CURRENT_KEY, previousCurrentRecord);
+        } else {
+          await kvDelete(env, PUBLICATION_CURRENT_KEY);
+        }
+      }
+      if (publicArtifactWritten) {
+        if (previousPublicRecord?.value) {
+          await kvPutText(env, PUBLIC_SNAPSHOT_KEY, previousPublicRecord.value, {
+            metadata: previousPublicRecord.metadata,
+          });
+        } else {
+          await kvDelete(env, PUBLIC_SNAPSHOT_KEY);
+        }
+      }
+    } catch (rollbackError) {
+      console.error("Publication rollback failed", {
+        error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
+      });
+    }
+    throw error;
+  }
+
+  return { publication, status, changed, commitManifest };
 }
 
 async function processQueueJob(job, env, ctx, options = {}) {
@@ -385,13 +484,14 @@ async function processQueueJob(job, env, ctx, options = {}) {
     return { type: job.type, updated: result.updated, due: result.due };
   }
   if (job?.type === "refresh-section") {
-    const record = await storeSectionFragment(String(job.section ?? ""), env, ctx);
+    const record = await storeSectionFragment(String(job.section ?? ""), env, ctx, job.runId);
     return { type: job.type, section: record.section, fetchedAt: record.fetchedAt };
   }
   if (job?.type === "refresh-external-section") {
     const record = await storeExternalSection(String(job.section ?? ""), env, {
       fetchImpl: options.fetchImpl ?? fetch,
       now: options.now ?? new Date(),
+      runId: job.runId,
     });
     return { type: job.type, section: record.section, fetchedAt: record.fetchedAt };
   }
@@ -551,7 +651,7 @@ async function finaliseRun(runId, env, options = {}) {
   let publicationResult = null;
   if (complete || successful.length > 0) {
     try {
-      publicationResult = await publishFromCaches(env, { ...options, now });
+      publicationResult = await publishFromCaches(env, { ...options, now, runId: run.runId });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (complete || message !== "Publication snapshot has no current source-owned evidence") {
@@ -1027,6 +1127,7 @@ export {
   EXTERNAL_SECTIONS,
   FINALISE_DELAY_SECONDS,
   GENERIC_SECTIONS,
+  PUBLICATION_COMMIT_KEY,
   PUBLISHED_SECTIONS,
   PUBLICATION_SECTION_PREFIX,
   RUN_PREFIX,
