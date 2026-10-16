@@ -83,4 +83,22 @@ describe("ClientOnlyChart", () => {
     expect(html).toContain("100.5%");
     expect(html).not.toContain("Rendered chart");
   });
+
+  it("renders the SSR fallback summary instead of a loading skeleton", () => {
+    const html = renderToStaticMarkup(
+      <ClientOnlyChart
+        heightClass="h-64"
+        fallbackLabel="Chart unavailable without JavaScript"
+        fallbackContent={<p>Fallback summary: latest value 100.5%</p>}
+      >
+        <div>Rendered chart</div>
+      </ClientOnlyChart>,
+    );
+
+    expect(html).toContain("Chart unavailable without JavaScript");
+    expect(html).toContain("Fallback summary: latest value 100.5%");
+    expect(html).not.toContain("Rendered chart");
+    expect(html).not.toContain("animate-pulse");
+    expect(html).toContain('aria-busy="false"');
+  });
 });

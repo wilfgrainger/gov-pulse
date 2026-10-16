@@ -204,6 +204,29 @@ export default function PollingPublicationChart<PartyKey extends string>({
         <ClientOnlyChart
           heightClass="h-[340px]"
           fallbackLabel="Interactive scatter plot unavailable without JavaScript. Complete polling results are listed in the data table below."
+          fallbackContent={
+            <div className="flex h-full flex-col justify-center gap-3">
+              <p className="max-w-3xl text-sm leading-6 text-gray-700">
+                The interactive scatter plot requires JavaScript. Without it,
+                every pollster-reported party share remains available in the
+                data table below.
+              </p>
+              <p className="max-w-3xl text-sm leading-6 text-gray-700">
+                <span className="font-semibold text-[#14243b]">
+                  Individual poll publications by party share:
+                </span>{" "}
+                {seriesByParty.length > 0
+                  ? `each point is one pollster-reported result for ${seriesByParty
+                      .map((series) => series.meta.label)
+                      .join(", ")}.`
+                  : "no party is currently selected; select a party above to list its publications."}
+              </p>
+              <p className="max-w-3xl text-xs leading-5 text-gray-600">
+                Fieldwork period: {range}. No average, uncertainty interval or
+                trend line is shown.
+              </p>
+            </div>
+          }
         >
           <ResponsiveContainer
             width="100%"
