@@ -45,9 +45,9 @@ describe("edge evidence hardening", () => {
     // SSR and a fresh cross-Worker fetch. Data-bearing routes own their context.
     const section = fs.readFileSync("app/section/[id]/page.tsx", "utf8");
     expect(layout).not.toMatch(/readServerMetricsSnapshot/);
-    expect(layout).toMatch(/MetricsSnapshotProvider snapshot=\\{null\\}/);
-    expect(page).toMatch(/MetricsSnapshotProvider snapshot=\\{createClientMetricsSnapshot\\(snapshot\\)\\}/);
-    expect(section).toMatch(/MetricsSnapshotProvider snapshot=\\{createClientMetricsSnapshot\\(snapshot\\)\\}/);
+    expect(layout).toContain("MetricsSnapshotProvider snapshot={null}");
+    expect(page).toContain("MetricsSnapshotProvider snapshot={createClientMetricsSnapshot(snapshot)}");
+    expect(section).toContain("MetricsSnapshotProvider snapshot={createClientMetricsSnapshot(snapshot)}");
     expect(hook).toMatch(/useInitialMetricsSnapshot/);
     expect(hook).not.toMatch(/BUILD_METRICS_SNAPSHOT/);
     expect(serverReader).toMatch(/await connection\(\)/);
