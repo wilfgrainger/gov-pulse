@@ -7,14 +7,12 @@ import queuedWorker, {
   refreshJobs,
 } from "@/worker/queued-publication-entry";
 
-const original = Object.fromEntries(
-  Object.entries(PUBLICATION_CONFIG.publications).map(([id, value]) => [id, value.enabled]),
+const original = Object.values(PUBLICATION_CONFIG.publications).map(
+  (publication) => ({ publication, enabled: publication.enabled }),
 );
 
 afterEach(() => {
-  for (const [id, enabled] of Object.entries(original)) {
-    PUBLICATION_CONFIG.publications[id].enabled = enabled;
-  }
+  for (const { publication, enabled } of original) publication.enabled = enabled;
   vi.restoreAllMocks();
 });
 
