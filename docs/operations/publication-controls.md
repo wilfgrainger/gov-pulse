@@ -18,10 +18,16 @@ source switches for any values to be shown. Disabled source values and their
 revision changes are removed from archived responses too. Enabling a switch
 does not bypass source validation, expiry or completeness checks.
 
-These controls affect publication, not private stored evidence or scheduled
-collection. Storage and collectors remain available for verification. A full
-pause serves a review notice, blocks data deliveries with HTTP 503/no-store,
-and reports `publication-paused` from the public health route.
+The enabled-source flags also bound **automatic** collection after the
+22 October resource-containment change. Disabled national and betting feeds
+are not queued by recurring Cron, nor is international comparison while held.
+Previously collected private evidence is retained, and an explicitly requested
+bootstrap can still refresh held feeds for validation. Before a held feed is
+enabled, bootstrap it if necessary and verify the source edition, freshness,
+currentness and complete reader output: turning a switch on never makes stale
+evidence publishable. A full pause serves a review notice, blocks data
+deliveries with HTTP 503/no-store, and reports `publication-paused` from the
+public health route.
 
 During a full pause the public Pages seed is also replaced by a notice and
 blocked data endpoints. It stays offline after a partial restoration until a

@@ -41,7 +41,13 @@ describe("edge evidence hardening", () => {
     const serverReader = fs.readFileSync("app/lib/serverMetricsSnapshot.ts", "utf8");
     expect(page).toMatch(/readServerMetricsSnapshot/);
     expect(page).not.toMatch(/BUILD_METRICS_SNAPSHOT/);
-    expect(layout).toMatch(/MetricsSnapshotProvider/);
+    // A shared layout must not force even held/static pages into request-time
+    // SSR and a fresh cross-Worker fetch. Data-bearing routes own their context.
+    const section = fs.readFileSync("app/section/[id]/page.tsx", "utf8");
+    expect(layout).not.toMatch(/readServerMetricsSnapshot/);
+    expect(layout).toContain("MetricsSnapshotProvider snapshot={null}");
+    expect(page).toContain("MetricsSnapshotProvider snapshot={createClientMetricsSnapshot(snapshot)}");
+    expect(section).toContain("MetricsSnapshotProvider snapshot={createClientMetricsSnapshot(snapshot)}");
     expect(hook).toMatch(/useInitialMetricsSnapshot/);
     expect(hook).not.toMatch(/BUILD_METRICS_SNAPSHOT/);
     expect(serverReader).toMatch(/await connection\(\)/);

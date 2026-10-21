@@ -15,6 +15,8 @@ import {
 import { SECTIONS } from "../../lib/sections";
 import { SECTION_CONTENT } from "../../lib/sectionContent";
 import { readServerMetricsSnapshot } from "../../lib/serverMetricsSnapshot";
+import { MetricsSnapshotProvider } from "../../lib/MetricsSnapshotProvider";
+import { createClientMetricsSnapshot } from "../../lib/metricsSnapshot";
 import { sectionDistribution } from "../../lib/sectionDownloads";
 import { filterCurrentSnapshot } from "@/worker/publication-currentness";
 import type { MetricsSnapshot } from "../../lib/metricsSnapshot";
@@ -124,7 +126,11 @@ export default async function SectionPage({
               <EvidenceHoldNotice id="section-publication-held">
                 This topic is part of the publication, but its source data is held from public release. We are showing no values until the evidence is verified and publication is authorised.
               </EvidenceHoldNotice>
-            ) : <SectionComponent />}
+            ) : (
+              <MetricsSnapshotProvider snapshot={createClientMetricsSnapshot(snapshot)}>
+                <SectionComponent />
+              </MetricsSnapshotProvider>
+            )}
           </Reveal>
           {dataSection && !evidenceHeld ? (
             <aside

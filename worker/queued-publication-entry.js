@@ -23,7 +23,7 @@ import {
   buildPublicSnapshotArtifact,
 } from "./public-snapshot.js";
 import { samePublicationEvidence } from "../contracts/publication-evidence.js";
-import { filterPublicationSnapshot } from "../contracts/publication-policy.js";
+import { filterPublicationSnapshot, publicationEnabled } from "../contracts/publication-policy.js";
 import { buildPublicationDiagnostics } from "../contracts/publication-diagnostics.js";
 import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
 import {
@@ -174,24 +174,36 @@ function sectionRefreshJobs(runId, sections, type) {
 }
 
 function refreshJobs(runId, scope = "daily", options = {}) {
+  // Recurring collection is narrower than an explicitly requested bootstrap:
+  // held publications stay available for evidence recovery but do not burn
+  // KV writes or retries every day.
+  const publishedOnly = options.publishedOnly === true && scope !== "bootstrap";
+  const dueForCollection = (section) => !publishedOnly || publicationEnabled(section);
   if (scope === "betting") {
-    return sectionRefreshJobs(runId, ["bettingOdds"], "refresh-external-section");
+    return sectionRefreshJobs(
+      runId,
+      dueForCollection("bettingOdds") ? ["bettingOdds"] : [],
+      "refresh-external-section",
+    );
   }
 
-  const genericSections =
+  const genericSections = (
     scope === "bootstrap"
       ? GENERIC_SECTIONS.filter((section) => REQUIRED_SECTION_SET.has(section))
-      : GENERIC_SECTIONS;
-  const externalSections =
+      : GENERIC_SECTIONS
+  ).filter(dueForCollection);
+  const externalSections = (
     scope === "bootstrap"
       ? EXTERNAL_SECTIONS.filter((section) => REQUIRED_SECTION_SET.has(section))
-      : EXTERNAL_SECTIONS;
+      : EXTERNAL_SECTIONS
+  ).filter(dueForCollection);
   const jobs = [
     ...sectionRefreshJobs(runId, genericSections, "refresh-section"),
     ...sectionRefreshJobs(runId, externalSections, "refresh-external-section"),
   ];
 
-  if (scope === "daily" || (scope === "bootstrap" && options.includeContracts === true)) {
+  if ((scope === "daily" && dueForCollection("governmentContracts")) ||
+      (scope === "bootstrap" && options.includeContracts === true)) {
     jobs.push({
       type: "refresh-contracts",
       runId,
@@ -557,6 +569,7 @@ async function createRun(env, now, scope = "daily", options = {}) {
       run: existing,
       jobs: refreshJobs(runId, existing.scope ?? scope, {
         includeContracts: existing.contractsRefreshRequested === true,
+        publishedOnly: existing.scheduledPublishedOnly === true,
       }),
       existing: true,
     };
@@ -574,6 +587,9 @@ async function createRun(env, now, scope = "daily", options = {}) {
     expectedJobIds: jobs.map((job) => job.jobId),
     dispatchedAt: null,
     finalisedAt: null,
+    ...(options.publishedOnly === true && scope !== "bootstrap"
+      ? { scheduledPublishedOnly: true }
+      : {}),
     ...(scope === "bootstrap"
       ? {
           comparisonRefreshRequested: options.comparisonRefreshRequested === true,
@@ -919,7 +935,9 @@ const queuedPublicationWorker = {
       (async () => {
         const now = new Date(controller.scheduledTime ?? Date.now());
         const scope = controller.cron === BETTING_CRON ? "betting" : "daily";
-        await enqueuePublicationRun(env, now, scope);
+        // No Queue messages, KV status records or finalisers for disabled feeds.
+        if (refreshJobs("scheduled", scope, { publishedOnly: true }).length === 0) return;
+        await enqueuePublicationRun(env, now, scope, { publishedOnly: true });
       })().catch((error) => {
         console.error("Cloudflare publication scheduling failed", {
           cron: controller.cron,
