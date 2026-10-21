@@ -484,7 +484,9 @@ const publicDataWorker = {
 
   scheduled(controller, env, ctx) {
     queuedWorker.scheduled(controller, env, ctx);
-    if (controller.cron === DAILY_CRON) {
+    // International comparisons are optional; don't schedule their batches
+    // while the entire publication is held.
+    if (controller.cron === DAILY_CRON && publicationEnabled("internationalComparison")) {
       ctx.waitUntil(
         enqueueInternationalComparisonRefresh(env, {
           now: new Date(controller.scheduledTime ?? Date.now()),
