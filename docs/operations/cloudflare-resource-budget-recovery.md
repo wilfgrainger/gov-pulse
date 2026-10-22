@@ -45,6 +45,45 @@ Account alert emails do **not** identify which deployed Worker or KV namespace c
 - KV: exact namespace and operation (`put`) count, mapped to live Worker bindings or API caller over the alert's reset window.
 - Regression: a 24–72h before/after comparison under comparable request volumes, with crawler traffic and release deployments noted. If evidence is missing, label the root cause `unverified`.
 
+## Phase 2 — read-only evidence edge caching
+
+The data Worker now opts into **Cloudflare Workers Caching** with `[cache]`
+enabled and `cross_version_cache = false` in `worker/wrangler.toml`.
+The checked-in Wrangler version supports both settings. The cache is consulted
+*before* Worker JavaScript runs for eligible GET/HEAD requests, reducing
+repeat KV reads and CPU work for published API endpoints.
+
+This is constrained by the existing route response headers:
+
+| Route | Cache contract | Reason |
+| --- | --- | --- |
+| `/data/metrics-snapshot.json` | Explicit 0–300 second TTL, limited by earliest source validity | Reuse a complete, policy-filtered verified edition, not expired evidence |
+| `/data/international-comparison.json` | Explicit bounded TTL only when enabled and current | Preserve source validity; held publications remain 503/no-store |
+| `/data/editions.json` | 60-second public cache | Avoid repeated index and archive reads |
+| `/data/contracts/history.json` | 300-second public cache for successful valid responses | Avoid expensive repeat upstream requests |
+| `/data/health.json` | no-store | Health reports must be observed live |
+| `/data/edition.json` | no-store | Historical selection/policy filtering must not leak across revisions |
+| All 4xx/5xx policy/availability errors | no-store | Never cache a held/unavailable verdict as a durable public resource |
+
+The cache is **not shared across Worker deployments**: a change to
+`config/publications.json`, source filtering, or other evidence policy gets a
+fresh per-version cache. Cloudflare documents that Workers Caching honours
+`Cache-Control` and bypasses `no-store`; production verification should check
+`CF-Cache-Status: MISS` on first eligible request, then `HIT` on subsequent
+identical requests in the same region, and `BYPASS` for health/errors.
+Do not attempt to infer this from unit tests alone: the test environment
+does not emulate Cloudflare's caching tier.
+
+**Risk and rollback:** an unexpectedly cached policy response or evidence
+after `validUntil` is a release blocker. Revert the `[cache]` stanza and
+redeploy the exact known-good Worker revision. Disable Workers Caching first
+rather than increasing TTL or relying on `stale-if-error`. Cross-version
+sharing remains prohibited, even if it would improve the apparent hit ratio.
+
+This phase does not cache the Next.js web Worker HTML, which still uses
+request-specific evidence and must be separately moved to a static-first
+delivery boundary with careful no-JavaScript and release validation.
+
 ## Next architecture change (separate review and controlled rollout)
 
 **Target: precomputed evidence, mostly static public pages, tiny dynamic read API.** Never render a full Next/OpenNext tree per visitor when the content can be prepared as a versioned edition.
