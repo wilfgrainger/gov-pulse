@@ -15,12 +15,13 @@ import {
 import { SECTIONS } from "../../lib/sections";
 import { SECTION_CONTENT } from "../../lib/sectionContent";
 import { readServerMetricsSnapshot } from "../../lib/serverMetricsSnapshot";
+import { MetricsSnapshotProvider } from "../../lib/MetricsSnapshotProvider";
+import { createClientMetricsSnapshot } from "../../lib/metricsSnapshot";
 import { sectionDistribution } from "../../lib/sectionDownloads";
 import { filterCurrentSnapshot } from "@/worker/publication-currentness";
 import type { MetricsSnapshot } from "../../lib/metricsSnapshot";
-import PublicMoneyPage, { metadata as publicMoneyMetadata } from "../../money/page";
-import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationRouteEnabled } from "@/contracts/publication-policy";
+import EvidenceHoldNotice from "@/app/components/EvidenceHoldNotice";
+import { publicationEnabled, sectionPublication, productRouteAvailable } from "@/contracts/publication-policy";
 
 export function generateStaticParams() {
   return Object.keys(SECTION_CONTENT).map((id) => ({ id }));
@@ -32,7 +33,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  if (!publicationRouteEnabled(`/section/${id}/`)) return { ...publicMoneyMetadata, title: "Data publication temporarily offline" };
+  if (!productRouteAvailable(`/section/${id}/`)) return {};
   const discovery = SECTION_DISCOVERY[id];
   if (!discovery) return {};
 
@@ -75,16 +76,17 @@ export default async function SectionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  if (id === "government-contracts" && !publicationRouteEnabled(`/section/${id}/`)) return await PublicMoneyPage();
   const section = SECTION_CONTENT[id as keyof typeof SECTION_CONTENT];
 
   if (!section) notFound();
-  if (!publicationRouteEnabled(`/section/${id}/`)) return <PublicationOffline title={`${section.title} is temporarily offline`} />;
+  if (!productRouteAvailable(`/section/${id}/`)) notFound();
 
   const SectionComponent = section.component;
-  const structuredData = structuredDataForSection(id);
   const dataSection = "dataSection" in section ? section.dataSection : null;
-  const snapshot = dataSection ? await readServerMetricsSnapshot() : null;
+  const publicationId = sectionPublication(id);
+  const evidenceHeld = SECTION_DISCOVERY[id]?.kind === "dataset" && Boolean(publicationId) && !publicationEnabled(publicationId);
+  const structuredData = evidenceHeld ? null : structuredDataForSection(id);
+  const snapshot = dataSection && !evidenceHeld ? await readServerMetricsSnapshot() : null;
   const current = snapshot && filterCurrentSnapshot(snapshot, new Date()) as MetricsSnapshot | null;
   const hasDownload = Boolean(dataSection && current && sectionDistribution(current, dataSection));
 
@@ -104,9 +106,11 @@ export default async function SectionPage({
         <PageHeader
           eyebrow={section.tag}
           title={section.title}
-          subtitle={section.subtitle}
+          subtitle={evidenceHeld
+            ? "This topic is part of the publication, but its source data is held from release. No figures are displayed while evidence remains unpublished."
+            : section.subtitle}
           current={section.category}
-          context={id === "election-polls" ? (
+          context={!evidenceHeld && id === "election-polls" ? (
             <aside aria-label="Polling evidence guide" className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-x-4 gap-y-3">
               <p className="row-span-2 text-5xl font-black leading-none tracking-[-0.07em] text-accent">14</p>
               <p className="eyebrow self-end">Day publication window</p>
@@ -118,9 +122,17 @@ export default async function SectionPage({
         <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
           <Reveal as="article" className="evidence-article v3-evidence-article p-5 md:p-8 lg:p-12">
             <h2 className="sr-only">{section.title}: latest evidence and sources</h2>
-            <SectionComponent />
+            {evidenceHeld ? (
+              <EvidenceHoldNotice id="section-publication-held">
+                This topic is part of the publication, but its source data is held from public release. We are showing no values until the evidence is verified and publication is authorised.
+              </EvidenceHoldNotice>
+            ) : (
+              <MetricsSnapshotProvider snapshot={createClientMetricsSnapshot(snapshot)}>
+                <SectionComponent />
+              </MetricsSnapshotProvider>
+            )}
           </Reveal>
-          {dataSection ? (
+          {dataSection && !evidenceHeld ? (
             <aside
               aria-label={`${section.title} data downloads`}
               className="evidence-downloads mt-8 grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center md:p-5"

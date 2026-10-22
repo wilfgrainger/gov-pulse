@@ -1,5 +1,6 @@
-import { access, readFile, writeFile } from "node:fs/promises";
+import { access, readFile, readdir, writeFile } from "node:fs/promises";
 import { execFileSync, spawn } from "node:child_process";
+import { publicationEnabled } from "../contracts/publication-policy.js";
 
 execFileSync(process.execPath, ["scripts/generate-social-cards.mjs"], {
   env: process.env,
@@ -74,43 +75,99 @@ if (process.env.STATIC_EXPORT === "true") {
     }
   }
 
-  const gdpHtml = await readFile("out/section/gdp/index.html", "utf8");
-  const requiredDiscoveryMarkers = [
-    "<title>UK GDP growth | public-data.org</title>",
-    'rel="canonical" href="https://public-data.org/section/gdp/"',
-    'type="application/ld+json"',
-    '"@type":"Dataset"',
-    'href="https://public-data.org/feed.xml"',
-  ];
-
-  for (const marker of requiredDiscoveryMarkers) {
-    if (!gdpHtml.includes(marker)) {
+  const sectionAssets = await readdir("out/data/sections").catch((error) => {
+    if (error && typeof error === "object" && error.code === "ENOENT") return [];
+    throw error;
+  });
+  for (const asset of sectionAssets.filter((file) => /\.(json|csv)$/.test(file))) {
+    const section = asset.replace(/\.(json|csv)$/, "");
+    if (!publicationEnabled(section)) {
       printDiagnosticTail();
-      console.error(`GDP static HTML is missing discovery marker: ${marker}`);
+      console.error(`Static export contains a disabled or unknown section download: ${asset}`);
       process.exit(1);
     }
   }
 
-  const downloads = ["json", "csv"].map((format) => `href="/data/sections/gdpTracker.${format}"`);
-  const hasAnyDownload = downloads.some((marker) => gdpHtml.includes(marker));
-  const hasCompleteDownloads = downloads.every((marker) => gdpHtml.includes(marker)) &&
-    gdpHtml.includes("Source metadata, observation and publication dates, geography, attribution and licence are included with this current edition.");
+  async function checkSectionDownloads({ route, section, title }) {
+    const html = await readFile(`out/section/${route}/index.html`, "utf8");
+    const formats = ["json", "csv"];
+    const links = formats.map((format) => `href="/data/sections/${section}.${format}"`);
+    const hasAnyLink = links.some((marker) => html.includes(marker));
+    const hasAllLinks = links.every((marker) => html.includes(marker));
+    const hasCompleteDownloads = hasAllLinks && html.includes(
+      "Source metadata, observation and publication dates, geography, attribution and licence are included with this current edition."
+    );
 
-  if (hasCompleteDownloads) {
-    for (const format of ["json", "csv"]) {
-      const artifact = `out/data/sections/gdpTracker.${format}`;
+    if (hasCompleteDownloads) {
+      for (const format of formats) {
+        const artifact = `out/data/sections/${section}.${format}`;
+        try {
+          await access(artifact);
+        } catch (error) {
+          printDiagnosticTail();
+          console.error(`${title} static HTML links to a missing section download: ${artifact}`, error);
+          process.exit(1);
+        }
+      }
+      return;
+    }
+
+    if (hasAnyLink || !html.includes("A download will appear when this section has current verified evidence.")) {
+      printDiagnosticTail();
+      console.error(`${title} static HTML must show both verified downloads or an explicit unavailable state.`);
+      process.exit(1);
+    }
+    for (const format of formats) {
+      const artifact = `out/data/sections/${section}.${format}`;
       try {
         await access(artifact);
-      } catch (error) {
         printDiagnosticTail();
-        console.error(`GDP static HTML links to a missing section download: ${artifact}`, error);
+        console.error(`${title} has a download artifact while its HTML shows no verified evidence: ${artifact}`);
+        process.exit(1);
+      } catch (error) {
+        if (!error || typeof error !== "object" || error.code !== "ENOENT") throw error;
+      }
+    }
+  }
+
+  const gdpHtml = await readFile("out/section/gdp/index.html", "utf8");
+  if (publicationEnabled("gdpTracker")) {
+    const requiredDiscoveryMarkers = [
+      "<title>UK GDP growth | public-data.org</title>",
+      'rel="canonical" href="https://public-data.org/section/gdp/"',
+      'type="application/ld+json"',
+      '"@type":"Dataset"',
+      'href="https://public-data.org/feed.xml"',
+    ];
+    for (const marker of requiredDiscoveryMarkers) {
+      if (!gdpHtml.includes(marker)) {
+        printDiagnosticTail();
+        console.error(`GDP static HTML is missing discovery marker: ${marker}`);
         process.exit(1);
       }
     }
-  } else if (hasAnyDownload || !gdpHtml.includes("A download will appear when this section has current verified evidence.")) {
-    printDiagnosticTail();
-    console.error("GDP static HTML must show both verified downloads or an explicit unavailable state.");
-    process.exit(1);
+    await checkSectionDownloads({ route: "gdp", section: "gdpTracker", title: "GDP" });
+  } else {
+    if (!gdpHtml.includes("This topic is part of the publication") || !gdpHtml.includes("source data is held from public release") || /href="\/data\/sections\/gdpTracker\.(json|csv)"/.test(gdpHtml)) {
+      printDiagnosticTail();
+      console.error("Held GDP static HTML must explain the publication hold without exposing downloads.");
+      process.exit(1);
+    }
+    for (const extension of ["json", "csv"]) {
+      const artifact = `out/data/sections/gdpTracker.${extension}`;
+      try {
+        await access(artifact);
+        printDiagnosticTail();
+        console.error(`Held GDP data must not be emitted as a static asset: ${artifact}`);
+        process.exit(1);
+      } catch (error) {
+        if (!error || typeof error !== "object" || error.code !== "ENOENT") throw error;
+      }
+    }
+  }
+
+  if (publicationEnabled("nationalDebt")) {
+    await checkSectionDownloads({ route: "national-debt", section: "nationalDebt", title: "National debt" });
   }
 }
 

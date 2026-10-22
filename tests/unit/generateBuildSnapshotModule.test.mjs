@@ -126,7 +126,7 @@ describe("build snapshot module generator", () => {
           : { value: section },
       ])
     );
-    sections.electionPolling = { value: "=HYPERLINK(\"bad\")" };
+    sections.nationalDebt = { value: "=HYPERLINK(\"bad\")" };
 
     const candidate = publicCandidate(
       {
@@ -148,15 +148,15 @@ describe("build snapshot module generator", () => {
     expect(candidate.meta.publicationMode).toBeUndefined();
     expect(candidate.meta.freeTierBudget).toBeUndefined();
     expect(candidate.meta).not.toHaveProperty("publicationDiagnostics");
-    expect(candidate.meta.sources.electionPolling).not.toHaveProperty("error");
+    expect(candidate.meta.sources.nationalDebt).not.toHaveProperty("error");
     expect(JSON.stringify(candidate)).not.toContain("private source rejection details");
-    expect(candidate.meta.sources.electionPolling.backend).toBeUndefined();
-    expect(csvCell(candidate.electionPolling.value)).toBe(
+    expect(candidate.meta.sources.nationalDebt.backend).toBeUndefined();
+    expect(csvCell(candidate.nationalDebt.value)).toBe(
       "\"'=HYPERLINK(\"\"bad\"\")\""
     );
     expect(csvCell(-1)).toBe("-1");
-    expect(sectionDistribution(candidate, "electionPolling").licence.name).toMatch(
-      /No reuse licence asserted/
+    expect(sectionDistribution(candidate, "nationalDebt").licence.name).toMatch(
+      /Open Government Licence v3\.0/
     );
   });
 

@@ -1,5 +1,7 @@
 # Publication reinvention, round two: executable implementation plan
 
+> **Historical plan — superseded for execution by [the V1 master delivery plan](../../v1/MASTER-DELIVERY-PLAN.md).** Keep its implementation findings and test evidence as history; use the master plan for current ownership, sequence and acceptance.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox syntax for tracking. Keep the user's ten priorities in order; use this plan as the current execution reference.
 
 **Goal:** Complete the ten user priorities as a distinctive, useful, populated public-evidence publication, with each claim and capability verified at the reader-facing journey.

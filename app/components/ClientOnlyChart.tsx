@@ -6,12 +6,14 @@ interface ClientOnlyChartProps {
   children: React.ReactNode;
   heightClass: string;
   fallbackLabel?: React.ReactNode;
+  fallbackContent?: React.ReactNode;
 }
 
 export default function ClientOnlyChart({
   children,
   heightClass,
   fallbackLabel = "Interactive chart unavailable. The published figures remain available in the surrounding summary and source information.",
+  fallbackContent,
 }: ClientOnlyChartProps) {
   const [mounted, setMounted] = useState(false);
   const [hasSize, setHasSize] = useState(false);
@@ -46,6 +48,11 @@ export default function ClientOnlyChart({
     <div ref={containerRef} className={`chart-shell min-w-0 ${heightClass}`}>
       {mounted && hasSize ? (
         children
+      ) : fallbackContent ? (
+        <div aria-busy="false" className="flex h-full flex-col justify-between overflow-y-auto border border-black/10 bg-[#f7f9fb] p-4 text-sm">
+          <span className="sr-only">{fallbackLabel}</span>
+          <div className="min-h-0 flex-1 overflow-auto">{fallbackContent}</div>
+        </div>
       ) : (
         <div className="flex h-full flex-col justify-between border border-black/10 bg-[#f7f9fb] p-5 animate-pulse" aria-busy="true">
           <span className="sr-only">{fallbackLabel}</span>

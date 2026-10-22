@@ -2,7 +2,7 @@ import queuedWorker, {
   DAILY_CRON,
   enqueueInternationalComparisonRefresh,
 } from "./queued-publication-entry.js";
-import { PUBLICATION_CONFIG, publicationEnabled, anyPublicationEnabled, filterPublicationSnapshot, filterPublicationCatalog, filterPublicationSummary } from "../contracts/publication-policy.js";
+import { PUBLICATION_CONFIG, publicationEnabled, anyEvidenceSourceEnabled, filterPublicationSnapshot, filterPublicationCatalog, filterPublicationSummary } from "../contracts/publication-policy.js";
 import { isSnapshot, readCurrentPublication } from "./publication-entry.js";
 import {
   FEED_REGISTRY_VERSION,
@@ -201,12 +201,12 @@ async function fetchSeedSnapshot(env, fetchImpl = fetch, now = new Date()) {
       return null;
     }
     assertSameHttpsHost(response, url, "Pages seed");
-    const candidate = withPublicationState(
-      filterCurrentSnapshot(
-        await readResponseJson(response, { label: "Pages seed JSON" }),
-        now,
-      )
-    );
+    const raw = await readResponseJson(response, { label: "Pages seed JSON" });
+    const current = filterCurrentSnapshot(raw, now);
+    if (!current) return null;
+    const policyFiltered = filterPublicationSnapshot(current);
+    if (!policyFiltered) return null;
+    const candidate = withPublicationState(policyFiltered);
     return isCompleteSnapshot(candidate) ? candidate : null;
   } catch {
     return null;
@@ -465,9 +465,9 @@ const publicDataWorker = {
       return json({ error: "Method not allowed" }, { status: 405 });
     }
     try {
-      if (!anyPublicationEnabled() && url.pathname === HEALTH_PATH) return json({ status: "publication-paused", ready: false }, { head: request.method === "HEAD" });
+      if (!anyEvidenceSourceEnabled() && url.pathname === HEALTH_PATH) return json({ status: "publication-paused", ready: false }, { head: request.method === "HEAD" });
       const gate = url.pathname === COMPARISON_PATH ? "internationalComparison" : [EDITION_PATH, EDITIONS_PATH].includes(url.pathname) ? "editionArchive" : url.pathname === CONTRACT_HISTORY_PATH ? "governmentContracts" : null;
-      if (url.pathname !== HEALTH_PATH && (gate ? !publicationEnabled(gate) : !anyPublicationEnabled())) return json({ error: "Data publication is offline for verification", code: "publication_disabled" }, { status: 503, head: request.method === "HEAD" });
+      if (url.pathname !== HEALTH_PATH && (gate ? !publicationEnabled(gate) : !anyEvidenceSourceEnabled())) return json({ error: "Data publication is offline for verification", code: "publication_disabled" }, { status: 503, head: request.method === "HEAD" });
       if (url.pathname === HEALTH_PATH) return healthResponse(request, env);
       if (url.pathname === COMPARISON_PATH) return comparisonResponse(request, env);
       if (url.pathname === EDITIONS_PATH) return editionsResponse(request, env);
@@ -484,7 +484,9 @@ const publicDataWorker = {
 
   scheduled(controller, env, ctx) {
     queuedWorker.scheduled(controller, env, ctx);
-    if (controller.cron === DAILY_CRON) {
+    // International comparisons are optional; don't schedule their batches
+    // while the entire publication is held.
+    if (controller.cron === DAILY_CRON && publicationEnabled("internationalComparison")) {
       ctx.waitUntil(
         enqueueInternationalComparisonRefresh(env, {
           now: new Date(controller.scheduledTime ?? Date.now()),

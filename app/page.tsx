@@ -1,20 +1,20 @@
-import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationRouteEnabled } from "@/contracts/publication-policy";
 import HomepageIntro from "./components/HomepageIntro";
 import NationalEvidenceEdition from "./components/NationalEvidenceEdition";
 import SectionNav from "./components/SectionNav";
 import SiteFooter from "./components/SiteFooter";
 import SocialShare from "./components/SocialShare";
 import { selectNationalEvidenceEdition } from "./lib/nationalEvidence";
+import { MetricsSnapshotProvider } from "./lib/MetricsSnapshotProvider";
+import { createClientMetricsSnapshot } from "./lib/metricsSnapshot";
 import { readServerMetricsSnapshot } from "./lib/serverMetricsSnapshot";
 import { SECTIONS } from "./lib/sections";
 
 export default async function Home() {
-  if (!publicationRouteEnabled("/")) return <PublicationOffline />;
   const snapshot = await readServerMetricsSnapshot();
   const initialEdition = selectNationalEvidenceEdition(snapshot);
 
   return (
+    <MetricsSnapshotProvider snapshot={createClientMetricsSnapshot(snapshot)}>
     <div className="min-h-screen bg-background text-foreground">
       <a href="#national-signals" className="sr-only z-[100] bg-[var(--accent)] px-4 py-3 text-white focus:not-sr-only focus:fixed focus:left-3 focus:top-3">
         Skip to the latest evidence
@@ -37,5 +37,6 @@ export default async function Home() {
 
       <SiteFooter />
     </div>
+    </MetricsSnapshotProvider>
   );
 }

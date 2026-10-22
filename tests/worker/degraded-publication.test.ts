@@ -106,7 +106,9 @@ describe("degraded public publication", () => {
       env
     );
     expect(data.status).toBe(200);
-    expect((await data.json()).meta.publicationState).toBe("degraded");
+    const snapshotPayload = await data.json();
+    expect(snapshotPayload.meta.publicationState).toBe("degraded");
+    expect(snapshotPayload.meta.missingRequiredSections).toEqual(["employmentStats"]);
 
     const health = await publicWorker.fetch(
       new Request("https://public-data.org/data/health.json"),
@@ -191,17 +193,33 @@ describe("degraded public publication", () => {
       [PUBLICATION_CURRENT_KEY, current],
       ["v12:publication:section:gdpTracker", gdpFragment],
     ]);
-    const put = vi.fn(async (key: string, value: string) => {
+    const metadata = new Map<string, Record<string, unknown>>();
+    const get = vi.fn(async (key: string, type?: "json" | "text") => {
+      const value = store.get(key);
+      if (value === undefined) return null;
+      if (type === "text") return typeof value === "string" ? value : JSON.stringify(value);
+      return value;
+    });
+    const put = vi.fn(async (key: string, value: string, options?: { metadata?: Record<string, unknown> }) => {
       try {
         store.set(key, JSON.parse(value));
       } catch {
         store.set(key, value);
       }
+      if (options?.metadata) metadata.set(key, options.metadata);
     });
     const env = {
       METRICS_CACHE: {
-        get: vi.fn(async (key: string) => store.get(key) ?? null),
+        get,
+        getWithMetadata: vi.fn(async (key: string) => ({
+          value: store.get(key) ?? null,
+          metadata: metadata.get(key) ?? null,
+        })),
         put,
+        delete: vi.fn(async (key: string) => {
+          store.delete(key);
+          metadata.delete(key);
+        }),
       },
     };
 

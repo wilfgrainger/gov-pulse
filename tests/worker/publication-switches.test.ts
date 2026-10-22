@@ -102,6 +102,28 @@ describe("disabled public deliveries", () => {
     expect(JSON.stringify(body)).not.toContain("998877");
   });
 
+  it("keeps data endpoints paused when only authored stories are enabled", async () => {
+    const original = Object.fromEntries(Object.entries(PUBLICATION_CONFIG.publications).map(([id, publication]) => [id, publication.enabled]));
+    try {
+      for (const [id, publication] of Object.entries(PUBLICATION_CONFIG.publications)) {
+        publication.enabled = id === "storyHouseholdBudgets" || id === "storyPublicFinances";
+      }
+      expect(PUBLICATION_CONFIG.publications.storyHouseholdBudgets.enabled).toBe(true);
+      expect(PUBLICATION_CONFIG.publications.storyPublicFinances.enabled).toBe(true);
+
+      const getWithMetadata = vi.fn(async () => ({ value: null, metadata: null }));
+      const response = await worker.fetch(new Request("https://public-data.org/data/metrics-snapshot.json"), { METRICS_CACHE: { getWithMetadata } });
+      expect(response.status).toBe(503);
+      expect(await response.json()).toMatchObject({ code: "publication_disabled" });
+      expect(getWithMetadata).not.toHaveBeenCalled();
+
+      const health = await worker.fetch(new Request("https://public-data.org/data/health.json"), {});
+      expect(await health.json()).toMatchObject({ status: "publication-paused", ready: false });
+    } finally {
+      for (const [id, enabled] of Object.entries(original)) PUBLICATION_CONFIG.publications[id].enabled = enabled;
+    }
+  });
+
   it("leaves health off the deliberate pause once any publication is enabled", async () => {
     const response = await worker.fetch(new Request("https://public-data.org/data/health.json"), {});
     expect(response.status).toBe(503);

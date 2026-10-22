@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { sanitizePublishedSnapshot } from "./build-static-snapshot.mjs";
 import { filterCurrentSnapshot } from "../worker/publication-currentness.js";
+import { filterPublicationSnapshot } from "../contracts/publication-policy.js";
 import {
   FEED_REGISTRY_VERSION,
   REQUIRED_PUBLISHED_SECTION_IDS,
@@ -58,7 +59,12 @@ export function validateCandidate(value, now = new Date()) {
 }
 
 export function publicCandidate(value, now = new Date()) {
-  const candidate = sanitizePublishedSnapshot(validateCandidate(value, now));
+  const completeCurrentCandidate = validateCandidate(value, now);
+  const publicProjection = filterPublicationSnapshot(completeCurrentCandidate);
+  if (!publicProjection) {
+    throw new Error("Cloudflare publication candidate has no enabled public evidence");
+  }
+  const candidate = sanitizePublishedSnapshot(publicProjection);
   delete candidate.meta.publicationMode;
   delete candidate.meta.freeTierBudget;
   return candidate;
