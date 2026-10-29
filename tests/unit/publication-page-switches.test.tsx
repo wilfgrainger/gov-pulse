@@ -12,6 +12,28 @@ import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
 import { PUBLICATION_CONFIG } from "@/contracts/publication-policy";
 import StoryEvidence from "@/app/components/StoryEvidence";
 
+vi.mock("@/config/publications.json", async (importOriginal) => {
+  const { default: config } = await importOriginal<{
+    default: { publications: Record<string, { state: string }> };
+  }>();
+  return {
+    default: {
+      ...config,
+      publications: Object.fromEntries(
+        Object.entries(config.publications).map(([id, entry]) => [
+          id,
+          {
+            ...entry,
+            state: ["nationalDebt", "editionArchive"].includes(id)
+              ? "published"
+              : "held",
+          },
+        ])
+      ),
+    },
+  };
+});
+
 vi.mock("@/app/lib/serverMetricsSnapshot", () => ({ readServerMetricsSnapshot: vi.fn(async () => null) }));
 vi.mock("@/app/components/SectionNav", () => ({ default: () => null }));
 vi.mock("@/app/components/NationalEvidenceEdition", () => ({ default: () => <div>National evidence</div> }));
@@ -64,15 +86,15 @@ describe("source-specific publication switches", () => {
   });
   it("does not index story metadata while story publication is held", async () => {
     const storySwitch = PUBLICATION_CONFIG.publications.storyHouseholdBudgets;
-    const enabled = storySwitch.enabled;
-    storySwitch.enabled = false;
+    const previousState = storySwitch.state;
+    storySwitch.state = "held";
     try {
       const metadata = await storyMetadata({ params: Promise.resolve({ slug: "household-budgets" }) });
       expect(metadata.robots?.index).toBe(false);
       expect(metadata.robots?.follow).toBe(false);
       expect(metadata.title).not.toContain("household pressure signals");
     } finally {
-      storySwitch.enabled = enabled;
+      storySwitch.state = previousState;
     }
   });
   it("publishes only enabled evidence entries in RSS", () => {
@@ -82,8 +104,7 @@ describe("source-specific publication switches", () => {
     expect(feed).toContain("/section/national-debt/");
     expect(feed).not.toContain("/section/government-contracts/");
     expect(feed).not.toContain("/section/election-polls/");
-    expect(feed).toContain("/stories/household-budgets/");
-    expect(feed).toContain("/stories/public-finances/");
+    expect(feed).not.toContain("/stories/");
   });
   it("keeps held story measures out of the evidence panel even if given an unfiltered catalog", () => {
     const catalog = {

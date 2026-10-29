@@ -6,7 +6,7 @@ import {
   validatePublicationDiagnostics,
 } from "../contracts/publication-diagnostics.js";
 import { FEED_REGISTRY } from "../worker/feed-registry.js";
-import { hasRequiredHistoryShape } from "./build-static-snapshot.mjs";
+import { hasRequiredHistoryShape } from "./lib/publication-validation.mjs";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 

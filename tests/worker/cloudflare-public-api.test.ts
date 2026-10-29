@@ -249,10 +249,11 @@ describe("Cloudflare public data route", () => {
     });
   });
 
-  it("uses the Pages snapshot only as a complete bootstrap fallback", async () => {
+  it("uses Pages only as a copy of an already accepted public artifact", async () => {
     const now = new Date();
+    const accepted = buildPublicSnapshotArtifact(snapshot(now), now);
     const fetchImpl = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(snapshot(now)), {
+      new Response(accepted.body, {
         status: 200,
         headers: { "Content-Type": "application/json" },
       })
@@ -263,12 +264,35 @@ describe("Cloudflare public data route", () => {
     });
 
     expect(result?.delivery).toBe("pages-fallback");
+    expect(result?.snapshot.meta.publicProjection.state).toBe("published");
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it("rejects an internal snapshot as a Pages fallback instead of rebuilding it", async () => {
+    const now = new Date();
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(snapshot(now)), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+
+    const result = await currentPublicSnapshot(environment(null), {
+      now,
+      fetchImpl,
+    });
+
+    expect(result).toBeNull();
     expect(fetchImpl).toHaveBeenCalledOnce();
   });
 
   it("sanitises the Pages seed fallback against publication policy and strips held sources", async () => {
     const now = new Date();
     const seedSnapshot = snapshot(now) as Record<string, unknown>;
+    delete (seedSnapshot.meta as Record<string, unknown>).backend;
+    delete (seedSnapshot.meta as Record<string, unknown>).generator;
+    delete (seedSnapshot.meta as Record<string, unknown>).publicationMode;
+    delete (seedSnapshot.meta as Record<string, unknown>).freeTierBudget;
     seedSnapshot.taxRevenue = { value: 12345 };
     (seedSnapshot.meta as { sources: Record<string, unknown> }).sources.taxRevenue = {
       status: "ok",
@@ -278,9 +302,9 @@ describe("Cloudflare public data route", () => {
       provenance: { retrieval: "cloudflare-worker-live" },
     };
 
-    const original = PUBLICATION_CONFIG.publications.taxRevenue?.enabled;
+    const original = PUBLICATION_CONFIG.publications.taxRevenue?.state;
     if (PUBLICATION_CONFIG.publications.taxRevenue) {
-      PUBLICATION_CONFIG.publications.taxRevenue.enabled = false;
+      PUBLICATION_CONFIG.publications.taxRevenue.state = "held";
     }
     try {
       const fetchImpl = vi.fn().mockResolvedValue(
@@ -295,7 +319,7 @@ describe("Cloudflare public data route", () => {
       expect((result?.snapshot.meta.sources as Record<string, unknown>).taxRevenue).toBeUndefined();
     } finally {
       if (PUBLICATION_CONFIG.publications.taxRevenue && original !== undefined) {
-        PUBLICATION_CONFIG.publications.taxRevenue.enabled = original;
+        PUBLICATION_CONFIG.publications.taxRevenue.state = original;
       }
     }
   });
@@ -304,11 +328,11 @@ describe("Cloudflare public data route", () => {
     const now = new Date();
     const seedSnapshot = snapshot(now);
     const originalConfig = Object.fromEntries(
-      Object.entries(PUBLICATION_CONFIG.publications).map(([id, pub]) => [id, pub.enabled])
+      Object.entries(PUBLICATION_CONFIG.publications).map(([id, pub]) => [id, pub.state])
     );
     try {
       for (const pub of Object.values(PUBLICATION_CONFIG.publications)) {
-        pub.enabled = false;
+        pub.state = "held";
       }
       const fetchImpl = vi.fn().mockResolvedValue(
         new Response(JSON.stringify(seedSnapshot), {
@@ -319,8 +343,8 @@ describe("Cloudflare public data route", () => {
       const result = await currentPublicSnapshot(environment(null), { now, fetchImpl });
       expect(result).toBeNull();
     } finally {
-      for (const [id, enabled] of Object.entries(originalConfig)) {
-        PUBLICATION_CONFIG.publications[id].enabled = enabled;
+      for (const [id, state] of Object.entries(originalConfig)) {
+        PUBLICATION_CONFIG.publications[id].state = state;
       }
     }
   });
@@ -339,8 +363,8 @@ describe("Cloudflare public data route", () => {
   });
 });
 
-// Exercise the enabled-publication behavior independently of the production pause.
+// Exercise the published-publication behavior independently of the production pause.
 vi.mock("@/config/publications.json", async (importOriginal) => {
-  const { default: config } = await importOriginal<{ default: { publications: Record<string, { enabled: boolean }> } }>();
-  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, enabled: true }])), ons: { enabled: true } } } };
+  const { default: config } = await importOriginal<{ default: { publications: Record<string, { state: string }> } }>();
+  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, state: "published" }])), ons: { state: "published" } } } };
 });

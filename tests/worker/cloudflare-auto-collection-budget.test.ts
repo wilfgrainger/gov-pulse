@@ -7,20 +7,22 @@ import queuedWorker, {
   refreshJobs,
 } from "@/worker/queued-publication-entry";
 
-const original = Object.values(PUBLICATION_CONFIG.publications).map(
-  (publication) => ({ publication, enabled: publication.enabled }),
+const original = Object.entries(PUBLICATION_CONFIG.publications).map(
+  ([id, publication]) => [id, publication.state] as const,
 );
 
 afterEach(() => {
-  for (const { publication, enabled } of original) publication.enabled = enabled;
+  for (const [id, state] of original) {
+    PUBLICATION_CONFIG.publications[id].state = state;
+  }
   vi.restoreAllMocks();
 });
 
 describe("Cloudflare automatic collection budget", () => {
-  it("keeps explicit bootstrap coverage while scheduling only enabled publications", () => {
-    for (const item of Object.values(PUBLICATION_CONFIG.publications)) item.enabled = false;
-    PUBLICATION_CONFIG.publications.nationalDebt.enabled = true;
-    PUBLICATION_CONFIG.publications.editionArchive.enabled = true;
+  it("keeps explicit bootstrap coverage while scheduling only published publications", () => {
+    for (const item of Object.values(PUBLICATION_CONFIG.publications)) item.state = "held";
+    PUBLICATION_CONFIG.publications.nationalDebt.state = "published";
+    PUBLICATION_CONFIG.publications.editionArchive.state = "published";
 
     expect(refreshJobs("daily", "daily", { publishedOnly: true })).toEqual([
       {
@@ -36,7 +38,7 @@ describe("Cloudflare automatic collection budget", () => {
   });
 
   it("does no Queue or KV work for an inactive three-hour cron", async () => {
-    PUBLICATION_CONFIG.publications.bettingOdds.enabled = false;
+    PUBLICATION_CONFIG.publications.bettingOdds.state = "held";
     const read = vi.fn();
     const put = vi.fn();
     const sendBatch = vi.fn();
@@ -54,12 +56,11 @@ describe("Cloudflare automatic collection budget", () => {
     expect(send).not.toHaveBeenCalled();
   });
 
-  it("retains a daily collector when its evidence publication is enabled", () => {
-    for (const item of Object.values(PUBLICATION_CONFIG.publications)) item.enabled = false;
-    PUBLICATION_CONFIG.publications.nationalDebt.enabled = true;
+  it("retains a daily collector when its evidence publication is published", () => {
+    for (const item of Object.values(PUBLICATION_CONFIG.publications)) item.state = "held";
+    PUBLICATION_CONFIG.publications.nationalDebt.state = "published";
     expect(refreshJobs("daily", "daily", { publishedOnly: true })).toHaveLength(1);
-    // Restoring the disabled betting publication deliberately turns its cron back on.
-    PUBLICATION_CONFIG.publications.bettingOdds.enabled = true;
+    PUBLICATION_CONFIG.publications.bettingOdds.state = "published";
     expect(refreshJobs("betting", "betting", { publishedOnly: true })).toHaveLength(1);
     expect(DAILY_CRON).toBe("17 3 * * *");
   });

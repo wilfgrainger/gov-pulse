@@ -4,8 +4,7 @@ import {
   FEED_REGISTRY_VERSION,
 } from "../worker/feed-registry.js";
 import { filterCurrentSnapshot } from "../worker/publication-currentness.js";
-import { currentPublicationManifest } from "./publication-manifest.mjs";
-import { validateSnapshot } from "./build-static-snapshot.mjs";
+import { validatePublicProjection, validateSnapshot } from "./lib/publication-validation.mjs";
 
 const maximumBuildAgeMs = 6 * 60 * 60 * 1000;
 const maximumFutureSkewMs = 5 * 60 * 1000;
@@ -35,35 +34,7 @@ function validateGovernmentContractsExtension(snapshot, now = new Date()) {
 }
 
 export function validatePublicationState(snapshot) {
-  const meta = snapshot?.meta;
-  const sourceErrors = Object.values(meta?.sources ?? {}).some(
-    (source) => source && typeof source === "object" &&
-      Object.prototype.hasOwnProperty.call(source, "error")
-  );
-  if (
-    Object.prototype.hasOwnProperty.call(meta ?? {}, "publicationDiagnostics") ||
-    Object.prototype.hasOwnProperty.call(meta ?? {}, "measureCatalogDiagnostics") ||
-    sourceErrors
-  ) {
-    throw new Error("Published snapshot exposes private diagnostics");
-  }
-
-  const {
-    missingRequiredSections: requiredUnavailableSections,
-    unavailableOptionalSections: optionalUnavailableSections,
-  } = currentPublicationManifest(snapshot);
-  const declaredMissing = meta?.missingRequiredSections;
-  const expectedMissing = requiredUnavailableSections;
-  if (
-    !Array.isArray(declaredMissing) ||
-    declaredMissing.some((section) => typeof section !== "string") ||
-    JSON.stringify([...declaredMissing].sort()) !== JSON.stringify(expectedMissing) ||
-    meta?.publicationState !== (expectedMissing.length ? "degraded" : "ready")
-  ) {
-    throw new Error("Published snapshot missing-section manifest is inconsistent");
-  }
-
-  return { requiredUnavailableSections, optionalUnavailableSections };
+  return validatePublicProjection(snapshot);
 }
 
 async function main(rawUrl) {
@@ -92,9 +63,8 @@ async function main(rawUrl) {
 
   let verifiedSections;
   try {
-    // A release may be explicitly degraded when one or more sources are unavailable.
-    // The public manifest records which required sections are missing; source rejection
-    // categories and raw errors stay in private operator state.
+    // Reader artifacts expose only the published projection. Internal feed
+    // readiness and source rejection details stay on the operator health path.
     verifiedSections = validateSnapshot(currentSnapshot, 1, []);
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : String(error));
@@ -103,9 +73,6 @@ async function main(rawUrl) {
   const publicationState = validatePublicationState(
     currentSnapshot
   );
-  if (currentSnapshot.meta.delivery !== "published-snapshot") {
-    throw new Error("Published data is not marked as a verified snapshot");
-  }
   const governmentContracts = validateGovernmentContractsExtension(
     currentSnapshot,
     checkedAt
@@ -113,7 +80,7 @@ async function main(rawUrl) {
   console.log(
     JSON.stringify(
       {
-        status: publicationState.requiredUnavailableSections.length > 0 ? "degraded" : "ok",
+        status: "ok",
         snapshotUrl,
         registryVersion: FEED_REGISTRY_VERSION,
         generatedAt: currentSnapshot.meta.generatedAt,

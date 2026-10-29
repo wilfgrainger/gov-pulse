@@ -1,15 +1,12 @@
-import { REQUIRED_PUBLISHED_SECTION_IDS } from "../worker/feed-registry.js";
-import { currentPublicationManifest } from "./publication-manifest.mjs";
+import { filterCurrentSnapshot } from "../worker/publication-currentness.js";
+import { validatePublicProjection } from "./lib/publication-validation.mjs";
 
 const DEFAULT_ATTEMPTS = 12;
 const DEFAULT_DELAY_MS = 10_000;
 const REQUEST_TIMEOUT_MS = 10_000;
 export const PUBLIC_SECTION_PATHS = [
-  "section/pm-approval/",
   "section/election-polls/",
   "section/betting-odds/",
-  "section/govt-approval/",
-  "section/gov-trust-trend/",
   "section/national-debt/",
   "section/gdp/",
   "section/economy/",
@@ -21,6 +18,13 @@ export const PUBLIC_SECTION_PATHS = [
   "section/nhs/",
   "section/migration/",
   "section/early-years/",
+];
+// Retired products are removed rather than kept alive as withdrawn pages
+// (docs/history/2026-10-07-retired-product-ledger.md); their old URLs must 404.
+export const RETIRED_SECTION_PATHS = [
+  "section/pm-approval/",
+  "section/govt-approval/",
+  "section/gov-trust-trend/",
   "section/uk-regions/",
   "section/policy-links/",
 ];
@@ -201,51 +205,50 @@ export function verifyHealthJson(text, options = {}) {
 }
 
 export function verifySnapshotJson(text, options = {}) {
-  const allowedMissingSections = new Set(options.allowedMissingSections ?? []);
-
   try {
     const payload = JSON.parse(text);
     const failures = [];
+
     if (!payload?.meta || typeof payload.meta.registryVersion !== "string") {
       failures.push("public data snapshot registry version was not found");
     }
     if (!payload?.meta?.sources || typeof payload.meta.sources !== "object") {
       failures.push("public data snapshot source manifest was not found");
+      return failures;
     }
-    if (
-      Object.prototype.hasOwnProperty.call(payload?.meta ?? {}, "publicationDiagnostics") ||
-      Object.prototype.hasOwnProperty.call(payload?.meta ?? {}, "measureCatalogDiagnostics") ||
-      Object.values(payload?.meta?.sources ?? {}).some((source) =>
-        source && typeof source === "object" &&
-          Object.prototype.hasOwnProperty.call(source, "error")
-      )
-    ) {
-      failures.push("public data snapshot exposes private diagnostics");
-    }
-    const { missingRequiredSections: actualMissing } = currentPublicationManifest(
-      payload,
-      options.now ?? new Date(),
-    );
-    const actualMissingSet = new Set(actualMissing);
-    for (const section of REQUIRED_PUBLISHED_SECTION_IDS) {
-      if (!actualMissingSet.has(section)) continue;
-      if (allowedMissingSections.has(section)) {
-        continue;
+
+    try {
+      validatePublicProjection(payload);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/private publication state/i.test(message)) {
+        failures.push("public data snapshot exposes private diagnostics");
+      } else if (/does not contain a valid public projection|does not match its source manifest/i.test(message)) {
+        failures.push("public data snapshot public projection is invalid");
+      } else {
+        failures.push("public data snapshot public projection could not be verified");
       }
-      failures.push(`public data snapshot is missing required section ${section}`);
     }
-    const declaredMissing = payload?.meta?.missingRequiredSections;
-    const expectedMissing = [...actualMissing].sort();
-    const healthMissing = [...allowedMissingSections].sort();
-    if (
-      !Array.isArray(declaredMissing) ||
-      declaredMissing.some((section) => typeof section !== "string") ||
-      JSON.stringify([...declaredMissing].sort()) !== JSON.stringify(expectedMissing) ||
-      JSON.stringify(expectedMissing) !== JSON.stringify(healthMissing) ||
-      payload?.meta?.publicationState !== (expectedMissing.length ? "degraded" : "ready")
-    ) {
-      failures.push("public data snapshot publication state does not match its missing-section manifest");
+
+    const sourceIds = Object.keys(payload.meta.sources).sort();
+    if (sourceIds.length === 0) {
+      failures.push("public data snapshot has no published evidence");
+      return failures;
     }
+
+    const current = filterCurrentSnapshot(payload, options.now ?? new Date());
+    if (!current?.meta?.sources) {
+      failures.push("public data snapshot has no current published evidence");
+      return failures;
+    }
+
+    const currentIds = new Set(Object.keys(current.meta.sources));
+    for (const section of sourceIds) {
+      if (!currentIds.has(section)) {
+        failures.push(`public data snapshot contains stale published section ${section}`);
+      }
+    }
+
     return failures;
   } catch {
     return ["public data snapshot returned invalid JSON"];
@@ -410,6 +413,7 @@ export async function verifyProduction({
     path,
     url: new URL(path, rootUrl).toString(),
   }));
+  const retiredUrls = RETIRED_SECTION_PATHS.map((path) => new URL(path, rootUrl).toString());
   const downloadUrls = PUBLIC_DOWNLOAD_SECTION_IDS.flatMap((section) =>
     ["json", "csv"].map((extension) => ({
       section,
@@ -440,6 +444,7 @@ export async function verifyProduction({
         fetchText(sitemapUrl, fetchImpl),
         fetchText(robotsUrl, fetchImpl),
         fetchText(feedUrl, fetchImpl),
+        ...retiredUrls.map((retiredUrl) => fetchResult(retiredUrl, fetchImpl)),
       ]);
       const sectionHtml = remaining.slice(0, sectionUrls.length);
       const downloadResults = remaining.slice(
@@ -449,6 +454,7 @@ export async function verifyProduction({
       const sitemapXml = remaining[sectionUrls.length + downloadUrls.length];
       const robotsTxt = remaining[sectionUrls.length + downloadUrls.length + 1];
       const feedXml = remaining[sectionUrls.length + downloadUrls.length + 2];
+      const retiredResults = remaining.slice(sectionUrls.length + downloadUrls.length + 3);
       let snapshotGeneratedAt;
       try {
         snapshotGeneratedAt = JSON.parse(snapshotJson)?.meta?.generatedAt;
@@ -481,11 +487,16 @@ export async function verifyProduction({
         ...verifySitemapXml(sitemapXml),
         ...verifyRobotsTxt(robotsTxt),
         ...verifyEvidenceFeed(feedXml, { allowedMissingSections }),
+        ...retiredUrls.flatMap((retiredUrl, index) =>
+          retiredResults[index]?.status === 404
+            ? []
+            : [`retired route ${retiredUrl} returned HTTP ${retiredResults[index]?.status ?? "unknown"} instead of 404`],
+        ),
       ];
 
       if (failures.length === 0) {
         log.info(
-          `Verified ${rootUrl} serves revision ${expectedRevision}, verified ready or explicitly degraded public data, the international comparison publication, all public section routes including UK in context, discovery metadata, sitemap, robots and RSS.`,
+          `Verified ${rootUrl} serves revision ${expectedRevision}, verified ready or explicitly degraded public data, the international comparison publication, all public section routes including UK in context, retired routes returning 404, discovery metadata, sitemap, robots and RSS.`,
         );
         return;
       }

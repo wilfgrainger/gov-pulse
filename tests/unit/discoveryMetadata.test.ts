@@ -81,10 +81,8 @@ describe("section discovery contract", () => {
       name: "UK in context",
       url: "https://public-data.org/section/uk-in-context/",
     });
-    expect(structuredDataForSection("pm-approval")).toMatchObject({
-      "@type": "Article",
-      articleSection: "Politics",
-    });
+    // Retired products are removed rather than described as withdrawn articles.
+    expect(structuredDataForSection("pm-approval")).toBeNull();
   });
 
   it("uses the primary source publication date rather than retrieval or snapshot generation time", () => {
@@ -189,8 +187,8 @@ describe("section discovery contract", () => {
   });
 });
 
-// Exercise the enabled-publication behavior independently of the production pause.
+// Exercise the published-publication behavior independently of the production pause.
 vi.mock("@/config/publications.json", async (importOriginal) => {
-  const { default: config } = await importOriginal<{ default: { publications: Record<string, { enabled: boolean }> } }>();
-  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, enabled: true }])), ons: { enabled: true } } } };
+  const { default: config } = await importOriginal<{ default: { publications: Record<string, { state: string }> } }>();
+  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, state: "published" }])), ons: { state: "published" } } } };
 });

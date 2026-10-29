@@ -3,11 +3,14 @@ import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { FEED_REGISTRY, PUBLICATION_SOURCE_REGISTRY } from "../worker/feed-registry.js";
+import { FEED_CATALOG } from "../contracts/source-catalog.js";
+import { PUBLICATION_STATES } from "../contracts/publication-policy.js";
 
 const INVENTORY_PATH = "docs/architecture/source-ownership.json";
 const ACTIVE_REQUIRED_FIELDS = ["collector", "normalizer", "entrypoint", "schedule", "storage", "fallback"];
 const IMPLEMENTATION_FIELDS = ["collector", "normalizer", "entrypoint"];
-const WITHDRAWN_REQUIRED_FIELDS = ["consumer", "schedule", "storage", "fallback"];
+const PUBLICATION_CONFIG_PATH = "config/publications.json";
+const PUBLIC_SURFACES_PATH = "contracts/public-surfaces.json";
 
 function nonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
@@ -132,61 +135,130 @@ function validateStaticSources(inventory, projectRoot, failures) {
   }
 }
 
-function validateWithdrawnSources(inventory, projectRoot, failures) {
-  if (!Array.isArray(inventory.withdrawnSources)) {
-    failures.push("withdrawnSources must be an array");
-    return new Set();
-  }
-  const sections = uniqueValues(inventory.withdrawnSources, "section", "withdrawn sources", failures);
-  for (const source of inventory.withdrawnSources) {
-    const label = source?.section ?? "unknown withdrawn section";
-    if (source?.collector !== null || source?.normalizer !== null) {
-      failures.push(`${label}: withdrawn sources must have null collector and normalizer`);
-    }
-    for (const field of WITHDRAWN_REQUIRED_FIELDS) {
-      if (!nonEmptyString(source?.[field])) failures.push(`${label}: ${field} must be recorded`);
-    }
-    if (!repositoryPathExists(source?.consumer, projectRoot)) {
-      failures.push(`${label}: consumer path '${source?.consumer ?? "missing"}' does not exist`);
-    }
-    if (source?.schedule !== "none") failures.push(`${label}: withdrawn sources must not schedule current collection`);
-  }
-  return new Set(sections);
+function loadJson(relativePath, projectRoot) {
+  return JSON.parse(fs.readFileSync(path.resolve(projectRoot, relativePath), "utf8"));
 }
 
-function validateWithdrawnRoutes(inventory, activeSections, withdrawnSections, projectRoot, failures) {
-  if (!Array.isArray(inventory.withdrawnRoutes)) {
-    failures.push("withdrawnRoutes must be an array");
+function rejectLegacyWithdrawnInventory(inventory, failures) {
+  for (const field of ["withdrawnSources", "withdrawnRoutes"]) {
+    if (Object.hasOwn(inventory, field)) {
+      failures.push(
+        `${field} is no longer supported; retired products are removed from runtime ownership and ` +
+          `recorded as publication decisions in ${PUBLICATION_CONFIG_PATH}`,
+      );
+    }
+  }
+}
+
+function inventoryMembership(inventory) {
+  const membership = new Map();
+  for (const [list, label] of [["sources", "sources"], ["publicationSources", "publicationSources"], ["staticSources", "staticSources"]]) {
+    if (!Array.isArray(inventory[list])) continue;
+    for (const source of inventory[list]) {
+      const section = source?.section;
+      if (!nonEmptyString(section)) continue;
+      membership.set(section, [...(membership.get(section) ?? []), label]);
+    }
+  }
+  return membership;
+}
+
+// Every catalogued source must be owned by exactly one inventory list, and
+// every inventoried section must be a catalogued source.
+function validateCatalogCoverage(membership, catalog, failures) {
+  for (const [section, lists] of membership) {
+    if (lists.length > 1) failures.push(`${section}: inventoried more than once (${lists.join(", ")})`);
+    if (!Object.hasOwn(catalog, section)) failures.push(`${section}: not declared in the canonical source catalog`);
+  }
+  for (const id of Object.keys(catalog)) {
+    if (!membership.has(id)) failures.push(`${id}: canonical source is not inventoried`);
+  }
+}
+
+// Every inventoried source needs exactly one explicit published / held /
+// retired decision. Retired products are removed from runtime ownership, so a
+// retired decision must not keep a source in the inventory.
+function validatePublicationDecisions(membership, publicationConfig, failures) {
+  const publications = publicationConfig?.publications;
+  if (!publications || typeof publications !== "object" || Array.isArray(publications)) {
+    failures.push(`${PUBLICATION_CONFIG_PATH}: publications must be an object`);
+    return null;
+  }
+  for (const [id, decision] of Object.entries(publications)) {
+    if (!PUBLICATION_STATES.includes(decision?.state)) {
+      failures.push(`${id}: publication state must be one of ${PUBLICATION_STATES.join(", ")}`);
+    }
+    if (!nonEmptyString(decision?.reasonCode) || !nonEmptyString(decision?.reason)) {
+      failures.push(`${id}: publication decision must record reasonCode and reason`);
+    }
+    if (decision?.sections !== undefined &&
+      (!Array.isArray(decision.sections) || decision.sections.some((route) => !nonEmptyString(route)))) {
+      failures.push(`${id}: publication sections must be an array of route ids`);
+    }
+  }
+  for (const section of membership.keys()) {
+    const decision = publications[section];
+    if (!decision) {
+      failures.push(`${section}: no publication decision (published, held or retired) is recorded`);
+    } else if (decision.state === "retired") {
+      failures.push(`${section}: retired sources must be removed from source ownership`);
+    }
+  }
+  return publications;
+}
+
+// Every public topic route is claimed by exactly one publication decision, and
+// every route a decision claims is a reviewed public topic.
+function validateRoutes(publications, surfaces, failures) {
+  if (!publications) return;
+  if (!Array.isArray(surfaces?.topics)) {
+    failures.push(`${PUBLIC_SURFACES_PATH}: topics must be an array`);
     return;
   }
-  uniqueValues(inventory.withdrawnRoutes, "route", "withdrawn routes", failures);
-  for (const route of inventory.withdrawnRoutes) {
-    const label = route?.route ?? "unknown withdrawn route";
-    if (!nonEmptyString(route?.source)) failures.push(`${label}: source must be recorded`);
-    if (!activeSections.has(route?.source) && !withdrawnSections.has(route?.source)) {
-      failures.push(`${label}: source '${route?.source ?? "missing"}' is not inventoried`);
+  const topicIds = surfaces.topics.map((topic) => topic?.id);
+  if (new Set(topicIds).size !== topicIds.length) failures.push(`${PUBLIC_SURFACES_PATH}: topics must contain unique id values`);
+  for (const topic of surfaces.topics) {
+    if (topic?.status !== "active") {
+      failures.push(`${topic?.id ?? "unknown topic"}: public topic status must be active; retired routes are removed`);
     }
-    if (!repositoryPathExists(route?.consumer, projectRoot)) {
-      failures.push(`${label}: consumer path '${route?.consumer ?? "missing"}' does not exist`);
+  }
+
+  const owners = new Map();
+  for (const [id, decision] of Object.entries(publications)) {
+    for (const route of Array.isArray(decision?.sections) ? decision.sections : []) {
+      owners.set(route, [...(owners.get(route) ?? []), id]);
     }
+  }
+  for (const [route, ids] of owners) {
+    if (ids.length > 1) failures.push(`route '${route}': claimed by more than one publication decision (${ids.join(", ")})`);
+    if (!topicIds.includes(route)) failures.push(`route '${route}': not a reviewed public topic`);
+  }
+  for (const route of topicIds) {
+    if (!owners.has(route)) failures.push(`route '${route}': no publication decision owns this route`);
   }
 }
 
-function validateSourceOwnership(inventory, projectRoot = process.cwd()) {
+function validateSourceOwnership(
+  inventory,
+  projectRoot = process.cwd(),
+  {
+    publicationConfig = loadJson(PUBLICATION_CONFIG_PATH, projectRoot),
+    surfaces = loadJson(PUBLIC_SURFACES_PATH, projectRoot),
+    catalog = FEED_CATALOG,
+  } = {},
+) {
   const failures = [];
   if (!inventory || typeof inventory !== "object" || Array.isArray(inventory)) {
     return ["source ownership inventory must be an object"];
   }
-  const activeSections = validateActiveSources(inventory, projectRoot, failures);
-  if (inventory.publicationSources !== undefined) {
-    validateAdditionalSources(inventory.publicationSources, "publicationSources", projectRoot, failures);
-    if (Array.isArray(inventory.publicationSources)) {
-      for (const source of inventory.publicationSources) activeSections.add(source.section);
-    }
-  }
+  validateActiveSources(inventory, projectRoot, failures);
+  validateAdditionalSources(inventory.publicationSources, "publicationSources", projectRoot, failures);
   validateStaticSources(inventory, projectRoot, failures);
-  const withdrawnSections = validateWithdrawnSources(inventory, projectRoot, failures);
-  validateWithdrawnRoutes(inventory, activeSections, withdrawnSections, projectRoot, failures);
+  rejectLegacyWithdrawnInventory(inventory, failures);
+  const membership = inventoryMembership(inventory);
+  validateCatalogCoverage(membership, catalog, failures);
+  const publications = validatePublicationDecisions(membership, publicationConfig, failures);
+  validateRoutes(publications, surfaces, failures);
   if (inventory.browserConsumer && !repositoryPathExists(inventory.browserConsumer, projectRoot)) {
     failures.push(`browserConsumer '${inventory.browserConsumer}' does not exist`);
   }
@@ -204,8 +276,9 @@ function main(projectRoot = process.cwd()) {
     return false;
   }
   console.log(
-    `Source ownership verified for ${inventory.sources.length} active sources, ` +
-      `${inventory.withdrawnSources.length} withdrawn sources and ${inventory.withdrawnRoutes.length} withdrawn routes.`,
+    `Source ownership verified for ${inventory.sources.length} feed sources, ` +
+      `${inventory.publicationSources.length} publication sources and ${inventory.staticSources.length} static sources, ` +
+      "each with one publication decision and one owner per public route.",
   );
   return true;
 }

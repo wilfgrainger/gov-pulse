@@ -1,3 +1,5 @@
+import PublicationOffline from "@/app/components/PublicationOffline";
+import { publicRouteAvailable } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
 import MeasureLibrary from "@/app/components/MeasureLibrary";
 import type { MeasureLibraryItem } from "@/app/components/MeasureLibrary";
@@ -8,7 +10,6 @@ import { measureForDisplay } from "@/app/lib/measureCatalog";
 import { MEASURES } from "@/app/lib/measureDefinitions";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
 import { SECTIONS } from "@/app/lib/sections";
-import { publicationEnabled } from "@/contracts/publication-policy";
 
 export const metadata: Metadata = {
   title: "Measure library",
@@ -17,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 export default async function MeasureIndexPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  if (!publicRouteAvailable("/measure/")) return <PublicationOffline />;
   const query = process.env.STATIC_EXPORT === "true" ? {} : await searchParams;
   const queryEntries: [string, string][] = [];
   for (const [key, value] of Object.entries(query)) {
@@ -31,9 +33,11 @@ export default async function MeasureIndexPage({ searchParams }: { searchParams:
     const record = measureForDisplay(catalog, definition.id, now);
     const source = snapshot?.meta.sources[definition.section];
     const publisher = measurePublisher(definition, source);
-    const availabilityReason = publicationEnabled(definition.section)
-      ? measureAvailabilityReason(definition, { record, source, snapshotAvailable: Boolean(snapshot) })
-      : "This source is held from publication; no observation is shown.";
+    const availabilityReason = measureAvailabilityReason(definition, {
+      record,
+      source,
+      snapshotAvailable: Boolean(snapshot),
+    });
     return {
       ...definition,
       publisher,

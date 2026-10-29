@@ -7,6 +7,26 @@ import SectionPage from "@/app/section/[id]/page";
 import SourceDetailPage from "@/app/sources/[id]/page";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
 
+vi.mock("@/config/publications.json", async (importOriginal) => {
+  const { default: config } = await importOriginal<{
+    default: { version: number; publications: Record<string, Record<string, unknown>> };
+  }>();
+  return {
+    default: {
+      ...config,
+      publications: Object.fromEntries(
+        Object.entries(config.publications).map(([id, entry]) => [
+          id,
+          {
+            ...entry,
+            state: ["nationalDebt", "editionArchive"].includes(id) ? entry.state : "held",
+          },
+        ]),
+      ),
+    },
+  };
+});
+
 vi.mock("@/app/lib/serverMetricsSnapshot", () => ({ readServerMetricsSnapshot: vi.fn(async () => null) }));
 vi.mock("@/app/lib/serverEditionArchive", () => ({ readEditionSummaries: vi.fn(async () => []) }));
 vi.mock("@/app/components/SectionNav", () => ({ default: () => null }));

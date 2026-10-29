@@ -8,6 +8,7 @@ import {
   DEFAULT_SECTION_DOWNLOAD_OUTPUT,
   generateSectionDownloads,
 } from "../../scripts/generate-section-downloads.mjs";
+import { PUBLICATION_CONFIG } from "@/contracts/publication-policy";
 
 const temporaryDirectories: string[] = [];
 
@@ -73,6 +74,8 @@ describe("section download delivery assets", () => {
   });
 
   it("builds downloads from the same current generated snapshot when the optional JSON candidate is absent", async () => {
+    const previousGdpState = PUBLICATION_CONFIG.publications.gdpTracker.state;
+    PUBLICATION_CONFIG.publications.gdpTracker.state = "held";
     const directory = await mkdtemp(join(tmpdir(), "section-download-generated-"));
     temporaryDirectories.push(directory);
     const outputDirectory = join(directory, "sections");
@@ -110,9 +113,12 @@ describe("section download delivery assets", () => {
     expect(readFileSync(join(outputDirectory, "nationalDebt.json"), "utf8")).not.toContain(
       "held-gdp-value",
     );
+    PUBLICATION_CONFIG.publications.gdpTracker.state = previousGdpState;
   });
 
   it("omits held sections from generated JSON and CSV assets", async () => {
+    const previousGdpState = PUBLICATION_CONFIG.publications.gdpTracker.state;
+    PUBLICATION_CONFIG.publications.gdpTracker.state = "held";
     const directory = await mkdtemp(join(tmpdir(), "section-download-policy-"));
     temporaryDirectories.push(directory);
     const snapshotPath = join(directory, "snapshot.json");
@@ -143,5 +149,6 @@ describe("section download delivery assets", () => {
     expect(files).toEqual(["nationalDebt.csv", "nationalDebt.json"]);
     expect(generated).toContain("allowed-debt-value");
     expect(generated).not.toContain("held-gdp-value");
+    PUBLICATION_CONFIG.publications.gdpTracker.state = previousGdpState;
   });
 });

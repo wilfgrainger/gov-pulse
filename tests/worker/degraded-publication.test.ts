@@ -90,7 +90,9 @@ describe("degraded public publication", () => {
     const artifact = buildPublicSnapshotArtifact(snapshot, now);
     const env = {
       METRICS_CACHE: {
-        get: vi.fn(async () => null),
+        get: vi.fn(async (key: string) =>
+          key === PUBLICATION_CURRENT_KEY ? snapshot : null
+        ),
         getWithMetadata: vi.fn(async (key: string) =>
           key === PUBLIC_SNAPSHOT_KEY
             ? { value: artifact.body, metadata: artifact.metadata }
@@ -106,9 +108,13 @@ describe("degraded public publication", () => {
       env
     );
     expect(data.status).toBe(200);
-    const snapshotPayload = await data.json();
-    expect(snapshotPayload.meta.publicationState).toBe("degraded");
-    expect(snapshotPayload.meta.missingRequiredSections).toEqual(["employmentStats"]);
+    const publicData = await data.json();
+    expect(publicData.meta).not.toHaveProperty("publicationState");
+    expect(publicData.meta).not.toHaveProperty("missingRequiredSections");
+    expect(publicData.meta.publicProjection).toMatchObject({
+      state: "published",
+    });
+    expect(publicData.meta.publicProjection.publishedSections).not.toContain("employmentStats");
 
     const health = await publicWorker.fetch(
       new Request("https://public-data.org/data/health.json"),
@@ -142,7 +148,9 @@ describe("degraded public publication", () => {
     legacy.meta.sources.gdpTracker.error = "private source response detail";
     const env = {
       METRICS_CACHE: {
-        get: vi.fn(async () => null),
+        get: vi.fn(async (key: string) =>
+          key === PUBLICATION_CURRENT_KEY ? legacy : null
+        ),
         getWithMetadata: vi.fn(async (key: string) =>
           key === PUBLIC_SNAPSHOT_KEY
             ? {
@@ -193,32 +201,24 @@ describe("degraded public publication", () => {
       [PUBLICATION_CURRENT_KEY, current],
       ["v12:publication:section:gdpTracker", gdpFragment],
     ]);
-    const metadata = new Map<string, Record<string, unknown>>();
-    const get = vi.fn(async (key: string, type?: "json" | "text") => {
-      const value = store.get(key);
-      if (value === undefined) return null;
-      if (type === "text") return typeof value === "string" ? value : JSON.stringify(value);
-      return value;
-    });
-    const put = vi.fn(async (key: string, value: string, options?: { metadata?: Record<string, unknown> }) => {
+    const put = vi.fn(async (key: string, value: string) => {
       try {
         store.set(key, JSON.parse(value));
       } catch {
         store.set(key, value);
       }
-      if (options?.metadata) metadata.set(key, options.metadata);
     });
     const env = {
       METRICS_CACHE: {
-        get,
+        get: vi.fn(async (key: string) => store.get(key) ?? null),
         getWithMetadata: vi.fn(async (key: string) => ({
           value: store.get(key) ?? null,
-          metadata: metadata.get(key) ?? null,
+          metadata: null,
         })),
         put,
+        list: vi.fn(async () => ({ keys: [], list_complete: true })),
         delete: vi.fn(async (key: string) => {
           store.delete(key);
-          metadata.delete(key);
         }),
       },
     };
@@ -249,8 +249,8 @@ describe("degraded public publication", () => {
   });
 });
 
-// Exercise the enabled-publication behavior independently of the production pause.
+// Exercise the published-publication behavior independently of the production pause.
 vi.mock("@/config/publications.json", async (importOriginal) => {
-  const { default: config } = await importOriginal<{ default: { publications: Record<string, { enabled: boolean }> } }>();
-  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, enabled: true }])), ons: { enabled: true } } } };
+  const { default: config } = await importOriginal<{ default: { publications: Record<string, { state: string }> } }>();
+  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, state: "published" }])), ons: { state: "published" } } } };
 });

@@ -1,5 +1,5 @@
 import { SITE_DISCOVERY } from "@/app/lib/discovery";
-import { publicationEnabled } from "@/contracts/publication-policy";
+import { publicationPublished } from "@/contracts/publication-policy";
 import { validateMeasureRecord } from "@/app/lib/measureCatalog";
 import type { MeasureCatalog } from "@/app/lib/measureCatalog";
 import type { MetricsSnapshot } from "@/app/lib/metricsSnapshot";
@@ -106,7 +106,7 @@ function validArchivedEdition(value: unknown, id: string): value is ArchivedEdit
 }
 
 export async function readEditionSummaries(): Promise<ListedEditionSummary[] | null> {
-  if (!publicationEnabled("editionArchive")) return null;
+  if (!publicationPublished("editionArchive")) return null;
   try {
     const response = await fetch(new URL("/data/editions.json", SITE_DISCOVERY.origin), { cache: "no-store", signal: AbortSignal.timeout(8_000) });
     if (!response.ok) return null;
@@ -121,7 +121,7 @@ export async function readEditionSummaries(): Promise<ListedEditionSummary[] | n
 }
 
 export async function readArchivedEdition(id: string): Promise<ArchivedEdition | null> {
-  if (!publicationEnabled("editionArchive")) return null;
+  if (!publicationPublished("editionArchive")) return null;
   if (!safeEditionId(id)) return null;
   try {
     const url = new URL("/data/edition.json", SITE_DISCOVERY.origin);
