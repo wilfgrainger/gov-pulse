@@ -30,18 +30,27 @@ all checks while reducing duplicated setup and build work.
 
 The `quality` PR result is required by the `main` branch ruleset. A merged PR
 therefore carries the source checks, tests and application build used to gate
-that release. On a relevant push to `main`, `deploy.yml` installs both locked
-root and worker-local npm toolchains, prepares assets, performs one OpenNext
-build and deploys the web Worker. Manual deployments run the source checks.
-It reconciles the Queue, then deploys
-and verifies the data Worker. It then checks the deployed revision, reader
-routes and health contract without waiting for source collection. The full job
-has a 15-minute timeout.
+that release. On a relevant push to `main`, `deploy.yml` builds and deploys
+the web Worker and data Worker on separate runners. Each individual-Worker
+token is injected only into its own deploy/metadata steps after locked
+dependency installation. The existing Queue must already be provisioned;
+routine CI has Queue Edit only in the separate manual recovery environment and
+no Queue Read or create permission. Route bindings are dashboard-managed and
+omitted from Wrangler config, so deployment does not need zone route-write
+access. A credential-free verification job checks both deployments, reader
+routes and health contract without waiting for source collection.
 
-Manual dispatch can run a separate evidence-recovery job after deployment or
-rebuild/deploy the secondary Cloudflare Pages seed. Recovery failure remains
-visible on its own job and cannot skip or invalidate the completed code release
-checks. Runtime data collection and KV publication continue independently.
+Manual dispatch can run a separate evidence-recovery job after successful
+deployment or refresh the secondary Cloudflare Pages seed. Recovery uses its
+own main-only GitHub environment with separate Queue Edit and account-scoped
+KV Read tokens. The Queue ID and namespace ID pin the requests made by the
+script; they do not reduce either Cloudflare token's account-wide authority.
+Create those recovery tokens only for an actual recovery, give them short
+expiry, and remove the GitHub secrets and revoke the tokens immediately after
+the run. Pages publishing uses a main-only, project-bound Cloudflare deploy
+hook instead of Pages Write. Recovery failure remains visible on its own job
+and cannot invalidate a completed code release. Runtime data collection and KV
+publication continue independently.
 
 ## Runtime and cost accounting
 

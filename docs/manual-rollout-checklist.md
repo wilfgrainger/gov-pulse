@@ -8,28 +8,34 @@ Routine data publication is automatic on Cloudflare. This checklist is for repos
 
 ## One-time account setup
 
-- Create the `cloudflare-internal-worker` GitHub environment and add
-  `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` to it.
-- Restrict the token to the intended account and `public-data.org` zone while permitting Worker deployment, Worker routes, Queues, KV bindings and Pages deployment.
-- Do not manually create `public-data-jobs`; the production workflow creates or reconciles it.
-- Do not add environment approval requirements unless the user asks for them.
+Follow [Cloudflare credential boundaries](./operations/cloudflare-credential-boundaries.md)
+to create independent Worker tokens and configure the main-only Pages
+deploy-hook secret. Keep the former `CLOUDFLARE_API_TOKEN` active until each
+Worker replacement and its production path have passed. Create the account-wide
+Queue Edit and KV Read recovery tokens only for an actual recovery run; expire
+and revoke them immediately afterward.
+
+Confirm that `public-data-jobs` and the dashboard-managed routes already exist
+before deploying this branch. Routine CI no longer creates Queues or changes
+routes.
 
 ## Normal release
 
 1. Merge a validated pull request into `main`.
 2. The `Deploy public-data.org` workflow automatically:
-   - prepares assets and compiles the deployable OpenNext Worker once (the
-     required PR `quality` result already ran lint, tests and the app build);
-   - creates `public-data-jobs` only when it is absent, using the account's default retention; existing Queue retention is preserved;
-   - deploys the Worker, Cron triggers, routes and bindings from `worker/wrangler.toml`;
-   - verifies the deployed revision, reader routes and `/data/health.json`;
-   - leaves the Pages fallback untouched unless explicitly requested.
+   - builds the web Worker and data Worker on separate runners;
+   - gives each runner only that Worker's token, after dependency installation;
+   - verifies the exact data Worker revision and then checks public routes and
+     `/data/health.json` without Cloudflare credentials;
+   - leaves routes attached in the Cloudflare dashboard;
+   - updates the Git-integrated Pages fallback only when paused or explicitly
+     requested.
 3. No action is required for subsequent data refreshes. Cloudflare Cron and Queue own them.
 
 Manual dispatch on `main` validates the selected source, then can redeploy it,
 request source recovery after deployment, or refresh the bounded Pages fallback.
-Evidence recovery runs in a separate job; its result does not block the deploy
-job's revision and reader-route verification.
+Evidence recovery runs in a separate job after successful deployment and
+verification; its result cannot change the code-release status.
 
 ## Runtime verification
 
@@ -37,7 +43,8 @@ Check the exact public boundaries:
 
 - `/data/health.json` returns HTTP 200 and either `ready` or `bootstrapping`;
 - `/data/metrics-snapshot.json` returns a complete current aggregate once ready;
-- `/data/sections/gdpTracker.json` remains a Pages asset;
+- `/data/sections/gdpTracker.json` remains a Pages asset on the Git-integrated
+  fallback project;
 - arbitrary `/data/*` paths do not expose Worker internals;
 - the homepage loads the same-origin runtime snapshot without a provider-specific public URL.
 
@@ -60,13 +67,16 @@ Do not treat a newer retrieval check as a newer source observation. Do not exten
 
 ### Queue is missing
 
-Rerun the production workflow. Its Queue check performs `wrangler queues info` and creates the named Queue only when absent. It does not overwrite retention configured on an existing Queue; a newly created Queue uses the account's platform default. The deployment should not require dashboard mutation.
+Create `public-data-jobs` in the Cloudflare dashboard using the intended
+retention settings, then rerun the deployment. Routine CI intentionally has no
+Queue management permission.
 
 ### Worker health is unavailable
 
-- Inspect the `deploy-worker` job and Wrangler output.
-- Confirm token permissions for Worker scripts, routes, Queues and KV.
-- Confirm the account ID and the `public-data.org` zone restriction.
+- Inspect the `deploy_web_worker` or `deploy_data_worker` job and Wrangler output.
+- Confirm the individual-Worker token is scoped to the expected Worker and
+  dashboard-managed routes remain attached.
+- Confirm the account ID variable is set in GitHub.
 - Revert the faulty merge or rerun the current `main` workflow after correcting credentials or configuration.
 
 ### Health reports `bootstrapping`
@@ -85,14 +95,19 @@ Rerun the production workflow. Its Queue check performs `wrangler queues info` a
 
 ### Pages deployment fails
 
-The previous Pages release remains active. Runtime data collection and KV publication continue independently. Correct or revert the repository change and let the normal production workflow deploy again.
+The previous Pages release remains active. Runtime data collection and KV
+publication continue independently. Correct or revert the repository change
+and let the normal production workflow deploy again. Do not move the custom
+domain or delete the old Direct Upload project until the new Pages seed and
+offline builds have both been verified.
 
 ## Rollback exercise
 
 A complete rollback exercise must prove both boundaries:
 
 1. Revert or redeploy a previous repository revision and confirm the previous Worker code, routes and triggers are restored.
-2. Confirm the previous Pages revision is serving the expected application commit.
+2. Confirm the previous Pages revision is serving the expected snapshot and
+   the Direct Upload project is still available as rollback.
 3. Confirm the current KV publication remains intact unless the rollback intentionally changes its contract.
 4. Confirm the exact snapshot and health routes remain Worker-owned and section downloads remain Pages-owned.
 5. Record the evidence in issue #257 before declaring the control-plane migration operationally complete.

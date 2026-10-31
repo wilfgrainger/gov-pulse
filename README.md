@@ -79,13 +79,6 @@ The repository contains three active workflows:
 - **Deploy public-data.org** — runs automatically after relevant changes reach `main` and deploys the web and data Workers. Pages refresh remains an explicit recovery operation.
 - **Manual Lighthouse audit** — builds the selected revision and uploads an optional local production-build report.
 
-The production workflow creates or reconciles the `public-data-jobs` Queue before deploying the Worker, so a fresh Cloudflare account does not depend on an undocumented manual Queue step.
-
-Required GitHub environment configuration:
-
-- `cloudflare-internal-worker` with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`;
-- `cloudflare-pages` with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
-
-The token must be restricted to the intended Cloudflare account and `public-data.org` zone while permitting Worker deployment, Worker routes, Queues, KV bindings and Pages deployment. Secret values must never be committed.
+The production workflow requires the existing `public-data-jobs` Queue and does not create or manage it. Worker deployments use separate, individual-Worker credentials; recovery and Pages fallback use separate GitHub environments. See [Cloudflare credential boundaries](./docs/operations/cloudflare-credential-boundaries.md) for exact scopes and the remaining Pages limitation.
 
 Operational checks and recovery are documented in [docs/manual-rollout-checklist.md](./docs/manual-rollout-checklist.md). Issue #257 remains the operational evidence record for consecutive scheduled runs and an exercised rollback; merge status alone is not treated as production proof.

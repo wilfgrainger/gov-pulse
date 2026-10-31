@@ -3,7 +3,9 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { currentPublicationManifest } from "./publication-manifest.mjs";
 
-const DEFAULT_QUEUE_NAME = "public-data-jobs";
+// Queue IDs are public resource identifiers, not credentials. Pin the known
+// queue so recovery needs Queue Edit without account-wide Queue Read/listing.
+const DEFAULT_QUEUE_ID = "bc58398b56234314bcd5f9485292ddbd";
 const DEFAULT_HEALTH_URL = "https://public-data.org/data/health.json";
 const DEFAULT_TIMEOUT_MS = 12 * 60 * 1000;
 const DEFAULT_COMPARISON_TIMEOUT_MS = 90 * 1000;
@@ -163,29 +165,10 @@ async function deploymentPublicationAvailable(fetchImpl, healthUrl, health) {
   return hasPreparedPublication(fetchImpl, healthUrl, health);
 }
 
-async function findQueueId(fetchImpl, accountId, apiToken, queueName) {
-  const response = await fetchImpl(
-    `https://api.cloudflare.com/client/v4/accounts/${accountId}/queues?per_page=100`,
-    {
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${apiToken}`,
-      },
-      signal: AbortSignal.timeout(15_000),
-    }
-  );
-  const payload = await responseJson(response, "Cloudflare Queue lookup");
-  const queue = payload?.result?.find((candidate) => candidate?.queue_name === queueName);
-  if (!queue?.queue_id) {
-    throw new Error(`Cloudflare Queue '${queueName}' was not found after reconciliation`);
-  }
-  return queue.queue_id;
-}
-
 async function readKvValue(
   fetchImpl,
   accountId,
-  apiToken,
+  kvReadToken,
   namespaceId,
   key
 ) {
@@ -194,7 +177,7 @@ async function readKvValue(
     {
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${apiToken}`,
+        Authorization: `Bearer ${kvReadToken}`,
       },
       signal: AbortSignal.timeout(15_000),
     }
@@ -260,7 +243,7 @@ function safeJobIds(value) {
 async function publicationDiagnostics(
   fetchImpl,
   accountId,
-  apiToken,
+  kvReadToken,
   namespaceId,
   deploymentId
 ) {
@@ -269,7 +252,7 @@ async function publicationDiagnostics(
   const run = await readKvValue(
     fetchImpl,
     accountId,
-    apiToken,
+    kvReadToken,
     namespaceId,
     prefix
   );
@@ -284,7 +267,7 @@ async function publicationDiagnostics(
     terminals[jobId] = await readKvValue(
       fetchImpl,
       accountId,
-      apiToken,
+      kvReadToken,
       namespaceId,
       `${prefix}:terminal:${jobId}`
     );
@@ -329,7 +312,7 @@ async function publicationDiagnostics(
 async function waitForComparisonRefresh(
   fetchImpl,
   accountId,
-  apiToken,
+  kvReadToken,
   namespaceId,
   runId,
   timeoutMs,
@@ -346,7 +329,7 @@ async function waitForComparisonRefresh(
       const terminal = await readKvValue(
         fetchImpl,
         accountId,
-        apiToken,
+        kvReadToken,
         namespaceId,
         key
       );
@@ -373,7 +356,7 @@ async function waitForComparisonRefresh(
 async function pushBootstrapMessage(
   fetchImpl,
   accountId,
-  apiToken,
+  queueToken,
   queueId,
   deploymentId,
   forceComparison = false,
@@ -385,7 +368,7 @@ async function pushBootstrapMessage(
       method: "POST",
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${apiToken}`,
+        Authorization: `Bearer ${queueToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -439,7 +422,14 @@ async function bootstrapCloudflarePublication(options = {}) {
       new Promise((resolve) => setTimeout(resolve, milliseconds)));
   const nowImpl = options.nowImpl ?? Date.now;
   const accountId = required(options.accountId, "CLOUDFLARE_ACCOUNT_ID");
-  const apiToken = required(options.apiToken, "CLOUDFLARE_API_TOKEN");
+  const queueToken = required(
+    options.queueToken,
+    "CLOUDFLARE_RECOVERY_QUEUES_TOKEN",
+  );
+  const kvReadToken = required(
+    options.kvReadToken,
+    "CLOUDFLARE_RECOVERY_KV_READ_TOKEN",
+  );
   const includeContracts = options.includeContracts === true;
   const deploymentId = bootstrapAttemptId(
     options.deploymentId,
@@ -447,10 +437,7 @@ async function bootstrapCloudflarePublication(options = {}) {
     options.executionId,
     includeContracts,
   );
-  const queueName = required(
-    options.queueName ?? DEFAULT_QUEUE_NAME,
-    "QUEUE_NAME"
-  );
+  const queueId = DEFAULT_QUEUE_ID;
   const namespaceId = required(
     options.namespaceId ?? DEFAULT_KV_NAMESPACE_ID,
     "CLOUDFLARE_KV_NAMESPACE_ID"
@@ -483,12 +470,6 @@ async function bootstrapCloudflarePublication(options = {}) {
     return { triggered: false, attempts: 0, health: initialHealth };
   }
 
-  const queueId = await findQueueId(
-    fetchImpl,
-    accountId,
-    apiToken,
-    queueName
-  );
   const deadline = nowImpl() + timeoutMs;
   let attempt = 0;
   let latestAttemptId = null;
@@ -502,7 +483,7 @@ async function bootstrapCloudflarePublication(options = {}) {
         const diagnostics = await publicationDiagnostics(
           fetchImpl,
           accountId,
-          apiToken,
+          kvReadToken,
           namespaceId,
           latestAttemptId
         );
@@ -538,7 +519,7 @@ async function bootstrapCloudflarePublication(options = {}) {
       result.comparisonRefresh = await waitForComparisonRefresh(
         fetchImpl,
         accountId,
-        apiToken,
+        kvReadToken,
         namespaceId,
         runId,
         comparisonTimeoutMs,
@@ -554,7 +535,7 @@ async function bootstrapCloudflarePublication(options = {}) {
     await pushBootstrapMessage(
       fetchImpl,
       accountId,
-      apiToken,
+      queueToken,
       queueId,
       attemptId,
       forceComparison,
@@ -571,7 +552,7 @@ async function bootstrapCloudflarePublication(options = {}) {
       const run = await readKvValue(
         fetchImpl,
         accountId,
-        apiToken,
+        kvReadToken,
         namespaceId,
         `v13:publication:run:bootstrap-${latestAttemptId}`
       );
@@ -584,7 +565,7 @@ async function bootstrapCloudflarePublication(options = {}) {
         const terminal = await readKvValue(
           fetchImpl,
           accountId,
-          apiToken,
+          kvReadToken,
           namespaceId,
           `v13:publication:run:bootstrap-${latestAttemptId}:terminal:contracts`
         );
@@ -661,7 +642,7 @@ async function bootstrapCloudflarePublication(options = {}) {
       await publicationDiagnostics(
         fetchImpl,
         accountId,
-        apiToken,
+        kvReadToken,
         namespaceId,
         deploymentId
       )
@@ -681,9 +662,10 @@ async function bootstrapCloudflarePublication(options = {}) {
 async function main() {
   const result = await bootstrapCloudflarePublication({
     accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
-    apiToken: process.env.CLOUDFLARE_API_TOKEN,
+    queueToken: process.env.CLOUDFLARE_RECOVERY_QUEUES_TOKEN,
+    kvReadToken: process.env.CLOUDFLARE_RECOVERY_KV_READ_TOKEN,
     deploymentId: process.env.GITHUB_SHA,
-    queueName: process.env.QUEUE_NAME,
+    queueId: DEFAULT_QUEUE_ID,
     healthUrl: process.env.HEALTH_URL,
     namespaceId: process.env.CLOUDFLARE_KV_NAMESPACE_ID,
     timeoutMs: process.env.BOOTSTRAP_TIMEOUT_MS,
@@ -717,13 +699,11 @@ export {
   DEFAULT_HEALTH_URL,
   DEFAULT_COMPARISON_TIMEOUT_MS,
   DEFAULT_POLL_INTERVAL_MS,
-  DEFAULT_QUEUE_NAME,
   DEFAULT_RECOVERY_INTERVAL_MS,
   DEFAULT_TIMEOUT_MS,
   bootstrapAttemptId,
   bootstrapCloudflarePublication,
   deploymentPublicationAvailable,
-  findQueueId,
   publicationDiagnostics,
   readKvValue,
   positiveInteger,

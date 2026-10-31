@@ -39,21 +39,37 @@ export function unsupportedWorkerIngress(config, surfaces = readPublicSurfaces()
   }
   const routes = workerRouteTables(config);
 
+  if (surfaces.workerRouteManagement === "cloudflare-dashboard") {
+    if (routes.length > 0) {
+      findings.push("Worker routes must remain dashboard-managed and omitted from Wrangler config");
+    }
+    return findings;
+  }
+  if (surfaces.workerRouteManagement !== undefined && surfaces.workerRouteManagement !== "wrangler") {
+    findings.push(`unsupported Worker route management mode '${surfaces.workerRouteManagement}'`);
+    return findings;
+  }
+
   return [...findings, ...surfacesForWorkerIngress(routes, surfaces)];
 }
 
 export function main(projectRoot = process.cwd()) {
   const findings = [];
-  const wranglerPath = path.join(projectRoot, "worker", "wrangler.toml");
-  const hasCloudflareRuntime = fs.existsSync(wranglerPath);
-  if (hasCloudflareRuntime) {
+  const workerConfigPaths = [
+    path.join(projectRoot, "worker", "wrangler.toml"),
+    path.join(projectRoot, "worker", "web-wrangler.toml"),
+  ];
+  const workerConfigs = workerConfigPaths.filter((configPath) =>
+    fs.existsSync(configPath)
+  );
+  for (const configPath of workerConfigs) {
     const workerIngress = unsupportedWorkerIngress(
-      fs.readFileSync(wranglerPath, "utf8"),
+      fs.readFileSync(configPath, "utf8"),
       readPublicSurfaces(projectRoot),
     );
     if (workerIngress.length > 0) {
       findings.push(
-        "The Cloudflare data Worker may expose only the approved evidence contracts:",
+        `The Cloudflare Worker config ${path.relative(projectRoot, configPath)} violates the ingress contract:`,
         ...workerIngress.map((entry) => `- ${entry}`)
       );
     }
@@ -69,8 +85,8 @@ export function main(projectRoot = process.cwd()) {
   }
 
   const surfaces = readPublicSurfaces(projectRoot);
-  const runtimeNote = hasCloudflareRuntime
-    ? `Cloudflare ingress checked across ${surfaces.workerRoutes.length} reviewed public routes.`
+  const runtimeNote = workerConfigs.length > 0
+    ? `Cloudflare ingress checked in ${workerConfigs.length} Worker configs against ${surfaces.workerRoutes.length} reviewed public routes.`
     : "No Cloudflare config found; provider-neutral public route contracts remain checked.";
   console.log(`Architecture check passed: ${runtimeNote}`);
   return true;

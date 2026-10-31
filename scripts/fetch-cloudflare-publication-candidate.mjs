@@ -4,19 +4,18 @@ import { pathToFileURL } from "node:url";
 import { sanitizePublishedSnapshot } from "./build-static-snapshot.mjs";
 import { filterCurrentSnapshot } from "../worker/publication-currentness.js";
 import {
+  assertSameHttpsHost,
+  MAX_RESPONSE_BYTES,
+  readResponseJson,
+} from "../worker/response-limits.js";
+import {
   FEED_REGISTRY_VERSION,
   REQUIRED_PUBLISHED_SECTION_IDS,
 } from "../worker/feed-registry.js";
 
-const DEFAULT_NAMESPACE_ID = "f950b17f36a447dca7bb339cba8818de";
-const DEFAULT_KEY = "v12:publication:current";
 const DEFAULT_OUTPUT = "public/data/metrics-snapshot.json";
-
-function required(name, value) {
-  const normalized = String(value ?? "").trim();
-  if (!normalized) throw new Error(`${name} is required`);
-  return normalized;
-}
+const DEFAULT_PUBLICATION_URL =
+  "https://public-data.org/data/metrics-snapshot.json";
 
 function isRecord(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -65,28 +64,16 @@ export function publicCandidate(value, now = new Date()) {
 }
 
 export async function fetchCandidate({
-  accountId,
-  apiToken,
-  namespaceId = DEFAULT_NAMESPACE_ID,
-  key = DEFAULT_KEY,
   output = DEFAULT_OUTPUT,
   fetchImpl = fetch,
   now = new Date(),
 }) {
-  const account = required("CLOUDFLARE_ACCOUNT_ID", accountId);
-  const token = required("CLOUDFLARE_API_TOKEN", apiToken);
-  const namespace = required("CLOUDFLARE_KV_NAMESPACE_ID", namespaceId);
-  const keyName = required("CLOUDFLARE_PUBLICATION_KEY", key);
+  const candidateUrl = DEFAULT_PUBLICATION_URL;
   const outputPath = resolve(output);
-  const url =
-    `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}` +
-    `/storage/kv/namespaces/${encodeURIComponent(namespace)}` +
-    `/values/${encodeURIComponent(keyName)}`;
-
-  const response = await fetchImpl(url, {
+  const response = await fetchImpl(candidateUrl, {
     headers: {
       Accept: "application/json",
-      Authorization: `Bearer ${token}`,
+      "Cache-Control": "no-cache",
     },
     signal: AbortSignal.timeout(20_000),
   });
@@ -96,10 +83,20 @@ export async function fetchCandidate({
     } catch {
       // Releasing an unsuccessful response body is best effort only.
     }
-    throw new Error(`Cloudflare KV candidate returned ${response.status}`);
+    throw new Error(`Cloudflare publication candidate returned ${response.status}`);
   }
 
-  const candidate = publicCandidate(await response.json(), now);
+  assertSameHttpsHost(response, candidateUrl, "Cloudflare publication candidate");
+  if (response.headers.get("X-Publication-Delivery") !== "cloudflare-kv") {
+    throw new Error("Cloudflare publication candidate was not served from the prepared KV edition");
+  }
+  const candidate = publicCandidate(
+    await readResponseJson(response, {
+      limit: MAX_RESPONSE_BYTES.json,
+      label: "Cloudflare publication candidate",
+    }),
+    now,
+  );
   await mkdir(dirname(outputPath), { recursive: true });
   await writeFile(outputPath, `${JSON.stringify(candidate, null, 2)}\n`, "utf8");
   return {
@@ -111,10 +108,6 @@ export async function fetchCandidate({
 
 async function main() {
   const result = await fetchCandidate({
-    accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
-    apiToken: process.env.CLOUDFLARE_API_TOKEN,
-    namespaceId: process.env.CLOUDFLARE_KV_NAMESPACE_ID,
-    key: process.env.CLOUDFLARE_PUBLICATION_KEY,
     output: process.env.CLOUDFLARE_PUBLICATION_OUTPUT,
   });
   process.stdout.write(

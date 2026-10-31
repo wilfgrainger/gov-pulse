@@ -25,6 +25,7 @@
     "worker:deploy": "npx wrangler deploy --config worker/wrangler.toml",
     "worker:tail": "npx wrangler tail --config worker/wrangler.toml",
     "build:prepare": "node scripts/generate-build-snapshot-module.mjs --optional-missing && node scripts/generate-social-cards.mjs",
+    "pages:build": "node scripts/build-pages-seed.mjs",
     "test:release": "node scripts/release-smoke.mjs"
   },
   "dependencies": {

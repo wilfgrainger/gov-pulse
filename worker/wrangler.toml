@@ -4,35 +4,14 @@ compatibility_date = "2026-03-17"
 workers_dev = false
 preview_urls = false
 
+# Public data routes are managed in the Cloudflare dashboard. Keeping them out
+# of this file avoids granting the deployment token zone-level route access.
+
 [vars]
 ENVIRONMENT = "production"
 DATA_REFRESH_TTL_SECONDS = "14400"
 DATA_STALE_TTL_SECONDS = "86400"
 STATIC_SNAPSHOT_SEED_URL = "https://public-data-org.pages.dev/data/metrics-snapshot.json"
-
-[[routes]]
-pattern = "public-data.org/data/metrics-snapshot.json"
-zone_name = "public-data.org"
-
-[[routes]]
-pattern = "public-data.org/data/health.json"
-zone_name = "public-data.org"
-
-[[routes]]
-pattern = "public-data.org/data/international-comparison.json"
-zone_name = "public-data.org"
-
-[[routes]]
-pattern = "public-data.org/data/editions.json"
-zone_name = "public-data.org"
-
-[[routes]]
-pattern = "public-data.org/data/edition.json*"
-zone_name = "public-data.org"
-
-[[routes]]
-pattern = "public-data.org/data/contracts/history.json*"
-zone_name = "public-data.org"
 
 [triggers]
 crons = ["17 3 * * *", "47 */3 * * *"]

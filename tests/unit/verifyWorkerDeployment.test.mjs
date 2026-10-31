@@ -4,10 +4,10 @@ import { verifyWorkerDeployment } from "../../scripts/verify-worker-deployment.m
 const revision = "a".repeat(40);
 
 describe("Worker deployment verifier", () => {
-  it("accepts the deployed commit in version metadata", () => {
+  it("accepts the deployed commit in the latest deployment message", () => {
     expect(
       verifyWorkerDeployment(
-        { deployments: [{ versionId: "version-1", tag: revision, message: `release ${revision}` }] },
+        { annotations: { "workers/message": `public-data.org Worker ${revision}` } },
         revision,
       ),
     ).toEqual([]);
@@ -15,12 +15,19 @@ describe("Worker deployment verifier", () => {
 
   it("rejects missing, malformed or different deployment revisions", () => {
     expect(verifyWorkerDeployment({ deployments: [] }, revision)).toEqual([
-      `Worker deployment metadata did not contain revision ${revision}`,
+      `Latest Worker deployment metadata did not contain revision ${revision}`,
     ]);
-    expect(verifyWorkerDeployment({ tag: "not-a-sha" }, revision)).toEqual([
-      `Worker deployment metadata did not contain revision ${revision}`,
+    expect(
+      verifyWorkerDeployment(
+        { annotations: { "workers/message": `old release ${"b".repeat(40)}` } },
+        revision,
+      ),
+    ).toEqual([
+      `Latest Worker deployment metadata did not contain revision ${revision}`,
     ]);
-    expect(verifyWorkerDeployment({ tag: revision }, "main")).toEqual([
+    expect(
+      verifyWorkerDeployment({ annotations: { "workers/message": `release ${revision}` } }, "main"),
+    ).toEqual([
       "expected Worker revision must be a full Git commit SHA",
     ]);
   });

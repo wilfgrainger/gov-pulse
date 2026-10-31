@@ -7,35 +7,40 @@ const workflow = readFileSync(
   "utf8",
 );
 
-function productionBody() {
-  const marker = "\n  deploy-production:\n";
+function jobBody(name: string) {
+  const marker = `\n  ${name}:\n`;
   const start = workflow.indexOf(marker);
-  if (start < 0) throw new Error("Missing deploy-production job");
-  return workflow.slice(start);
+  if (start < 0) throw new Error(`Missing ${name} job`);
+  const nextJobPattern = /\n  [A-Za-z0-9_-]+:\n/g;
+  nextJobPattern.lastIndex = start + marker.length;
+  const nextJob = nextJobPattern.exec(workflow)?.index ?? -1;
+  return workflow.slice(start, nextJob < 0 ? undefined : nextJob);
 }
 
 describe("degraded evidence must not block application releases", () => {
-  // The strict 9/9 snapshot belongs to the fallback boundary, never the Worker release boundary.
-  it("deploys the web Worker before requiring a complete static fallback snapshot", () => {
-    const production = productionBody();
-    const webDeploy = production.indexOf("opennextjs-cloudflare deploy");
-    const productionVerify = production.indexOf("npm run test:release");
-    const fallbackCandidate = production.indexOf(
-      "node scripts/fetch-cloudflare-publication-candidate.mjs",
-    );
+  // Worker deploy and live route verification must succeed independently of
+  // the separately gated Pages fallback publication.
+  it("deploys Workers before running the Pages fallback boundary", () => {
+    const webWorker = jobBody("deploy_web_worker");
+    const dataWorker = jobBody("deploy_data_worker");
+    const verification = jobBody("verify_production");
+    const pages = jobBody("publish_pages");
 
-    expect(webDeploy).toBeGreaterThan(-1);
-    expect(productionVerify).toBeGreaterThan(webDeploy);
-    expect(fallbackCandidate).toBeGreaterThan(productionVerify);
+    expect(webWorker).toContain("opennextjs-cloudflare deploy");
+    expect(dataWorker).toContain("npm run worker:deploy");
+    expect(verification).toContain("npm run test:release");
+    expect(pages).toContain("needs: [release_gate, deploy_web_worker, deploy_data_worker, verify_production, recover_evidence]");
+    expect(pages).toContain("npm run pages:build");
+    expect(pages).toContain("Trigger the main-only Pages deploy hook");
   });
 
   it("keeps a complete Pages seed refresh optional when one evidence source is unavailable", () => {
-    const production = productionBody();
+    const pages = jobBody("publish_pages");
 
-    expect(production).toContain("id: pages-seed-candidate");
-    expect(production).toContain("continue-on-error: true");
-    expect(production).toContain(
-      "if: steps.pages-seed-candidate.outcome == 'success'",
-    );
+    expect(pages).toContain("needs.deploy_web_worker.outputs.publications_paused == 'true'");
+    expect(pages).toContain("inputs.refresh_pages_seed == true");
+    expect(pages).toContain("anyPublicationEnabled()");
+    expect(pages).toContain("CLOUDFLARE_PAGES_DEPLOY_HOOK_URL");
+    expect(pages).not.toContain("CLOUDFLARE_API_TOKEN");
   });
 });

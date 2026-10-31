@@ -4,7 +4,7 @@
 > internal, route-less component. The data Worker presently owns six exact
 > public `/data/*` routes,
 > runs a daily plus three-hourly cron, and deploys automatically from `main`.
-> Ground truth lives in `worker/wrangler.toml`, `worker/public-data-entry.js`
+> Ground truth lives in `contracts/public-surfaces.json`, `worker/public-data-entry.js`
 > and `.github/workflows/deploy.yml`; this document only describes them.
 
 ## Role in the delivery plane
@@ -17,7 +17,7 @@ routes as same-origin public contracts.
 
 ## Public HTTP boundary
 
-The Worker currently exposes six public routes, attached in `worker/wrangler.toml` and enumerated in `contracts/public-surfaces.json`:
+The Worker currently exposes six public routes, managed in the Cloudflare dashboard and enumerated in `contracts/public-surfaces.json`:
 
 - `/data/metrics-snapshot.json`
 - `/data/health.json`
@@ -27,8 +27,11 @@ The Worker currently exposes six public routes, attached in `worker/wrangler.tom
 - `/data/contracts/history.json?ocid=<validated-OCID>`
 
 Every unlisted path returns 404. Add a reader capability by updating the public contract and its tests with the route; six is the current inventory, not a permanent product limit. `workers_dev = false` and `preview_urls = false`
-still prevent `workers.dev` and preview hostnames, so current public ingress is
-the listed zoned routes. The edition routes are read-only, bounded, and
+still prevent `workers.dev` and preview hostnames. The route manifest defines
+the approved public contract; production route bindings remain dashboard-managed
+so routine deployment tokens need no zone-level route access. Verify the six
+dashboard bindings against the manifest before the first deployment using this
+configuration. The edition routes are read-only, bounded, and
 serve only retained historical evidence. No collector, refresh or diagnostic
 route is public. Do not add a wildcard `/data/*`, a browser-to-collector call,
 or an exposed cache key or secret without an explicit recorded architecture

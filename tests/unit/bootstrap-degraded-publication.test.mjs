@@ -78,7 +78,7 @@ describe("Cloudflare deployment bootstrap with degraded evidence", () => {
 
     const result = await bootstrapCloudflarePublication({
       accountId: "account",
-      apiToken: "token",
+      queueToken: "queue-token", kvReadToken: "kv-token",
       deploymentId: SHA,
       fetchImpl,
     });

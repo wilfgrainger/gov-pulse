@@ -40,19 +40,49 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy-production:
+  release_gate:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      current: ${{ steps.current.outputs.current }}
+    steps:
+      - name: Confirm this release is still the current main commit
+        id: current
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          latest_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          if [[ "$latest_sha" != "$RELEASE_SHA" ]]; then
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "Skipped this stale release; the current main revision will deploy in its own serialized run." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "current=true" >> "$GITHUB_OUTPUT"
+
+  deploy_web_worker:
+    needs: release_gate
+    if: needs.release_gate.outputs.current == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      publications_paused: ${{ steps.publication_controls.outputs.paused }}
     environment:
-      name: cloudflare-internal-worker
+      name: cloudflare-web-worker
       url: https://public-data.org/
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - name: Checkout source without a persistent GitHub credential
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -60,22 +90,12 @@ jobs:
             package-lock.json
             worker/package-lock.json
 
-      - name: Install locked dependencies
+      - name: Install locked dependencies without Cloudflare credentials
         run: npm ci --prefer-offline --no-audit --no-fund
 
-      - name: Install locked OpenNext toolchain
+      - name: Install locked OpenNext toolchain without Cloudflare credentials
         run: npm ci --prefix worker --prefer-offline --no-audit --no-fund
 
-      - name: Validate Cloudflare credentials
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing CLOUDFLARE_API_TOKEN"; exit 1; }
-          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Missing CLOUDFLARE_ACCOUNT_ID"; exit 1; }
-
-      # Main updates arrive through PRs whose required `quality` result has
-      # already validated this code. Manual deployments keep the local guard.
       - name: Validate manually dispatched release source
         if: github.event_name == 'workflow_dispatch'
         run: npm run lint && npm run test
@@ -101,122 +121,136 @@ jobs:
         env:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
 
-      - name: Deploy request-time public-data.org web Worker
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: >-
-          ./worker/node_modules/.bin/opennextjs-cloudflare deploy
-          --config worker/web-wrangler.toml
-
-      - name: Reconcile Cloudflare Queue
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          QUEUE_NAME: public-data-jobs
+      - name: Deploy and verify the exact web Worker revision with its isolated credential
         shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WEB_WORKER_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          if ! npx wrangler queues info "$QUEUE_NAME" >/dev/null 2>&1; then
-            npx wrangler queues create "$QUEUE_NAME" || npx wrangler queues info "$QUEUE_NAME"
-          fi
+          ./worker/node_modules/.bin/opennextjs-cloudflare deploy \
+            --config worker/web-wrangler.toml \
+            --tag "$GITHUB_SHA" \
+            --message "public-data.org web Worker $GITHUB_SHA"
+          npx wrangler deployments status \
+            --json \
+            --config worker/web-wrangler.toml \
+            > "$RUNNER_TEMP/web-worker-deployments.json"
+          node scripts/verify-worker-deployment.mjs "$GITHUB_SHA" \
+            < "$RUNNER_TEMP/web-worker-deployments.json"
 
-      - name: Deploy Cloudflare data Worker
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: >-
-          npm run worker:deploy --
-          --tag "$GITHUB_SHA"
-          --message "public-data.org Worker $GITHUB_SHA"
+      - name: Check publication controls
+        id: publication_controls
+        run: node --input-type=module -e 'import {anyPublicationEnabled} from "./contracts/publication-policy.js"; console.log(`paused=${!anyPublicationEnabled()}`)' >> "$GITHUB_OUTPUT"
 
-      - name: Verify Worker deployment
+  deploy_data_worker:
+    needs: release_gate
+    if: needs.release_gate.outputs.current == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: cloudflare-data-worker
+      url: https://public-data.org/data/health.json
+    steps:
+      - name: Checkout source without a persistent GitHub credential
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            worker/package-lock.json
+
+      - name: Install locked dependencies without Cloudflare credentials
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Install locked OpenNext toolchain without Cloudflare credentials
+        run: npm ci --prefix worker --prefer-offline --no-audit --no-fund
+
+      - name: Validate manually dispatched release source
+        if: github.event_name == 'workflow_dispatch'
+        run: npm run lint && npm run test
+
+      - name: Prepare generated data and assets
+        run: npm run build:prepare
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: >-
-          npx wrangler deployments status
-          --json
-          --config worker/wrangler.toml
-          | node scripts/verify-worker-deployment.mjs "$GITHUB_SHA"
+          NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
+
+      - name: Deploy and verify the exact data Worker revision with its isolated credential
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DATA_WORKER_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npm run worker:deploy -- \
+            --tag "$GITHUB_SHA" \
+            --message "public-data.org Worker $GITHUB_SHA"
+          npx wrangler deployments status \
+            --json \
+            --config worker/wrangler.toml \
+            > "$RUNNER_TEMP/data-worker-deployments.json"
+          node scripts/verify-worker-deployment.mjs "$GITHUB_SHA" \
+            < "$RUNNER_TEMP/data-worker-deployments.json"
+
+  verify_production:
+    if: github.ref == 'refs/heads/main'
+    needs: [deploy_web_worker, deploy_data_worker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production-smoke
+      url: https://public-data.org/
+    steps:
+      - name: Checkout source without a persistent GitHub credential
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install locked dependencies without Cloudflare credentials
+        run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: Verify deployed revision and reader routes
         run: npm run test:release -- "https://public-data.org/" "${{ github.sha }}"
 
-      - name: Check publication controls
-        id: publication-controls
-        run: node --input-type=module -e 'import {anyPublicationEnabled} from "./contracts/publication-policy.js"; console.log(`paused=${!anyPublicationEnabled()}`)' >> "$GITHUB_OUTPUT"
-
-      - name: Withdraw the public Pages seed while all publications are offline
-        if: steps.publication-controls.outputs.paused == 'true'
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          mkdir -p out-paused
-          cp worker/offline-pages-entry.js out-paused/_worker.js
-          echo 'Data publications are temporarily offline.' > out-paused/index.html
-          npx wrangler pages deploy out-paused --project-name public-data-org --branch main --commit-hash "$GITHUB_SHA"
-
-      - name: Fetch complete publication for bounded Pages seed fallback
-        id: pages-seed-candidate
-        if: github.event_name == 'workflow_dispatch' && inputs.refresh_pages_seed
-        continue-on-error: true
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_PUBLICATION_OUTPUT: public/data/metrics-snapshot.json
-        run: node scripts/fetch-cloudflare-publication-candidate.mjs
-
-      - name: Build bounded Pages seed fallback
-        if: steps.pages-seed-candidate.outcome == 'success'
-        run: npm run build:check
-        env:
-          STATIC_EXPORT: "true"
-          NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
-
-      - name: Deploy Pages seed fallback
-        if: steps.pages-seed-candidate.outcome == 'success'
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: >-
-          npx wrangler pages deploy ./out
-          --project-name public-data-org
-          --branch main
-          --commit-hash "$GITHUB_SHA"
-          --commit-message "Seed fallback $GITHUB_SHA"
-
-      - name: Verify Pages seed evidence download
-        if: steps.pages-seed-candidate.outcome == 'success'
-        run: >-
-          curl --fail --silent --show-error
-          --retry 20 --retry-all-errors --retry-delay 5
-          https://public-data-org.pages.dev/data/sections/gdpTracker.json
-          --output /dev/null
-
-  recover-evidence:
-    if: github.event_name == 'workflow_dispatch' && inputs.refresh_evidence
-    needs: deploy-production
+  recover_evidence:
+    if: github.event_name == 'workflow_dispatch' && inputs.refresh_evidence && needs.release_gate.outputs.current == 'true'
+    needs: [release_gate, deploy_web_worker, deploy_data_worker, verify_production]
     runs-on: ubuntu-latest
     timeout-minutes: 16
+    permissions:
+      contents: read
     environment:
-      name: cloudflare-internal-worker
+      name: cloudflare-publication-recovery
       url: https://public-data.org/data/health.json
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version-file: .nvmrc
 
       - name: Bootstrap national evidence and force the independent comparison refresh
         if: inputs.refresh_contracts != true
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_RECOVERY_QUEUES_TOKEN: ${{ secrets.CLOUDFLARE_RECOVERY_QUEUES_TOKEN }}
+          CLOUDFLARE_RECOVERY_KV_READ_TOKEN: ${{ secrets.CLOUDFLARE_RECOVERY_KV_READ_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           HEALTH_URL: https://public-data.org/data/health.json
           BOOTSTRAP_TIMEOUT_MS: "420000"
           FORCE_PUBLICATION_REFRESH: "true"
@@ -226,11 +260,123 @@ jobs:
       - name: Bootstrap national, comparison, and contracts evidence
         if: inputs.refresh_contracts == true
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_RECOVERY_QUEUES_TOKEN: ${{ secrets.CLOUDFLARE_RECOVERY_QUEUES_TOKEN }}
+          CLOUDFLARE_RECOVERY_KV_READ_TOKEN: ${{ secrets.CLOUDFLARE_RECOVERY_KV_READ_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           HEALTH_URL: https://public-data.org/data/health.json
           BOOTSTRAP_TIMEOUT_MS: "660000"
           FORCE_PUBLICATION_REFRESH: "true"
           FORCE_COMPARISON_REFRESH: "true"
           FORCE_CONTRACTS_REFRESH: "true"
         run: node scripts/bootstrap-cloudflare-publication.mjs
+
+  publish_pages:
+    if: >-
+      always() &&
+      needs.release_gate.outputs.current == 'true' &&
+      needs.verify_production.result == 'success' &&
+      (
+        (
+          needs.deploy_web_worker.outputs.publications_paused == 'true' &&
+          (github.event_name != 'workflow_dispatch' || inputs.refresh_pages_seed != true)
+        ) ||
+        (
+          github.event_name == 'workflow_dispatch' &&
+          github.ref == 'refs/heads/main' &&
+          inputs.refresh_pages_seed == true &&
+          needs.recover_evidence.result != 'failure' &&
+          needs.recover_evidence.result != 'cancelled'
+        )
+      )
+    needs: [release_gate, deploy_web_worker, deploy_data_worker, verify_production, recover_evidence]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    environment:
+      name: cloudflare-pages
+      url: https://public-data-org-git.pages.dev/
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install locked build dependencies without Cloudflare credentials
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Build the selected Pages fallback without Cloudflare credentials
+        id: pages_build
+        env:
+          NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          npm run pages:build
+          node --input-type=module -e 'import {anyPublicationEnabled} from "./contracts/publication-policy.js"; console.log(`mode=${anyPublicationEnabled() ? "seed" : "offline"}`)' >> "$GITHUB_OUTPUT"
+
+      - name: Confirm this release is still the current main commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          latest_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          test "$latest_sha" = "$RELEASE_SHA"
+
+      - name: Trigger the main-only Pages deploy hook
+        shell: bash
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.CLOUDFLARE_PAGES_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          hook_url="${DEPLOY_HOOK_URL:-}"
+          unset DEPLOY_HOOK_URL
+          if [[ ! "$hook_url" =~ ^https://api\.cloudflare\.com/client/v4/pages/webhooks/deploy_hooks/[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}$ ]]; then
+            echo "::error::Set a valid main-only Pages deploy hook URL in the cloudflare-pages environment secret." >&2
+            exit 1
+          fi
+          printf 'url = "%s"\n' "$hook_url" |
+            curl --config - --silent --show-error --fail --proto '=https' --tlsv1.2 --max-time 30 \
+              --request POST --output /dev/null
+          unset hook_url
+
+      - name: Verify the published Pages fallback
+        shell: bash
+        env:
+          PAGES_MODE: ${{ steps.pages_build.outputs.mode }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          marker="$RUNNER_TEMP/pages-release.json"
+          url="https://public-data-org-git.pages.dev/"
+          if [[ "$PAGES_MODE" == "seed" ]]; then
+            url="https://public-data-org-git.pages.dev/data/sections/gdpTracker.json"
+          fi
+
+          for attempt in {1..60}; do
+            marker_status="$(curl --silent --show-error --output "$marker" --write-out '%{http_code}' --max-time 15 --header 'Cache-Control: no-cache' "https://public-data-org-git.pages.dev/release.json?release=$RELEASE_SHA" || true)"
+            if [[ "$marker_status" == "200" ]] && node --input-type=module - "$marker" "$RELEASE_SHA" <<'NODE'
+          import { readFileSync } from "node:fs";
+          const release = JSON.parse(readFileSync(process.argv[2], "utf8"));
+          process.exit(release.commitSha === process.argv[3] && release.branch === "main" ? 0 : 1);
+          NODE
+            then
+              status="$(curl --silent --show-error --output "$RUNNER_TEMP/pages-fallback" --write-out '%{http_code}' --max-time 15 --header 'Cache-Control: no-cache' "$url?release=$RELEASE_SHA" || true)"
+              if [[ "$status" == "200" ]] && [[ -s "$RUNNER_TEMP/pages-fallback" ]]; then
+                if [[ "$PAGES_MODE" == "seed" ]] || grep -Fq "Data publications are temporarily offline." "$RUNNER_TEMP/pages-fallback"; then
+                  exit 0
+                fi
+              fi
+            fi
+            sleep 5
+          done
+
+          echo "::error::The Pages project did not publish the exact validated main revision and expected $PAGES_MODE fallback." >&2
+          exit 1
