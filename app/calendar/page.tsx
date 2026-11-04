@@ -20,9 +20,11 @@ export default async function CalendarPage() {
   const snapshot = await readServerMetricsSnapshot();
   const catalog = snapshot?.meta.measureCatalog as MeasureCatalog | undefined;
   const calendarHeld = !publicationEnabled("releaseCalendar") && !publicationEnabled("nhsReleaseCalendar");
-  const events = calendarHeld ? [] : buildReleaseEvents(snapshot);
   const generatedAt = snapshot?.meta.generatedAt;
-  const calendarDate = typeof generatedAt === "string" && Number.isFinite(Date.parse(generatedAt)) ? generatedAt : new Date().toISOString();
+  const generatedAtKnown = typeof generatedAt === "string" && Number.isFinite(Date.parse(generatedAt));
+  // Without a verified generation time no event can be judged current, so the calendar is empty rather than dated "now".
+  const events = calendarHeld || !generatedAtKnown ? [] : buildReleaseEvents(snapshot);
+  const calendarDate = generatedAtKnown ? generatedAt : new Date(0).toISOString();
   return <div className="min-h-screen bg-background text-foreground"><a href="#calendar" className="sr-only focus:not-sr-only focus:block focus:bg-white focus:p-4">Skip to release calendar</a><SectionNav sections={SECTIONS}/><main id="calendar" className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-12">
     <header className="mb-8 border-b-4 border-foreground bg-surface-warm p-5 md:p-8"><p className="eyebrow">On-device tools</p><h1 className="mt-2 text-5xl font-black tracking-[-0.06em] md:text-7xl">Release calendar</h1><p className="mt-4 max-w-3xl text-base leading-7 text-gray-700">Upcoming dates come only from named publishers. Follow measures locally in this browser and export your selected IDs to carry them to another device.</p></header>
     {calendarHeld ? <div className="mb-8"><EvidenceHoldNotice id="release-calendar-publication-held">Release schedules are not currently authorised for publication. The calendar will show dates only after the publisher’s schedule is verified; it never guesses missing dates.</EvidenceHoldNotice></div> : null}

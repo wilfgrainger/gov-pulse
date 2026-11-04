@@ -363,7 +363,7 @@ function createImmutableEdition(input) {
 
   const entries = decisions
     .map((decision) => ({ evidenceId: decision.evidenceId, decisionId: decision.id }))
-    .sort((left, right) => left.evidenceId.localeCompare(right.evidenceId));
+    .sort((left, right) => (left.evidenceId < right.evidenceId ? -1 : left.evidenceId > right.evidenceId ? 1 : 0));
   const fingerprint = `content-${fnv64(JSON.stringify(entries))}`;
   const id = `edition-${fnv64(JSON.stringify({ publishedAt, previousEditionId, entries }))}`;
 

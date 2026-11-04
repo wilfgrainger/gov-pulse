@@ -38,7 +38,14 @@ async function fetchPublicationSeedSnapshot(env, fetchImpl = fetch, now = new Da
       headers: { Accept: "application/json" },
       signal: AbortSignal.timeout(8_000),
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      try {
+        await response.body?.cancel();
+      } catch {
+        // Releasing an unsuccessful response body is best effort only.
+      }
+      return null;
+    }
 
     assertSameHttpsHost(response, url, "Pages seed");
     const payload = await readResponseJson(response, {
