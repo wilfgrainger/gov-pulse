@@ -278,7 +278,9 @@ jobs:
       (
         (
           needs.deploy_web_worker.outputs.publications_paused == 'true' &&
-          (github.event_name != 'workflow_dispatch' || inputs.refresh_pages_seed != true)
+          (github.event_name != 'workflow_dispatch' || inputs.refresh_pages_seed != true) &&
+          needs.recover_evidence.result != 'failure' &&
+          needs.recover_evidence.result != 'cancelled'
         ) ||
         (
           github.event_name == 'workflow_dispatch' &&
@@ -308,19 +310,17 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
-      - name: Install locked build dependencies without Cloudflare credentials
-        run: npm ci --prefer-offline --no-audit --no-fund
-
-      - name: Build the selected Pages fallback without Cloudflare credentials
+      - name: Select the Pages fallback mode
         id: pages_build
         env:
-          NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
+          PAUSED: ${{ needs.deploy_web_worker.outputs.publications_paused }}
         run: |
           set -euo pipefail
-          npm run pages:build
-          node --input-type=module -e 'import {anyPublicationEnabled} from "./contracts/publication-policy.js"; console.log(`mode=${anyPublicationEnabled() ? "seed" : "offline"}`)' >> "$GITHUB_OUTPUT"
+          if [[ "$PAUSED" == "true" ]]; then mode=offline; else mode=seed; fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
 
       - name: Confirm this release is still the current main commit
+        id: still_current
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -328,9 +328,15 @@ jobs:
         run: |
           set -euo pipefail
           latest_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
-          test "$latest_sha" = "$RELEASE_SHA"
+          if [[ "$latest_sha" != "$RELEASE_SHA" ]]; then
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "Skipped Pages: a newer main commit will publish its own fallback." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "current=true" >> "$GITHUB_OUTPUT"
 
       - name: Trigger the main-only Pages deploy hook
+        if: steps.still_current.outputs.current == 'true'
         shell: bash
         env:
           DEPLOY_HOOK_URL: ${{ secrets.CLOUDFLARE_PAGES_DEPLOY_HOOK_URL }}
@@ -348,6 +354,7 @@ jobs:
           unset hook_url
 
       - name: Verify the published Pages fallback
+        if: steps.still_current.outputs.current == 'true'
         shell: bash
         env:
           PAGES_MODE: ${{ steps.pages_build.outputs.mode }}

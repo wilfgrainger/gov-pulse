@@ -437,7 +437,7 @@ async function bootstrapCloudflarePublication(options = {}) {
     options.executionId,
     includeContracts,
   );
-  const queueId = DEFAULT_QUEUE_ID;
+  const queueId = options.queueId ?? DEFAULT_QUEUE_ID;
   const namespaceId = required(
     options.namespaceId ?? DEFAULT_KV_NAMESPACE_ID,
     "CLOUDFLARE_KV_NAMESPACE_ID"
@@ -665,7 +665,7 @@ async function main() {
     queueToken: process.env.CLOUDFLARE_RECOVERY_QUEUES_TOKEN,
     kvReadToken: process.env.CLOUDFLARE_RECOVERY_KV_READ_TOKEN,
     deploymentId: process.env.GITHUB_SHA,
-    queueId: DEFAULT_QUEUE_ID,
+    queueId: process.env.CLOUDFLARE_QUEUE_ID || DEFAULT_QUEUE_ID,
     healthUrl: process.env.HEALTH_URL,
     namespaceId: process.env.CLOUDFLARE_KV_NAMESPACE_ID,
     timeoutMs: process.env.BOOTSTRAP_TIMEOUT_MS,

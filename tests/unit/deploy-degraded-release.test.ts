@@ -30,7 +30,9 @@ describe("degraded evidence must not block application releases", () => {
     expect(dataWorker).toContain("npm run worker:deploy");
     expect(verification).toContain("npm run test:release");
     expect(pages).toContain("needs: [release_gate, deploy_web_worker, deploy_data_worker, verify_production, recover_evidence]");
-    expect(pages).toContain("npm run pages:build");
+    // Cloudflare Pages runs pages:build itself; the GitHub job only selects the mode and fires the hook.
+    expect(pages).not.toContain("npm run pages:build");
+    expect(pages).toContain("Select the Pages fallback mode");
     expect(pages).toContain("Trigger the main-only Pages deploy hook");
   });
 
@@ -39,7 +41,7 @@ describe("degraded evidence must not block application releases", () => {
 
     expect(pages).toContain("needs.deploy_web_worker.outputs.publications_paused == 'true'");
     expect(pages).toContain("inputs.refresh_pages_seed == true");
-    expect(pages).toContain("anyPublicationEnabled()");
+    expect(pages).toContain("needs.deploy_web_worker.outputs.publications_paused");
     expect(pages).toContain("CLOUDFLARE_PAGES_DEPLOY_HOOK_URL");
     expect(pages).not.toContain("CLOUDFLARE_API_TOKEN");
   });

@@ -86,7 +86,7 @@ export function main(projectRoot = process.cwd()) {
 
   const surfaces = readPublicSurfaces(projectRoot);
   const runtimeNote = workerConfigs.length > 0
-    ? `Cloudflare ingress checked in ${workerConfigs.length} Worker configs against ${surfaces.workerRoutes.length} reviewed public routes.`
+    ? `Cloudflare Worker configs (${workerConfigs.length}) checked for dashboard-managed ingress; the ${surfaces.workerRoutes.length} reviewed public routes are verified live after deploy, not here.`
     : "No Cloudflare config found; provider-neutral public route contracts remain checked.";
   console.log(`Architecture check passed: ${runtimeNote}`);
   return true;

@@ -145,7 +145,7 @@ describe("government contracts publication", () => {
     expect(workflow).not.toContain("public-data-jobs");
     expect(source("worker/wrangler.toml")).toContain('queue = "public-data-jobs"');
     expect(workflow).not.toContain("--message-retention-period-secs");
-    expect(workflow).toContain("npm run pages:build");
+    expect(source("package.json")).toContain('"pages:build": "node scripts/build-pages-seed.mjs"');
     expect(source("scripts/build-pages-seed.mjs")).toContain(
       'output: resolve(root, "public/data/metrics-snapshot.json")'
     );
