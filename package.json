@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "build:check": "node scripts/generate-build-snapshot-module.mjs --optional-missing && node scripts/check-build-output.mjs",
     "start": "next start",
     "lint": "eslint",
@@ -19,7 +19,6 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:live": "node scripts/snapshot-canary.mjs",
-    "snapshot:build": "node scripts/build-static-snapshot.mjs",
     "snapshot:diagnostics": "node scripts/generate-publication-diagnostics.mjs",
     "worker:dev": "npx wrangler dev --config worker/wrangler.toml",
     "worker:deploy": "npx wrangler deploy --config worker/wrangler.toml",

@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 import FinancialTimeSeriesChart, { addCadenceBreaks } from "@/app/components/FinancialTimeSeriesChart";
 
@@ -124,5 +125,37 @@ describe("FinancialTimeSeriesChart keyboard scrubber", () => {
     expect(table).toHaveTextContent("February 2024");
     expect(table).toHaveTextContent("March 2024");
     expect(table).toHaveTextContent("30 units");
+  });
+
+  it("provides the latest published values in an SSR fallback without chart JavaScript", () => {
+    const html = renderToStaticMarkup(<FinancialTimeSeriesChart
+      title="Example chart"
+      description="Example description"
+      data={data}
+      series={series}
+      valueFormatter={(value) => `${value} units`}
+      showEvents={false}
+    />);
+
+    expect(html).toContain("The interactive chart requires JavaScript");
+    expect(html).toContain("Latest published values for March 2024");
+    expect(html).toContain("Example measure 30 units");
+    expect(html).toContain("January 2024 to March 2024");
+    expect(html).not.toContain("animate-pulse");
+  });
+
+  it("keeps the observation table in the document for no-JavaScript readers", () => {
+    const html = renderToStaticMarkup(<FinancialTimeSeriesChart
+      title="Example chart"
+      description="Example description"
+      data={data}
+      series={series}
+      valueFormatter={(value) => `${value} units`}
+      showEvents={false}
+    />);
+
+    expect(html).toContain("Published observations from January 2024 to March 2024");
+    expect(html).toContain("January 2024");
+    expect(html).toContain("30 units");
   });
 });

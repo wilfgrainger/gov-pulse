@@ -217,8 +217,15 @@ function rankComparisonObservations(observations) {
     return { ...observation, rank: null };
   });
 
-  const comparable = validated
-    .filter((observation) => observation.value !== null)
+  // A rank is only meaningful across one period and one basis: never rank a
+  // 2024 historical value against a 2026 projection.
+  const rankable = validated.filter((observation) => observation.value !== null);
+  const periods = new Set(rankable.map((observation) => `${observation.observationYear}:${observation.valueType}`));
+  if (periods.size > 1) {
+    throw new Error("Comparison observations must share one observationYear and valueType to be ranked together");
+  }
+
+  const comparable = rankable
     .sort((left, right) => right.value - left.value || left.country.localeCompare(right.country));
 
   let previousValue = null;

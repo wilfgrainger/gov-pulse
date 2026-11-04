@@ -169,7 +169,11 @@ function discoverHousePriceIndexChartUrl(html, bulletinUrl) {
   if (!match) {
     throw new Error("ONS house price index bulletin did not expose the Figure 1 CSV download link");
   }
-  return new URL(decodeHtml(match[1]).replace(/&amp;/gi, "&"), bulletinUrl).toString();
+  const resolved = new URL(decodeHtml(match[1]).replace(/&amp;/gi, "&"), bulletinUrl);
+  if (resolved.protocol !== "https:" || resolved.origin !== new URL(bulletinUrl).origin) {
+    throw new Error("ONS house price index bulletin CSV link left the bulletin's HTTPS origin");
+  }
+  return resolved.toString();
 }
 
 function parseCsvColumns(line) {

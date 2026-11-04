@@ -169,17 +169,6 @@ function validDebtPayload(data, now = new Date()) {
 // wrapping so their behaviour matches the doll exactly.
 // ---------------------------------------------------------------------------
 
-const GENERIC_SECTIONS = Object.freeze([
-  "gdpTracker",
-  "sentimentPulse",
-  "employmentStats",
-  "nationalDebt",
-  "migrationStats",
-  "housePriceIndex",
-  "realWages",
-  "crimeStatistics",
-]);
-
 function sectionLabel(section) {
   return FEED_REGISTRY[section].upstreams.map((upstream) => upstream.label).join(" + ");
 }
@@ -327,7 +316,6 @@ const SECTION_BUILDERS = Object.freeze({
 });
 
 export {
-  GENERIC_SECTIONS,
   SECTION_BUILDERS,
   buildCurrentEconomicIndicators,
   measureValidityFor,

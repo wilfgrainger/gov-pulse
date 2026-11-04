@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { AUTOMATED_METRIC_KEYS } from "@/app/lib/metricFallbacks";
+import { DATA_SOURCES } from "@/app/lib/config";
 import {
   FEED_REGISTRY,
   FEED_REGISTRY_VERSION,
@@ -16,7 +16,10 @@ import {
 describe("feed registry", () => {
   it("covers every automated Worker section exactly once", () => {
     expect(Object.keys(FEED_REGISTRY).sort()).toEqual(
-      [...AUTOMATED_METRIC_KEYS].sort()
+      Object.entries(DATA_SOURCES)
+        .filter(([, meta]) => meta.automation === "automated" && meta.collectionLayer !== "publication")
+        .map(([key]) => key)
+        .sort()
     );
   });
 

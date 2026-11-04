@@ -10,11 +10,8 @@
     { "pattern": "public-data.org/data/contracts/history.json*", "zone_name": "public-data.org", "required": true, "queryParams": { "ocid": "^ocds-h6vhtk-[0-9a-f]+$" } }
   ],
   "topics": [
-    { "id": "pm-approval", "status": "withdrawn" },
     { "id": "election-polls", "status": "active" },
     { "id": "betting-odds", "status": "active" },
-    { "id": "govt-approval", "status": "withdrawn" },
-    { "id": "gov-trust-trend", "status": "withdrawn" },
     { "id": "national-debt", "status": "active" },
     { "id": "gdp", "status": "active" },
     { "id": "economy", "status": "active" },
@@ -27,9 +24,7 @@
     { "id": "migration", "status": "active" },
     { "id": "real-wages", "status": "active" },
     { "id": "house-price-index", "status": "active" },
-    { "id": "early-years", "status": "active" },
-    { "id": "uk-regions", "status": "withdrawn" },
-    { "id": "policy-links", "status": "withdrawn" }
+    { "id": "early-years", "status": "active" }
   ],
   "measureDefinitions": "contracts/measure-definitions.json",
   "privatePathPrefixes": [

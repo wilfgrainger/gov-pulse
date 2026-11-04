@@ -17,6 +17,7 @@ import { buildEditionSummary } from "./edition-summary.js";
 const PUBLICATION_CURRENT_KEY = "v12:publication:current";
 const PUBLICATION_STATUS_KEY = "v12:publication:status";
 const PUBLICATION_HISTORY_PREFIX = "v12:publication:history:";
+const PUBLICATION_COMMIT_KEY = "v12:publication:commit";
 
 function isRecord(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -38,6 +39,10 @@ async function kvGet(env, key) {
 async function readCurrentPublication(env) {
   const payload = await kvGet(env, PUBLICATION_CURRENT_KEY);
   return isSnapshot(payload) ? payload : null;
+}
+
+async function readCurrentCommitManifest(env) {
+  return kvGet(env, PUBLICATION_COMMIT_KEY);
 }
 
 // The live queue path (queued-publication-entry.js:storeSectionFragment) only
@@ -126,11 +131,13 @@ function mergePublication(previous, refreshedRecords, contractsRecord, now = new
 }
 
 export {
+  PUBLICATION_COMMIT_KEY,
   PUBLICATION_CURRENT_KEY,
   PUBLICATION_HISTORY_PREFIX,
   PUBLICATION_STATUS_KEY,
   isSnapshot,
   mergePublication,
+  readCurrentCommitManifest,
   readCurrentPublication,
   refreshSectionPayload,
 };

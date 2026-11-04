@@ -1,5 +1,5 @@
-import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationRouteEnabled } from "@/contracts/publication-policy";
+import EvidenceHoldNotice from "@/app/components/EvidenceHoldNotice";
+import { publicationEnabled } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -11,12 +11,73 @@ import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
 import { readEditionSummaries } from "@/app/lib/serverEditionArchive";
 import { SECTIONS } from "@/app/lib/sections";
 import { selectSourceRecordMeasures } from "@/app/lib/sourceHistory";
+import { DATA_SOURCE_DETAILS } from "@/app/lib/dataSourceDetails";
 import { FEED_REGISTRY, PUBLICATION_SOURCE_REGISTRY } from "@/worker/feed-registry";
 
 type SourcePageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ measure?: string | string[] }>;
 };
+
+type PublicUpstream = { publisher?: string; label?: string; url: string };
+
+function publicUpstreams(id: string): PublicUpstream[] {
+  const sourceConfig = (PUBLICATION_SOURCE_REGISTRY as Record<string, { upstreams?: PublicUpstream[] }>)[id]
+    ?? (FEED_REGISTRY as Record<string, { upstreams?: PublicUpstream[] }>)[id];
+  const upstreams = (sourceConfig?.upstreams ?? []).filter((upstream) => upstream.url.startsWith("https://"));
+  if (upstreams.length > 0) return upstreams;
+  if (id === "governmentContracts") {
+    return [{ publisher: "Find a Tender", label: "Find a Tender service", url: "https://www.find-tender.service.gov.uk/" }];
+  }
+  return [];
+}
+
+function HeldSourceRecord({ id, title }: { id: string; title: string }) {
+  const detail = DATA_SOURCE_DETAILS[id];
+  const upstreams = publicUpstreams(id);
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <a href="#source-record" className="sr-only focus:not-sr-only focus:block focus:bg-white focus:p-4">Skip to source record</a>
+      <SectionNav sections={SECTIONS} />
+      <main id="source-record" className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-12">
+        <header className="mb-8 border-b-4 border-foreground bg-surface-warm p-5 md:p-8">
+          <p className="eyebrow">Publisher and source lineage</p>
+          <h1 className="mt-2 break-words text-5xl font-black tracking-[-0.06em] md:text-7xl">{title}</h1>
+          <p className="mt-4 max-w-3xl text-base leading-7 text-gray-700">This source record explains the evidence family and its measurement limits. Later retrieval alone is not a revision.</p>
+        </header>
+        <EvidenceHoldNotice id="source-publication-held">
+          This source&apos;s evidence is held from publication. The public record contains no current observations or private collection diagnostics.
+        </EvidenceHoldNotice>
+        {detail ? (
+          <section className="mt-8 border border-line-strong bg-white p-5 md:p-7">
+            <h2 className="text-2xl font-black">Measurement and coverage</h2>
+            <dl className="mt-4 grid gap-px border border-line-strong bg-line-strong sm:grid-cols-2">
+              <div className="bg-white p-4"><dt className="text-xs font-bold uppercase tracking-wider text-gray-600">Publication period</dt><dd className="mt-2 text-sm leading-6">{detail.publicationPeriod}</dd></div>
+              <div className="bg-white p-4"><dt className="text-xs font-bold uppercase tracking-wider text-gray-600">Unit</dt><dd className="mt-2 text-sm leading-6">{detail.unit}</dd></div>
+              <div className="bg-white p-4"><dt className="text-xs font-bold uppercase tracking-wider text-gray-600">Revision status</dt><dd className="mt-2 text-sm leading-6">{detail.revisionStatus}</dd></div>
+              <div className="bg-white p-4 sm:col-span-2"><dt className="text-xs font-bold uppercase tracking-wider text-gray-600">Caveat</dt><dd className="mt-2 text-sm leading-6">{detail.caveat}</dd></div>
+            </dl>
+          </section>
+        ) : null}
+        {upstreams.length ? (
+          <section className="mt-8 border-t border-line-strong pt-6">
+            <h2 className="text-xl font-bold">Primary publisher material</h2>
+            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm">
+              {upstreams.map((upstream) => (
+                <li key={upstream.url}>
+                  <a className="font-semibold underline" href={upstream.url} target="_blank" rel="noreferrer">{upstream.label ?? upstream.publisher ?? "Open publisher source"}</a>
+                  {upstream.publisher && upstream.label ? ` · ${upstream.publisher}` : ""}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+        <p className="mt-8 text-sm"><Link className="font-semibold underline" href="/sources/">All sources and methods</Link> · <Link className="font-semibold underline" href="/measure/">Browse the measure library</Link></p>
+      </main>
+      <SiteFooter />
+    </div>
+  );
+}
 
 export function generateStaticParams() {
   return Object.keys(PUBLICATION_SOURCE_REGISTRY).map((id) => ({ id }));
@@ -39,6 +100,7 @@ function selectedMeasureId(value: string | string[] | undefined): string | undef
 
 function sourceTitle(id: string, measures: Awaited<ReturnType<typeof sourceData>>["measures"], measureId?: string) {
   if (measureId || measures.length === 1) return measures[0]?.label ?? id;
+  if (id === "governmentContracts") return "Government contract award releases";
   const feed = (FEED_REGISTRY as Record<string, { title?: string }>)[id];
   const publication = (PUBLICATION_SOURCE_REGISTRY as Record<string, { title?: string }>)[id];
   return feed?.title ?? publication?.title ?? `${id} source collection`;
@@ -65,8 +127,18 @@ function displayEvidenceClass(
 }
 
 export async function generateMetadata({ params, searchParams }: SourcePageProps): Promise<Metadata> {
-  const [{ id }, query] = await Promise.all([params, searchParams]);
+  const { id } = await params;
   if (!/^[A-Za-z0-9._-]{1,160}$/.test(id)) return {};
+  if (!Object.hasOwn(PUBLICATION_SOURCE_REGISTRY, id) && !Object.hasOwn(FEED_REGISTRY, id)) return {};
+  if (!publicationEnabled(id)) {
+    const title = sourceTitle(id, []);
+    return {
+      title: `${title} source record`,
+      description: `Publisher identity, measurement coverage and caveats for ${title}. Evidence is held from public release.`,
+      alternates: { canonical: `https://public-data.org/sources/${encodeURIComponent(id)}/` },
+    };
+  }
+  const query = process.env.STATIC_EXPORT === "true" ? {} : await searchParams;
   const measureId = selectedMeasureId(query.measure);
   if (measureId === null) return {};
   const { measures } = await sourceData(id, measureId);
@@ -79,11 +151,15 @@ export async function generateMetadata({ params, searchParams }: SourcePageProps
 }
 
 export default async function SourceDetailPage({ params, searchParams }: SourcePageProps) {
-  const [{ id }, query] = await Promise.all([params, searchParams]);
-  if (!publicationRouteEnabled(`/sources/${id}/`)) return <PublicationOffline />;
+  const { id } = await params;
   if (!/^[A-Za-z0-9._-]{1,160}$/.test(id)) notFound();
+  if (!Object.hasOwn(PUBLICATION_SOURCE_REGISTRY, id) && !Object.hasOwn(FEED_REGISTRY, id)) notFound();
+  const query = process.env.STATIC_EXPORT === "true" ? {} : await searchParams;
   const measureId = selectedMeasureId(query.measure);
   if (measureId === null) notFound();
+  if (!publicationEnabled(id)) {
+    return <HeldSourceRecord id={id} title={sourceTitle(id, [], undefined)} />;
+  }
   const [{ snapshot, measures, status, invalidMeasureSelection }, editions] = await Promise.all([sourceData(id, measureId), readEditionSummaries()]);
   if (snapshot && (measures.length === 0 || invalidMeasureSelection)) notFound();
   const sourceMeasure = measureId || measures.length === 1 ? measures[0] ?? null : null;

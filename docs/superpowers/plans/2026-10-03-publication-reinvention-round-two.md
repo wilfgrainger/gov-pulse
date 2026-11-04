@@ -1,5 +1,7 @@
 # Public Evidence Reinvention 2026: Round Two Plan
 
+> **Historical plan — superseded for execution by [the V1 master delivery plan](../../v1/MASTER-DELIVERY-PLAN.md).** Preserve its source checks and implementation evidence; its checkboxes and task order are not current authority.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Each task is an independently reviewable PR; do not bundle unrelated feature work.
 
 **Goal:** Verify and finish the ten public evidence features against live sources and user journeys, then fix only the gaps that fail their acceptance checks.

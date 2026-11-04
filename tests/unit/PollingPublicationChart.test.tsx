@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import PollingPublicationChart from "@/app/components/PollingPublicationChart";
 
@@ -75,5 +76,17 @@ describe("poll publication party controls", () => {
       ticks.every((label) => /^-?\d+(?:[.,]\d+)?%$/.test(label)),
       `Rendered y-axis ticks: ${ticks.join(", ")}`,
     ).toBe(true);
+  });
+
+  it("provides a no-JavaScript summary in the SSR fallback instead of a loading skeleton", () => {
+    const html = renderToStaticMarkup(
+      <PollingPublicationChart polls={polls} partyMeta={partyMeta} partyOrder={["conservative", "labour"]} />,
+    );
+
+    expect(html).toContain("The interactive scatter plot requires JavaScript");
+    expect(html).toContain("each point is one pollster-reported result for Conservative, Labour.");
+    expect(html).toContain("No average, uncertainty interval or trend line is shown.");
+    expect(html).toContain("No average, uncertainty interval or trend line is shown");
+    expect(html).not.toContain("animate-pulse");
   });
 });

@@ -1,4 +1,4 @@
-# Current Cloudflare workload baseline (model refreshed 2 October 2026)
+# Current Cloudflare workload baseline (revised 22 October 2026)
 
 > This is a workload estimate. The 20% headroom figure below is a planning
 > target, not a product, code-size or blanket release gate; reassess it against
@@ -8,14 +8,24 @@ This is a repository workload model, not evidence of Cloudflare account
 entitlement. It is derived from `worker/feed-registry.js`, the scheduled cron
 expressions in `worker/queued-publication-entry.js`, and `worker/wrangler.toml`.
 
-The healthy recurring schedule has nine cron invocations: one daily run and
-eight three-hour betting refreshes. The daily run queues twelve registered
-feeds, one contracts refresh and one finaliser (14 deliveries). Each
-three-hour run queues the betting refresh and one finaliser (16 deliveries).
-The resulting target is 30 queue deliveries per day. The code records a
-planning factor of three queue operations per delivery, or 90 operations/day;
-this factor is a conservative project estimate, not a Cloudflare billing
-definition.
+The deployment still receives nine cron invocations daily: one national run and
+eight three-hour betting checks. **Only enabled evidence publications generate
+scheduled work**; held feeds no longer write KV or enqueue Queue jobs. The
+current V1 switches enable only the nationalDebt source. Thus the proposed
+healthy schedule queues one section refresh and one finaliser per day: **two
+Queue deliveries/day**, compared with the former all-feed model's 30.
+The eight betting cron invocations return without Queue or KV calls. The
+independently scheduled international-comparison refresh also skips while held.
+These are deterministic projections from code/config, **not measured Cloudflare
+usage or proof of plan headroom**. Manual bootstraps, replay and account-wide
+workload are separate.
+
+The planning factor of three Queue operations per delivery makes the current
+two-delivery example six project operations/day. This is a conservative
+estimate, not the platform's billing definition. When another source is
+enabled its daily collection automatically resumes; update the projection.
+Stored held-source evidence remains private and manual recovery remains
+available.
 
 The national finaliser checks the edition archive once per daily run. A steady
 duplicate publication costs two KV reads for the existing summary and index.
@@ -47,12 +57,14 @@ limits; those published limits describe the platform, not the account's
 remaining headroom ([pricing](https://developers.cloudflare.com/workers/platform/pricing/),
 [KV limits](https://developers.cloudflare.com/kv/platform/limits/)).
 
-The queue allows three retries. If every scheduled delivery exhausts all three
-retries, the configured upper bound is 120 deliveries/day and 360 project
-operations/day. This is a failure bound, not a healthy target. Bootstrap and
-manual recovery traffic are excluded and must be budgeted separately. The
-derived schedule is tested so a new active feed or retry allowance cannot
-silently leave the inventory unchanged.
+The queue allows three retries. If the two projected daily deliveries each
+exhaust all three retries, their modeled upper bound is eight deliveries/day,
+not including new jobs explicitly enqueued by application retry handling.
+The former 120-delivery/day failure projection applied only to the old 30-job
+all-source schedule. Bootstrap, manual recovery and re-sends are separate.
+The scheduled collection tests cover disabled-feed no-ops and preserve the
+ability to force a verified bootstrap. Measure actual Queue deliveries,
+retries and KV writes before trusting either estimate.
 
 This model describes the current Cloudflare deployment only. It is not a
 Cloudflare-Free requirement or proof that quotas, CPU, KV, Queue, storage, build
