@@ -1,5 +1,5 @@
 import { SITE_DISCOVERY } from "@/app/lib/discovery";
-import { publicationPublished } from "@/contracts/publication-policy";
+import { filterPublicationCatalog, filterPublicationSummary, publicationPublished } from "@/contracts/publication-policy";
 import { validateMeasureRecord } from "@/app/lib/measureCatalog";
 import type { MeasureCatalog } from "@/app/lib/measureCatalog";
 import type { MetricsSnapshot } from "@/app/lib/metricsSnapshot";
@@ -114,7 +114,10 @@ export async function readEditionSummaries(): Promise<ListedEditionSummary[] | n
     if (!object(payload) || !Array.isArray(payload.editions) || typeof payload.retention !== "number" ||
       !Number.isInteger(payload.retention) || payload.retention !== payload.editions.length || payload.retention > 60 ||
       !payload.editions.every((edition) => validEditionSummary(edition))) return null;
-    return (payload.editions as ListedEditionSummary[]).toSorted((left, right) =>
+    return (payload.editions as ListedEditionSummary[]).map((edition) => ({
+      ...filterPublicationSummary(edition) as EditionSummary,
+      ...(edition.asOf ? { asOf: edition.asOf } : {}),
+    })).toSorted((left, right) =>
       (right.asOf ?? right.publishedAt).localeCompare(left.asOf ?? left.publishedAt) || right.id.localeCompare(left.id)
     );
   } catch { return null; }
@@ -130,6 +133,9 @@ export async function readArchivedEdition(id: string): Promise<ArchivedEdition |
     if (!response.ok) return null;
     const payload = await response.json() as unknown;
     if (!validArchivedEdition(payload, id)) return null;
-    return payload;
+    // The data Worker already filters, but a source held after the response was cached must not surface here.
+    const measureCatalog = filterPublicationCatalog(payload.measureCatalog) as MeasureCatalog | null;
+    if (!measureCatalog) return null;
+    return { ...payload, measureCatalog, summary: filterPublicationSummary(payload.summary, undefined, measureCatalog) as EditionSummary };
   } catch { return null; }
 }

@@ -287,3 +287,20 @@ describe("international comparison publication", () => {
     expect(publication.measures.defenceSpending.countryHistory?.find((row) => row.country === "GBR" && row.observationYear === 2025)?.valueType).toBe("estimate");
   });
 });
+
+describe("comparison ranking basis", () => {
+  it("refuses to rank observations from different years or value types together", async () => {
+    const { buildComparisonMeasure } = await import("@/worker/international-comparison");
+    const source = { publisher: "IMF", series: "x", url: "https://www.imf.org/x", publicationDate: "2026-04-01" };
+    const base = { definition: "d", sourceReferences: [] };
+    expect(() => buildComparisonMeasure({
+      id: "governmentDebt",
+      ...base,
+      observationYear: 2026,
+      observations: [
+        { country: "GBR", value: 100, observationYear: 2026, valueType: "projection", source },
+        { country: "FRA", value: 110, observationYear: 2024, valueType: "historical", source },
+      ],
+    })).toThrow("share one observationYear and valueType");
+  });
+});
