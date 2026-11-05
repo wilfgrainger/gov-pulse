@@ -168,7 +168,19 @@ describe("Cloudflare public data route", () => {
       new Request("https://public-data.org/data/health.json"),
       environment()
     );
-    expect(await ready.json()).toEqual({ status: "ready", ready: true });
+    // Every family is published under this test's config mock; families the
+    // fixture snapshot does not carry are named as unavailable.
+    expect(await ready.json()).toEqual({
+      status: "ready",
+      ready: true,
+      unavailableSections: [
+        "bettingOdds",
+        "crimeStatistics",
+        "governmentContracts",
+        "nhsReleaseCalendar",
+        "releaseCalendar",
+      ].map((id) => ({ id, reason: "no-current-observation" })),
+    });
 
     const bootstrapping = await publicWorker.fetch(
       new Request("https://public-data.org/data/health.json"),

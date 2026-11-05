@@ -4,7 +4,8 @@ import queuedWorker, {
 } from "./queued-publication-entry.js";
 import { PUBLICATION_CONFIG, publicationPublished, anyEvidencePublished, filterPublicationSnapshot, filterPublicationCatalog, filterPublicationSummary } from "../contracts/publication-policy.js";
 import { isPublicArtifact } from "../contracts/public-artifact.js";
-import { isSnapshot, readCurrentPublication } from "./publication-entry.js";
+import { PUBLICATION_STATUS_KEY, isSnapshot, readCurrentPublication } from "./publication-entry.js";
+import { publicUnavailableSections } from "./publication-availability.js";
 import {
   FEED_REGISTRY_VERSION,
   REQUIRED_PUBLISHED_SECTION_IDS,
@@ -421,6 +422,14 @@ async function contractHistoryResponse(request, url) {
   }
 }
 
+async function readPublicationStatus(env) {
+  try {
+    return await env.METRICS_CACHE.get(PUBLICATION_STATUS_KEY, "json");
+  } catch {
+    return null;
+  }
+}
+
 async function healthResponse(request, env) {
   if (!env?.METRICS_CACHE?.get || !env?.METRICS_CACHE?.getWithMetadata) {
     return json(
@@ -441,6 +450,12 @@ async function healthResponse(request, env) {
     );
   }
 
+  const unavailableSections = publicUnavailableSections(
+    internal,
+    await readPublicationStatus(env),
+  );
+  const unavailable = unavailableSections.length > 0 ? { unavailableSections } : {};
+
   if (internal.meta.publicationState === "degraded") {
     return json(
       {
@@ -449,13 +464,14 @@ async function healthResponse(request, env) {
         degraded: true,
         missingRequiredSections:
           internal.meta.missingRequiredSections ?? [],
+        ...unavailable,
       },
       { head: request.method === "HEAD" }
     );
   }
 
   return json(
-    { status: "ready", ready: true },
+    { status: "ready", ready: true, ...unavailable },
     { head: request.method === "HEAD" }
   );
 }
