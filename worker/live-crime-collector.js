@@ -116,28 +116,44 @@ function statementFor(statements, expression, label) {
 
 const NO_SIGNIFICANT_CHANGE = /no statistically significant change/i;
 const SURVEY_CHANGE =
-  /\ban? (\d+)% (increase|decrease) compared with (?:last year['\u2019]s|the previous year['\u2019]s|the YE [A-Za-z]+ 20\d{2}) survey/i;
+  /\ban? (\d+(?:\.\d+)?)% (increase|decrease) compared with (?:last year['\u2019]s|the previous year['\u2019]s|the YE [A-Za-z]+ 20\d{2}) survey/i;
+// Any wording that states a change. If one of these appears before a
+// recognised comparison, the measure's own comparison is in wording this
+// parser does not understand, and it must fail closed rather than fall
+// through to a later "no statistically significant change" clause.
+const CHANGE_WORDING =
+  /\d+(?:\.\d+)?%|\b(?:increas(?:e|ed|es|ing)|decreas(?:e|ed|es|ing)|ris(?:e|es|en|ing)|rose|fall(?:s|en|ing)?|fell|higher|lower|grew|growth|declin(?:e|ed|es|ing)|drop(?:s|ped)?|statistically significant)\b/i;
+
+function firstIndex(text, expression) {
+  const match = text.match(expression);
+  return match ? { index: match.index, match } : null;
+}
 
 function surveyComparison(statement, valueIndex, label) {
   // A CSEW estimate is compared with the previous survey in the clause that
   // follows it. ONS reports either "no statistically significant change" or
   // a statistically significant "N% increase/decrease compared with last
   // year's survey". Take whichever comparison comes first after the estimate,
-  // so a later clause about a sub-measure cannot relabel the headline one.
+  // so a later clause about a sub-measure cannot relabel it. A change stated
+  // in any other wording before that point fails closed: a stated change is
+  // never defaulted to "no significant change".
   const after = statement.slice(valueIndex);
-  const noChange = after.search(NO_SIGNIFICANT_CHANGE);
-  const change = after.match(SURVEY_CHANGE);
-  const changeIndex = change ? after.indexOf(change[0]) : -1;
-  if (noChange !== -1 && (changeIndex === -1 || noChange < changeIndex)) {
-    return noSignificantChange();
+  const noChange = firstIndex(after, NO_SIGNIFICANT_CHANGE);
+  const change = firstIndex(after, SURVEY_CHANGE);
+  const wording = firstIndex(after, CHANGE_WORDING);
+  const candidates = [noChange, change].filter(Boolean);
+  const first = candidates.sort((left, right) => left.index - right.index)[0];
+  if (!first || (wording && wording.index < first.index)) {
+    throw new Error(`ONS crime bulletin did not expose ${label} and comparison`);
   }
-  if (changeIndex !== -1) {
-    const percent = integer(change[1], `${label} percentage`);
-    return change[2].toLowerCase() === "increase"
-      ? increase(percent)
-      : decrease(percent, "the previous survey");
+  if (first === noChange) return noSignificantChange();
+  const percent = Number.parseFloat(change.match[1]);
+  if (!Number.isFinite(percent) || percent < 0) {
+    throw new Error(`ONS crime bulletin exposed an invalid ${label} percentage`);
   }
-  throw new Error(`ONS crime bulletin did not expose ${label} and comparison`);
+  return change.match[2].toLowerCase() === "increase"
+    ? increase(change.match[1])
+    : decrease(change.match[1], "the previous survey");
 }
 
 function surveyMeasure(id, label, estimate) {

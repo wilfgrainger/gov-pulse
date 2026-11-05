@@ -301,3 +301,33 @@ describe("police-recorded total", () => {
     );
   });
 });
+
+describe("CSEW comparison wording", () => {
+  const recorded = fixture("crime-yearendingjune2026.html");
+  const fraudClause =
+    "4.5 million fraud incidents, an 11% increase compared with last year's survey (4.1 million incidents)";
+  const fraudMeasure = (html: string) =>
+    parseOnsCrimeBulletin(html, CRIME_EDITION_URL).crimeSurvey.measures.find(
+      (item: { id: string }) => item.id === "fraud",
+    );
+
+  it("reports a decimal increase even when a later sub-measure clause has no significant change", () => {
+    expect(recorded).toContain(fraudClause);
+    const html = recorded.replace(
+      fraudClause,
+      "4.5 million fraud incidents, an 11.4% increase compared with last year's survey (4.1 million incidents); there was no statistically significant change in other fraud",
+    );
+    expect(fraudMeasure(html)).toMatchObject({
+      value: 4_500_000,
+      changeLabel: "11.4% higher than the previous survey",
+    });
+  });
+
+  it("fails closed when a stated change uses unrecognised wording before a no-change clause", () => {
+    const html = recorded.replace(
+      fraudClause,
+      "4.5 million fraud incidents, a statistically significant 11% rise on last year's survey (4.1 million incidents); there was no statistically significant change in other fraud",
+    );
+    expect(() => fraudMeasure(html)).toThrow(/CSEW fraud and comparison/);
+  });
+});
