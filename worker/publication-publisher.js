@@ -16,7 +16,6 @@ import { filterPublicationSnapshot } from "../contracts/publication-policy.js";
 import { buildPublicationDiagnostics } from "../contracts/publication-diagnostics.js";
 import { archiveEdition, reconcileRetainedEditionSummaries } from "./edition-archive.js";
 import {
-  RUN_PREFIX,
   kvDelete,
   kvGet,
   kvGetWithMetadata,
@@ -26,7 +25,11 @@ import {
 } from "./publication-run-store.js";
 import { unavailableSectionsFor } from "./publication-availability.js";
 import { PUBLISHED_SECTIONS } from "./publication-plan.js";
-import { PUBLICATION_SECTION_PREFIX } from "./publication-collection-runner.js";
+import {
+  fragmentRetrievalTime,
+  runSectionFragmentKey,
+  sectionFragmentKey,
+} from "./publication-collection-runner.js";
 import { fetchPublicationSeedSnapshot } from "./publication-recovery.js";
 
 const PUBLICATION_HISTORY_TTL_SECONDS = 14 * 24 * 60 * 60;
@@ -35,23 +38,41 @@ function isRecord(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-async function publicationFragments(env, now = new Date(), runId = null) {
+// Section records for one publication. A run reads its own run-scoped record
+// and the shared (monotonic) global fragment, and uses whichever current one
+// has the newer retrieval clock; a fragment never replaces newer evidence the
+// committed edition already holds for that section.
+async function publicationFragments(env, now = new Date(), runId = null, current = null) {
   const records = [];
   for (const section of PUBLISHED_SECTIONS) {
-    let record = null;
+    const candidates = [];
     if (typeof runId === "string" && runId.trim()) {
-      record = await kvGet(env, `${RUN_PREFIX}${runId}:section:${section}`);
+      candidates.push(await kvGet(env, runSectionFragmentKey(runId, section)));
     }
-    if (!record) {
-      record = await kvGet(env, `${PUBLICATION_SECTION_PREFIX}${section}`);
+    candidates.push(await kvGet(env, sectionFragmentKey(section)));
+    let record = null;
+    for (const candidate of candidates) {
+      if (
+        candidate?.section !== section ||
+        !isRecord(candidate.data) ||
+        !currentSectionRecord(candidate, now)
+      ) {
+        continue;
+      }
+      if (
+        !record ||
+        (fragmentRetrievalTime(candidate) ?? -Infinity) > (fragmentRetrievalTime(record) ?? -Infinity)
+      ) {
+        record = candidate;
+      }
     }
-    if (
-      record?.section === section &&
-      isRecord(record.data) &&
-      currentSectionRecord(record, now)
-    ) {
-      records.push(record);
+    if (!record) continue;
+    const committedTime = fragmentRetrievalTime({ source: current?.meta?.sources?.[section] });
+    const recordTime = fragmentRetrievalTime(record);
+    if (committedTime !== null && (recordTime === null || recordTime < committedTime)) {
+      continue;
     }
+    records.push(record);
   }
   return records;
 }
@@ -72,11 +93,58 @@ function missingRequiredSections(snapshot) {
   );
 }
 
+function publicArtifactMetadata(publication, artifact) {
+  return {
+    ...artifact.metadata,
+    editionId: publication.meta.measureCatalog?.editionId ?? null,
+  };
+}
+
+// Recovery for an interrupted publish (Worker eviction or timeout after the
+// public artifact write but before PUBLICATION_CURRENT_KEY): the public record
+// then describes an edition that was never committed. The committed current
+// record is authoritative, so the public artifact is rebuilt from it. Costs
+// one KV write only when the two records disagree; zero otherwise.
+async function repairPublicRecordAgainstCurrent(env, current, now = new Date()) {
+  const publicRecord = await kvGetWithMetadata(env, PUBLIC_SNAPSHOT_KEY, "text");
+  if (!isSnapshot(current) || !publicRecord?.value) {
+    return { record: publicRecord, repaired: false };
+  }
+  const metadata = isRecord(publicRecord.metadata) ? publicRecord.metadata : {};
+  const currentEditionId = current.meta.measureCatalog?.editionId ?? null;
+  if (
+    metadata.generatedAt === current.meta.generatedAt &&
+    (metadata.editionId ?? null) === currentEditionId
+  ) {
+    return { record: publicRecord, repaired: false };
+  }
+
+  let artifact = null;
+  try {
+    const projection = filterPublicationSnapshot(current);
+    artifact = projection ? buildPublicSnapshotArtifact(projection, now) : null;
+  } catch (error) {
+    console.error("Publication public record repair could not rebuild from current", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+  if (!artifact) return { record: publicRecord, repaired: false };
+
+  const repairedMetadata = publicArtifactMetadata(current, artifact);
+  await kvPutText(env, PUBLIC_SNAPSHOT_KEY, artifact.body, { metadata: repairedMetadata });
+  console.warn("Publication public record repaired from committed current record", {
+    publicGeneratedAt: metadata.generatedAt ?? null,
+    currentGeneratedAt: current.meta.generatedAt,
+  });
+  return { record: { value: artifact.body, metadata: repairedMetadata }, repaired: true };
+}
+
 async function publishFromCaches(env, options = {}) {
   const now = options.now ?? new Date();
   const current = await readCurrentPublication(env);
   const seed = current ?? (await fetchPublicationSeedSnapshot(env, options.fetchImpl ?? fetch));
-  const fragments = await publicationFragments(env, now, options.runId ?? null);
+  const repairedPublic = await repairPublicRecordAgainstCurrent(env, current, now);
+  const fragments = await publicationFragments(env, now, options.runId ?? null, current);
   const contractsRecord = await kvGet(env, CONTRACT_CURRENT_RECORD_KEY);
   const merged = mergePublication(seed, fragments, contractsRecord, now);
   const currentCandidate = filterCurrentSnapshot(merged, now);
@@ -165,30 +233,27 @@ async function publishFromCaches(env, options = {}) {
     publication.meta.commitManifest = commitManifest;
   }
 
-  const previousPublicRecord = await kvGetWithMetadata(env, PUBLIC_SNAPSHOT_KEY, "text");
+  const previousPublicRecord = repairedPublic.record;
   const previousCurrentRecord = current;
   const previousStatusRecord = await kvGet(env, PUBLICATION_STATUS_KEY);
 
+  let historyKeyWritten = null;
   let publicArtifactWritten = false;
   let currentWritten = false;
   let statusWritten = false;
 
   try {
     if (changed) {
-      await kvPut(
-        env,
-        `${PUBLICATION_HISTORY_PREFIX}${now.toISOString().replaceAll(":", "-")}`,
-        publication,
-        { expirationTtl: PUBLICATION_HISTORY_TTL_SECONDS }
-      );
+      const historyKey = `${PUBLICATION_HISTORY_PREFIX}${now.toISOString().replaceAll(":", "-")}`;
+      await kvPut(env, historyKey, publication, {
+        expirationTtl: PUBLICATION_HISTORY_TTL_SECONDS,
+      });
+      historyKeyWritten = historyKey;
     }
 
     if (publicArtifact) {
       await kvPutText(env, PUBLIC_SNAPSHOT_KEY, publicArtifact.body, {
-        metadata: {
-          ...publicArtifact.metadata,
-          editionId: publication.meta.measureCatalog?.editionId ?? null,
-        },
+        metadata: publicArtifactMetadata(publication, publicArtifact),
       });
       publicArtifactWritten = true;
     }
@@ -227,6 +292,9 @@ async function publishFromCaches(env, options = {}) {
           await kvDelete(env, PUBLIC_SNAPSHOT_KEY);
         }
       }
+      if (historyKeyWritten) {
+        await kvDelete(env, historyKeyWritten);
+      }
     } catch (rollbackError) {
       console.error("Publication rollback failed", {
         error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
@@ -243,4 +311,5 @@ export {
   missingRequiredSections,
   publicationFragments,
   publishFromCaches,
+  repairPublicRecordAgainstCurrent,
 };

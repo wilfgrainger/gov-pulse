@@ -55,7 +55,9 @@ async function recordFinaliseFailure(env, runId, error, now = new Date()) {
   return true;
 }
 
-async function createRun(env, now, scope = "daily", options = {}) {
+// `dispatch.jobsEnqueuedAt` lets enqueuePublicationRun stamp its write-ahead
+// job-dispatch lease into the same put that creates the run record.
+async function createRun(env, now, scope = "daily", options = {}, dispatch = {}) {
   const runId = options.runId ?? runIdFor(now);
   const existing = await kvGet(env, runKey(runId));
   if (isRecord(existing)) {
@@ -79,6 +81,8 @@ async function createRun(env, now, scope = "daily", options = {}) {
     createdAt: now.toISOString(),
     deadlineAt: new Date(now.getTime() + deadlineSeconds * 1000).toISOString(),
     expectedJobIds: jobs.map((job) => job.jobId),
+    jobsEnqueuedAt:
+      typeof dispatch.jobsEnqueuedAt === "string" ? dispatch.jobsEnqueuedAt : null,
     dispatchedAt: null,
     finalisedAt: null,
     ...(options.publishedOnly === true && scope !== "bootstrap"
@@ -96,38 +100,79 @@ async function createRun(env, now, scope = "daily", options = {}) {
   return { run, jobs, existing: false };
 }
 
+// Dispatch is resumable under partial failure without KV compare-and-swap:
+//  1. `jobsEnqueuedAt` is written BEFORE sendBatch (write-ahead lease). A
+//     redelivered bootstrap that finds it never sends the job batch again.
+//     If sendBatch throws, the lease is cleared so the retry sends the jobs.
+//  2. The finaliser is sent next. Finalisation is idempotent per run, so a
+//     retry after a failed send (or a failed confirmation put) safely sends
+//     it again without re-enqueueing jobs.
+//  3. `dispatchedAt` is written last and only confirms that both sends ran.
+// A lease whose clearing put also failed leaves the jobs unsent; the run then
+// finalises as incomplete at its deadline rather than reporting success.
+// Happy-path KV writes per run: 2 (run creation with lease, confirmation).
 async function enqueuePublicationRun(env, now, scope = "daily", options = {}) {
   if (!env?.DATA_JOBS?.sendBatch || !env?.DATA_JOBS?.send) {
     throw new Error("DATA_JOBS queue binding is required");
   }
 
-  const created = await createRun(env, now, scope, options);
+  const lease = new Date().toISOString();
+  const created = await createRun(env, now, scope, options, { jobsEnqueuedAt: lease });
   if (created.run.dispatchedAt) {
-    return { ...created, dispatched: false };
+    return { ...created, dispatched: false, jobsDispatched: false };
+  }
+
+  let run = created.run;
+  // This attempt owns the job dispatch only when it wrote the lease itself.
+  let jobsDispatched = !created.existing && run.jobsEnqueuedAt === lease;
+  if (!run.jobsEnqueuedAt) {
+    run = { ...run, jobsEnqueuedAt: lease };
+    await kvPut(env, runKey(run.runId), run, { expirationTtl: RUN_TTL_SECONDS });
+    jobsDispatched = true;
+  }
+
+  if (jobsDispatched) {
+    try {
+      await env.DATA_JOBS.sendBatch(created.jobs.map((body) => ({ body })));
+    } catch (error) {
+      try {
+        await kvPut(
+          env,
+          runKey(run.runId),
+          { ...run, jobsEnqueuedAt: null },
+          { expirationTtl: RUN_TTL_SECONDS }
+        );
+      } catch (releaseError) {
+        console.error("Publication job dispatch lease release failed", {
+          runId: run.runId,
+          error: releaseError instanceof Error ? releaseError.message : String(releaseError),
+        });
+      }
+      throw error;
+    }
   }
 
   const finaliseDelaySeconds =
     options.finaliseDelaySeconds ?? FINALISE_DELAY_SECONDS;
   const finaliseRetrySeconds =
     options.finaliseRetrySeconds ?? FINALISE_RETRY_SECONDS;
-  await env.DATA_JOBS.sendBatch(created.jobs.map((body) => ({ body })));
   await env.DATA_JOBS.send(
     {
       type: "finalise-run",
-      runId: created.run.runId,
+      runId: run.runId,
       retryDelaySeconds: finaliseRetrySeconds,
     },
     { delaySeconds: finaliseDelaySeconds }
   );
 
   const dispatchedRun = {
-    ...created.run,
+    ...run,
     dispatchedAt: new Date().toISOString(),
   };
   await kvPut(env, runKey(dispatchedRun.runId), dispatchedRun, {
     expirationTtl: RUN_TTL_SECONDS,
   });
-  return { ...created, run: dispatchedRun, dispatched: true };
+  return { ...created, run: dispatchedRun, dispatched: true, jobsDispatched };
 }
 
 async function readTerminals(env, run) {
