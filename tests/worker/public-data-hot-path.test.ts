@@ -9,7 +9,8 @@ import {
 } from "@/worker/publication-entry";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 import { PUBLIC_SNAPSHOT_KEY, buildPublicProjection } from "@/worker/public-snapshot";
-import { publicationPublished } from "@/contracts/publication-policy";
+import { PUBLICATION_CONFIG, publicationPublished } from "@/contracts/publication-policy";
+import { sectionCurrentness } from "@/worker/publication-currentness";
 
 const REQUIRED = [
   "sentimentPulse",
@@ -185,26 +186,104 @@ describe("free-tier public read path", () => {
     expect((await readPreparedPublicArtifact(env, READ_AT))!.body).toBe(prepared!.body);
   });
 
-  it("held evidence inside a prepared artifact is never served", async () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- free-form tampering of parsed JSON
+  async function servedAfterTampering(tamper: (stored: any) => void) {
     const { env, store } = await publishedEnv();
-    expect(publicationPublished("bettingOdds")).toBe(false);
     const stored = JSON.parse(String(store.get(PUBLIC_SNAPSHOT_KEY)));
-    stored.bettingOdds = { value: "held" };
-    stored.meta.sources.bettingOdds = { status: "ok", cacheState: "fresh", fetchedAt: "2026-07-17T10:00:00.000Z" };
-    stored.meta.publicProjection.publishedSections = [
-      ...stored.meta.publicProjection.publishedSections,
-      "bettingOdds",
-    ].sort();
-    store.set(PUBLIC_SNAPSHOT_KEY, JSON.stringify(stored));
+    tamper(stored);
+    const storedBytes = JSON.stringify(stored);
+    store.set(PUBLIC_SNAPSHOT_KEY, storedBytes);
     vi.useFakeTimers();
     vi.setSystemTime(READ_AT);
-
     const response = await get("/data/metrics-snapshot.json", env);
-
     expect(response.status).toBe(200);
-    const body = await response.json();
-    expect(body).not.toHaveProperty("bettingOdds");
-    expect(body.meta.sources).not.toHaveProperty("bettingOdds");
+    const text = await response.text();
+    return { text, body: JSON.parse(text), storedBytes };
+  }
+
+  it("held evidence inside a prepared artifact is never served", async () => {
+    // nhsStats is held and, under this fixture, current: only the policy
+    // guard (not currentness) can withhold it.
+    expect(publicationPublished("nhsStats")).toBe(false);
+    const internal = internalSnapshot();
+    expect(
+      sectionCurrentness("nhsStats", internal.nhsStats, internal.meta.sources.nhsStats, READ_AT).current,
+    ).toBe(true);
+
+    const { text, body, storedBytes } = await servedAfterTampering((stored) => {
+      stored.nhsStats = internal.nhsStats;
+      stored.meta.sources.nhsStats = internal.meta.sources.nhsStats;
+      stored.meta.publicProjection.publishedSections = [
+        ...stored.meta.publicProjection.publishedSections,
+        "nhsStats",
+      ].sort();
+    });
+
+    expect(text).not.toBe(storedBytes);
+    expect(body).not.toHaveProperty("nhsStats");
+    expect(body.meta.sources).not.toHaveProperty("nhsStats");
+    expect(body.meta.publicProjection.publishedSections).not.toContain("nhsStats");
+  });
+
+  it("a family held after publication is withheld on the next read", async () => {
+    const { env, store } = await publishedEnv();
+    const storedBytes = String(store.get(PUBLIC_SNAPSHOT_KEY));
+    expect(JSON.parse(storedBytes)).toHaveProperty("gdpTracker");
+    const decision = PUBLICATION_CONFIG.publications.gdpTracker;
+    const original = decision.state;
+    decision.state = "held";
+    try {
+      vi.useFakeTimers();
+      vi.setSystemTime(READ_AT);
+      const response = await get("/data/metrics-snapshot.json", env);
+      expect(response.status).toBe(200);
+      const text = await response.text();
+      const body = JSON.parse(text);
+      expect(text).not.toBe(storedBytes);
+      expect(body).not.toHaveProperty("gdpTracker");
+      expect(body.meta.sources).not.toHaveProperty("gdpTracker");
+      expect(body.meta.publicProjection.publishedSections).not.toContain("gdpTracker");
+    } finally {
+      decision.state = original;
+    }
+  });
+
+  it("a catalogue measure for a held family is dropped", async () => {
+    const { text, body, storedBytes } = await servedAfterTampering((stored) => {
+      stored.meta.measureCatalog.measures = {
+        heldMeasure: { id: "heldMeasure", sourceId: "nhsStats" },
+        publishedMeasure: { id: "publishedMeasure", sourceId: "gdpTracker" },
+      };
+    });
+
+    expect(text).not.toBe(storedBytes);
+    expect(body.meta.measureCatalog.measures).not.toHaveProperty("heldMeasure");
+    expect(body.meta.measureCatalog.measures).toHaveProperty("publishedMeasure");
+  });
+
+  it("an edition-summary change for a held family is withheld", async () => {
+    const { text, body, storedBytes } = await servedAfterTampering((stored) => {
+      stored.meta.measureCatalog.measures = {
+        heldMeasure: { id: "heldMeasure", sourceId: "nhsStats" },
+      };
+      stored.meta.editionSummary.changes = [
+        { measureId: "heldMeasure", nextSourceEditionId: "held-edition" },
+      ];
+      stored.meta.editionSummary.sourceEditionIds = ["held-edition"];
+    });
+
+    expect(text).not.toBe(storedBytes);
+    expect(text).not.toMatch(/held-edition|heldMeasure/);
+    expect(body.meta.editionSummary.changes).toEqual([]);
+  });
+
+  it("a meta field outside the public allow-list is dropped", async () => {
+    const { text, body, storedBytes } = await servedAfterTampering((stored) => {
+      stored.meta.commitManifest = { schemaVersion: 1, status: "published" };
+    });
+
+    expect(text).not.toBe(storedBytes);
+    expect(body.meta).not.toHaveProperty("commitManifest");
   });
 
   it("an unsanitised prepared artifact is sanitised before it is served", async () => {
