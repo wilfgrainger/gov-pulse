@@ -43,6 +43,20 @@ rebuild/deploy the secondary Cloudflare Pages seed. Recovery failure remains
 visible on its own job and cannot skip or invalidate the completed code release
 checks. Runtime data collection and KV publication continue independently.
 
+## GitHub Actions allow-list
+
+The repository restricts which third-party actions workflows may use. The
+allow-list in repository settings is exactly:
+
+`actions/checkout@*, actions/setup-node@*, actions/upload-artifact@*`
+
+Any `uses:` outside this list is rejected before the workflow starts.
+Symptom: the workflow never starts or shows a zero-second failed run with no
+job logs, and the run annotation names the rejected action. Fix it by removing
+the action or by adding it to the allow-list in repository settings and to
+`tests/unit/workflow-actions-allow-list.test.ts` together. That test fails when
+a workflow uses an action outside the list or this section drifts from it.
+
 ## Runtime and cost accounting
 
 Cloudflare is the current platform, not a Free-only requirement. Derive requests,
