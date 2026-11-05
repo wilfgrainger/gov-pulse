@@ -15,6 +15,9 @@ export function GovernmentContractsDetails({
   metrics: ReturnType<typeof import("@/app/lib/useMetrics").useMetrics>;
   displayedAwardLimit: number;
 }) {
+  // The equal-share supplier scenario is no longer rendered on this page, so
+  // its caveat is not shown either; the data contract keeps it for now.
+  const displayedCaveats = data.caveats.filter((caveat) => !/equal-share|equal share|split equally/i.test(caveat));
   return (
     <>
       <CoreEvidenceExplanation
@@ -38,7 +41,7 @@ export function GovernmentContractsDetails({
         }
         caveat={
           <p>
-            {data.caveats[0] ?? "See the method and coverage details below for full limitations."} This publication uses {valueBasisDescription(data.summary.valueBasis)} throughout. The collector examined {data.dataQuality.releasesSeen.toLocaleString("en-GB")} releases and found {data.dataQuality.validComparableAwards.toLocaleString("en-GB")} comparable awards in the complete window; this display retains the highest-valued awards.
+            {displayedCaveats[0] ?? "See the method and coverage details below for full limitations."} This publication uses {valueBasisDescription(data.summary.valueBasis)} throughout. The collector examined {data.dataQuality.releasesSeen.toLocaleString("en-GB")} releases and found {data.dataQuality.validComparableAwards.toLocaleString("en-GB")} comparable awards in the complete window; this display retains the highest-valued awards.
           </p>
         }
         sourceLabel="Find a Tender OCDS API"
@@ -63,7 +66,7 @@ export function GovernmentContractsDetails({
           <div>
             <h4 className="font-semibold text-black">Important limitations</h4>
             <ul className="mt-2 list-disc space-y-2 pl-5">
-              {data.caveats.map((caveat) => <li key={caveat}>{caveat}</li>)}
+              {displayedCaveats.map((caveat) => <li key={caveat}>{caveat}</li>)}
             </ul>
           </div>
         </div>

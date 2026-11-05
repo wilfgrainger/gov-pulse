@@ -93,6 +93,12 @@ export default function SupplierMarketConcentration({
         </div>
       </dl>
 
+      {ranked.length > 0 && ranked.every((a) => a.supplierNations.every((n) => n === "Other/Unknown")) && (
+        <p className="mt-4 text-xs text-slate-600">
+          Supplier nation is currently Other/Unknown for every ranked supplier; nations are never inferred from supplier names.
+        </p>
+      )}
+
       {filtered.length === 0 ? (
         <p className="mt-5 text-sm text-slate-700">Award values unavailable for this selection.</p>
       ) : (
