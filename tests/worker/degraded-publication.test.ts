@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import publicWorker, { isCompleteSnapshot } from "@/worker/public-data-entry";
 import { publishFromCaches } from "@/worker/queued-publication-entry";
-import { mergePublication, PUBLICATION_CURRENT_KEY } from "@/worker/publication-entry";
+import { mergePublication, PUBLICATION_CURRENT_KEY, PUBLICATION_STATUS_KEY } from "@/worker/publication-entry";
 import {
   FEED_REGISTRY_VERSION,
   REQUIRED_PUBLISHED_SECTION_IDS,
@@ -91,7 +91,15 @@ describe("degraded public publication", () => {
     const env = {
       METRICS_CACHE: {
         get: vi.fn(async (key: string) =>
-          key === PUBLICATION_CURRENT_KEY ? snapshot : null
+          key === PUBLICATION_CURRENT_KEY
+            ? snapshot
+            : key === PUBLICATION_STATUS_KEY
+              ? {
+                  status: "degraded",
+                  includedSections: Object.keys(snapshot.meta.sources).sort(),
+                  missingRequired: ["employmentStats"],
+                }
+              : null
         ),
         getWithMetadata: vi.fn(async (key: string) =>
           key === PUBLIC_SNAPSHOT_KEY

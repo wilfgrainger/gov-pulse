@@ -76,3 +76,32 @@ The retained workbook limits are project input caps, not Cloudflare plan
 quotas: 8 MiB expanded per retained ZIP entry, 24 MiB total retained expanded
 XML, 25,000 rows per worksheet and 250,000 cells per workbook. Decompression
 counts bytes while streaming; forged ZIP uncompressed-size fields are ignored.
+
+## Public read path and publication writes (revised 5 November 2026)
+
+The publisher stores the public artifact (`v14:publication:public`) already
+normalised: policy-filtered, sanitised and currentness-filtered at publish
+time. A `/data/metrics-snapshot.json` cache miss performs one KV read, checks
+the stored artifact by keys and identifiers, and serves the stored body
+unchanged with no `structuredClone`. Currentness is still enforced on every
+read: when a section or sentiment measure has aged out since publication, one
+copy is filtered. An artifact not in the normalised form (an earlier publisher
+or publication policy) is fully re-normalised and never served as stored.
+Before this change a cache miss made 15 `structuredClone` calls on the test
+fixture (11 when a section had expired) and parsed the body twice.
+
+`/data/health.json` reads only the public artifact and the publisher status
+record (`v12:publication:status`): two KV reads and no copies on the common
+path. It no longer reads or copies the full internal publication. Held
+required sections, which the public artifact never carries, are judged from
+the status record's per-section `sectionValidUntil` deadlines.
+
+Each publication writes three KV keys, each with a reader: the public
+artifact, the current record and the status record (plus edition-archive keys
+for a new edition, and one repair write only when an interrupted publish left
+the public record behind the current one). The unread commit manifest
+(`v12:publication:commit`) and the unread 14-day internal history copy
+(`v12:publication:history:*`) are no longer written; the filtered edition
+archive is the durable history. Stale copies of those keys already in KV are
+inert and expire or can be deleted by an operator. These counts come from unit
+tests with a recording KV, not Cloudflare metrics.
