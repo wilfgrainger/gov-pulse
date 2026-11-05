@@ -1,6 +1,9 @@
 name = "pulse-data-worker"
 main = "public-data-entry.js"
 compatibility_date = "2026-03-17"
+# Collectors fetch untrusted publisher URLs; global fetch must only reach the
+# public internet, never this account's own zones or Workers.
+compatibility_flags = ["global_fetch_strictly_public"]
 workers_dev = false
 preview_urls = false
 

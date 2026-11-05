@@ -11,7 +11,12 @@ import {
   ukNationFromCountryName,
   ukNationFromPostcode,
 } from "../contracts/government-contracts.js";
-import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
+import { frozenHostSet } from "./approved-source-hosts.js";
+import {
+  cancelResponseBody,
+  fetchWithApprovedRedirects,
+  readResponseJson,
+} from "./response-limits.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const SHARD_PREFIX = "v12:contracts:day:";
@@ -30,6 +35,9 @@ const MAX_RETRIEVAL_DURATION_MS = 4 * 60 * 1000;
 // before writing so valid records are retained up to the actual store limit.
 const MAX_SHARD_BYTES = 25 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 20_000;
+// Pagination is pinned to the API window by apiUrl; redirects are pinned to
+// the Find a Tender API host itself, not the wider collector allowlist.
+const FIND_A_TENDER_HOSTS = frozenHostSet([new URL(FIND_A_TENDER_API).hostname]);
 
 function utcDay(value) {
   const date = value instanceof Date ? value : new Date(value);
@@ -332,11 +340,18 @@ async function fetchSlice(slice, fetchImpl = fetch, budget = createContractsRetr
     }
     if (seenPages.has(url)) throw new Error("Find a Tender pagination repeated a page");
     seenPages.add(url);
-    const response = await fetchImpl(url, {
-      headers: { Accept: "application/json", "User-Agent": FIND_A_TENDER_USER_AGENT },
-      signal: AbortSignal.timeout(Math.min(REQUEST_TIMEOUT_MS, remainingMs)),
-    });
+    const response = await fetchWithApprovedRedirects(
+      url,
+      {
+        headers: { Accept: "application/json", "User-Agent": FIND_A_TENDER_USER_AGENT },
+        signal: AbortSignal.timeout(Math.min(REQUEST_TIMEOUT_MS, remainingMs)),
+      },
+      FIND_A_TENDER_HOSTS,
+      fetchImpl,
+      "Find a Tender"
+    );
     if (!response.ok) {
+      await cancelResponseBody(response);
       const error = new Error(`Find a Tender returned ${response.status}`);
       if (response.status === 429 || response.status === 503) {
         const retryAfter = Number.parseInt(response.headers.get("retry-after") ?? "", 10);
@@ -346,7 +361,6 @@ async function fetchSlice(slice, fetchImpl = fetch, budget = createContractsRetr
       }
       throw error;
     }
-    assertSameHttpsHost(response, url, "Find a Tender");
     if (response.url) apiUrl(response.url, url, "response");
     const payload = await readResponseJson(response, {
       limit: MAX_CONTRACT_PAGE_BYTES,

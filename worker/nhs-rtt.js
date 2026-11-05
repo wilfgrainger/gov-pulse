@@ -1,6 +1,7 @@
+import { NHS_ENGLAND_HOSTS as NHS_HOSTS } from "./approved-source-hosts.js";
+
 const NHS_RTT_MAX_AGE_DAYS = 45;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const NHS_HOSTS = new Set(["www.england.nhs.uk", "england.nhs.uk"]);
 
 const MONTHS = Object.freeze({
   january: 0,

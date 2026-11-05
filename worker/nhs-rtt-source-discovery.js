@@ -1,3 +1,4 @@
+import { NHS_ENGLAND_HOSTS as NHS_HOSTS } from "./approved-source-hosts.js";
 import {
   absoluteUrl,
   decodeHtml,
@@ -6,7 +7,6 @@ import {
 
 const NHS_RTT_LANDING_PAGE =
   "https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/";
-const NHS_HOSTS = new Set(["england.nhs.uk", "www.england.nhs.uk"]);
 const ANNUAL_PAGE_PATH =
   /^\/statistics\/statistical-work-areas\/rtt-waiting-times\/rtt-data-(\d{4})-(\d{2})\/?$/i;
 const PUBLICATION_ASSET_PATH = /^\/statistics\/wp-content\/uploads\/sites\/2\//i;

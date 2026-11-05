@@ -1,7 +1,9 @@
+import { APPROVED_SOURCE_HOSTS } from "./approved-source-hosts.js";
 import { provenanceFor } from "./feed-registry.js";
 import {
   MAX_RESPONSE_BYTES,
-  assertSameHttpsHost,
+  cancelResponseBody,
+  fetchWithApprovedRedirects,
   readResponseArrayBuffer,
   readResponseText,
 } from "./response-limits.js";
@@ -36,20 +38,30 @@ function absoluteUrl(base, href) {
   return new URL(decodeHtml(href), base).toString();
 }
 
-async function fetchResponse(url, fetchImpl = fetch, accept = "text/html") {
-  const response = await fetchImpl(url, {
-    headers: {
-      Accept: accept,
-      "User-Agent": USER_AGENT,
-      "Accept-Language": "en-GB,en;q=0.9",
+async function fetchResponse(
+  url,
+  fetchImpl = fetch,
+  accept = "text/html",
+  approvedHosts = APPROVED_SOURCE_HOSTS
+) {
+  const response = await fetchWithApprovedRedirects(
+    url,
+    {
+      headers: {
+        Accept: accept,
+        "User-Agent": USER_AGENT,
+        "Accept-Language": "en-GB,en;q=0.9",
+      },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     },
-    redirect: "follow",
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-  });
+    approvedHosts,
+    fetchImpl,
+    "Live source"
+  );
   if (!response.ok) {
+    await cancelResponseBody(response);
     throw new Error(`${new URL(url).hostname} returned ${response.status}`);
   }
-  assertSameHttpsHost(response, url, "Live source");
   return response;
 }
 
