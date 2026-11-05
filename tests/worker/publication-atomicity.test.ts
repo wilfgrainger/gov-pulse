@@ -6,7 +6,7 @@ import {
   publishFromCaches,
 } from "@/worker/queued-publication-entry";
 import { writeSectionFragment } from "@/worker/publication-collection-runner";
-import { PUBLICATION_CURRENT_KEY, PUBLICATION_HISTORY_PREFIX } from "@/worker/publication-entry";
+import { PUBLICATION_CURRENT_KEY, PUBLICATION_STATUS_KEY } from "@/worker/publication-entry";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 import { PUBLIC_SNAPSHOT_KEY } from "@/worker/public-snapshot";
 import { RUN_PREFIX, runKey } from "@/worker/publication-run-store";
@@ -228,18 +228,20 @@ describe("publication atomicity", () => {
 
     // The queue redelivers the finaliser; this attempt fails before it can
     // write a new public artifact, so only the recovery repair can realign it.
-    env.METRICS_CACHE.put = vi.fn(async (key: string, value: string, options?: PutOptions) => {
-      if (key.startsWith(PUBLICATION_HISTORY_PREFIX)) {
-        throw new Error("simulated history write failure");
+    env.METRICS_CACHE.put = vi.fn(write);
+    const read = env.METRICS_CACHE.get;
+    env.METRICS_CACHE.get = vi.fn(async (key: string, type?: "json" | "text") => {
+      if (key === PUBLICATION_STATUS_KEY) {
+        throw new Error("simulated status read failure");
       }
-      return write(key, value, options);
+      return read(key, type);
     });
     env.METRICS_CACHE.delete = vi.fn(async (key: string) => {
       store.delete(key);
       metadata.delete(key);
     });
     await expect(publishFromCaches(env, { now: new Date("2026-07-18T03:35:00.000Z") }))
-      .rejects.toThrow("simulated history write failure");
+      .rejects.toThrow("simulated status read failure");
 
     const committed = store.get(PUBLICATION_CURRENT_KEY) as ReturnType<typeof snapshot>;
     expect(committed).toEqual(current);

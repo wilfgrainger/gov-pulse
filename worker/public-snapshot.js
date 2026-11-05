@@ -29,6 +29,26 @@ function sanitizePublishedValue(value) {
   );
 }
 
+// True when sanitizePublishedValue(value) would change nothing: a cheap
+// allocation-free walk the read path uses before serving a stored artifact.
+function isSanitizedPublishedValue(value) {
+  if (Array.isArray(value)) return value.every(isSanitizedPublishedValue);
+  if (!value || typeof value !== "object") return true;
+  for (const key of Object.keys(value)) {
+    if (key === "backend" || key === "generator") return false;
+    const nestedValue = value[key];
+    if (
+      key === "retrieval" &&
+      typeof nestedValue === "string" &&
+      /github|cloudflare|worker/i.test(nestedValue)
+    ) {
+      return false;
+    }
+    if (!isSanitizedPublishedValue(nestedValue)) return false;
+  }
+  return true;
+}
+
 function publicSnapshot(value) {
   const snapshot = sanitizePublishedValue(value);
   if (snapshot?.meta && typeof snapshot.meta === "object") {
@@ -92,6 +112,7 @@ export {
   PUBLIC_SNAPSHOT_KEY,
   buildPublicProjection,
   buildPublicSnapshotArtifact,
+  isSanitizedPublishedValue,
   publicSnapshot,
   sanitizePublishedValue,
 };

@@ -227,6 +227,26 @@ function sectionValidityDeadline(section, data, source, now = new Date()) {
   return Math.min(...deadlines);
 }
 
+// The instant after which filterCurrentSnapshot drops the section, or null
+// when it is not current now. It equals sectionValidityDeadline except for
+// sentimentPulse, which stays (with expired measures redacted) while any of
+// its independently dated measures is current.
+function sectionPresenceDeadline(section, data, source, now = new Date()) {
+  if (!sectionCurrentness(section, data, source, now).current) return null;
+  if (section === "sentimentPulse") {
+    const state = sentimentMeasureState(data, now.getTime());
+    if (state) {
+      if (!state.valid || state.current.length === 0) return null;
+      const latest = Math.max(
+        ...state.current.map((id) => parsedTime(data.__measureValidity[id].validUntil))
+      );
+      const explicitExpiry = parsedTime(data.expiresAt);
+      return explicitExpiry === null ? latest : Math.min(explicitExpiry, latest);
+    }
+  }
+  return sectionValidityDeadline(section, data, source, now);
+}
+
 function snapshotValidityDeadline(snapshot, now = new Date()) {
   if (!isRecord(snapshot) || !isRecord(snapshot.meta) || !isRecord(snapshot.meta.sources)) {
     return null;
@@ -265,14 +285,13 @@ function filterCurrentSnapshot(snapshot, now = new Date()) {
         delete filtered.meta.sources[section];
         continue;
       }
-      const independentData = structuredClone(data);
-      const independentState = sentimentMeasureState(independentData, now.getTime(), true);
+      // `filtered` is already a deep copy, so expired measures are redacted
+      // in place rather than cloning the section a second time.
+      const independentState = sentimentMeasureState(filtered[section], now.getTime(), true);
       if (!independentState?.valid || independentState.current.length === 0) {
         delete filtered[section];
         delete filtered.meta.sources[section];
-        continue;
       }
-      filtered[section] = independentData;
       continue;
     }
     const result = sectionCurrentness(section, data, source, now);
@@ -292,6 +311,55 @@ function filterCurrentSnapshot(snapshot, now = new Date()) {
   return currentSections.size > 0 ? filtered : null;
 }
 
+// True when filterCurrentSnapshot(snapshot, now) would return the snapshot
+// unchanged: no undeclared sections, every declared section current, verified
+// sections all declared and no sentiment measure awaiting redaction. Lets the
+// public read path serve an already-normalised artifact without a deep copy;
+// it never relaxes currentness, because any doubt returns false and the caller
+// then filters a copy.
+function snapshotIsCurrentAsIs(snapshot, now = new Date()) {
+  if (!isRecord(snapshot) || !isRecord(snapshot.meta) || !isRecord(snapshot.meta.sources)) {
+    return false;
+  }
+  const sources = snapshot.meta.sources;
+  const sectionIds = Object.keys(sources);
+  if (sectionIds.length === 0) return false;
+  for (const key of Object.keys(snapshot)) {
+    if (key !== "meta" && !Object.prototype.hasOwnProperty.call(sources, key)) return false;
+  }
+  if (
+    snapshot.meta.verifiedSections !== undefined &&
+    (!Array.isArray(snapshot.meta.verifiedSections) ||
+      snapshot.meta.verifiedSections.some(
+        (section) => typeof section !== "string" || !Object.prototype.hasOwnProperty.call(sources, section)
+      ))
+  ) {
+    return false;
+  }
+  const nowMs = now.getTime();
+  for (const section of sectionIds) {
+    const data = snapshot[section];
+    if (!sectionCurrentness(section, data, sources[section], now).current) return false;
+    if (section !== "sentimentPulse") continue;
+    const state = sentimentMeasureState(data, nowMs);
+    if (!state) continue;
+    if (!state.valid || state.current.length === 0) return false;
+    for (const [id, series] of Object.entries(data.series)) {
+      if (state.current.includes(id) || !["inflation", "bankRate", "unemployment"].includes(id)) continue;
+      // An unusable measure must already carry its redacted form.
+      if (
+        series.status !== "expired" ||
+        series.value !== null ||
+        !Object.prototype.hasOwnProperty.call(series, "annualDelta") ||
+        series.annualDelta !== null
+      ) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 function currentSectionRecord(record, now = new Date()) {
   if (!isRecord(record) || typeof record.section !== "string") return false;
   return sectionCurrentness(record.section, record.data, record.source, now).current;
@@ -305,6 +373,8 @@ export {
   currentSectionRecord,
   filterCurrentSnapshot,
   sectionCurrentness,
+  sectionPresenceDeadline,
   sectionValidityDeadline,
+  snapshotIsCurrentAsIs,
   snapshotValidityDeadline,
 };

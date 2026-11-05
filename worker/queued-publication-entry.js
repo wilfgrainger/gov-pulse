@@ -93,6 +93,5 @@ export {
   runIdFor,
 } from "./publication-run-store.js";
 
-export { PUBLICATION_COMMIT_KEY } from "./publication-entry.js";
 
 export default queuedPublicationWorker;
