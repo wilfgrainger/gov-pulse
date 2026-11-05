@@ -1,3 +1,4 @@
+import { withheldRobots } from "@/app/lib/withheldRobots";
 import type { Metadata } from "next";
 import CostOfLivingLens from "@/app/components/CostOfLivingLens";
 import EvidenceHoldNotice from "@/app/components/EvidenceHoldNotice";
@@ -8,7 +9,7 @@ import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
 import { SECTIONS } from "@/app/lib/sections";
 import { publicationEnabled } from "@/contracts/publication-policy";
 
-export const metadata: Metadata = { title: "Cost-of-living lens", description: "Compare official prices, private rents, house prices, real pay and Bank Rate while keeping definitions and observation periods clear.", alternates: { canonical: "https://public-data.org/cost-of-living/" } };
+export const metadata: Metadata = { ...withheldRobots(["sentimentPulse", "housePriceIndex", "realWages"].some((id) => publicationEnabled(id))), title: "Cost-of-living lens", description: "Compare official prices, private rents, house prices, real pay and Bank Rate while keeping definitions and observation periods clear.", alternates: { canonical: "https://public-data.org/cost-of-living/" } };
 
 export default async function CostOfLivingPage() {
   const snapshot = await readServerMetricsSnapshot();

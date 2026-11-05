@@ -1,3 +1,4 @@
+import { withheldRobots } from "@/app/lib/withheldRobots";
 import PublicationOffline from "@/app/components/PublicationOffline";
 import { publicRouteAvailable } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
@@ -11,7 +12,7 @@ import { availableMeasures } from "@/app/lib/measureCatalog";
 import type { MeasureCatalog } from "@/app/lib/measureCatalog";
 import { parseWorkspace } from "@/app/lib/comparisonWorkspace";
 
-export const metadata: Metadata = { title: "Compare UK public measures | public-data.org", description: "Compare one published indicator at a time. Overlay only when definitions match. Country peers stay unavailable while UK-in-context is offline." };
+export const metadata: Metadata = { ...withheldRobots(publicRouteAvailable("/compare/")), title: "Compare UK public measures | public-data.org", description: "Compare one published indicator at a time. Overlay only when definitions match. Country peers stay unavailable while UK-in-context is offline." };
 
 export default async function ComparePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   if (!publicRouteAvailable("/compare/")) return <PublicationOffline />;

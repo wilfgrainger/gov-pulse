@@ -1,5 +1,6 @@
 "use client";
 
+import ScrollRegion from "@/app/components/ScrollRegion";
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import MetricsStatus from "@/app/components/MetricsStatus";
 import { useMetrics } from "@/app/lib/useMetrics";
@@ -69,7 +70,7 @@ function formatDate(value: string) {
 
 function EvidenceTable({ module }: { module: EvidenceModule }) {
   return (
-    <div className="overflow-x-auto border-y border-black/20">
+    <ScrollRegion label={`${module.title} evidence table`} className="border-y border-black/20">
       <table className="min-w-full divide-y divide-black/15 text-left text-sm">
         <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-600">
           <tr>
@@ -93,7 +94,7 @@ function EvidenceTable({ module }: { module: EvidenceModule }) {
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollRegion>
   );
 }
 

@@ -1,3 +1,4 @@
+import { withheldRobots } from "@/app/lib/withheldRobots";
 import EvidenceHoldNotice from "@/app/components/EvidenceHoldNotice";
 import { publicationEnabled } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
@@ -11,6 +12,7 @@ import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
 import { SECTIONS } from "@/app/lib/sections";
 
 export const metadata: Metadata = {
+  ...withheldRobots(publicationEnabled("releaseCalendar") || publicationEnabled("nhsReleaseCalendar")),
   title: "Release calendar and watchlist",
   description: "See publisher-announced release dates and keep a private, on-device list of public measures.",
   alternates: { canonical: "https://public-data.org/calendar/" },

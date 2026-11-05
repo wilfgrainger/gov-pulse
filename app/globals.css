@@ -80,6 +80,12 @@ body {
   outline-offset: 3px;
 }
 
+/* Scrollable regions are keyboard stops; reuse the site focus ring. */
+.scroll-region:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
 /* Smooth the focus-ring appearance so keyboard navigation reads as considered,
    never abrupt. Colour and width remain exactly as pinned above. */
 :where(a, button, input, summary) {

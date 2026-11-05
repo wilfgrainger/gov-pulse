@@ -1,3 +1,4 @@
+import { withheldRobots } from "@/app/lib/withheldRobots";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -39,8 +40,11 @@ export async function generateMetadata({
 
   const canonical = sectionPath(id);
   const image = socialImagePath(id);
+  const publicationId = sectionPublication(id);
+  const evidenceHeld = discovery.kind === "dataset" && Boolean(publicationId) && !publicationEnabled(publicationId);
 
   return {
+    ...withheldRobots(!evidenceHeld),
     title: discovery.title,
     description: discovery.description,
     alternates: {

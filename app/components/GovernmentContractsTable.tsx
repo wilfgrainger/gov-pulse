@@ -1,5 +1,6 @@
 "use client";
 
+import ScrollRegion from "@/app/components/ScrollRegion";
 import {
   AwardCard,
   formatCurrency,
@@ -68,7 +69,7 @@ export function GovernmentContractsTable({
           {displayedAwards.map((award) => <AwardCard key={award.key} award={award} />)}
         </div>
 
-        <div className="mt-5 hidden overflow-x-auto border-y border-black/20 md:block">
+        <ScrollRegion label="Government contract awards table" className="mt-5 hidden border-y border-black/20 md:block">
           <table className="min-w-full divide-y divide-black/15 text-left text-sm">
             <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-600">
               <tr>
@@ -106,7 +107,7 @@ export function GovernmentContractsTable({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
       </section>
   );
 }

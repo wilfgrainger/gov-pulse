@@ -1,4 +1,5 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import sharp from "sharp";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -60,16 +61,22 @@ async function main() {
   const contract = JSON.parse(await readFile(contractPath, "utf8"));
 
   await mkdir(outputDirectory, { recursive: true });
+  // X, Facebook, LinkedIn and Slack do not render SVG previews: publish 1200x630 PNGs.
+  for (const stale of await readdir(outputDirectory)) {
+    if (stale.endsWith(".svg")) await rm(resolve(outputDirectory, stale));
+  }
+  const cards = [
+    ...Object.entries(contract.sections),
+    ["home", { title: "Britain, in evidence", category: "Independent" }],
+  ];
   await Promise.all(
-    Object.entries(contract.sections).map(([id, section]) =>
-      writeFile(resolve(outputDirectory, `${id}.svg`), socialCard(section), "utf8")
-    )
-  );
-
-  await writeFile(
-    resolve(outputDirectory, "home.svg"),
-    socialCard({ title: "Britain, in evidence", category: "Independent" }),
-    "utf8"
+    cards.map(async ([id, section]) => {
+      const png = await sharp(Buffer.from(socialCard(section), "utf8"), { density: 72 })
+        .resize(1200, 630)
+        .png()
+        .toBuffer();
+      await writeFile(resolve(outputDirectory, `${id}.png`), png);
+    })
   );
 
   process.stdout.write(

@@ -1,3 +1,4 @@
+import { withheldRobots } from "@/app/lib/withheldRobots";
 import PublicationOffline from "@/app/components/PublicationOffline";
 import { publicRouteAvailable } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
@@ -44,6 +45,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const title = measure?.label ?? definition.label;
   const basis = measure?.basis ?? definition.basis;
   return {
+    ...withheldRobots(publicRouteAvailable(`/measure/${id}/`)),
     title,
     description: measure
       ? `${basis}. ${measure.geography.label}; ${measure.observationPeriod.label}. Source edition ${measure.sourceEditionId}.`

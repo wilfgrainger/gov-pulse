@@ -54,7 +54,7 @@ describe("section discovery contract", () => {
 
   it("creates self-referential section and social URLs", () => {
     expect(sectionPath("gdp")).toBe("/section/gdp/");
-    expect(socialImagePath("gdp")).toBe("/social/gdp.svg");
+    expect(socialImagePath("gdp")).toBe("/social/gdp.png");
     expect(absoluteUrl(sectionPath("gdp"))).toBe(
       "https://public-data.org/section/gdp/"
     );
@@ -178,12 +178,30 @@ describe("section discovery contract", () => {
     expect(layout).toContain('"@type": "Organization"');
     expect(layout).toContain('"@type": "WebSite"');
     expect(layout).toContain("serializeJsonLd");
-    expect(sitemap).toContain('absoluteUrl("/feed.xml")');
+    expect(sitemap).not.toContain("/feed.xml");
     expect(sitemap).toContain('export const dynamic = "force-static"');
     expect(robots).toContain('absoluteUrl("/sitemap.xml")');
     expect(robots).toContain('export const dynamic = "force-static"');
     expect(feed).toContain('export const dynamic = "force-static"');
     expect(feed).toContain('"content-type": "application/rss+xml; charset=utf-8"');
+  });
+
+  it("social images are PNG 1200x630", async () => {
+    const { execFileSync } = await import("node:child_process");
+    execFileSync(process.execPath, ["scripts/generate-social-cards.mjs"], { stdio: "pipe" });
+    const layout = source("app/layout.tsx");
+    expect(layout).toContain("/social/home.png");
+    expect(layout).not.toContain(".svg");
+    expect(source("app/sources/layout.tsx")).not.toContain("/social/home.svg");
+    const files = new Set([...PUBLIC_SECTION_IDS.map((id) => socialImagePath(id)), "/social/home.png"]);
+    for (const file of files) {
+      const png = fs.readFileSync(`public${file}`);
+      expect([...png.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+      expect(png.readUInt32BE(16)).toBe(1200);
+      expect(png.readUInt32BE(20)).toBe(630);
+    }
+    for (const id of PUBLIC_SECTION_IDS) expect(socialImagePath(id)).toMatch(/\.png$/);
+    expect(fs.readdirSync("public/social").filter((name) => name.endsWith(".svg"))).toEqual([]);
   });
 });
 

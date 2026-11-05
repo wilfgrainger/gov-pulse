@@ -39,11 +39,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.7,
     },
-    {
-      url: absoluteUrl("/feed.xml"),
-      changeFrequency: "daily",
-      priority: 0.5,
-    },
   ];
 
   const sectionRoutes: MetadataRoute.Sitemap = PUBLIC_SECTION_IDS.filter((id) => publicRouteAvailable(sectionPath(id))).map((id) => {
@@ -56,5 +51,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     };
   });
 
+  // Pages only: feeds are not HTML routes and withheld routes must not be advertised.
   return [...staticRoutes.filter((entry) => publicRouteAvailable(new URL(entry.url).pathname)), ...sectionRoutes];
 }

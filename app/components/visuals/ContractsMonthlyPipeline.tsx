@@ -1,5 +1,6 @@
 "use client";
 
+import ScrollRegion from "@/app/components/ScrollRegion";
 import { useId, useMemo, useState } from "react";
 
 export type PipelineAward = {
@@ -285,7 +286,7 @@ export default function ContractsMonthlyPipeline({ awards, totalValue, valueBasi
 
       {/* Accessible Screen-Reader & Full Data Table */}
       {showTable && (
-        <div className="mt-5 overflow-x-auto border-t border-black/15 pt-4">
+        <ScrollRegion label="Monthly government contracts data table" className="mt-5 border-t border-black/15 pt-4">
           <table className="min-w-full divide-y divide-black/10 text-left text-xs">
             <caption className="sr-only">Monthly government contracts breakdown</caption>
             <thead>
@@ -315,7 +316,7 @@ export default function ContractsMonthlyPipeline({ awards, totalValue, valueBasi
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
       )}
 
       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[11px] text-slate-500">

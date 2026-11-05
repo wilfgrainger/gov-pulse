@@ -1,3 +1,4 @@
+import ScrollRegion from "@/app/components/ScrollRegion";
 import type { MeasurePoint, MeasureRecord } from "@/app/lib/measureCatalog";
 import type { DateWindow } from "@/app/lib/chartModel";
 
@@ -23,7 +24,7 @@ export default function ObservationTable(props: MeasureTableProps | GenericTable
     return (
       <details className="mt-4 border-t border-black/15 pt-3">
         <summary className="cursor-pointer text-sm font-semibold underline decoration-black/30 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black">Show observation table ({props.rows.length})</summary>
-        <div className="mt-3 overflow-x-auto">
+        <ScrollRegion label={`${props.caption} table`} className="mt-3">
           <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
             <caption className="sr-only">{props.caption}</caption>
             <thead><tr className="border-b border-black/20 text-xs uppercase tracking-wide text-gray-600">
@@ -40,7 +41,7 @@ export default function ObservationTable(props: MeasureTableProps | GenericTable
               })}
             </tr>)}</tbody>
           </table>
-        </div>
+        </ScrollRegion>
       </details>
     );
   }
@@ -50,7 +51,7 @@ export default function ObservationTable(props: MeasureTableProps | GenericTable
       <summary className="cursor-pointer text-sm font-semibold underline decoration-black/30 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black">
         Show observation table ({points.length})
       </summary>
-      <div className="mt-3 overflow-x-auto">
+      <ScrollRegion label={`${measure.label} observations table`} className="mt-3">
         <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
           <caption className="sr-only">
             {measure.label} observations from {window.start} through {window.end}; source edition {measure.sourceEditionId}.
@@ -79,7 +80,7 @@ export default function ObservationTable(props: MeasureTableProps | GenericTable
             ) : null}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
     </details>
   );
 }

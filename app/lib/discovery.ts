@@ -45,7 +45,7 @@ export function sectionPath(id: string) {
 }
 
 export function socialImagePath(id: string) {
-  return id === "uk-in-context" ? "/social/home.svg" : `/social/${id}.svg`;
+  return id === "uk-in-context" ? "/social/home.png" : `/social/${id}.png`;
 }
 
 export function absoluteUrl(path: string) {

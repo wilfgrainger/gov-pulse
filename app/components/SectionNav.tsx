@@ -1,5 +1,6 @@
 "use client";
 
+import ScrollRegion from "@/app/components/ScrollRegion";
 import Link from "next/link";
 import { publicRouteAvailable } from "@/contracts/publication-policy";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -146,7 +147,7 @@ export default function SectionNav({ sections: configuredSections }: { sections:
         </div>
 
         <div className="edition-quick-rail hidden md:block">
-          <div className="mx-auto flex max-w-7xl items-center overflow-x-auto px-6 text-xs">
+          <ScrollRegion label="Section navigation links" className="mx-auto flex max-w-7xl items-center px-6 text-xs">
             <Link
               href="/"
               prefetch={false}
@@ -170,7 +171,7 @@ export default function SectionNav({ sections: configuredSections }: { sections:
                 {section.shortLabel ?? section.label}
               </Link>
             ))}
-          </div>
+          </ScrollRegion>
         </div>
 
         {menuOpen ? (

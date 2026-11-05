@@ -4,6 +4,7 @@
  */
 "use client";
 
+import ScrollRegion from "@/app/components/ScrollRegion";
 import {
   buildPollingTable,
   distinctPollsters,
@@ -67,7 +68,7 @@ export default function PollingTable({
           Correction notices appear as their own rows. Betting markets are absent.
         </p>
       </div>
-      <div className="overflow-x-auto">
+      <ScrollRegion label="Voting-intention publications table">
         <table className="w-full min-w-[44rem] border-collapse text-sm">
           <caption className="sr-only">
             Verified primary voting-intention publications with aligned party shares and source links. No average.
@@ -140,7 +141,7 @@ export default function PollingTable({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
       {table.omittedWithoutSource > 0 ? (
         <p className="mt-3 text-xs text-gray-600" role="status">
           {table.omittedWithoutSource} record{table.omittedWithoutSource === 1 ? "" : "s"} omitted because a share cannot appear without a source URL.

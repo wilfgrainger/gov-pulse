@@ -1,5 +1,7 @@
 "use client";
 
+import { markerPath, seriesStyle } from "@/app/lib/seriesStyles";
+import ScrollRegion from "@/app/components/ScrollRegion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { compareEligibility, type MeasureRecord } from "@/app/lib/measureCatalog";
@@ -13,8 +15,16 @@ import { parseNamedComparisonWorkspaces, type NamedComparisonWorkspace } from "@
 
 const STORAGE_KEY = "public-data.org:comparison-workspaces:v1";
 
-const COLORS = ["#08766c", "#a72d24", "#4d43a5", "#a45700", "#135f94", "#7b3e76", "#4d6531", "#273b4a"];
 const format = (value: number, unit: string) => `${new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2 }).format(value)}${unit === "%" ? "%" : ` ${unit}`}`;
+
+function LegendSwatch({ index }: { index: number }) {
+  const style = seriesStyle(index);
+  const hollow = style.marker === "cross" || style.marker === "plus";
+  return <svg aria-hidden="true" focusable="false" width="32" height="12" viewBox="0 0 32 12" data-legend-swatch={`${style.dash}|${style.marker}`}>
+    <line x1="0" x2="32" y1="6" y2="6" stroke={style.color} strokeWidth="3" strokeDasharray={style.dash}/>
+    <path transform="translate(16 6)" d={markerPath(style.marker, 4)} fill={hollow ? "none" : style.color} stroke={hollow ? style.color : "white"} strokeWidth={hollow ? 2 : 1}/>
+  </svg>;
+}
 
 function Overlay({ measures, window }: { measures: MeasureRecord[]; window: DateWindow }) {
   const visible = measures.map((measure) => ({ measure, points: clipPoints(measure.points, window) }));
@@ -39,22 +49,24 @@ function Overlay({ measures, window }: { measures: MeasureRecord[]; window: Date
   return <figure className="my-8 border-y-2 border-foreground bg-white p-4 md:p-6">
     <figcaption><h2 className="text-2xl font-black">Comparable measures on one scale</h2><p className="mt-2 text-sm text-gray-700">Shared unit: {measures[0]?.unit}. Shared definition family, geography, cadence and evidence class are validated.</p></figcaption>
     <p className="mt-4 text-xs text-gray-600 sm:hidden">Swipe to inspect the full chart; exact observations are listed in the tables below.</p>
-    <div className="mt-2 overflow-x-auto">
+    <ScrollRegion label="Comparable measures chart" className="mt-2">
       <svg ref={ref} viewBox="0 0 800 340" role="img" aria-label={`Comparable measures from ${window.start} to ${window.end}; fitted vertical scale ${format(min, measures[0]?.unit ?? "")} to ${format(max, measures[0]?.unit ?? "")}.`} className="h-auto min-w-[36rem] w-full">
         {[0, .25, .5, .75, 1].map((step) => <g key={step}><line x1="220" x2="740" y1={40 + step * 240} y2={40 + step * 240} stroke="#d8d0c5" strokeDasharray="3 4"/><text x="212" y={44 + step * 240} textAnchor="end" fontSize="11" fill="#51596a">{format(max - step * span, measures[0]?.unit ?? "")}</text></g>)}
         {visible.map(({ measure, points }, index) => {
+          const style = seriesStyle(index);
           const series = segmentPoints(points, measure.cadence);
-        return series.map((segment, segmentIndex) => <g key={`${measure.id}-${segmentIndex}`}>
-            <path d={segment.map((point, pointIndex) => `${pointIndex ? "L" : "M"} ${x(point.observedAt)} ${y(point.value!)}`).join(" ")} fill="none" stroke={COLORS[index % COLORS.length]} strokeWidth="3"/>
-            {segment.length === 1 ? <circle cx={x(segment[0].observedAt)} cy={y(segment[0].value!)} r="5" fill={COLORS[index % COLORS.length]} stroke="white" strokeWidth="2"/> : null}
+          const markerProps = { fill: style.marker === "cross" || style.marker === "plus" ? "none" : style.color, stroke: style.marker === "cross" || style.marker === "plus" ? style.color : "white", strokeWidth: style.marker === "cross" || style.marker === "plus" ? 2 : 1.5 };
+          return series.map((segment, segmentIndex) => <g key={`${measure.id}-${segmentIndex}`}>
+            <path data-series={measure.id} data-marker={style.marker} d={segment.map((point, pointIndex) => `${pointIndex ? "L" : "M"} ${x(point.observedAt)} ${y(point.value!)}`).join(" ")} fill="none" stroke={style.color} strokeWidth="3" strokeDasharray={style.dash}/>
+            {segment.map((point) => <path key={point.observedAt} data-marker-shape={style.marker} transform={`translate(${x(point.observedAt)} ${y(point.value!)})`} d={markerPath(style.marker, segment.length === 1 ? 5 : 4)} {...markerProps}/>)}
           </g>);
         })}
         <text x="220" y="316" fontSize="11" fill="#51596a">{dates[0] ?? window.start}</text><text x="740" y="316" textAnchor="end" fontSize="11" fill="#51596a">{dates.at(-1) ?? window.end}</text>
       </svg>
-    </div>
+    </ScrollRegion>
     {values.length === 0 ? <p role="status" className="mt-3 border-l-4 border-accent bg-accent-soft p-3 text-sm">No numeric observations fall within this date window. Widen the date window to see published values.</p> : null}
     {visible.some(({ points }) => points.length === 0 || points.every((point) => point.value === null)) && values.length ? <p className="mt-3 text-sm text-gray-700">Some selected measures have no numeric observations in this date window; see their tables below.</p> : null}
-    <div className="mt-2 flex flex-wrap gap-4 text-sm font-semibold">{measures.map((measure, index) => <span key={measure.id} className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-1 w-6" style={{ backgroundColor: COLORS[index] }}/>{measure.label}</span>)}</div>
+    <div className="mt-2 flex flex-wrap gap-4 text-sm font-semibold">{measures.map((measure, index) => <span key={measure.id} className="inline-flex items-center gap-2"><LegendSwatch index={index}/>{measure.label}</span>)}</div>
     <p className="mt-3 text-xs leading-5 text-gray-600">Fitted axis: {format(min, measures[0]?.unit ?? "")} to {format(max, measures[0]?.unit ?? "")}. Source editions: {measures.map(({ sourceEditionId }) => sourceEditionId).join(", ")}.</p>
     <div className="mt-3 flex justify-end"><ChartExportButtons containerRef={ref} exportPackage={pkg}/></div>
     {measures.map((measure) => <ObservationTable key={measure.id} measure={measure} points={clipPoints(measure.points, window)} window={window}/>)}

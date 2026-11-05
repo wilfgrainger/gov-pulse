@@ -1,5 +1,6 @@
 "use client";
 
+import ScrollRegion from "@/app/components/ScrollRegion";
 import { useState } from "react";
 import CoreEvidenceExplanation from "@/app/components/CoreEvidenceExplanation";
 import MetricsStatus from "@/app/components/MetricsStatus";
@@ -207,13 +208,13 @@ export default function ElectionPolling() {
                   <p className="font-mono text-xs text-gray-600">{correction.pollster} · {correction.geography} · {correction.observationPeriod} · corrected {formatDate(correction.correctedAt)}</p>
                 </div>
                 <p className="mt-2 text-sm leading-6 text-gray-700">{correction.reason}</p>
-                <div className="mt-3 overflow-x-auto">
+                <ScrollRegion label={`${correction.measure} results before and after the publisher correction`} className="mt-3">
                   <table className="w-full border-collapse text-sm">
                     <caption className="sr-only">{correction.measure} results before and after the publisher correction</caption>
                     <thead><tr className="border-b border-line text-left text-xs uppercase tracking-wide text-gray-600"><th scope="col" className="py-2 pr-4">Party</th><th scope="col" className="py-2 pr-4">Originally reported</th><th scope="col" className="py-2">Corrected</th></tr></thead>
                     <tbody>{correction.results.map((result) => <tr key={result.partyId} className="border-b border-line"><th scope="row" className="py-2 pr-4 text-left font-medium">{result.label}</th><td className="py-2 pr-4 tabular-nums">{result.original}{correction.unit}</td><td className="py-2 tabular-nums">{result.corrected}{correction.unit}</td></tr>)}</tbody>
                   </table>
-                </div>
+                </ScrollRegion>
                 <a className="mt-3 inline-block min-h-11 text-sm font-semibold underline underline-offset-4" href={correction.sourceUrl} target="_blank" rel="noopener noreferrer">{correction.pollster} correction notice ↗</a>
               </article>
             ))}

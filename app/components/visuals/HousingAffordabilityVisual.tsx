@@ -1,5 +1,6 @@
 "use client";
 
+import ScrollRegion from "@/app/components/ScrollRegion";
 import { useId, useMemo, useState } from "react";
 
 export type HousingSeriesPoint = {
@@ -193,15 +194,15 @@ export default function HousingAffordabilityVisual({
       </div>
 
       {hasData && (
-        <div className="mt-6" aria-hidden={showTable ? "true" : undefined}>
+        <div className="mt-6">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-slate-700">
             <div className="flex flex-wrap items-center gap-4">
               <span className="flex items-center gap-1.5">
-                <span className="inline-block h-3 w-3 rounded-full" style={{ background: SERIES.realPay.colour }} />
+                <svg aria-hidden="true" focusable="false" width="20" height="8" viewBox="0 0 20 8"><line x1="0" x2="20" y1="4" y2="4" stroke={SERIES.realPay.colour} strokeWidth="2.5" /></svg>
                 Real regular pay growth (% annual)
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="inline-block h-3 w-3 rounded-full" style={{ background: SERIES.housePrice.colour }} />
+                <svg aria-hidden="true" focusable="false" width="20" height="8" viewBox="0 0 20 8"><line x1="0" x2="20" y1="4" y2="4" stroke={SERIES.housePrice.colour} strokeWidth="2.5" strokeDasharray="4 2" /></svg>
                 House price annual change (% annual, dashed)
               </span>
             </div>
@@ -213,7 +214,13 @@ export default function HousingAffordabilityVisual({
           </div>
 
           <div className="relative h-44 w-full rounded-xs border border-slate-200 bg-slate-50 p-2">
-            <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="none" className="h-full w-full overflow-visible">
+            <svg
+              viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+              preserveAspectRatio="none"
+              className="h-full w-full overflow-visible"
+              role="group"
+              aria-label={`Two separate annual-change series: ${SERIES.housePrice.label} (dashed line, ${periodRange(hpiPoints)}) and ${SERIES.realPay.label} (solid line, ${periodRange(payPoints)}), plotted on a shared date axis. Each point is keyboard focusable; the same values are in the data tables.`}
+            >
               {zeroY !== null && (
                 <line x1="0" y1={zeroY} x2={WIDTH} y2={zeroY} stroke="#cbd5e1" strokeDasharray="3 3" strokeWidth="1" />
               )}
@@ -260,10 +267,10 @@ export default function HousingAffordabilityVisual({
       )}
 
       {showTable && (
-        <div className="mt-5 space-y-6 overflow-x-auto border-t border-black/15 pt-4">
+        <ScrollRegion label="House price and real pay data tables" className="mt-5 space-y-6 border-t border-black/15 pt-4">
           {tableFor(SERIES.housePrice, hpiPoints)}
           {tableFor(SERIES.realPay, payPoints)}
-        </div>
+        </ScrollRegion>
       )}
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-[11px] text-slate-500">

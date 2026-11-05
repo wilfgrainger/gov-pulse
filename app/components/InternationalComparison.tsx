@@ -1,3 +1,4 @@
+import ScrollRegion from "@/app/components/ScrollRegion";
 import { readServerInternationalComparison } from "@/app/lib/serverInternationalComparison";
 import CountryComparisonFigures from "@/app/components/CountryComparisonFigures";
 import {
@@ -174,7 +175,7 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
       </div>
 
       {ranked.length > 0 ? (
-        <div className="mt-6 overflow-x-auto">
+        <ScrollRegion label={`${measure.label} by country table`} className="mt-6">
           <table className="w-full min-w-[36rem] border-collapse text-left">
             <caption className="sr-only">{measure.label} by country</caption>
             <thead>
@@ -207,7 +208,7 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
       ) : (
         <div className="mt-6 border border-[#d3dae1] bg-[#f4f6f8] p-5">
           <p className="font-semibold text-[#14243b]">Comparable figures are currently unavailable.</p>
@@ -267,7 +268,7 @@ export default async function InternationalComparison() {
       {publication ? <CountryComparisonFigures measures={publication.measures} /> : null}
 
       <div className="mt-7 border-y border-[#14243b]">
-        <div className="overflow-x-auto">
+        <ScrollRegion label="UK per-resident international comparison scorecard table">
           <table className="w-full min-w-[58rem] border-collapse">
             <caption className="sr-only">United Kingdom per-resident international comparison scorecard</caption>
             <thead>
@@ -301,7 +302,7 @@ export default async function InternationalComparison() {
                   ))}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
       </div>
 
       {!publication ? (

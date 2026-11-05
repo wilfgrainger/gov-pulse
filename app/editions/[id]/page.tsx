@@ -1,3 +1,4 @@
+import { withheldRobots } from "@/app/lib/withheldRobots";
 import PublicationOffline from "@/app/components/PublicationOffline";
 import { publicRouteAvailable } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
@@ -24,6 +25,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   return {
+    ...withheldRobots(publicRouteAvailable(`/editions/${id}/`)),
     title: `Historical edition ${id}`,
     description: "An immutable archived evidence catalog. Values describe their publication date and are not current readings.",
   };

@@ -1,5 +1,6 @@
 "use client";
 
+import ScrollRegion from "@/app/components/ScrollRegion";
 import { useRef, useState } from "react";
 import {
   CartesianGrid,
@@ -298,7 +299,7 @@ export default function PollingPublicationChart<PartyKey extends string>({
           </ResponsiveContainer>
         </ClientOnlyChart>
       </div>
-      <div className="mt-4 overflow-x-auto">
+      <ScrollRegion label="Per-poll party shares and sample sizes table" className="mt-4">
         <table className="w-full min-w-[640px] border-collapse text-sm">
           <caption className="sr-only">
             Per-poll party shares and disclosed sample size, one row per
@@ -335,7 +336,7 @@ export default function PollingPublicationChart<PartyKey extends string>({
             )}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 px-1">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-gray-600">
           {seriesByParty.map((series) => (

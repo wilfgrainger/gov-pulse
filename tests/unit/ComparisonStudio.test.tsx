@@ -56,9 +56,9 @@ describe("ComparisonStudio overlay", () => {
     );
 
     const chart = screen.getByRole("img", { name: /Comparable measures from 2026-08-01 to 2026-08-01/ });
-    const points = [...chart.querySelectorAll("circle")];
+    const points = [...chart.querySelectorAll("[data-marker-shape]")];
     expect(points).toHaveLength(2);
-    expect(points.map((point) => point.getAttribute("cx"))).toEqual(["480", "480"]);
+    expect(points.map((point) => point.getAttribute("transform")?.split(" ")[0])).toEqual(["translate(480", "translate(480"]);
     expect([...chart.querySelectorAll("text")].slice(0, 5).every((tick) => Number(tick.getAttribute("x")) >= 0)).toBe(true);
   });
 

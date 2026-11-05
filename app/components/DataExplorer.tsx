@@ -1,5 +1,6 @@
 "use client";
 
+import ScrollRegion from "@/app/components/ScrollRegion";
 import Link from "next/link";
 import {
   Suspense,
@@ -596,7 +597,7 @@ function MeasureDetail({
           <summary className="cursor-pointer py-2 font-semibold">
             Published observations ({points.length})
           </summary>
-          <div className="mt-3 max-h-80 overflow-auto">
+          <ScrollRegion label="Published observations table" className="mt-3 max-h-80 overflow-y-auto">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr>
@@ -619,7 +620,7 @@ function MeasureDetail({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         </details>
       )}
     </section>

@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     url: "/sources/",
     images: [
       {
-        url: "/social/home.svg",
+        url: "/social/home.png",
         width: 1200,
         height: 630,
         alt: "Sources and methods — public-data.org",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title,
     description,
-    images: ["/social/home.svg"],
+    images: ["/social/home.png"],
   },
 };
 

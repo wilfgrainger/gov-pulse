@@ -1,3 +1,4 @@
+import { withheldRobots } from "@/app/lib/withheldRobots";
 import PublicationOffline from "@/app/components/PublicationOffline";
 import { publicRouteAvailable } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
   title: "Latest public-data briefing",
   description: "A dated account of accepted observations, historical revisions, method changes and the sources behind the latest UK public-data edition.",
   alternates: { canonical: "https://public-data.org/briefing/" },
+  ...withheldRobots(publicRouteAvailable("/briefing/")),
 };
 
 export default async function BriefingPage() {

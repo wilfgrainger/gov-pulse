@@ -1,5 +1,6 @@
 "use client";
 
+import ScrollRegion from "@/app/components/ScrollRegion";
 import { useId, useMemo, useState } from "react";
 
 export type IndicatorPoint = {
@@ -180,7 +181,7 @@ export default function EconomicPulseGrid({ series }: EconomicPulseGridProps) {
             </span>
           </div>
 
-          <div className="mt-3 overflow-x-auto">
+          <ScrollRegion label={`${activeSeries.title} historical publication points`} className="mt-3">
             <div className="flex gap-2 min-w-max pb-2">
               {activeSeries.history.slice(-12).map((point) => (
                 <div key={point.date} className="rounded-xs bg-white border border-blue-100 p-2 text-center min-w-[70px]">
@@ -189,7 +190,7 @@ export default function EconomicPulseGrid({ series }: EconomicPulseGridProps) {
                 </div>
               ))}
             </div>
-          </div>
+          </ScrollRegion>
         </div>
       )}
 

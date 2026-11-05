@@ -1,3 +1,4 @@
+import { withheldRobots } from "@/app/lib/withheldRobots";
 import PublicationOffline from "@/app/components/PublicationOffline";
 import { publicRouteAvailable } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
   title: "Measure library",
   description: "Browse public measures with their definitions, observations, source editions, caveats and publication dates.",
   alternates: { canonical: "https://public-data.org/measure/" },
+  ...withheldRobots(publicRouteAvailable("/measure/")),
 };
 
 export default async function MeasureIndexPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

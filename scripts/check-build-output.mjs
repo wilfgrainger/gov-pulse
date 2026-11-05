@@ -61,8 +61,8 @@ if (process.env.STATIC_EXPORT === "true") {
     "out/sitemap.xml",
     "out/robots.txt",
     "out/feed.xml",
-    "out/social/home.svg",
-    "out/social/gdp.svg",
+    "out/social/home.png",
+    "out/social/gdp.png",
   ];
 
   for (const artifact of requiredPagesArtifacts) {

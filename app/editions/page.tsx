@@ -1,3 +1,4 @@
+import { withheldRobots } from "@/app/lib/withheldRobots";
 import PublicationOffline from "@/app/components/PublicationOffline";
 import RevisionLedger from "@/app/components/RevisionLedger";
 import { publicRouteAvailable } from "@/contracts/publication-policy";
@@ -12,6 +13,7 @@ import { SECTIONS } from "@/app/lib/sections";
 export const metadata: Metadata = {
   title: "Publication editions and revisions",
   description: "Browse retained source editions and their dated observations, corrections and method changes.",
+  ...withheldRobots(publicRouteAvailable("/editions/")),
 };
 
 export default async function EditionsPage() {

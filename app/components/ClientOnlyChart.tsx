@@ -1,5 +1,6 @@
 "use client";
 
+import ScrollRegion from "@/app/components/ScrollRegion";
 import { useEffect, useRef, useState } from "react";
 
 interface ClientOnlyChartProps {
@@ -51,7 +52,7 @@ export default function ClientOnlyChart({
       ) : fallbackContent ? (
         <div aria-busy="false" className="flex h-full flex-col justify-between overflow-y-auto border border-black/10 bg-[#f7f9fb] p-4 text-sm">
           <span className="sr-only">{fallbackLabel}</span>
-          <div className="min-h-0 flex-1 overflow-auto">{fallbackContent}</div>
+          <ScrollRegion label="Chart fallback figures" className="min-h-0 flex-1 overflow-y-auto">{fallbackContent}</ScrollRegion>
         </div>
       ) : (
         <div className="flex h-full flex-col justify-between border border-black/10 bg-[#f7f9fb] p-5 animate-pulse" aria-busy="true">

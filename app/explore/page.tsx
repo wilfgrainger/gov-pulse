@@ -1,3 +1,4 @@
+import { withheldRobots } from "@/app/lib/withheldRobots";
 import PublicationOffline from "@/app/components/PublicationOffline";
 import { publicRouteAvailable } from "@/contracts/publication-policy";
 import type { Metadata } from "next";
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
   description:
     "Look up a published geography, search verified measures, and open buyer or supplier dossiers. Inspect history, sources and gaps without invented local figures.",
   alternates: { canonical: "https://public-data.org/explore/" },
+  ...withheldRobots(publicRouteAvailable("/explore/")),
 };
 export default async function ExplorePage() {
   if (!publicRouteAvailable("/explore/")) return <PublicationOffline />;

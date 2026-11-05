@@ -1,5 +1,6 @@
 "use client";
 
+import ScrollRegion from "@/app/components/ScrollRegion";
 import { useId, useRef } from "react";
 import ChartExportButtons from "@/app/components/ChartExportButtons";
 import ObservationTable from "./ObservationTable";
@@ -84,7 +85,7 @@ export default function EvidenceFigure({
         {measure.availability === "historical" ? " Historical edition." : ""}
       </p>
       <p className="mb-2 px-1 text-xs text-gray-600 sm:hidden">Swipe to inspect the full chart; exact observations are listed in the table below.</p>
-      <div className="overflow-x-auto">
+      <ScrollRegion label={`${title} chart`}>
         <svg
           ref={chartRef}
           className="h-auto min-w-[38rem] w-full"
@@ -133,7 +134,7 @@ export default function EvidenceFigure({
           </> : <text x="400" y="155" textAnchor="middle" fontSize="15" fill="#4b5563">No observations in this window</text>}
           <text x="400" y="336" textAnchor="middle" fontSize="12" fill="#374151">Observation period · {measure.geography.label}</text>
         </svg>
-      </div>
+      </ScrollRegion>
       <p className="mt-2 px-1 text-xs leading-5 text-gray-600">
         Source: {description.replace(/[.]$/, "")} · <Link href={sourceHistoryHref(measure)} className="underline">{measure.publisher ?? measure.sourceId}</Link> · edition {measure.sourceEditionId} · published {measure.publishedAt.slice(0, 10)} · <a href={measure.sourceUrl} className="break-all underline">Primary publication</a>
       </p>
