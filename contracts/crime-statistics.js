@@ -35,13 +35,15 @@ const REQUIRED_CSEW_IDS = Object.freeze([
   "criminalDamage",
 ]);
 const REQUIRED_POLICE_IDS = Object.freeze([
-  "recordedCrime",
   "homicide",
   "knife",
   "firearms",
   "personalRobbery",
   "shoplifting",
 ]);
+// The total is stated in some bulletin editions only. When an edition omits
+// it the measure is absent (unavailable), never substituted.
+const OPTIONAL_POLICE_IDS = Object.freeze(["recordedCrime"]);
 const REQUIRED_JUSTICE_IDS = Object.freeze([
   "magistratesChargeToCompletion",
   "crownChargeToCompletion",
@@ -138,22 +140,35 @@ function normalizeMeasure(value, label) {
   };
 }
 
-function normalizeMeasures(values, expectedIds, label) {
-  if (!Array.isArray(values) || values.length !== expectedIds.length) {
-    throw new Error(`${label} must contain exactly ${expectedIds.length} measures`);
+function normalizeMeasures(values, expectedIds, label, optionalIds = []) {
+  const allowedIds = [...optionalIds, ...expectedIds];
+  if (
+    !Array.isArray(values) ||
+    values.length < expectedIds.length ||
+    values.length > allowedIds.length
+  ) {
+    throw new Error(
+      optionalIds.length === 0
+        ? `${label} must contain exactly ${expectedIds.length} measures`
+        : `${label} must contain ${expectedIds.length} to ${allowedIds.length} measures`
+    );
   }
   const normalized = values.map((value, index) =>
     normalizeMeasure(value, `${label} measure ${index + 1}`)
   );
   const ids = normalized.map((measure) => measure.id);
-  if (new Set(ids).size !== expectedIds.length || expectedIds.some((id) => !ids.includes(id))) {
+  if (
+    new Set(ids).size !== ids.length ||
+    ids.some((id) => !allowedIds.includes(id)) ||
+    expectedIds.some((id) => !ids.includes(id))
+  ) {
     throw new Error(`${label} must contain each approved measure exactly once`);
   }
-  normalized.sort((left, right) => expectedIds.indexOf(left.id) - expectedIds.indexOf(right.id));
+  normalized.sort((left, right) => allowedIds.indexOf(left.id) - allowedIds.indexOf(right.id));
   return normalized;
 }
 
-function normalizeOfficialModule(value, expectedIds, label, sourceUrl = null) {
+function normalizeOfficialModule(value, expectedIds, label, sourceUrl = null, optionalIds = []) {
   if (!value || typeof value !== "object" || Array.isArray(value) || value.status !== "available") {
     throw new Error(`${label} must be available`);
   }
@@ -163,7 +178,7 @@ function normalizeOfficialModule(value, expectedIds, label, sourceUrl = null) {
     sourceLabel: requiredText(value.sourceLabel, `${label} source label`, 200),
     summary: requiredText(value.summary, `${label} summary`, 600),
     caveat: requiredText(value.caveat, `${label} caveat`, 1200),
-    measures: normalizeMeasures(value.measures, expectedIds, label),
+    measures: normalizeMeasures(value.measures, expectedIds, label, optionalIds),
   };
   if (value.sourceClass !== undefined) {
     result.sourceClass = requiredText(value.sourceClass, `${label} source class`, 80);
@@ -278,7 +293,9 @@ function normalizeCrimeStatisticsPayload(data, now = new Date()) {
     policeRecorded: normalizeOfficialModule(
       data.policeRecorded,
       REQUIRED_POLICE_IDS,
-      "Police-recorded module"
+      "Police-recorded module",
+      null,
+      OPTIONAL_POLICE_IDS
     ),
     justice,
     regional: {

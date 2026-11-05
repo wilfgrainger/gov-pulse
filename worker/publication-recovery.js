@@ -4,7 +4,12 @@ import { FEED_REGISTRY_VERSION } from "./feed-registry.js";
 import { filterCurrentSnapshot } from "./publication-currentness.js";
 import { publicSnapshot } from "./public-snapshot.js";
 import { filterPublicationSnapshot } from "../contracts/publication-policy.js";
-import { assertSameHttpsHost, readResponseJson } from "./response-limits.js";
+import { frozenHostSet } from "./approved-source-hosts.js";
+import {
+  cancelResponseBody,
+  fetchWithApprovedRedirects,
+  readResponseJson,
+} from "./response-limits.js";
 
 const DEFAULT_PUBLICATION_SEED_URL =
   "https://public-data-org.pages.dev/data/metrics-snapshot.json";
@@ -34,20 +39,29 @@ async function fetchPublicationSeedSnapshot(env, fetchImpl = fetch, now = new Da
   if (!url) return null;
 
   try {
-    const response = await fetchImpl(url, {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(8_000),
-    });
+    // The seed URL is operator configuration, so its own host is the only
+    // approved origin; it must still be HTTPS and redirects may not leave it.
+    let seedHost;
+    try {
+      seedHost = new URL(url).hostname;
+    } catch {
+      return null;
+    }
+    const response = await fetchWithApprovedRedirects(
+      url,
+      {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(8_000),
+      },
+      frozenHostSet([seedHost]),
+      fetchImpl,
+      "Pages seed"
+    );
     if (!response.ok) {
-      try {
-        await response.body?.cancel();
-      } catch {
-        // Releasing an unsuccessful response body is best effort only.
-      }
+      await cancelResponseBody(response);
       return null;
     }
 
-    assertSameHttpsHost(response, url, "Pages seed");
     const payload = await readResponseJson(response, {
       label: "Pages seed JSON",
     });

@@ -19,7 +19,6 @@ export default function GovernmentContracts() {
   const metrics = useMetrics("governmentContracts", FALLBACK);
   const [query, setQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("value-desc");
-  const [nationFilter, setNationFilter] = useState<string>("all");
   const valid =
     metrics.isLive &&
     metrics.cacheState === "fresh" &&
@@ -38,9 +37,7 @@ export default function GovernmentContracts() {
             .toLocaleLowerCase("en-GB")
             .includes(search)
         : true;
-      const matchesNation =
-        nationFilter === "all" || award.supplierNations.includes(nationFilter);
-      return matchesSearch && matchesNation;
+      return matchesSearch;
     });
     return filtered.sort((left, right) => {
       if (sortMode === "value-asc") return left.amount - right.amount;
@@ -51,20 +48,7 @@ export default function GovernmentContracts() {
       }
       return right.amount - left.amount;
     });
-  }, [data.awards, nationFilter, query, sortMode, valid]);
-
-  const supplierConcentration = useMemo(() => {
-    if (!valid) return [];
-    if (nationFilter === "all") return data.supplierConcentration;
-    return data.supplierConcentration.filter((entry) => entry.nation === nationFilter);
-  }, [data.supplierConcentration, nationFilter, valid]);
-
-  const availableNations = useMemo(() => {
-    if (!valid) return [];
-    return [...new Set(data.supplierConcentration.map((entry) => entry.nation))].sort(
-      (left, right) => left.localeCompare(right, "en-GB")
-    );
-  }, [data.supplierConcentration, valid]);
+  }, [data.awards, query, sortMode, valid]);
 
   if (!valid) {
     return (
@@ -87,13 +71,7 @@ export default function GovernmentContracts() {
   return (
     <div className="space-y-10">
       <GovernmentContractsBriefing data={data} leadAward={leadAward} coverageLine={coverageLine} />
-      <GovernmentContractsCharts
-        data={data}
-        supplierConcentration={supplierConcentration}
-        nationFilter={nationFilter}
-        setNationFilter={setNationFilter}
-        availableNations={availableNations}
-      />
+      <GovernmentContractsCharts data={data} />
       <GovernmentContractsTable
         data={data}
         displayedAwards={displayedAwards}

@@ -83,6 +83,12 @@ after exact-head route/health checks and the affected public journey.
 - A degraded edition declares `meta.publicationState = "degraded"` and an exact
   `missingRequiredSections` manifest, and `/data/health.json` reports
   `ready: false`.
+- A family that `config/publications.json` marks `published` but that has no
+  current section is listed in `/data/health.json` as
+  `unavailableSections: [{ id, reason }]`, where `reason` is one of
+  `not-scheduled`, `collector-failed` or `no-current-observation`. The
+  publisher stores the reason in its status record at publish time; health
+  reads it from there and never exposes collector errors or storage keys.
 - This implementation currently serves browser evidence through the listed
   same-origin routes. The route inventory, hostname and service split may grow,
   move or be replaced when a reader need or verified source constraint warrants

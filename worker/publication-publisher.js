@@ -22,7 +22,9 @@ import {
   kvGetWithMetadata,
   kvPut,
   kvPutText,
+  terminalKey,
 } from "./publication-run-store.js";
+import { unavailableSectionsFor } from "./publication-availability.js";
 import { PUBLISHED_SECTIONS } from "./publication-plan.js";
 import { PUBLICATION_SECTION_PREFIX } from "./publication-collection-runner.js";
 import { fetchPublicationSeedSnapshot } from "./publication-recovery.js";
@@ -127,6 +129,12 @@ async function publishFromCaches(env, options = {}) {
     ? buildPublicSnapshotArtifact(publicProjection, now)
     : null;
 
+  const runId = typeof options.runId === "string" && options.runId.trim() ? options.runId : null;
+  const unavailableSections = await unavailableSectionsFor(
+    publication,
+    async (jobId) => (runId ? kvGet(env, terminalKey(runId, jobId)) : null),
+  );
+
   const status = {
     status:
       missingRequired.length > 0
@@ -137,6 +145,7 @@ async function publishFromCaches(env, options = {}) {
     generatedAt: publication.meta.generatedAt,
     includedSections: Object.keys(publication.meta.sources).sort(),
     ...(missingRequired.length > 0 ? { missingRequired } : {}),
+    ...(unavailableSections.length > 0 ? { unavailableSections } : {}),
   };
 
   const commitManifest = publicArtifact

@@ -127,6 +127,16 @@ describe("degraded public publication", () => {
       ready: false,
       degraded: true,
       missingRequiredSections: ["employmentStats"],
+      // Every family is published under this test's config mock; families the
+      // fixture snapshot does not carry are named as unavailable.
+      unavailableSections: [
+        "bettingOdds",
+        "crimeStatistics",
+        "employmentStats",
+        "governmentContracts",
+        "nhsReleaseCalendar",
+        "releaseCalendar",
+      ].map((id) => ({ id, reason: "no-current-observation" })),
     });
   });
 

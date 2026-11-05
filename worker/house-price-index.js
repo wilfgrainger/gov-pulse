@@ -257,6 +257,26 @@ function parseHpiHistoryCsv(text) {
   return bounded;
 }
 
+function previousAnnualGrowth(text, headlineMatch, label) {
+  // The comparison sentence immediately follows its own headline. ONS words
+  // it three ways: "is up from X% in the 12 months to <month>", "is down from
+  // X% ...", or, when the rate did not move, "is unchanged from the 12 months
+  // to <month>" (no percentage; first seen in the October 2026 bulletin). An
+  // unchanged rate means the previous period's rate equals the headline rate.
+  const after = text.slice(text.indexOf(headlineMatch[0]) + headlineMatch[0].length);
+  const match = matchRequired(
+    after,
+    /^(?:\s*\([^)]*\))?\s*;?\s*this annual growth rate is (?:(?:up|down) from\s+([\d.]+)%\s+in|(unchanged) from)\s+the 12 months to\s+([A-Za-z]+\s+\d{4})/i,
+    label
+  );
+  return {
+    period: normalizeMonthlyPeriod(match[3]),
+    changePercent: match[2]
+      ? numeric(headlineMatch[1], label)
+      : numeric(match[1], label),
+  };
+}
+
 function parseHpiBulletin(html, edition) {
   const text = decodeHtml(html);
   const nextReleaseDate = parseOnsNextReleaseDate(text);
@@ -270,10 +290,9 @@ function parseHpiBulletin(html, edition) {
     /Average UK monthly private rent increased by\s+([\d.]+)%,\s+to\s+£([\d,]+),\s+in the 12 months to\s+([A-Za-z]+\s+\d{4})/i,
     "private rent headline"
   );
-  const afterRentHeadline = text.slice(text.indexOf(rentHeadlineMatch[0]) + rentHeadlineMatch[0].length);
-  const previousRentMatch = matchRequired(
-    afterRentHeadline,
-    /^(?:\s*\([^)]*\))?\s*;?\s*this annual growth rate is (?:up|down) from\s+([\d.]+)%\s+in the 12 months to\s+([A-Za-z]+\s+\d{4})/i,
+  const previousRent = previousAnnualGrowth(
+    text,
+    rentHeadlineMatch,
     "previous private rent annual growth"
   );
   const headlineMatch = matchRequired(
@@ -286,10 +305,9 @@ function parseHpiBulletin(html, edition) {
   // headline a paragraph earlier also reads "...annual growth rate is up/down
   // from X% in the 12 months to <month>", and an unanchored match picks up
   // that unrelated rent figure instead of the house-price one that follows it.
-  const afterHeadline = text.slice(text.indexOf(headlineMatch[0]) + headlineMatch[0].length);
-  const previousMatch = matchRequired(
-    afterHeadline,
-    /^(?:\s*\([^)]*\))?\s*;?\s*this annual growth rate is (?:up|down) from\s+([\d.]+)%\s+in the 12 months to\s+([A-Za-z]+\s+\d{4})/i,
+  const previous = previousAnnualGrowth(
+    text,
+    headlineMatch,
     "previous house price annual growth"
   );
 
@@ -299,8 +317,8 @@ function parseHpiBulletin(html, edition) {
   if (!Number.isFinite(avgPriceGbp)) {
     throw new Error("Unable to parse house price index average price");
   }
-  const previousPeriod = normalizeMonthlyPeriod(previousMatch[2]);
-  const previousChangePercent = numeric(previousMatch[1], "previous house price annual change");
+  const previousPeriod = previous.period;
+  const previousChangePercent = previous.changePercent;
   const privateRentPeriod = normalizeMonthlyPeriod(rentHeadlineMatch[3]);
   const avgMonthlyPrivateRentGbp = Number.parseInt(rentHeadlineMatch[2].replace(/,/g, ""), 10);
   if (!Number.isFinite(avgMonthlyPrivateRentGbp) || avgMonthlyPrivateRentGbp <= 0) {
@@ -313,8 +331,8 @@ function parseHpiBulletin(html, edition) {
       privateRentObservedAt: monthlyPeriodEnd(privateRentPeriod),
       avgMonthlyPrivateRentGbp,
       privateRentAnnualChangePercent: numeric(rentHeadlineMatch[1], "private rent annual change"),
-      previousPrivateRentPeriod: normalizeMonthlyPeriod(previousRentMatch[2]),
-      previousPrivateRentAnnualChangePercent: numeric(previousRentMatch[1], "previous private rent annual change"),
+      previousPrivateRentPeriod: previousRent.period,
+      previousPrivateRentAnnualChangePercent: previousRent.changePercent,
       period,
       observedAt: monthlyPeriodEnd(period),
       releaseDate: isoDate(releaseDate, "house price index release date"),

@@ -1,3 +1,4 @@
+import { YOU_GOV_ARTICLE_HOSTS, YOU_GOV_RESULTS_HOSTS } from "./approved-source-hosts.js";
 import { PARTY_LABELS, normalizePrimaryPollPayload } from "./election-polls.js";
 import { collectMoreInCommonPolls } from "./more-in-common-polling.js";
 import {
@@ -12,10 +13,6 @@ import {
 const YOU_GOV_ARTICLES_URL = "https://yougov.com/en-gb/articles";
 const YOU_GOV_METHOD_URL =
   "https://yougov.com/en-gb/articles/54278-how-yougov-conducts-voting-intention-polling";
-const YOU_GOV_ARTICLE_HOSTS = new Set(["yougov.com", "www.yougov.com"]);
-const YOU_GOV_RESULTS_HOSTS = new Set([
-  "ygo-assets-websites-editorial-emea.yougov.net",
-]);
 const MAX_PDF_STREAM_EXPANSION_BYTES = 2 * 1024 * 1024;
 const MAX_PDF_TOTAL_EXPANSION_BYTES = 8 * 1024 * 1024;
 
