@@ -28,10 +28,10 @@ import {
 import { unavailableSectionsFor } from "./publication-availability.js";
 import { PUBLISHED_SECTIONS } from "./publication-plan.js";
 import {
-  fragmentRetrievalTime,
   runSectionFragmentKey,
   sectionFragmentKey,
 } from "./publication-collection-runner.js";
+import { fragmentRetrievalTime, readFeedRecord } from "./feed-store.js";
 import { fetchPublicationSeedSnapshot } from "./publication-recovery.js";
 
 function isRecord(value) {
@@ -46,10 +46,28 @@ async function publicationFragments(env, now = new Date(), runId = null, current
   const records = [];
   for (const section of PUBLISHED_SECTIONS) {
     const candidates = [];
+    // v20 per-feed record first (preferred on a retrieval-clock tie), then the
+    // run-scoped and legacy global fragments during the dual-read window.
+    const feed = await readFeedRecord(env, section);
+    if (feed?.record) candidates.push(feed.record);
     if (typeof runId === "string" && runId.trim()) {
       candidates.push(await kvGet(env, runSectionFragmentKey(runId, section)));
     }
-    candidates.push(await kvGet(env, sectionFragmentKey(section)));
+    const legacy = await kvGet(env, sectionFragmentKey(section));
+    candidates.push(legacy);
+    if (
+      feed?.record &&
+      legacy?.section === section &&
+      currentSectionRecord(legacy, now) &&
+      JSON.stringify([feed.record.data, feed.record.source]) !==
+        JSON.stringify([legacy.data, legacy.source])
+    ) {
+      console.warn("Feed record diverged from legacy fragment", {
+        section,
+        feedFetchedAt: feed.record.source?.fetchedAt ?? feed.record.fetchedAt ?? null,
+        legacyFetchedAt: legacy.source?.fetchedAt ?? legacy.fetchedAt ?? null,
+      });
+    }
     let record = null;
     for (const candidate of candidates) {
       if (

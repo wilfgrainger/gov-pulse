@@ -232,3 +232,19 @@ Against Workers Free limits:
 4. Not measured: the scheduled cron handler, per-job subrequest counts other
    than contracts, Queue and KV daily operation counts. A scheduled-run capture
    at 03:17 UTC would close these.
+
+### Per-feed records: dual-write window (Task 9)
+
+Each successful section collection now also writes `v20:feed:<id>` (one get and
+one put per feed, after the legacy run-scoped and global fragment writes); a
+terminal bootstrap failure writes one more put recording `lastAttempt`. The
+publisher reads `v20:feed:*` first, falls back to the legacy fragments, and logs
+`Feed record diverged from legacy fragment` when current copies differ.
+
+Expected cost in the dual window, **from code and unit tests, not yet measured in
+production**: about +9 KV puts per daily run (9 section feeds through the
+collection runner; contracts and comparison batches are unchanged), so roughly
+39 + 9 = 48, below the 50-write test bound and the 1,000/day account limit. The
+target of about 16 writes per run applies only after the legacy keys are retired
+(Task 17a). Required before retirement, not done: at least 7 production days of
+dual-write with the daily divergence-log count recorded here.

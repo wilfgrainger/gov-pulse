@@ -7,6 +7,8 @@ import {
   runKey,
   terminalKey,
 } from "./publication-run-store.js";
+import { writeFeedAttempt } from "./feed-store.js";
+import { collectionPlanFor } from "./publication-plan.js";
 import { processQueueJob } from "./publication-job-runner.js";
 import {
   PUBLICATION_QUEUE_MAX_RETRIES,
@@ -210,6 +212,16 @@ async function dispatchPublicationMessage(message, env, ctx) {
       job.runId.startsWith("bootstrap-") &&
       typeof job.jobId === "string"
     ) {
+      try {
+        if (collectionPlanFor(job.section)) {
+          await writeFeedAttempt(env, job.section, job.runId, { error }, new Date());
+        }
+      } catch (feedError) {
+        console.warn("Feed record failure write skipped", {
+          section: job.section,
+          error: feedError instanceof Error ? feedError.message : String(feedError),
+        });
+      }
       console.warn(
         "Cloudflare bootstrap source failure is terminal; allowing degraded finalisation",
         {
