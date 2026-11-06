@@ -287,6 +287,73 @@ function filterPublicationSnapshot(input, config = PUBLICATION_CONFIG) {
   return snapshot;
 }
 
+const FILTERED_SNAPSHOT_META_FIELDS = new Set([
+  "registryVersion",
+  "generatedAt",
+  "sources",
+  "verifiedSections",
+  "measureCatalog",
+  "publicProjection",
+  "editionSummary",
+]);
+const FILTERED_SUMMARY_FIELDS = new Set([
+  "id",
+  "publishedAt",
+  "asOf",
+  "previousEditionId",
+  "summaryCorrection",
+  "sourceEditionIds",
+  "changes",
+]);
+
+/**
+ * True when `snapshot` already is a filterPublicationSnapshot output under
+ * `config`, so filtering it again would withhold nothing. It inspects keys
+ * and identifiers only (no copies), letting the public read path accept a
+ * publisher-normalised artifact cheaply. Keep it in step with
+ * filterPublicationSnapshot: any field that filter drops or narrows must make
+ * this return false when present. False only means "filter a copy".
+ *
+ * @param {any} snapshot @param {PublicationConfig} config
+ */
+function isPublicationFilteredSnapshot(snapshot, config = PUBLICATION_CONFIG) {
+  const meta = snapshot?.meta;
+  if (!meta?.sources || typeof meta.sources !== "object") return false;
+  for (const key of Object.keys(meta)) {
+    if (!FILTERED_SNAPSHOT_META_FIELDS.has(key)) return false;
+  }
+  for (const key of Object.keys(snapshot)) {
+    if (key !== "meta" && !Object.hasOwn(meta.sources, key)) return false;
+  }
+  const sourceIds = Object.keys(meta.sources);
+  if (sourceIds.length === 0 || sourceIds.some((id) => !publicationPublished(id, config))) return false;
+  if (!Array.isArray(meta.verifiedSections) || meta.verifiedSections.some((id) => !Object.hasOwn(meta.sources, id))) {
+    return false;
+  }
+  const catalog = meta.measureCatalog;
+  if (catalog !== null) {
+    if (!catalog?.measures || typeof catalog.measures !== "object") return false;
+    if (Object.values(catalog.measures).some((measure) => !publicationPublished(measure?.sourceId, config))) {
+      return false;
+    }
+  }
+  if (Object.hasOwn(meta, "editionSummary")) {
+    const summary = meta.editionSummary;
+    if (!publicationPublished("editionArchive", config) || !summary || !Array.isArray(summary.changes)) return false;
+    if (Object.keys(summary).some((key) => !FILTERED_SUMMARY_FIELDS.has(key))) return false;
+    const changesPublished = summary.changes.every((change) =>
+      publicationPublished(
+        catalog?.measures?.[change?.measureId]?.sourceId ??
+          definitions.measures.find((measure) => measure.id === change?.measureId)?.section ??
+          "",
+        config,
+      )
+    );
+    if (!changesPublished) return false;
+  }
+  return true;
+}
+
 export {
   PRODUCT_CAPABILITIES,
   PUBLICATION_CONFIG,
@@ -297,6 +364,7 @@ export {
   filterPublicationCatalog,
   filterPublicationSnapshot,
   filterPublicationSummary,
+  isPublicationFilteredSnapshot,
   productCapabilityAvailable,
   productRouteAvailable,
   publicRouteAvailable,
