@@ -167,18 +167,71 @@ conclusion is drawn here. Subrequests: 10 of the 11 published jobs make at most
 binding calls were not counted in these figures, and whether they count toward
 the 50 limit has not been verified here.
 
-### TODO (owner-run, not done): measured Workers CPU and wall time
+### Measured Workers CPU and wall time (6 November 2026)
 
-During the next scheduled daily run on the current pipeline, with the Cloudflare
-token kept local:
+**MEASURED on Cloudflare Workers**, not Node. Source: `npx wrangler tail
+pulse-data-worker --format json` captured 09:01-09:13 UTC on 6 November 2026
+during a manually dispatched `deploy.yml` run (`refresh_evidence` and
+`refresh_contracts` true, the documented recovery path, run
+`bootstrap-eb24309b...`). It is a forced bootstrap run of the **current**
+pipeline, not the `17 3 * * *` cron: the same queue job types ran, but the cron
+`scheduled` handler itself was not captured. Single run, so n = 1 per job;
+"p95" below is across all 21 queue invocations, not per job. `cpuTime` and
+`wallTime` are the Workers tail fields in milliseconds. The tail does not report
+subrequest counts; the only count available is `requestsMade` logged by
+`refresh-contracts`.
 
-```
-npx wrangler tail pulse-data-worker --format json > tail.json
-```
+| queue job (section) | cpuTime ms | wallTime ms | outcome | notes |
+| --- | --- | --- | --- | --- |
+| bootstrap accepted (dispatch) | 4 | 986 | ok | |
+| refresh-section gdpTracker | 46 | 7,218 | ok | |
+| refresh-section sentimentPulse | 80 | 19,159 | ok | |
+| refresh-section employmentStats | 570 | 21,239 | ok | |
+| refresh-section taxRevenue | 51 | 18,228 | ok | |
+| refresh-section nationalDebt | 42 | 4,259 | ok (job failed) | ONS bulletin did not expose public sector data; section left unavailable |
+| refresh-section migrationStats | 21 | 18,866 | ok | |
+| refresh-section housePriceIndex | 14 | 2,122 | ok | |
+| refresh-section realWages | 19 | 2,227 | ok | |
+| refresh-external-section electionPolling | 605 | 4,532 | ok | highest CPU |
+| refresh-external-section nhsStats (held) | 2 | 373 | ok (job failed) | upstream AWS WAF block |
+| refresh-contracts | 188 | 21,889 | ok | 28 page requests (daily increment, 7 days) |
+| finalise-run | 532 | 11,399 | ok | status `incomplete` (nationalDebt failed, nhsStats held) |
+| refresh-international-comparison x7 | 5-219 (219 max) | 564-4,558 | ok | batches finalised `success` |
+| international batches finalised | 7 | 564 | ok | |
 
-Record `cpuTime` and wall time per queue message type and section, including
-`finalise-run`, and the p95 job durations Task 10 needs. Until that is done
-there is no measured Workers CPU figure in this repository.
+All 21 queue invocations: cpuTime p95 570 ms, max 605 ms; wallTime p95
+21,239 ms, max 21,889 ms; no exceptions; outcome `ok` for all (job-level
+failures are logged, not thrown).
+
+Public data routes served by the same Worker in the window (14 requests):
+cpuTime 6-18 ms (p95 18). `/data/metrics-snapshot.json` 11-18, `/data/editions.json`
+6-16, `/data/health.json` 9-16.
+
+Against Workers Free limits:
+
+| limit | measured | verdict |
+| --- | --- | --- |
+| Queue consumer CPU, default 30,000 ms | max 605 ms | within, about 2% |
+| Subrequests per invocation, 50 | `refresh-contracts` 28 in this run; other counts not reported by tail | within in this run; the 64-page ceiling (`MAX_PAGES_PER_REFRESH`) is still above 50 |
+| CPU per request/cron trigger, 10 ms | queue accept 4 ms; 8 of 14 data-route requests measured 11-18 ms, all outcome `ok` | **over on measured cpuTime for data routes**; whether this is enforced is not established here |
+| Cron `scheduled` handler CPU | not captured | unmeasured |
+| Queues, 10,000 ops/day | not derivable from tail (21 messages this run) | not measured here |
+| KV writes, 1,000/day account-wide | not derivable from tail | not measured here |
+
+**Items for owner decision G-CPU:**
+
+1. `refresh-contracts`: 28 requests this run (incremental). The first or a
+   recovery run can reach the 64-page ceiling and exceed 50 subrequests. Split
+   by page range, or cap at 45, rather than rely on retries.
+2. Public data-route requests (`metrics-snapshot.json`, `editions.json`,
+   `health.json`) measured above 10 ms cpuTime in 8 of 14 requests. Confirm
+   with the account's plan and Cloudflare's enforcement before relying on the
+   10 ms limit as met; no request failed in the sample.
+3. No queue job approached the 30 s consumer CPU limit, so shard size is
+   bounded by subrequests and wall time, not CPU.
+4. Not measured: the scheduled cron handler, per-job subrequest counts other
+   than contracts, Queue and KV daily operation counts. A scheduled-run capture
+   at 03:17 UTC would close these.
 
 ### Per-feed records: dual-write window (Task 9)
 
