@@ -208,7 +208,7 @@ export async function staticRelease(opts: { sha: string; editionId: string; buil
   - build → `wrangler deploy --config worker/static-wrangler.toml` → reader-page SHA smoke against the production or non-production host;
   - on a smoke failure, `wrangler rollback`.
 
-  Create the deploy hook and store `EDITION_BUILD_HOOK`. Whether Workers Builds exposes the commit SHA as an env var is *unverified*; if not, use `git rev-parse HEAD`. Deploy-hook fallback if unavailable on Free: `workflow_dispatch` on `release/verified`.
+  Create the deploy hook and store `EDITION_BUILD_HOOK`. Workers Builds exposes `WORKERS_CI_COMMIT_SHA` and `WORKERS_CI_BRANCH` (verified 6 Nov 2026). Deploy hooks are listed with a Free-plan limit; fallback if they fail in practice: `workflow_dispatch` on `release/verified`.
 - [ ] **Step 5b: Prove the trigger (T-R2.3).** Push to `release/verified` from a `deploy.yml` run using `GITHUB_TOKEN`, and confirm Workers Builds starts a build. GitHub suppresses *workflow* triggers from `GITHUB_TOKEN` pushes; whether app webhooks still fire is *unverified*. If no build starts, `deploy.yml` instead POSTs the same deploy hook after advancing the branch, using an owner-stored `STATIC_BUILD_HOOK` GitHub secret. Record the result.
 - [ ] **Step 6: Measure** gate CPU p99 < 2 ms via `wrangler tail` on the non-production host.
 - [ ] **Step 7: Commit** `feat: fail-closed asset gate for every evidence-bearing static file`.

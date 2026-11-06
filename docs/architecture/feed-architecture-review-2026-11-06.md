@@ -302,3 +302,19 @@ The static-export branch (`STATIC_EXPORT === "true"`) already exists for the Pag
 - **Workers Caching with `cross_version_cache = false`**, so a policy-changing deploy never serves old cached responses.
 - **Tests and guards:** 63 Worker and 121 unit test files, `check-static-architecture.mjs`, `check-source-ownership.mjs`, the workflow allow-list test and the PR lane test. These are the safety net for the migration and must all pass at every step.
 - **Exact data-Worker route table** and the public-surface contract.
+
+## Addendum: platform limits verified after sign-off (6 Nov 2026)
+
+Checked against current Cloudflare documentation after the Chief of Staff's final decision. These edits strengthen or correct assumptions and do not change any task, gate or ordering.
+
+| Item | Was | Now (source) |
+|---|---|---|
+| Free Worker script size | "3 MB compressed, binding" (unverified) | 64 MiB uncompressed; no compressed limit (Workers limits page). Risk R15 drops to Low |
+| Queue consumer CPU on Free | unverified | Default 30 s, configurable to 5 min; no Free/Paid difference stated (Queues limits page). Task 8 measurement still required |
+| Cron Trigger CPU on Free | not stated | 10 ms (Workers limits page). Applies to the scheduled handler, which only enqueues |
+| Subrequests on Free | not considered | 50 per invocation; internal services 1,000. New constraint on collector jobs (target §5, Task 8) |
+| Deploy hooks on Free | unverified | Listed with a Free-plan limit of 10/min per Worker, 100/min per account (Workers Builds limits page) |
+| Commit SHA in Workers Builds | unverified | `WORKERS_CI_COMMIT_SHA` and `WORKERS_CI_BRANCH` exposed (Workers Builds configuration page) |
+| Static asset requests | unverified | Free and unlimited; requests to the Worker script, including `run_worker_first`, count against the 100,000/day limit (static assets page) |
+
+Still unverified: whether a `GITHUB_TOKEN` push triggers Workers Builds, whether OpenNext honours `revalidate`/`expireTime`, whether `wrangler secret put` avoids re-uploading assets, whether `wrangler rollback` restores an older secret value, and whether a Cloudflare API token can be scoped to one Worker's secrets.

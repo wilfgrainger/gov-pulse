@@ -475,7 +475,7 @@ Runs **before** Tasks 9–10.
 
 - [ ] **Step 1 (Haiku):** `node scripts/measure-collector-cost.mjs --all > /tmp/cost.txt`. Expected: one line per feed, `feedId cpuMs bytes`.
 - [ ] **Step 2 (owner runs, token stays local):** during the next scheduled daily run on the **current** pipeline, `npx wrangler tail pulse-data-worker --format json > tail.json`. Record `cpuTime` and wall time per message type and section, including `finalise-run`.
-- [ ] **Step 3 (Opus):** compare against the Free consumer CPU limit, recording whether it was verified. List any over-limit feed for **G-CPU**. Retries are never a substitute. Record the measured p95 job durations; Task 10 uses them.
+- [ ] **Step 3 (Opus):** compare against the verified Free queue-consumer CPU default (30 s, configurable to 5 min) and the 50-subrequests-per-invocation limit, recording external fetches per job. List any over-limit feed for **G-CPU**. Retries are never a substitute. Record the measured p95 job durations; Task 10 uses them.
 - [ ] **Step 4: Commit** `docs: record measured collector cost per feed`.
 
 ### Task 9: Per-feed KV records with dual-write and dual-read
