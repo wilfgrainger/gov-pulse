@@ -25,7 +25,10 @@ function SourceLinks({ change }: { change: EditionSummary["changes"][number] }) 
   </span>;
 }
 
-export default function RevisionLedger({ summaries, measureIds }: { summaries: EditionSummary[]; measureIds?: string[] }) {
+/** Newest changes shown per edition on the /editions/ list; the edition page renders the full ledger. */
+export const LEDGER_LIST_CHANGE_CAP = 5;
+
+export default function RevisionLedger({ summaries, measureIds, maxChangesPerEdition }: { summaries: EditionSummary[]; measureIds?: string[]; maxChangesPerEdition?: number }) {
   const editions = measureIds ? summaries.filter((summary) => summary.changes.some((change) => measureIds.includes(change.measureId))) : summaries;
   return <section aria-labelledby="revision-ledger-heading" className="border-y-2 border-foreground bg-white p-5 md:p-8">
     <p className="eyebrow">Dated publication changes</p>
@@ -33,13 +36,20 @@ export default function RevisionLedger({ summaries, measureIds }: { summaries: E
     {editions.length ? <ol className="mt-5 list-none divide-y divide-line p-0">{editions.map((edition) => <li key={edition.id} className="py-4">
       <p className="font-mono text-xs text-gray-600">Catalog published {edition.publishedAt.slice(0, 10)} · edition {edition.id}</p>
       {edition.summaryCorrection ? <p className="mt-2 text-sm text-gray-700">{edition.summaryCorrection.note} <Link className="font-semibold underline" href={`/editions/${encodeURIComponent(edition.summaryCorrection.baselineEditionId)}`}>Open the retained baseline →</Link></p> : null}
-      <ul className="mt-3 list-disc space-y-4 pl-5 text-sm">{edition.changes.filter((change) => !measureIds || measureIds.includes(change.measureId)).map((change, index) => <li key={`${change.measureId}-${change.period}-${index}`}>
+      {(() => {
+        const matching = edition.changes.filter((change) => !measureIds || measureIds.includes(change.measureId));
+        const shown = maxChangesPerEdition === undefined ? matching : matching.slice(0, maxChangesPerEdition);
+        return <>
+      <ul className="mt-3 list-disc space-y-4 pl-5 text-sm">{shown.map((change, index) => <li key={`${change.measureId}-${change.period}-${index}`}>
         <strong>{change.measureId}</strong> · {label(change.kind)}{change.period ? ` · ${change.period} (${change.observedAt ?? "observation date unavailable"})` : ""}.
         <p className="mt-1">{valueChange(change)}</p>
         {change.changedFields?.length ? <p className="mt-1 text-gray-700">Changed metadata: {change.changedFields.join(", ")}.</p> : null}
         <p className="mt-1 text-xs text-gray-600">Source edition {change.previousSourceEditionId ?? "not previously recorded"} → {change.nextSourceEditionId}; source publication {change.previousSourcePublishedAt?.slice(0, 10) ?? "not recorded"} → {change.nextSourcePublishedAt?.slice(0, 10) ?? "not recorded"}; revision {change.previousRevisionId ?? "not previously recorded"} → {change.nextRevisionId}.</p>
         <SourceLinks change={change}/>
       </li>)}</ul>
+      {shown.length < matching.length ? <p className="mt-3 text-sm font-semibold">{`Showing the newest ${shown.length} of ${matching.length} changes. `}<Link className="underline" href={`/editions/${encodeURIComponent(edition.id)}`}>{`Open this edition to read all ${matching.length} changes →`}</Link></p> : null}
+        </>;
+      })()}
       <Link className="mt-3 inline-block text-sm font-bold underline" href={`/editions/${encodeURIComponent(edition.id)}`}>Open historical edition →</Link>
     </li>)}</ol> : <p role="status" className="mt-4 text-sm leading-6 text-gray-700">No retained edition changes are available for this record. A new retrieval alone is not a correction.</p>}
   </section>;
