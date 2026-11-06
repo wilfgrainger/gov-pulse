@@ -22,7 +22,7 @@ const KNOWN_KEYS = new Set([
   "id", "slug", "title", "displayName", "description", "category", "evidenceClass", "geography", "editorial",
   "sources", "automation", "collectionLayer", "retrieval", "cadence", "collection", "validity", "requirement",
   "measures", "downloads", "releaseTitles", "discovery", "view",
-  "registry", "uiSourceLabels", "legacyEvidenceClass", "runtimeSourceIds",
+  "registry", "uiSourceLabels", "legacyEvidenceClass", "runtimeSourceIds", "shards",
 ]);
 const REGISTRIES = new Set(["feed", "publication", null]);
 
@@ -117,6 +117,10 @@ export function defineFeed(def) {
     }
     if (def.requirement !== undefined && !REQUIREMENTS.has(def.requirement)) fail(id, "requirement must be required, optional or independent");
     if (def.requirement === undefined) fail(id, "requirement is required");
+  }
+
+  if (def.shards !== undefined && (def.shards.kind !== "day" || !(def.shards.window > 0))) {
+    fail(id, "shards must be {kind: \"day\", window: positive number}");
   }
 
   if (!Array.isArray(def.measures)) fail(id, "measures must be an array");

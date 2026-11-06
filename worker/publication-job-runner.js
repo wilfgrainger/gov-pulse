@@ -1,4 +1,4 @@
-import { refreshGovernmentContracts } from "./government-contracts-cloudflare.js";
+import { refreshGovernmentContracts } from "../feeds/government-contracts/parse.js";
 import {
   INTERNATIONAL_COMPARISON_REFRESH_BATCHES,
   refreshInternationalComparison,

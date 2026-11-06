@@ -7,7 +7,7 @@ import {
   mergePublication,
   readCurrentPublication,
 } from "./publication-entry.js";
-import { CURRENT_RECORD_KEY as CONTRACT_CURRENT_RECORD_KEY } from "./government-contracts-cloudflare.js";
+import { CURRENT_RECORD_KEY as CONTRACT_CURRENT_RECORD_KEY } from "../feeds/government-contracts/parse.js";
 import { FEED_REGISTRY, FEED_REGISTRY_VERSION, REQUIRED_PUBLISHED_SECTION_IDS } from "./feed-registry.js";
 import { currentSectionRecord, filterCurrentSnapshot, filterPublicationSnapshot } from "../contracts/evidence-policy.js";
 import { PUBLIC_SNAPSHOT_KEY, buildPublicSnapshotArtifact } from "./public-snapshot.js";

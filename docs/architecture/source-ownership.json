@@ -132,7 +132,7 @@
     },
     {
       "section": "governmentContracts",
-      "collector": "worker/government-contracts-cloudflare.js",
+      "collector": "feeds/government-contracts/parse.js",
       "normalizer": "contracts/government-contracts.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "one bounded daily Cloudflare Queue job",

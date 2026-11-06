@@ -10,13 +10,13 @@ import {
   buildSummary,
   ukNationFromCountryName,
   ukNationFromPostcode,
-} from "../contracts/government-contracts.js";
-import { frozenHostSet } from "./approved-source-hosts.js";
+} from "../../contracts/government-contracts.js";
+import { frozenHostSet } from "../../worker/approved-source-hosts.js";
 import {
   cancelResponseBody,
   fetchWithApprovedRedirects,
   readResponseJson,
-} from "./response-limits.js";
+} from "../../worker/response-limits.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const SHARD_PREFIX = "v12:contracts:day:";
@@ -453,9 +453,10 @@ async function writeJson(env, key, value, expirationTtl) {
   await env.METRICS_CACHE.put(key, JSON.stringify(value), options);
 }
 
-async function collectDayShard(
+// The retrieval half of collectDayShard: fetch the day's four slices and rank
+// them. Pure with respect to storage, so the feed interface can use it without a KV binding.
+async function buildDayShard(
   day,
-  env,
   fetchImpl = fetch,
   now = new Date(),
   budget = createContractsRetrievalBudget(),
@@ -467,10 +468,20 @@ async function collectDayShard(
     releases.push(...result.releases);
     pagesFetched += result.pagesFetched;
   }
-  const shard = rankDailyAwards(releases, day, now, {
+  return rankDailyAwards(releases, day, now, {
     pagesFetched,
     requestsMade: pagesFetched,
   });
+}
+
+async function collectDayShard(
+  day,
+  env,
+  fetchImpl = fetch,
+  now = new Date(),
+  budget = createContractsRetrievalBudget(),
+) {
+  const shard = await buildDayShard(day, fetchImpl, now, budget);
   await writeJson(env, `${SHARD_PREFIX}${day}`, shard, SHARD_TTL_SECONDS);
   return shard;
 }
@@ -621,6 +632,30 @@ async function refreshGovernmentContracts(env, options = {}) {
   return { updated: true, collected, completeDays: 7, requestsMade, record };
 }
 
+/**
+ * Feed interface (target design 2.3), sharded form: one complete UTC day.
+ * Does not touch storage; the pipeline persists shards.
+ *
+ * @param {{fetch: typeof fetch, now: Date, budget?: object}} ctx
+ * @param {string} day  UTC day, YYYY-MM-DD
+ */
+async function collectShard(ctx, day) {
+  return buildDayShard(day, ctx.fetch, ctx.now, ctx.budget ?? createContractsRetrievalBudget());
+}
+
+/**
+ * Combine the seven complete day shards into the section payload. Returns null
+ * (never a partial payload) unless every day of the window is present and complete.
+ *
+ * @param {Record<string, object>} shards  day -> shard
+ * @param {{now: Date}} ctx
+ */
+function combine(shards, ctx) {
+  const ordered = previousCompleteDays(ctx.now, 7).map((day) => shards[day]).filter(Boolean);
+  const data = buildContractsFromShards(ordered, ctx.now);
+  return data ? { data } : null;
+}
+
 export {
   CURRENT_RECORD_KEY,
   MAX_CONTRACT_PAGE_BYTES,
@@ -630,7 +665,10 @@ export {
   MAX_RELEASES_PER_SLICE,
   SHARD_PREFIX,
   buildContractsFromShards,
+  buildDayShard,
   collectDayShard,
+  collectShard,
+  combine,
   createContractsRetrievalBudget,
   daySlices,
   fetchSlice,

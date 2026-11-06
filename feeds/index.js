@@ -25,6 +25,8 @@ import { definition as realWagesDefinition } from "./real-wages/feed.js";
 import * as realWagesParser from "./real-wages/parse.js";
 import { definition as bettingOddsDefinition } from "./betting-odds/feed.js";
 import * as bettingOddsParser from "./betting-odds/parse.js";
+import { definition as governmentContractsDefinition } from "./government-contracts/feed.js";
+import * as governmentContractsParser from "./government-contracts/parse.js";
 import { definition as releaseCalendarDefinition } from "./release-calendar/feed.js";
 import * as releaseCalendarParser from "./release-calendar/parse.js";
 import { definition as nhsReleaseCalendarDefinition } from "./nhs-release-calendar/feed.js";
@@ -32,7 +34,8 @@ import * as nhsReleaseCalendarParser from "./nhs-release-calendar/parse.js";
 import { definition as earlyYearsDefinition } from "./early-years/feed.js";
 
 /**
- * `collect` is absent only for automation "static" feeds, which have no collector.
+ * `collect` is absent only for static feeds (no collector) and sharded feeds,
+ * which declare `collectShard` and `combine` instead.
  * @typedef {{definition: Readonly<Record<string, any>>, collect?: (ctx: any) => Promise<any>,
  *   collectShard?: (ctx: any, shardKey: string) => Promise<object>,
  *   combine?: (shards: Record<string, object>, ctx: any) => any}} FeedModule
@@ -52,6 +55,7 @@ export const FEEDS = Object.freeze([
   { definition: housePriceIndexDefinition, collect: housePriceIndexParser.collect },
   { definition: realWagesDefinition, collect: realWagesParser.collect },
   { definition: bettingOddsDefinition, collect: bettingOddsParser.collect },
+  { definition: governmentContractsDefinition, collectShard: governmentContractsParser.collectShard, combine: governmentContractsParser.combine },
   { definition: releaseCalendarDefinition, collect: releaseCalendarParser.collect },
   { definition: nhsReleaseCalendarDefinition, collect: nhsReleaseCalendarParser.collect },
   { definition: earlyYearsDefinition },

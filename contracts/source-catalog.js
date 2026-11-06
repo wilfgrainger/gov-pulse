@@ -12,6 +12,7 @@ import { definition as bettingOddsDefinition } from "../feeds/betting-odds/feed.
 import { definition as releaseCalendarDefinition } from "../feeds/release-calendar/feed.js";
 import { definition as nhsReleaseCalendarDefinition } from "../feeds/nhs-release-calendar/feed.js";
 import { definition as earlyYearsDefinition } from "../feeds/early-years/feed.js";
+import { definition as governmentContractsDefinition } from "../feeds/government-contracts/feed.js";
 import { catalogEntryOf } from "../feeds/define-feed.js";
 import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
 import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
@@ -82,22 +83,8 @@ export const FEED_CATALOG = deepFreeze({
   bettingOdds: defineFeed(catalogEntryOf(bettingOddsDefinition)),
   // Projected from feeds/crime-stats/feed.js (the single declaration).
   crimeStatistics: defineFeed(catalogEntryOf(crimeStatisticsDefinition)),
-  governmentContracts: defineFeed({
-    id: "governmentContracts", registry: "publication", title: "Government contracts", displayName: "Government Contracts",
-    evidenceClass: "administrative-data", geography: { code: "UK", label: "United Kingdom — Find a Tender publication coverage" },
-    sourceIds: ["cabinet-office-find-a-tender"], automation: "automated", collectionLayer: "publication", frequency: "daily Cloudflare Queue collection",
-    retrieval: "scheduled-publication-check", refreshCadence: "daily", publicationCadence: "continuous notice publication",
-    retrievalMaxAgeMs: 72 * HOUR_MS, publicationRequirement: "optional",
-    freshnessWindow: "Within 72 hours of the verified collection",
-    freshnessRationale: "The ranking uses seven complete UTC day shards and can reuse only a still-current accepted publication.",
-    uiSourceLabels: ["Cabinet Office Find a Tender OCDS award releases"],
-    editorial: {
-      publicationPeriod: "Latest complete seven-day Find a Tender update window, collected in six-hour slices",
-      unit: "Disclosed award value in GBP, excluding VAT where supplied",
-      revisionStatus: "Contracting authorities can publish corrections, updates and later notices; the newest release for each award identity is retained",
-      caveat: "Award values are not invoices or confirmed lifetime expenditure. Framework ceilings, lots and multi-supplier awards may not be fully spent; missing, redacted and non-GBP values are excluded.",
-    },
-  }),
+  // Projected from feeds/government-contracts/feed.js (the single declaration).
+  governmentContracts: defineFeed(catalogEntryOf(governmentContractsDefinition)),
   // Projected from feeds/release-calendar/feed.js (the single declaration).
   releaseCalendar: defineFeed(catalogEntryOf(releaseCalendarDefinition)),
   // Projected from feeds/nhs-release-calendar/feed.js (the single declaration).

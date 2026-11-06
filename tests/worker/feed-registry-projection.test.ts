@@ -36,10 +36,13 @@ describe("feed index", () => {
     expect(FEEDS.map((feed) => feed.definition.slug).sort()).toEqual(folders.sort());
   });
 
-  it("registers a collect function for every feed except static ones", () => {
+  it("registers a collector for every feed except static ones", () => {
     for (const feed of FEEDS) {
       if (feed.definition.automation === "static") expect(feed.collect, feed.definition.id).toBeUndefined();
-      else expect(typeof feed.collect, feed.definition.id).toBe("function");
+      else if (feed.definition.shards) {
+        expect(typeof feed.collectShard, feed.definition.id).toBe("function");
+        expect(typeof feed.combine, feed.definition.id).toBe("function");
+      } else expect(typeof feed.collect, feed.definition.id).toBe("function");
     }
   });
 

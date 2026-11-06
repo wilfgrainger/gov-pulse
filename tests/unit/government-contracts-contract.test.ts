@@ -15,7 +15,7 @@ import {
   daySlices,
   previousCompleteDays,
   rankDailyAwards,
-} from "../../worker/government-contracts-cloudflare.js";
+} from "@/feeds/government-contracts/parse.js";
 
 const NOW = new Date("2026-07-18T12:00:00.000Z");
 
