@@ -228,7 +228,10 @@ describe("degraded public publication", () => {
     });
     const env = {
       METRICS_CACHE: {
-        get: vi.fn(async (key: string) => store.get(key) ?? null),
+        get: vi.fn(async (key: string, type?: string) => {
+          const stored = store.get(key) ?? null;
+          return type === "text" && stored !== null && typeof stored !== "string" ? JSON.stringify(stored) : stored;
+        }),
         getWithMetadata: vi.fn(async (key: string) => ({
           value: store.get(key) ?? null,
           metadata: null,

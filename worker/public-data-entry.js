@@ -19,6 +19,7 @@ import {
 import { readInternationalComparison } from "../feeds/international-comparison/parse.js";
 import { assertSameHttpsHost, MAX_RESPONSE_BYTES, readResponseJson } from "./response-limits.js";
 import { listEditionSummaries, readEdition } from "./edition-archive.js";
+import { fnv64 } from "./measure-catalog.js";
 import { fetchPublicationSeedSnapshot } from "./publication-recovery.js";
 import {
   FIND_A_TENDER_USER_AGENT,
@@ -377,21 +378,55 @@ async function comparisonResponse(request, env) {
   });
 }
 
-async function editionsResponse(request, env) {
+function stableStringify(value) {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+const configHashes = new WeakMap();
+/** FNV-64 of the stable-stringified publication config; a hold or release changes it, and with it every edition ETag. */
+function publicationConfigHash(config) {
+  if (config === null || typeof config !== "object") return fnv64(stableStringify(config));
+  let hash = configHashes.get(config);
+  if (!hash) {
+    hash = fnv64(stableStringify(config));
+    configHashes.set(config, hash);
+  }
+  return hash;
+}
+const PUBLICATION_CONFIG_HASH = publicationConfigHash(PUBLICATION_CONFIG);
+
+const EDITION_CACHE_CONTROL = "public, max-age=60";
+
+async function editionsResponse(request, env, config = PUBLICATION_CONFIG) {
   const url = new URL(request.url);
   if (url.searchParams.size) return json({ error: "Release listing does not accept query parameters" }, { status: 400, head: request.method === "HEAD" });
-  const editions = (await listEditionSummaries(env)).map((summary) => filterPublicationSummary(summary));
+  const editions = (await listEditionSummaries(env)).map((summary) => filterPublicationSummary(summary, config));
   return json({ editions, retention: editions.length }, { head: request.method === "HEAD", cacheControl: "public, max-age=60, s-maxage=60" });
 }
 
-async function editionResponse(request, env, url) {
+function etagMatches(header, etag) {
+  return typeof header === "string" && header.split(",").some((candidate) => candidate.trim().replace(/^W\//, "") === etag);
+}
+
+async function editionResponse(request, env, url, config = PUBLICATION_CONFIG) {
+  const head = request.method === "HEAD";
   const values = url.searchParams.getAll("edition");
   if (values.length !== 1 || url.searchParams.size !== 1 || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/.test(values[0])) {
-    return json({ error: "A single valid edition id is required" }, { status: 400, head: request.method === "HEAD" });
+    return json({ error: "A single valid edition id is required" }, { status: 400, head });
   }
   const result = await readEdition(env, values[0]);
-  if (!result) return json({ error: "Edition not found" }, { status: 404, head: request.method === "HEAD" });
-  return json({ edition: result.summary.id, asOf: result.asOf, availability: "historical", measureCatalog: filterPublicationCatalog(result.catalog), summary: filterPublicationSummary(result.summary, PUBLICATION_CONFIG, result.catalog) }, { head: request.method === "HEAD", cacheControl: "no-store" });
+  if (!result) return json({ error: "Edition not found" }, { status: 404, head });
+  const configHash = config === PUBLICATION_CONFIG ? PUBLICATION_CONFIG_HASH : publicationConfigHash(config);
+  // A summary correction changes the body without changing the immutable content, so it is part of the identity.
+  const correction = result.summary.summaryCorrection ? `.s${fnv64(stableStringify(result.summary))}` : "";
+  const etag = `"${result.contentHash}.${configHash}${correction}"`;
+  const headers = { ...publicHeaders(EDITION_CACHE_CONTROL), ETag: etag };
+  if (etagMatches(request.headers.get("If-None-Match"), etag)) return new Response(null, { status: 304, headers });
+  return json({ edition: result.summary.id, asOf: result.asOf, availability: "historical", measureCatalog: filterPublicationCatalog(result.catalog, config), summary: filterPublicationSummary(result.summary, config, result.catalog) }, { head, cacheControl: EDITION_CACHE_CONTROL, headers: { ETag: etag } });
 }
 
 async function contractHistoryResponse(request, url) {

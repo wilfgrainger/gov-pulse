@@ -14,11 +14,26 @@ export const metadata: Metadata = {
   description: "Browse retained source editions and their dated observations, corrections and method changes.",
 };
 
-export default async function EditionsPage() {
+const PAGE_SIZE = 20;
+
+function pageHref(page: number) { return page <= 1 ? "/editions/" : `/editions/?page=${page}`; }
+
+function requestedPage(value: string | string[] | undefined, pageCount: number) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const page = raw && /^[1-9]\d{0,3}$/.test(raw) ? Number(raw) : 1;
+  return Math.min(page, Math.max(1, pageCount));
+}
+
+export default async function EditionsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const gate = gateRoute("/editions/");
   if (gate.access !== "serve") return <PublicationOffline heldFeeds={gate.heldFeeds} />;
   const staticExport = process.env.STATIC_EXPORT === "true";
-  const editions = staticExport ? null : await readEditionSummaries();
+  const retained = staticExport ? null : await readEditionSummaries();
+  // Static export has no request query; the live Worker pages the retained list.
+  const query = staticExport ? {} : await searchParams;
+  const pageCount = Math.ceil((retained?.length ?? 0) / PAGE_SIZE);
+  const page = requestedPage(query.page, pageCount);
+  const editions = retained ? retained.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) : null;
   return (
     <div className="min-h-screen bg-background text-foreground">
       <a href="#editions" className="sr-only focus:not-sr-only focus:block focus:bg-white focus:p-4">Skip to edition archive</a>
@@ -33,6 +48,7 @@ export default async function EditionsPage() {
         </header>
         {editions?.length ? (
           <>
+            <p className="mb-3 font-mono text-xs text-gray-600">Showing {(page - 1) * PAGE_SIZE + 1}–{(page - 1) * PAGE_SIZE + editions.length} of {retained?.length} retained editions · page {page} of {pageCount}</p>
             <ol className="list-none divide-y-2 divide-foreground border-y-2 border-foreground bg-white p-0">
               {editions.map((edition) => (
                 <li key={edition.id} className="grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
@@ -45,6 +61,12 @@ export default async function EditionsPage() {
                 </li>
               ))}
             </ol>
+            {pageCount > 1 ? (
+              <nav aria-label="Edition archive pages" className="mt-6 flex flex-wrap items-center justify-between gap-3">
+                {page > 1 ? <Link className="v3-secondary-action" rel="prev" href={pageHref(page - 1)}>Newer editions</Link> : <span/>}
+                {page < pageCount ? <Link className="v3-secondary-action" rel="next" href={pageHref(page + 1)}>Older editions</Link> : <span/>}
+              </nav>
+            ) : null}
             <div className="mt-10">
               <RevisionLedger summaries={editions}/>
             </div>

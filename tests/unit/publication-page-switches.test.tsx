@@ -52,7 +52,7 @@ describe("source-specific publication switches", () => {
   });
 
   it("opens the edition archive pages once editionArchive is enabled", async () => {
-    render(await EditionsPage());
+    render(await EditionsPage({ searchParams: Promise.resolve({}) }));
     expect(screen.queryByRole("heading", { name: /temporarily offline/i })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Editions and revisions/i })).toBeInTheDocument();
   });
