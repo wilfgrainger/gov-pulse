@@ -79,7 +79,7 @@ applicable exact-head and affected-journey checks before claiming success.
 - `app/`: routes, editorial components and browser contracts.
 - `worker/`: web/data Workers, collectors, normalizers and publication logic.
 - `contracts/`: public evidence, route and ownership contracts.
-- `feeds/`: declarative feed definitions (`feeds/<slug>/feed.js`), parsers and projections; `scripts/generate-feed-projections.mjs --check` guards drift.
+- `feeds/`: declarative feed definitions (`feeds/<slug>/feed.js`), parsers and projections. A new feed is its folder plus its entry in `feeds/index.js`; `node scripts/generate-feed-projections.mjs --write` regenerates `feeds/definitions.generated.js` and the feed-owned contract entries, and `--check` guards drift.
 - `data/`: checked-in source snapshots and static section downloads.
 - `scripts/`: build, diagnostics, release and verification utilities.
 - `docs/architecture/`: current architecture decisions and source ownership.

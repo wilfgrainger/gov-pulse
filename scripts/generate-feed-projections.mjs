@@ -1,19 +1,19 @@
 // Feed projection tooling.
-//   --capture-legacy  write tests/fixtures/registry/legacy-projections.json from the
-//                     registries as they stand (run before a feed is migrated)
+//   --capture-legacy  retired: the legacy fixture is frozen and cannot be re-captured
 //   --check           fail when a feed-owned entry in a checked-in contract or
 //                     registry differs from its projection from feeds/
 //   --write           rewrite feeds/definitions.generated.js and the feed-owned entries
 //                     of contracts/section-discovery.json and
 //                     contracts/measure-definitions.json from feeds/
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
 import { isDeepStrictEqual } from "node:util";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { FEED_CATALOG } from "../contracts/source-catalog.js";
 import { SECTION_COLLECTION_PLAN } from "../worker/publication-plan.js";
 import { OBSERVATION_CONTRACTS } from "../worker/observation-contract.js";
-import { routeManifest } from "../contracts/route-manifest.js";
 import { SECTION_DOWNLOAD_IDS } from "../app/lib/sectionDownloads.ts";
 import discovery from "../contracts/section-discovery.json" with { type: "json" };
 import measureDefinitions from "../contracts/measure-definitions.json" with { type: "json" };
@@ -25,38 +25,18 @@ import {
   feedCatalog,
   measureDefinitions as projectedMeasures,
   observationContracts,
-  releaseFamilyGroups,
   sectionDiscovery,
 } from "../feeds/registry.js";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-export function captureLegacy() {
-  return {
-    note: "Captured from the hand-written registries before feed migration (Task 6). Do not edit by hand.",
-    feedCatalog: JSON.parse(JSON.stringify(FEED_CATALOG)),
-    collectionPlan: JSON.parse(JSON.stringify(SECTION_COLLECTION_PLAN)),
-    observationContracts: Object.fromEntries(
-      Object.entries(OBSERVATION_CONTRACTS).map(([id, c]) => [id, { maxAgeDays: c.maxAgeDays, extractor: c.extract.name }]),
-    ),
-    sectionDiscovery: discovery.sections,
-    measureDefinitions: measureDefinitions.measures,
-    downloadIds: [...SECTION_DOWNLOAD_IDS],
-    releaseFamilies: releaseFamilyGroups().map((f) => ({
-      familyIds: f.familyIds,
-      pattern: f.pattern.source,
-      flags: f.pattern.flags,
-      ...(f.exclude ? { exclude: f.exclude.source, excludeFlags: f.exclude.flags } : {}),
-    })),
-    routeManifest: JSON.parse(JSON.stringify(routeManifest())),
-  };
-}
-
 if (process.argv.includes("--capture-legacy")) {
-  const target = resolve(root, "tests/fixtures/registry/legacy-projections.json");
-  await mkdir(dirname(target), { recursive: true });
-  await writeFile(target, `${JSON.stringify(captureLegacy(), null, 2)}\n`);
-  console.log(`wrote ${target}`);
+  // The hand-written registries this captured are now projections of feeds/, so a
+  // new capture would only record the projections and make the parity proof circular.
+  console.error(
+    "--capture-legacy is retired: tests/fixtures/registry/legacy-projections.json is the frozen pre-migration capture and must not be regenerated.",
+  );
+  process.exit(1);
 }
 
 const DEFINITIONS_PATH = resolve(root, "feeds/definitions.generated.js");
@@ -118,6 +98,11 @@ export function findDrift() {
     DEFINITIONS.map((definition) => definition.id),
     FEEDS.map(({ definition }) => definition.id),
   );
+  compare(
+    "feeds/definitions.generated.js (file contents)",
+    readFileSync(DEFINITIONS_PATH, "utf8"),
+    definitionsModuleSource(),
+  );
   const ids = downloadIds();
   compare("SECTION_DOWNLOAD_IDS (feed-owned, in order)", SECTION_DOWNLOAD_IDS.filter((id) => ids.includes(id)), ids);
   return drift;
@@ -134,7 +119,6 @@ const measureBlock = (measure) =>
   `    {\n      ${Object.entries(measure).map(([key, entry]) => `${JSON.stringify(key)}: ${inline(entry)}`).join(", ")}\n    }`;
 
 async function writeContracts() {
-  await writeFile(DEFINITIONS_PATH, definitionsModuleSource());
   const sections = { ...discovery.sections, ...sectionDiscovery() };
   await writeFile(DISCOVERY_PATH, `${JSON.stringify({ ...discovery, sections }, null, 2)}\n`);
 
@@ -175,6 +159,14 @@ async function writeContracts() {
 }
 
 if (process.argv.includes("--write")) {
+  // The projections below read feeds/definitions.generated.js, so a changed
+  // definition list is written first and the run repeats against the new file.
+  const nextDefinitions = definitionsModuleSource();
+  if (readFileSync(DEFINITIONS_PATH, "utf8") !== nextDefinitions) {
+    await writeFile(DEFINITIONS_PATH, nextDefinitions);
+    execFileSync(process.execPath, [fileURLToPath(import.meta.url), ...process.argv.slice(2)], { stdio: "inherit" });
+    process.exit(0);
+  }
   await writeContracts();
   console.log("rewrote feed-owned contract entries");
 }
