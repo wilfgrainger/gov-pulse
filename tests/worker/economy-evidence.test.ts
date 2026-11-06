@@ -3,16 +3,14 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   FINANCES_BULLETIN_URL,
-  GDP_BULLETIN_URL,
   LABOUR_BULLETIN_URL,
   buildEmploymentStats,
-  buildGdpTracker,
   buildTaxRevenue,
   discoverLatestBulletinUrl,
   parseFinancesBulletin,
-  parseGdpBulletin,
   parseLabourBulletin,
 } from "@/worker/economy-evidence";
+import { GDP_BULLETIN_URL, buildGdpTracker, collect as collectGdp, parseGdpBulletin } from "@/feeds/gdp/parse.js";
 
 const gdpEditionUrl = `${GDP_BULLETIN_URL.replace(/\/latest$/, "")}/may2026`;
 const labourEditionUrl = `${LABOUR_BULLETIN_URL.replace(/\/latest$/, "")}/july2026`;
@@ -155,6 +153,20 @@ describe("official ONS economy bulletin connectors", () => {
     expect(result).not.toHaveProperty("gdpHistory");
     expect(result).not.toHaveProperty("g7Comparison");
     expect(result).not.toHaveProperty("sectorBreakdown");
+  });
+
+  it("gdp collect wraps the unchanged builder output with observation and source", async () => {
+    const fetchImpl = fetchFor(GDP_BULLETIN_URL, gdpEditionUrl, gdpHtml, {
+      ecy2: monthlyCsv(2026, 4, 103.2, 101.9),
+      ecyx: monthlyCsv(2026, 4, 0.1, 0),
+      ed2r: monthlyCsv(2026, 4, 1.3, 1),
+      ed3h: monthlyCsv(2026, 4, 0.5, 0.2),
+    });
+    const now = new Date("2026-07-10T08:00:00Z");
+    const result = await collectGdp({ fetch: fetchImpl, now });
+    expect(result.data).toEqual(await buildGdpTracker(fetchImpl));
+    expect(result.observation).toMatchObject({ period: "May 2026", publishedAt: "2026-07-10" });
+    expect(result.source).toMatchObject({ url: gdpEditionUrl, fetchedAt: now.toISOString() });
   });
 
   it("parses a no-growth GDP month without inventing movement", () => {

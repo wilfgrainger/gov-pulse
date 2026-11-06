@@ -147,10 +147,7 @@ const contracts = {
       return latestBy(data?.economicData, (entry) => entry?.date, now);
     },
   },
-  gdpTracker: {
-    maxAgeDays: 70,
-    extract: publishedObservation,
-  },
+  gdpTracker: declaredContract("gdpTracker"),
   employmentStats: {
     maxAgeDays: 70,
     extract: publishedObservation,

@@ -6,24 +6,25 @@ import { downloadGeography, downloadIds } from "../../feeds/registry.js";
 // id union; tests/worker/feed-registry-projection.test.ts pins the list and
 // order to the pre-migration list.
 const HAND_LISTED_IDS = [
-  "electionPolling", "nationalDebt", "gdpTracker", "sentimentPulse",
-  "taxRevenue", "employmentStats",] as const;
-type DownloadIds = readonly [
+  "electionPolling", "nationalDebt", "sentimentPulse",
+  "taxRevenue", "employmentStats",
+] as const;
+// Published order of the download list. Until every feed is declared, the two
+// sources are merged into this order; afterwards FEEDS order is this order.
+const DOWNLOAD_ORDER = [
   "electionPolling", "nationalDebt", "gdpTracker", "sentimentPulse",
   "taxRevenue", "employmentStats", "crimeStatistics", "nhsStats", "migrationStats",
   "housePriceIndex", "realWages",
-];
-export const SECTION_DOWNLOAD_IDS = [
-  ...HAND_LISTED_IDS,
-  ...downloadIds(),
-] as unknown as DownloadIds;
+] as const;
+const LISTED = new Set<string>([...HAND_LISTED_IDS, ...downloadIds()]);
+export const SECTION_DOWNLOAD_IDS = DOWNLOAD_ORDER.filter((id) => LISTED.has(id)) as unknown as typeof DOWNLOAD_ORDER;
 
 const DECLARED_GEOGRAPHY: Record<string, string> = downloadGeography();
 
 const GEOGRAPHY: Record<(typeof SECTION_DOWNLOAD_IDS)[number], string> = {
   electionPolling: "United Kingdom (check each poll's sample)",
   nationalDebt: "United Kingdom",
-  gdpTracker: "United Kingdom",
+  gdpTracker: DECLARED_GEOGRAPHY.gdpTracker,
   sentimentPulse: "United Kingdom (check each series)",
   taxRevenue: "United Kingdom",
   employmentStats: "United Kingdom",

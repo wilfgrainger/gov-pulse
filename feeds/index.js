@@ -11,6 +11,8 @@ import { definition as nhsStatsDefinition } from "./nhs/feed.js";
 import * as nhsStatsParser from "./nhs/parse.js";
 import { definition as crimeStatisticsDefinition } from "./crime-stats/feed.js";
 import * as crimeStatisticsParser from "./crime-stats/parse.js";
+import { definition as gdpTrackerDefinition } from "./gdp/feed.js";
+import * as gdpTrackerParser from "./gdp/parse.js";
 
 /**
  * @typedef {{definition: Readonly<Record<string, any>>, collect: (ctx: any) => Promise<any>,
@@ -20,6 +22,7 @@ import * as crimeStatisticsParser from "./crime-stats/parse.js";
 
 /** @type {readonly FeedModule[]} */
 export const FEEDS = Object.freeze([
+  { definition: gdpTrackerDefinition, collect: gdpTrackerParser.collect },
   { definition: crimeStatisticsDefinition, collect: crimeStatisticsParser.collect },
   { definition: nhsStatsDefinition, collect: nhsStatsParser.collect },
   { definition: migrationStatsDefinition, collect: migrationStatsParser.collect },

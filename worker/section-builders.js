@@ -27,10 +27,8 @@
  * special-cases it to the live collector in publication-entry.js, exactly as
  * before.
  */
-import {
-  buildEmploymentStats,
-  buildGdpTracker,
-} from "./economy-evidence.js";
+import { buildEmploymentStats } from "./economy-evidence.js";
+import { buildGdpTracker } from "../feeds/gdp/parse.js";
 import {
   buildEconomicIndicators,
   isEconomicIndicatorsPayload,

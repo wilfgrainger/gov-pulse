@@ -2,6 +2,7 @@ import { SOURCE_CATALOG, SOURCE_CATALOG_VERSION, deepFreeze } from "./source-def
 import { definition as migrationStatsDefinition } from "../feeds/migration/feed.js";
 import { definition as nhsStatsDefinition } from "../feeds/nhs/feed.js";
 import { definition as crimeStatisticsDefinition } from "../feeds/crime-stats/feed.js";
+import { definition as gdpTrackerDefinition } from "../feeds/gdp/feed.js";
 import { catalogEntryOf } from "../feeds/define-feed.js";
 import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
 import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
@@ -73,21 +74,8 @@ export const FEED_CATALOG = deepFreeze({
       caveat: "CPI is monthly, unemployment is a rolling three-month estimate and Bank Rate changes after Monetary Policy Committee decisions. Their observation periods, publication dates, check dates and revision status stay separate.",
     },
   }),
-  gdpTracker: defineFeed({
-    id: "gdpTracker", registry: "feed", title: "Monthly gross domestic product", displayName: "GDP",
-    evidenceClass: "official-statistics", geography: { code: "UK", label: "United Kingdom" },
-    sourceIds: ["ons-gdp-monthly"], automation: "automated", collectionLayer: "worker", frequency: "monthly",
-    retrieval: "scheduled-publication-check", refreshCadence: "daily", publicationCadence: "monthly",
-    retrievalMaxAgeMs: 36 * HOUR_MS, publicationRequirement: "required",
-    freshnessWindow: "Checked within 36 hours",
-    freshnessRationale: "The rolling ONS bulletin is checked regularly. The observation period is assessed separately from the date of that check.",
-    editorial: {
-      publicationPeriod: "Latest ONS monthly GDP bulletin edition",
-      unit: "Percentage change in real, seasonally adjusted GDP",
-      revisionStatus: "Early monthly estimate; revised as fuller source data become available",
-      caveat: "The latest monthly movement, three-month comparison and annual movement remain separate; forecasts, nominal totals and international estimates are not mixed into the headline.",
-    },
-  }),
+  // Projected from feeds/gdp/feed.js (the single declaration).
+  gdpTracker: defineFeed(catalogEntryOf(gdpTrackerDefinition)),
   employmentStats: defineFeed({
     id: "employmentStats", registry: "feed", title: "UK labour market", displayName: "Employment",
     evidenceClass: "official-statistics", geography: { code: "UK", label: "United Kingdom" },
