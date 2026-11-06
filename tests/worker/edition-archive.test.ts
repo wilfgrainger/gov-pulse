@@ -125,17 +125,16 @@ describe("content-addressed edition archive", () => {
     await kv.put(EDITION_INDEX_KEY, JSON.stringify(preMigrationIndex));
     const listed = await listEditionSummaries({ METRICS_CACHE: kv });
     const newestOnly = await listEditionSummaries({ METRICS_CACHE: kv }, 1);
+    // The list reads only the index: an entry without a recorded archive time is listed without inventing one.
     expect(listed.map((entry) => ({ id: entry.id, asOf: (entry as typeof entry & { asOf?: string }).asOf }))).toEqual([
-      { id: newer.catalog.editionId, asOf: newer.catalog.generatedAt },
-      { id: older.catalog.editionId, asOf: older.catalog.generatedAt },
+      { id: older.catalog.editionId, asOf: undefined },
+      { id: newer.catalog.editionId, asOf: undefined },
     ]);
-    expect(newestOnly).toEqual([{ ...newer.summary, asOf: newer.catalog.generatedAt }]);
+    expect(newestOnly).toEqual([{ ...older.summary }]);
     const response = await editionsResponse(new Request("https://public-data.org/data/editions.json"), { METRICS_CACHE: kv });
     const payload = await response.json();
-    expect(payload.editions.map((entry: { id: string; asOf?: string }) => ({ id: entry.id, asOf: entry.asOf }))).toEqual([
-      { id: newer.catalog.editionId, asOf: newer.catalog.generatedAt },
-      { id: older.catalog.editionId, asOf: older.catalog.generatedAt },
-    ]);
+    expect(payload.editions.map((entry: { id: string; asOf?: string }) => entry.id)).toEqual([older.catalog.editionId, newer.catalog.editionId]);
+    expect(payload.editions.every((entry: { asOf?: string }) => entry.asOf === undefined)).toBe(true);
   });
 
   it("keeps the immutable archive when the same catalogue is retried with a different comparison summary", async () => {
@@ -169,10 +168,9 @@ describe("content-addressed edition archive", () => {
     );
     const reread = await readEdition({ METRICS_CACHE: kv }, current.catalog.editionId);
     const indexed = await listEditionSummaries({ METRICS_CACHE: kv });
-    const originalRecord = await kv.getWithMetadata(
-      `${EDITION_SUMMARY_PREFIX}${current.catalog.editionId}`,
-      "json",
-    );
+    const originalRecord = {
+      value: JSON.parse(kv.values.get(EDITION_INDEX_KEY)!.value).find((entry: { id: string }) => entry.id === current.catalog.editionId),
+    };
     const detailUrl = `https://public-data.org/data/edition.json?edition=${current.catalog.editionId}`;
     const detailResponse = await editionResponse(
       new Request(detailUrl),
@@ -196,7 +194,8 @@ describe("content-addressed edition archive", () => {
     expect(reread?.summary).toEqual(repaired.summary);
     expect(indexed[0]).toMatchObject({ ...repaired.summary, asOf: current.catalog.generatedAt });
     expect(detail.summary).toEqual(repaired.summary);
-    expect(detailResponse.headers.get("Cache-Control")).toBe("no-store");
+    expect(detailResponse.headers.get("Cache-Control")).toBe("public, max-age=60");
+    expect(detailResponse.headers.get("ETag")).toMatch(/\.s[a-f0-9]{16}"$/);
     expect(originalRecord.value.summary).toEqual(current.summary);
 
     await expect(
@@ -225,10 +224,9 @@ describe("content-addressed edition archive", () => {
       latest.catalog.editionId,
     );
     const corrected = await readEdition({ METRICS_CACHE: kv }, current.catalog.editionId);
-    const original = await kv.getWithMetadata(
-      `${EDITION_SUMMARY_PREFIX}${current.catalog.editionId}`,
-      "json",
-    );
+    const original = {
+      value: JSON.parse(kv.values.get(EDITION_INDEX_KEY)!.value).find((entry: { id: string }) => entry.id === current.catalog.editionId),
+    };
 
     expect(result).toMatchObject({
       reconciledIds: [current.catalog.editionId],
@@ -306,19 +304,18 @@ describe("content-addressed edition archive", () => {
     expect(payload.measureCatalog.measures.measure).toMatchObject({ availability: "historical", value: 8 });
   });
 
-  it("does not advertise a listed edition after its content object disappears", async () => {
+  it("lists from the index alone and answers 404 for a listed edition whose content object disappeared", async () => {
     const kv = new MemoryKv();
     const item = edition(3);
     await archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary);
     const entry = JSON.parse(kv.values.get(EDITION_INDEX_KEY)!.value)[0];
     await kv.delete(`${EDITION_CONTENT_PREFIX}${entry.contentHash}`);
 
-    expect(await listEditionSummaries({ METRICS_CACHE: kv })).toEqual([]);
-    const response = await editionsResponse(
-      new Request("https://public-data.org/data/editions.json"),
-      { METRICS_CACHE: kv },
-    );
-    expect(await response.json()).toEqual({ editions: [], retention: 0 });
+    // The list no longer re-verifies content (one KV read); the detail route still refuses to serve it.
+    expect(await listEditionSummaries({ METRICS_CACHE: kv })).toHaveLength(1);
+    expect(await readEdition({ METRICS_CACHE: kv }, item.catalog.editionId)).toBeNull();
+    const url = new URL(`https://public-data.org/data/edition.json?edition=${item.catalog.editionId}`);
+    expect((await editionResponse(new Request(url), { METRICS_CACHE: kv }, url)).status).toBe(404);
   });
 
   it("recovers an interrupted index write without leaving a dangling public entry", async () => {
@@ -338,7 +335,7 @@ describe("content-addressed edition archive", () => {
     expect(await listEditionSummaries({ METRICS_CACHE: kv })).toEqual([]);
 
     const recovered = await archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary);
-    expect(recovered.duplicate).toBe(true);
+    expect(recovered).toMatchObject({ archived: true, duplicate: false });
     expect(await listEditionSummaries({ METRICS_CACHE: kv })).toEqual([{ ...item.summary, asOf: item.catalog.generatedAt }]);
     expect(await readEdition({ METRICS_CACHE: kv }, item.catalog.editionId)).not.toBeNull();
   });
@@ -385,7 +382,8 @@ describe("content-addressed edition archive", () => {
     expect(await readEdition({ METRICS_CACHE: kv }, expiring.catalog.editionId)).toBeNull();
     expect(await readEdition({ METRICS_CACHE: kv }, updated.catalog.editionId)).not.toBeNull();
     expect(kv.values.has(`${EDITION_SUMMARY_CORRECTION_PREFIX}${expiring.catalog.editionId}`)).toBe(false);
-    expect([...kv.values.keys()].filter((key) => key.startsWith(EDITION_SUMMARY_PREFIX))).toHaveLength(60);
+    expect(JSON.parse(kv.values.get(EDITION_INDEX_KEY)!.value)).toHaveLength(60);
+    expect([...kv.values.keys()].filter((key) => key.startsWith(EDITION_SUMMARY_PREFIX))).toHaveLength(0);
   });
 
   it("exposes archived editions as historical records and rejects arbitrary query values", async () => {
@@ -413,6 +411,125 @@ describe("content-addressed edition archive", () => {
     expect(list.status).toBe(200);
     expect(detail.status).toBe(200);
     expect(unknown.status).toBe(404);
+  });
+});
+
+class CountingKv extends MemoryKv {
+  reads = 0;
+  async get(key: string, type?: "json" | "text") { this.reads += 1; return super.get(key, type); }
+  async getWithMetadata(key: string, type?: "json" | "text") { this.reads += 1; return super.getWithMetadata(key, type); }
+}
+
+const PUBLISHED_ONS = { version: 2, publications: { ons: { state: "published" }, gdpTracker: { state: "published" }, crimeStatistics: { state: "published" } } };
+const HELD_ONS = { version: 2, publications: { ons: { state: "held" }, gdpTracker: { state: "published" }, crimeStatistics: { state: "published" } } };
+
+function change(measureId: string, sourceEditionId: string) {
+  return {
+    measureId, kind: "new-observation", observedAt: "2024-01-31", period: "January 2024",
+    previousSourceEditionId: null, nextSourceEditionId: sourceEditionId, previousRevisionId: null, nextRevisionId: `${sourceEditionId}-r`,
+    previous: null, next: 1,
+  };
+}
+
+describe("editions list", () => {
+  it("performs exactly one KV read for 60 retained editions", async () => {
+    const kv = new CountingKv();
+    for (let index = 0; index < 60; index += 1) {
+      const item = edition(index);
+      await archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary);
+    }
+    kv.reads = 0;
+    const listed = await listEditionSummaries({ METRICS_CACHE: kv });
+    expect(listed).toHaveLength(60);
+    expect(kv.reads).toBe(1);
+    kv.reads = 0;
+    const response = await editionsResponse(new Request("https://public-data.org/data/editions.json"), { METRICS_CACHE: kv }, { version: 2, publications: { ons: { state: "published" } } });
+    expect((await response.json()).editions).toHaveLength(60);
+    expect(kv.reads).toBe(1);
+  });
+
+  it("excludes held-family changes", async () => {
+    const kv = new MemoryKv();
+    const item = edition(3);
+    item.summary.changes = [change("gdp-monthlyGrowth", "edition-3"), change("crime-csew-headline", "edition-3")];
+    item.summary.sourceEditionIds = ["edition-3"];
+    await archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary);
+    const config = { version: 2, publications: { gdpTracker: { state: "published" }, crimeStatistics: { state: "held" } } };
+    const response = await editionsResponse(new Request("https://public-data.org/data/editions.json"), { METRICS_CACHE: kv }, config);
+    const payload = await response.json();
+    expect(payload.editions[0].changes.map((entry: { measureId: string }) => entry.measureId)).toEqual(["gdp-monthlyGrowth"]);
+    expect(response.headers.get("Cache-Control")).not.toMatch(/immutable|max-age=(?!60\b)/);
+  });
+});
+
+describe("edition detail", () => {
+  it("a publication hold changes the cacheable response identity", async () => {
+    const kv = new MemoryKv();
+    const item = edition(5);
+    await archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary);
+    const url = new URL(`https://public-data.org/data/edition.json?edition=${item.catalog.editionId}`);
+    const open = await editionResponse(new Request(url), { METRICS_CACHE: kv }, url, PUBLISHED_ONS);
+    const held = await editionResponse(new Request(url), { METRICS_CACHE: kv }, url, HELD_ONS);
+    const archived = await readEdition({ METRICS_CACHE: kv }, item.catalog.editionId);
+    expect(open.headers.get("ETag")).toMatch(new RegExp(`^"${archived!.contentHash}\\.[a-f0-9]{16}"$`));
+    expect(held.headers.get("ETag")).not.toBe(open.headers.get("ETag"));
+    for (const response of [open, held]) {
+      const cacheControl = response.headers.get("Cache-Control") ?? "";
+      expect(cacheControl).not.toMatch(/immutable/);
+      const maxAge = /max-age=(\d+)/.exec(cacheControl);
+      expect(maxAge && Number(maxAge[1])).toBeLessThanOrEqual(60);
+    }
+    const revalidated = await editionResponse(new Request(url, { headers: { "If-None-Match": open.headers.get("ETag")! } }), { METRICS_CACHE: kv }, url, PUBLISHED_ONS);
+    expect(revalidated.status).toBe(304);
+    const afterHold = await editionResponse(new Request(url, { headers: { "If-None-Match": open.headers.get("ETag")! } }), { METRICS_CACHE: kv }, url, HELD_ONS);
+    expect(afterHold.status).toBe(200);
+    expect((await afterHold.json()).measureCatalog.measures).toEqual({});
+  });
+
+  it("errors are no-store", async () => {
+    const kv = new MemoryKv();
+    const bad = new URL("https://public-data.org/data/edition.json?edition=../x");
+    const missing = new URL("https://public-data.org/data/edition.json?edition=absent");
+    for (const url of [bad, missing]) {
+      const response = await editionResponse(new Request(url), { METRICS_CACHE: kv }, url, PUBLISHED_ONS);
+      expect(response.status).toBeGreaterThanOrEqual(400);
+      expect(response.headers.get("Cache-Control")).toBe("no-store");
+      expect(response.headers.get("ETag")).toBeNull();
+    }
+  });
+
+  it("config hash reuses measure-catalog fnv64", async () => {
+    const { readFileSync } = await import("node:fs");
+    expect(readFileSync("worker/public-data-entry.js", "utf8")).not.toMatch(/function fnv64/);
+    expect(readFileSync("worker/public-data-entry.js", "utf8")).toMatch(/import \{[^}]*\bfnv64\b[^}]*\} from "\.\/measure-catalog\.js"/);
+  });
+});
+
+describe("archive write", () => {
+  it("rejects content whose hash mismatches before indexing", async () => {
+    const kv = new MemoryKv();
+    const put = kv.put.bind(kv);
+    kv.put = async (key, value, options) => put(key, key.startsWith(EDITION_CONTENT_PREFIX) ? `${value} ` : value, options);
+    const item = edition(6);
+    await expect(archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary)).rejects.toThrow(/hash/i);
+    expect(kv.values.has(EDITION_INDEX_KEY)).toBe(false);
+    expect([...kv.values.keys()].some((key) => key.startsWith(EDITION_SUMMARY_PREFIX))).toBe(false);
+  });
+
+  it("does not write per-edition summary keys for new editions and keeps the legacy fallback", async () => {
+    const kv = new MemoryKv();
+    const item = edition(7);
+    await archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary);
+    expect([...kv.values.keys()].some((key) => key.startsWith(EDITION_SUMMARY_PREFIX))).toBe(false);
+    expect(await readEdition({ METRICS_CACHE: kv }, item.catalog.editionId)).toMatchObject({ summary: item.summary, catalog: item.catalog });
+
+    const legacy = new MemoryKv();
+    const old = edition(8);
+    await archiveEdition({ METRICS_CACHE: legacy }, old.catalog, old.summary);
+    const stored = JSON.parse(legacy.values.get(EDITION_INDEX_KEY)!.value)[0];
+    await legacy.put(`${EDITION_SUMMARY_PREFIX}${old.catalog.editionId}`, JSON.stringify({ summary: old.summary }), { metadata: { contentHash: stored.contentHash } });
+    await legacy.delete(EDITION_INDEX_KEY);
+    expect(await readEdition({ METRICS_CACHE: legacy }, old.catalog.editionId)).toMatchObject({ summary: old.summary, catalog: old.catalog });
   });
 });
 

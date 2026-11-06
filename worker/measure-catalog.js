@@ -1,4 +1,5 @@
 import { sectionCurrentness, sectionValidityDeadline } from "../contracts/evidence-policy.js";
+import { fnv64 } from "../contracts/evidence-domain.js";
 import { validateMeasureRecord } from "../contracts/measure-record.js";
 import { FEED_REGISTRY_VERSION } from "../feeds/registry.js";
 import measureInventory from "../contracts/measure-definitions.json" with { type: "json" };
@@ -308,15 +309,6 @@ function buildMeasureCatalog(snapshot, now = new Date(), { onOmission, onDiagnos
     validUntil: deadlines.length ? new Date(Math.min(...deadlines)).toISOString() : null,
     measures,
   };
-}
-
-function fnv64(value) {
-  let hash = 0xcbf29ce484222325n;
-  for (const byte of new TextEncoder().encode(value)) {
-    hash ^= BigInt(byte);
-    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
-  }
-  return hash.toString(16).padStart(16, "0");
 }
 
 const MEASURE_IDS = Object.freeze(DEFINITIONS.map(({ id }) => id));
