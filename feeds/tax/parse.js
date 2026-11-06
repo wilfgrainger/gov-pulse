@@ -1,20 +1,16 @@
+import { FINANCES_BULLETIN_URL, RECEIPTS_SERIES } from "./finances.js";
 import {
-  FINANCES_BULLETIN_URL,
+  ONS_GENERATOR,
+  ONS_ORIGIN,
+  TEN_YEARS_MONTHLY,
   fetchLatestOnsBulletin,
   parseMonthlyOnsCsv,
-} from "./economy-evidence.js";
-import { fetchOfficialResponse } from "./official-source-fetch.js";
-import { readResponseText } from "./response-limits.js";
-import { parseOnsNextReleaseDate } from "./ons-release-date.js";
-import { sectionRecord } from "./live-feed-common.js";
+} from "../_kit/ons-economy.js";
+import { fetchOfficialResponse } from "../../worker/official-source-fetch.js";
+import { readResponseText } from "../../worker/response-limits.js";
+import { parseOnsNextReleaseDate } from "../../worker/ons-release-date.js";
+import { sectionRecord } from "../../worker/live-feed-common.js";
 
-const ONS_ORIGIN = "https://www.ons.gov.uk";
-const RECEIPTS_SERIES = Object.freeze({
-  id: "ANBV",
-  path: "/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/anbv/pusf",
-});
-const ONS_GENERATOR = `${ONS_ORIGIN}/generator?format=csv&uri=`;
-const TEN_YEARS_MONTHLY = 120;
 const MAX_AGE_DAYS = 70;
 const MONTHS = Object.freeze({
   january: 0,
@@ -241,8 +237,22 @@ async function collectTaxRevenue(fetchImpl = fetch, now = new Date()) {
   );
 }
 
+/**
+ * Feed interface (target design 2.3). The former special 'tax-revenue-live'
+ * branch is an ordinary collect: it returns the unchanged section payload
+ * collectTaxRevenue has always built (publication-entry.js still wraps it in a
+ * section record exactly as before).
+ *
+ * @param {{fetch: typeof fetch, now: Date}} ctx
+ */
+async function collect(ctx) {
+  const record = await collectTaxRevenue(ctx.fetch, ctx.now);
+  return { data: record.data };
+}
+
 export {
   RECEIPTS_SERIES,
+  collect,
   collectTaxRevenue,
   currentTableReceipts,
   parseTaxRevenueBulletin,

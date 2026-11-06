@@ -52,7 +52,7 @@ async function readCurrentCommitManifest(env) {
 // fail-closed currentness behaviour) the internal-worker doll produced.
 async function refreshSectionPayload(section, env, ctx, now = new Date()) {
   if (section === "taxRevenue") {
-    const { collectTaxRevenue } = await import("./live-tax-revenue-collector.js");
+    const { collectTaxRevenue } = await import("../feeds/tax/parse.js");
     return collectTaxRevenue(fetch, now);
   }
 

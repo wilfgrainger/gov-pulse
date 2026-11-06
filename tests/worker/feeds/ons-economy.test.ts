@@ -1,12 +1,8 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from "vitest";
-import {
-  FINANCES_BULLETIN_URL,
-  buildTaxRevenue,
-  discoverLatestBulletinUrl,
-  parseFinancesBulletin,
-} from "@/worker/economy-evidence";
+import { FINANCES_BULLETIN_URL, buildTaxRevenue, parseFinancesBulletin } from "@/feeds/tax/finances.js";
+import { discoverLatestBulletinUrl } from "@/feeds/_kit/ons-economy.js";
 import {
   LABOUR_BULLETIN_URL,
   buildEmploymentStats,

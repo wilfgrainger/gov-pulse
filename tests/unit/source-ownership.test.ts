@@ -147,7 +147,7 @@ describe("source ownership inventory", () => {
     evolved.publicPublicationKey = "publication:public";
     evolved.sources[0].collector = [
       "worker/economic-indicators.js",
-      "worker/economy-evidence.js",
+      "feeds/_kit/ons-economy.js",
     ];
     delete evolved.simplification;
 

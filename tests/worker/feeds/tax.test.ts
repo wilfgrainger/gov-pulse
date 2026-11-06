@@ -3,10 +3,11 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   RECEIPTS_SERIES,
+  collect,
   collectTaxRevenue,
   parseTaxRevenueBulletin,
-} from "@/worker/live-tax-revenue-collector";
-import { FINANCES_BULLETIN_URL } from "@/worker/economy-evidence";
+} from "@/feeds/tax/parse.js";
+import { FINANCES_BULLETIN_URL } from "@/feeds/tax/finances.js";
 
 const editionUrl = FINANCES_BULLETIN_URL.replace("/latest", "/june2026");
 const currentBulletin = `
@@ -117,6 +118,9 @@ describe("Cloudflare ONS receipts collector", () => {
       receiptsBillion: 91.6,
     });
     expect(fetchImpl).toHaveBeenCalledTimes(3);
+
+    const feedResult = await collect({ fetch: fetchImpl, now: new Date("2026-08-02T04:30:00.000Z") });
+    expect(feedResult.data).toEqual(record.data);
   });
 
   it("fails closed when the table arithmetic does not reconcile", () => {

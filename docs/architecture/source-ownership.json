@@ -40,8 +40,8 @@
     },
     {
       "section": "taxRevenue",
-      "collector": "worker/live-tax-revenue-collector.js",
-      "normalizer": "worker/live-tax-revenue-collector.js",
+      "collector": "feeds/tax/parse.js",
+      "normalizer": "feeds/tax/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",

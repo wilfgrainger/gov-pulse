@@ -156,10 +156,7 @@ const contracts = {
       return date ? { raw: date.toISOString().slice(0, 10), date } : null;
     },
   },
-  taxRevenue: {
-    maxAgeDays: 70,
-    extract: publishedObservation,
-  },
+  taxRevenue: declaredContract("taxRevenue"),
   migrationStats: declaredContract("migrationStats"),
   housePriceIndex: declaredContract("housePriceIndex"),
   realWages: declaredContract("realWages"),

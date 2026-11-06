@@ -7,7 +7,6 @@ import { downloadGeography, downloadIds } from "../../feeds/registry.js";
 // order to the pre-migration list.
 const HAND_LISTED_IDS = [
   "electionPolling", "nationalDebt", "sentimentPulse",
-  "taxRevenue",
 ] as const;
 // Published order of the download list. Until every feed is declared, the two
 // sources are merged into this order; afterwards FEEDS order is this order.
@@ -26,7 +25,7 @@ const GEOGRAPHY: Record<(typeof SECTION_DOWNLOAD_IDS)[number], string> = {
   nationalDebt: "United Kingdom",
   gdpTracker: DECLARED_GEOGRAPHY.gdpTracker,
   sentimentPulse: "United Kingdom (check each series)",
-  taxRevenue: "United Kingdom",
+  taxRevenue: DECLARED_GEOGRAPHY.taxRevenue,
   employmentStats: DECLARED_GEOGRAPHY.employmentStats,
   crimeStatistics: DECLARED_GEOGRAPHY.crimeStatistics,
   nhsStats: DECLARED_GEOGRAPHY.nhsStats,

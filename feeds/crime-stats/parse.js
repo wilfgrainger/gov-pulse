@@ -5,7 +5,7 @@ import {
   periodEnd,
   validatePublicationIdentity,
 } from "../../contracts/crime-statistics.js";
-import { fetchLatestOnsBulletin } from "../../worker/economy-evidence.js";
+import { fetchLatestOnsBulletin } from "../_kit/ons-economy.js";
 import { decodeHtml } from "../../worker/live-feed-common.js";
 
 const MONTHS = Object.freeze({

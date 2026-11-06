@@ -4,6 +4,7 @@ import { definition as nhsStatsDefinition } from "../feeds/nhs/feed.js";
 import { definition as crimeStatisticsDefinition } from "../feeds/crime-stats/feed.js";
 import { definition as gdpTrackerDefinition } from "../feeds/gdp/feed.js";
 import { definition as employmentStatsDefinition } from "../feeds/employment/feed.js";
+import { definition as taxRevenueDefinition } from "../feeds/tax/feed.js";
 import { catalogEntryOf } from "../feeds/define-feed.js";
 import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
 import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
@@ -95,22 +96,8 @@ export const FEED_CATALOG = deepFreeze({
       caveat: "Public sector net debt excluding public sector banks (HF6W) and the matching percentage-of-GDP series (HF6X) are shown together. Other debt measures are not interchangeable.",
     },
   }),
-  taxRevenue: defineFeed({
-    id: "taxRevenue", registry: "feed", title: "Central government receipts", displayName: "Government Receipts",
-    evidenceClass: "official-statistics", geography: { code: "UK", label: "United Kingdom" },
-    sourceIds: ["ons-public-sector-finances"], automation: "automated", collectionLayer: "worker", frequency: "monthly",
-    retrieval: "scheduled-publication-check", refreshCadence: "daily", publicationCadence: "monthly",
-    retrievalMaxAgeMs: 36 * HOUR_MS, publicationRequirement: "required",
-    freshnessWindow: "Checked within 36 hours",
-    freshnessRationale: "The rolling public-sector-finance bulletin is checked regularly, while its publication period is assessed separately.",
-    uiSourceLabels: ["ONS Public Sector Finances"],
-    editorial: {
-      publicationPeriod: "Latest ONS public-sector-finance bulletin edition",
-      unit: "£ billions of central government receipts",
-      revisionStatus: "Subject to routine public-finance revisions",
-      caveat: "The monthly receipts measure is not a tax-burden ratio, category breakdown, forecast or average-per-person estimate.",
-    },
-  }),
+  // Projected from feeds/tax/feed.js (the single declaration).
+  taxRevenue: defineFeed(catalogEntryOf(taxRevenueDefinition)),
   // Projected from feeds/migration/feed.js (the single declaration).
   migrationStats: defineFeed(catalogEntryOf(migrationStatsDefinition)),
   // Projected from feeds/house-price-index/feed.js (the single declaration).

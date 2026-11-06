@@ -1,9 +1,7 @@
 import { fetchOfficialText as fetchSourceText } from "./official-source-fetch.js";
 import { parseOnsNextReleaseDate } from "./ons-release-date.js";
-import {
-  FINANCES_BULLETIN_URL,
-  fetchLatestOnsBulletin,
-} from "./economy-evidence.js";
+import { FINANCES_BULLETIN_URL } from "../feeds/tax/finances.js";
+import { fetchLatestOnsBulletin } from "../feeds/_kit/ons-economy.js";
 
 const ONS_ORIGIN = "https://www.ons.gov.uk";
 const ONS_GENERATOR = `${ONS_ORIGIN}/generator?format=csv&uri=`;

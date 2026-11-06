@@ -2,7 +2,7 @@
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
-import { FINANCES_BULLETIN_URL } from "@/worker/economy-evidence";
+import { FINANCES_BULLETIN_URL } from "@/feeds/tax/finances.js";
 import {
   DEBT_GDP_SERIES_URL,
   DEBT_SERIES_PATH,

@@ -3,6 +3,8 @@
 // it: publication state lives only in config/publications.json.
 import { definition as gdpTrackerDefinition } from "./gdp/feed.js";
 import * as gdpTrackerParser from "./gdp/parse.js";
+import { definition as taxRevenueDefinition } from "./tax/feed.js";
+import * as taxRevenueParser from "./tax/parse.js";
 import { definition as employmentStatsDefinition } from "./employment/feed.js";
 import * as employmentStatsParser from "./employment/parse.js";
 import { definition as crimeStatisticsDefinition } from "./crime-stats/feed.js";
@@ -25,6 +27,7 @@ import * as realWagesParser from "./real-wages/parse.js";
 /** @type {readonly FeedModule[]} */
 export const FEEDS = Object.freeze([
   { definition: gdpTrackerDefinition, collect: gdpTrackerParser.collect },
+  { definition: taxRevenueDefinition, collect: taxRevenueParser.collect },
   { definition: employmentStatsDefinition, collect: employmentStatsParser.collect },
   { definition: crimeStatisticsDefinition, collect: crimeStatisticsParser.collect },
   { definition: nhsStatsDefinition, collect: nhsStatsParser.collect },

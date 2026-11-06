@@ -1,20 +1,18 @@
-import { parseOnsNextReleaseDate } from "./ons-release-date.js";
+import { parseOnsNextReleaseDate } from "../../worker/ons-release-date.js";
 import {
   ONS_ORIGIN,
   TEN_YEARS_MONTHLY,
   assertClose,
   assertLatestPeriod,
   decodeHtml,
-  discoverLatestBulletinUrl,
   displayMonthlyPeriod,
   fetchLatestOnsBulletin,
   fetchOnsSeries,
   monthlyPeriodEnd,
   numeric,
-  parseMonthlyOnsCsv,
   parseReleaseDate,
   requiredMatch,
-} from "../feeds/_kit/ons-economy.js";
+} from "../_kit/ons-economy.js";
 
 const FINANCES_BULLETIN_URL =
   `${ONS_ORIGIN}/economy/governmentpublicsectorandtaxes/publicsectorfinance/bulletins/publicsectorfinances/latest`;
@@ -93,9 +91,7 @@ async function buildTaxRevenue(fetchImpl = fetch) {
 
 export {
   FINANCES_BULLETIN_URL,
+  RECEIPTS_SERIES,
   buildTaxRevenue,
-  discoverLatestBulletinUrl,
-  fetchLatestOnsBulletin,
   parseFinancesBulletin,
-  parseMonthlyOnsCsv,
 };
