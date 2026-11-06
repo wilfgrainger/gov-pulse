@@ -121,4 +121,30 @@ describe("build snapshot module", () => {
       warn.mockRestore();
     }
   });
+
+  it("stops reading a streamed body past the cap even when it is otherwise a valid snapshot", async () => {
+    const directory = await workspace();
+    const output = join(directory, "metricsSnapshot.ts");
+    // Valid and current if read in full, but padded beyond 2 MiB; no Content-Length.
+    const padded = JSON.stringify({ ...fixture, padding: "x".repeat(3 * 1024 * 1024) });
+    const bytes = new TextEncoder().encode(padded);
+    const chunkSize = 64 * 1024;
+    let offset = 0;
+    let cancelled = false;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (offset >= bytes.length) return controller.close();
+        controller.enqueue(bytes.slice(offset, offset + chunkSize));
+        offset += chunkSize;
+      },
+      cancel() { cancelled = true; },
+    });
+    const response = new Response(body, { status: 200 });
+    expect(response.headers.get("content-length")).toBeNull();
+
+    expect(await generate({ fetchImpl: vi.fn().mockResolvedValue(response), now: NOW, output })).toEqual({ wrote: "null" });
+    expect(cancelled).toBe(true);
+    expect(offset).toBeLessThan(bytes.length);
+    expect(await readFile(output, "utf8")).toContain("BUILD_METRICS_SNAPSHOT: unknown = null;");
+  });
 });
