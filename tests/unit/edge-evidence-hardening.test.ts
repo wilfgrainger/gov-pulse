@@ -49,23 +49,24 @@ describe("edge evidence hardening", () => {
     expect(serverReader).toMatch(/cache: "no-store"|requestSnapshot/);
   });
 
-  it("deploys OpenNext from a worker-local lockfile while keeping Pages only as the seed fallback", () => {
+  it("deploys OpenNext from the single root lockfile while keeping Pages only as the seed fallback", () => {
     const deploy = fs.readFileSync(".github/workflows/deploy.yml", "utf8");
     const webWrangler = fs.readFileSync("worker/web-wrangler.toml", "utf8");
     const openNext = fs.readFileSync("worker/open-next.config.template", "utf8");
-    const workerPackage = JSON.parse(fs.readFileSync("worker/package.json", "utf8"));
-    const workerLock = JSON.parse(fs.readFileSync("worker/package-lock.json", "utf8"));
+    const rootPackage = JSON.parse(fs.readFileSync("package.json", "utf8"));
 
-    expect(workerPackage.devDependencies?.["@opennextjs/cloudflare"]).toBe("1.20.2");
-    expect(workerLock.packages?.[""]?.devDependencies?.["@opennextjs/cloudflare"]).toBe("1.20.2");
+    expect(rootPackage.devDependencies?.["@opennextjs/cloudflare"]).toBe("1.20.7");
+    expect(fs.existsSync("worker/package.json")).toBe(false);
+    expect(fs.existsSync("worker/package-lock.json")).toBe(false);
 
     for (const workflow of [deploy]) {
       expect(workflow).not.toMatch(/npm install --no-save --package-lock=false @opennextjs\/cloudflare/);
-      expect(workflow).toMatch(/npm ci --prefix worker/);
-      expect(workflow).toMatch(/worker\/node_modules\/\.bin\/opennextjs-cloudflare build/);
+      expect(workflow).not.toMatch(/npm ci --prefix worker/);
+      expect(workflow).not.toMatch(/worker\/node_modules/);
+      expect(workflow).toMatch(/npx opennextjs-cloudflare build/);
       expect(workflow).toMatch(/cp worker\/open-next\.config\.template open-next\.config\.ts/);
     }
-    expect(deploy).toMatch(/worker\/node_modules\/\.bin\/opennextjs-cloudflare deploy/);
+    expect(deploy).toMatch(/npx opennextjs-cloudflare deploy/);
     expect(deploy).toMatch(/Pages seed/i);
     expect(openNext).toMatch(/static-assets-incremental-cache/);
     expect(openNext).not.toMatch(/r2-incremental-cache/);

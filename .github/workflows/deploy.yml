@@ -56,15 +56,10 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            worker/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install locked dependencies
         run: npm ci --prefer-offline --no-audit --no-fund
-
-      - name: Install locked OpenNext toolchain
-        run: npm ci --prefix worker --prefer-offline --no-audit --no-fund
 
       - name: Validate Cloudflare credentials
         env:
@@ -86,17 +81,11 @@ jobs:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
 
       - name: Stage OpenNext adapter config
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p node_modules/@opennextjs
-          rm -rf node_modules/@opennextjs/cloudflare
-          ln -s "$PWD/worker/node_modules/@opennextjs/cloudflare" node_modules/@opennextjs/cloudflare
-          cp worker/open-next.config.template open-next.config.ts
+        run: cp worker/open-next.config.template open-next.config.ts
 
       - name: Adapt Next.js build for Cloudflare Workers
         run: >-
-          ./worker/node_modules/.bin/opennextjs-cloudflare build
+          npx opennextjs-cloudflare build
           --config worker/web-wrangler.toml
         env:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
@@ -106,7 +95,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
-          ./worker/node_modules/.bin/opennextjs-cloudflare deploy
+          npx opennextjs-cloudflare deploy
           --config worker/web-wrangler.toml
 
       - name: Reconcile Cloudflare Queue
