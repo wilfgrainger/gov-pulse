@@ -8,7 +8,7 @@ import {
   readCurrentPublication,
 } from "./publication-entry.js";
 import { CURRENT_RECORD_KEY as CONTRACT_CURRENT_RECORD_KEY } from "../feeds/government-contracts/parse.js";
-import { FEED_REGISTRY, FEED_REGISTRY_VERSION, REQUIRED_PUBLISHED_SECTION_IDS } from "./feed-registry.js";
+import { FEED_REGISTRY, FEED_REGISTRY_VERSION, REQUIRED_PUBLISHED_SECTION_IDS } from "../feeds/registry.js";
 import { currentSectionRecord, filterCurrentSnapshot, filterPublicationSnapshot } from "../contracts/evidence-policy.js";
 import { PUBLIC_SNAPSHOT_KEY, buildPublicSnapshotArtifact } from "./public-snapshot.js";
 import { samePublicationEvidence } from "../contracts/publication-evidence.js";

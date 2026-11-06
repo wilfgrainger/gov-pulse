@@ -2,7 +2,7 @@ import { pathToFileURL } from "node:url";
 import { isCurrentGovernmentContractsPayload } from "../contracts/government-contracts.js";
 import {
   FEED_REGISTRY_VERSION,
-} from "../worker/feed-registry.js";
+} from "../feeds/registry.js";
 import { filterCurrentSnapshot } from "../contracts/evidence-policy.js";
 import { validatePublicProjection, validateSnapshot } from "./lib/publication-validation.mjs";
 

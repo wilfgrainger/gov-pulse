@@ -18,9 +18,6 @@ import { catalogEntryOf } from "../feeds/define-feed.js";
 import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
 import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
 
-const HOUR_MS = 60 * 60 * 1000;
-const DAY_MS = 24 * HOUR_MS;
-
 export { SOURCE_CATALOG, SOURCE_CATALOG_VERSION };
 
 function defineFeed(input) {
@@ -59,42 +56,31 @@ const UI_CLASS = Object.freeze({
   "derived-analysis": "derived-analysis",
 });
 
-export const FEED_CATALOG = deepFreeze({
-  // Projected from feeds/economy/feed.js (the single declaration).
-  sentimentPulse: defineFeed(catalogEntryOf(sentimentPulseDefinition)),
-  // Projected from feeds/gdp/feed.js (the single declaration).
-  gdpTracker: defineFeed(catalogEntryOf(gdpTrackerDefinition)),
-  // Projected from feeds/employment/feed.js (the single declaration).
-  employmentStats: defineFeed(catalogEntryOf(employmentStatsDefinition)),
-  // Projected from feeds/national-debt/feed.js (the single declaration).
-  nationalDebt: defineFeed(catalogEntryOf(nationalDebtDefinition)),
-  // Projected from feeds/tax/feed.js (the single declaration).
-  taxRevenue: defineFeed(catalogEntryOf(taxRevenueDefinition)),
-  // Projected from feeds/migration/feed.js (the single declaration).
-  migrationStats: defineFeed(catalogEntryOf(migrationStatsDefinition)),
-  // Projected from feeds/house-price-index/feed.js (the single declaration).
-  housePriceIndex: defineFeed(catalogEntryOf(housePriceIndexDefinition)),
-  // Projected from feeds/real-wages/feed.js (the single declaration).
-  realWages: defineFeed(catalogEntryOf(realWagesDefinition)),
-  // Projected from feeds/election-polls/feed.js (the single declaration).
-  electionPolling: defineFeed(catalogEntryOf(electionPollingDefinition)),
-  // Projected from feeds/nhs/feed.js (the single declaration).
-  nhsStats: defineFeed(catalogEntryOf(nhsStatsDefinition)),
-  // Projected from feeds/betting-odds/feed.js (the single declaration).
-  bettingOdds: defineFeed(catalogEntryOf(bettingOddsDefinition)),
-  // Projected from feeds/crime-stats/feed.js (the single declaration).
-  crimeStatistics: defineFeed(catalogEntryOf(crimeStatisticsDefinition)),
-  // Projected from feeds/government-contracts/feed.js (the single declaration).
-  governmentContracts: defineFeed(catalogEntryOf(governmentContractsDefinition)),
-  // Projected from feeds/release-calendar/feed.js (the single declaration).
-  releaseCalendar: defineFeed(catalogEntryOf(releaseCalendarDefinition)),
-  // Projected from feeds/nhs-release-calendar/feed.js (the single declaration).
-  nhsReleaseCalendar: defineFeed(catalogEntryOf(nhsReleaseCalendarDefinition)),
-  // Projected from feeds/international-comparison/feed.js (the single declaration).
-  internationalComparison: defineFeed(catalogEntryOf(internationalComparisonDefinition)),
-  // Projected from feeds/early-years/feed.js (the single declaration).
-  earlyYears: defineFeed(catalogEntryOf(earlyYearsDefinition)),
-});
+// Every entry is projected from its feed definition (feeds/<slug>/feed.js), the
+// single declaration. The list below is the published catalogue order.
+const CATALOG_DEFINITIONS = [
+  sentimentPulseDefinition,
+  gdpTrackerDefinition,
+  employmentStatsDefinition,
+  nationalDebtDefinition,
+  taxRevenueDefinition,
+  migrationStatsDefinition,
+  housePriceIndexDefinition,
+  realWagesDefinition,
+  electionPollingDefinition,
+  nhsStatsDefinition,
+  bettingOddsDefinition,
+  crimeStatisticsDefinition,
+  governmentContractsDefinition,
+  releaseCalendarDefinition,
+  nhsReleaseCalendarDefinition,
+  internationalComparisonDefinition,
+  earlyYearsDefinition,
+];
+
+export const FEED_CATALOG = deepFreeze(
+  Object.fromEntries(CATALOG_DEFINITIONS.map((definition) => [definition.id, defineFeed(catalogEntryOf(definition))])),
+);
 
 export function sourceFor(id) {
   return SOURCE_CATALOG[id] ?? null;

@@ -1,5 +1,5 @@
 import { SECTION_BUILDERS } from "./section-builders.js";
-import { FEED_REGISTRY_VERSION } from "./feed-registry.js";
+import { FEED_REGISTRY_VERSION } from "../feeds/registry.js";
 import { buildMeasureCatalog } from "./measure-catalog.js";
 import { buildEditionSummary } from "./edition-summary.js";
 

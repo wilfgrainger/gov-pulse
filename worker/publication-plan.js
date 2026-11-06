@@ -1,5 +1,5 @@
 import { publicationPublished } from "../contracts/evidence-policy.js";
-import { REQUIRED_PUBLISHED_SECTION_IDS } from "./feed-registry.js";
+import { REQUIRED_PUBLISHED_SECTION_IDS } from "../feeds/registry.js";
 import { collectionPlan } from "../feeds/registry.js";
 
 // Feeds declared under feeds/ project their own plan entry; the rest are still listed here.

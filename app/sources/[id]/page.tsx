@@ -12,7 +12,7 @@ import { readEditionSummaries } from "@/app/lib/serverEditionArchive";
 import { SECTIONS } from "@/app/lib/sections";
 import { selectSourceRecordMeasures } from "@/app/lib/sourceHistory";
 import { DATA_SOURCE_DETAILS } from "@/app/lib/dataSourceDetails";
-import { FEED_REGISTRY, PUBLICATION_SOURCE_REGISTRY } from "@/worker/feed-registry";
+import { FEED_REGISTRY, PUBLICATION_SOURCE_REGISTRY } from "@/feeds/registry.js";
 
 type SourcePageProps = {
   params: Promise<{ id: string }>;

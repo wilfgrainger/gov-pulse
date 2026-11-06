@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import legacy from "@/tests/fixtures/registry/legacy-projections.json";
@@ -203,5 +203,29 @@ describe("projection parity with the legacy hand-written registries", () => {
 describe("projection drift check", () => {
   it("reports no drift between feeds/ and the checked-in contracts", () => {
     expect(findDrift()).toEqual([]);
+  });
+});
+
+describe("feed registry", () => {
+  function sourceFiles(dir: string): string[] {
+    return readdirSync(join(process.cwd(), dir), { withFileTypes: true }).flatMap((entry) => {
+      const relative = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) return ["node_modules", ".next", ".open-next", "generated", ".wrangler"].includes(entry.name) ? [] : sourceFiles(relative);
+      return /\.(js|mjs|ts|tsx)$/.test(entry.name) ? [relative] : [];
+    });
+  }
+
+  it("no module imports worker/feed-registry", () => {
+    const offenders = ["app", "worker", "scripts", "contracts", "feeds"]
+      .flatMap(sourceFiles)
+      .filter((file) => file !== "worker/feed-registry.js")
+      .filter((file) => /from\s+["'][^"']*\/feed-registry(?:\.js)?["']|import\(["'][^"']*\/feed-registry(?:\.js)?["']\)/.test(readFileSync(join(process.cwd(), file), "utf8")));
+    expect(offenders).toEqual([]);
+  });
+
+  it("the worker shim is a pure re-export of feeds/registry.js", () => {
+    const shim = readFileSync(join(process.cwd(), "worker/feed-registry.js"), "utf8");
+    expect(shim).not.toMatch(/\bfunction\b|\bconst\b/);
+    expect(shim).toMatch(/from "\.\.\/feeds\/registry\.js"/);
   });
 });

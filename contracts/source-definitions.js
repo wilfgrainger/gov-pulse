@@ -3,8 +3,6 @@
 // an import cycle; source-catalog.js re-exports everything here unchanged.
 import { validateSourceDefinition } from "./evidence-domain.js";
 
-const HOUR_MS = 60 * 60 * 1000;
-const DAY_MS = 24 * HOUR_MS;
 const ONS_GENERATOR = "https://www.ons.gov.uk/generator?format=csv&uri=";
 
 export const SOURCE_CATALOG_VERSION = "2026-10-06.1";

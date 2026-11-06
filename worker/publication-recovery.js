@@ -1,6 +1,6 @@
 import { isSnapshot } from "./publication-entry.js";
 import { isPublicArtifact } from "../contracts/public-artifact.js";
-import { FEED_REGISTRY_VERSION } from "./feed-registry.js";
+import { FEED_REGISTRY_VERSION } from "../feeds/registry.js";
 import { filterCurrentSnapshot, filterPublicationSnapshot } from "../contracts/evidence-policy.js";
 import { publicSnapshot } from "./public-snapshot.js";
 import { frozenHostSet } from "./approved-source-hosts.js";

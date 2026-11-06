@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
-import { FEED_REGISTRY, PUBLICATION_SOURCE_REGISTRY } from "../worker/feed-registry.js";
+import { FEED_REGISTRY, PUBLICATION_SOURCE_REGISTRY } from "../feeds/registry.js";
 import { FEED_CATALOG } from "../contracts/source-catalog.js";
 import { PUBLICATION_STATES } from "../contracts/evidence-policy.js";
 

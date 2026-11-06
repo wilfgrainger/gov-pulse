@@ -1,6 +1,6 @@
 import { sectionCurrentness, sectionValidityDeadline } from "../contracts/evidence-policy.js";
 import { validateMeasureRecord } from "../contracts/measure-record.js";
-import { FEED_REGISTRY_VERSION } from "./feed-registry.js";
+import { FEED_REGISTRY_VERSION } from "../feeds/registry.js";
 import measureInventory from "../contracts/measure-definitions.json" with { type: "json" };
 
 const DEFINITIONS = measureInventory.measures;

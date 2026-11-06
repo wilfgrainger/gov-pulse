@@ -10,7 +10,7 @@ import { publicUnavailableSections } from "./publication-availability.js";
 import {
   FEED_REGISTRY_VERSION,
   REQUIRED_PUBLISHED_SECTION_IDS,
-} from "./feed-registry.js";
+} from "../feeds/registry.js";
 import {
   PUBLIC_SNAPSHOT_KEY,
   buildPublicProjection,

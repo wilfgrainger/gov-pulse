@@ -49,7 +49,7 @@ import {
   FEED_REGISTRY,
   applyFeedRegistry,
   provenanceFor,
-} from "./feed-registry.js";
+} from "../feeds/registry.js";
 import { applyObservationContracts } from "./observation-contract.js";
 
 const DEBT_MAX_PUBLICATION_AGE_MS = 75 * 24 * 60 * 60 * 1000;

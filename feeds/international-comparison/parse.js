@@ -6,7 +6,6 @@ import {
   buildComparisonMeasure,
   validateInternationalComparisonPublication,
 } from "./compare.js";
-import { PUBLICATION_SOURCE_REGISTRY } from "../../worker/feed-registry.js";
 import { definition } from "./feed.js";
 import {
   OECD_COMPARABLE_IDS,
@@ -32,7 +31,8 @@ const MEASURE_SOURCE_DEPENDENCIES = Object.freeze({
   taxRevenue: ["world-bank-gdp-per-capita-2024", "oecd-tax-2024"],
   debtInterest: ["world-bank-gdp-per-capita-2024", "imf-interest-2024"],
 });
-const INTERNATIONAL_SOURCES = PUBLICATION_SOURCE_REGISTRY.internationalComparison.sourceIds;
+// The runtime source ids the catalogue projects to PUBLICATION_SOURCE_REGISTRY.internationalComparison.sourceIds.
+const INTERNATIONAL_SOURCES = definition.runtimeSourceIds;
 // Declared once, as the feed's shards (feeds/international-comparison/feed.js).
 const INTERNATIONAL_COMPARISON_REFRESH_BATCHES = definition.shards.batches;
 const COMPARISON_VALIDITY_MS = 30 * 24 * 60 * 60 * 1000;

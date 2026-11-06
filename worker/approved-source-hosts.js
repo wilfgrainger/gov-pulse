@@ -4,7 +4,7 @@ import { SOURCE_CATALOG } from "../contracts/source-catalog.js";
 // sends, and every redirect hop it follows, must land on one of these hosts.
 //
 // Primary publisher hosts are derived from contracts/source-catalog.js (the
-// owner of every source's primaryUrls, which worker/feed-registry.js projects),
+// owner of every source's primaryUrls, which feeds/registry.js projects),
 // so adding a source there approves its host here without a second list.
 //
 // The supplementary sets below are retrieval hosts that are not a catalog

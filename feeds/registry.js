@@ -179,3 +179,19 @@ export function routeManifest(config = PUBLICATION_CONFIG) {
   manifestCache.set(config, manifest);
   return manifest;
 }
+
+// Runtime registry views (FEED_REGISTRY and friends). They live in
+// registry-views.js, which never imports FEEDS, so modules the collectors
+// themselves import (worker/live-feed-common.js) can read provenance without
+// creating an import cycle through every collector.
+export {
+  FEED_REGISTRY,
+  FEED_REGISTRY_VERSION,
+  OPTIONAL_PUBLISHED_SECTION_IDS,
+  PUBLICATION_SOURCE_REGISTRY,
+  REQUIRED_PUBLISHED_SECTION_IDS,
+  applyFeedRegistry,
+  provenanceFor,
+  registrySnapshot,
+  retrievalMaxAgeMsForSection,
+} from "./registry-views.js";
