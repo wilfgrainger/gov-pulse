@@ -14,7 +14,7 @@ import {
   shardKeyFor,
 } from "@/worker/pipeline";
 import { refreshJobs } from "@/worker/publication-plan";
-import { BETTING_CRON, DAILY_CRON } from "@/worker/publication-schedule";
+import { DAILY_CRON } from "@/worker/publication-schedule";
 
 type Body = Record<string, unknown>;
 
