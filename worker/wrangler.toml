@@ -16,9 +16,6 @@ enabled = true
 cross_version_cache = false
 
 [vars]
-ENVIRONMENT = "production"
-DATA_REFRESH_TTL_SECONDS = "14400"
-DATA_STALE_TTL_SECONDS = "86400"
 STATIC_SNAPSHOT_SEED_URL = "https://public-data-org.pages.dev/data/metrics-snapshot.json"
 
 [[routes]]
