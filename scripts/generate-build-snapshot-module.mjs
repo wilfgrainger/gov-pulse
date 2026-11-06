@@ -160,6 +160,10 @@ export async function generate({
 
   await mkdir(dirname(outputPath), { recursive: true });
   await writeFile(outputPath, source, "utf8");
+  if (!snapshot && process.env.GITHUB_ACTIONS) {
+    // Make a release that ships a feed with no dataset items visible in the run.
+    console.log("::warning::Build evidence unavailable (fetch or validation failed); wrote a null export so RSS will carry no dataset items.");
+  }
   return { wrote: snapshot ? "artifact" : "null" };
 }
 

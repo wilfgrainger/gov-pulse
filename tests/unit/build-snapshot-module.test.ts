@@ -92,4 +92,33 @@ describe("build snapshot module", () => {
     expect(await generate({ fetchImpl: declared, now: NOW, output })).toEqual({ wrote: "null" });
     expect(await readFile(output, "utf8")).toContain("BUILD_METRICS_SNAPSHOT: unknown = null;");
   });
+
+  it("emits a GitHub Actions warning only for a null export after failure", async () => {
+    const directory = await workspace();
+    const output = join(directory, "metricsSnapshot.ts");
+    const failing = () => vi.fn().mockRejectedValue(new Error("offline"));
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const previous = process.env.GITHUB_ACTIONS;
+    try {
+      delete process.env.GITHUB_ACTIONS;
+      await generate({ fetchImpl: failing(), now: NOW, output });
+      expect(log).not.toHaveBeenCalled();
+
+      process.env.GITHUB_ACTIONS = "true";
+      await generate({ fetchImpl: failing(), now: NOW, output });
+      expect(log).toHaveBeenCalledTimes(1);
+      expect(String(log.mock.calls[0][0])).toMatch(/^::warning::[^\n]+$/);
+
+      log.mockClear();
+      await ensure({ output: join(directory, "other.ts") });
+      await generate({ fetchImpl: vi.fn().mockResolvedValue(new Response(JSON.stringify(fixture))), now: NOW, output });
+      expect(log).not.toHaveBeenCalled();
+    } finally {
+      if (previous === undefined) delete process.env.GITHUB_ACTIONS;
+      else process.env.GITHUB_ACTIONS = previous;
+      log.mockRestore();
+      warn.mockRestore();
+    }
+  });
 });

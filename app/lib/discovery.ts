@@ -57,6 +57,23 @@ export function serializeJsonLd(value: unknown) {
   return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
+// The imported build snapshot is constant for the isolate's lifetime and only
+// read, so its now-independent public projection is computed once. Currentness
+// is still evaluated per call against the caller's `now`.
+let projectedBuildSnapshot: unknown;
+let projectedBuildSnapshotReady = false;
+
+function projectSnapshot(rawSnapshot: unknown) {
+  if (rawSnapshot !== BUILD_METRICS_SNAPSHOT) {
+    return filterPublicationSnapshot(publicSnapshot(rawSnapshot));
+  }
+  if (!projectedBuildSnapshotReady) {
+    projectedBuildSnapshot = filterPublicationSnapshot(publicSnapshot(rawSnapshot));
+    projectedBuildSnapshotReady = true;
+  }
+  return projectedBuildSnapshot;
+}
+
 /**
  * Build-time publication facts for a section. The evidence must be current at
  * `now`; expired, held, unavailable or null evidence yields no publication.
@@ -67,7 +84,7 @@ export function getBuildPublication(
   now: Date = new Date()
 ) {
   if (!publicationPublished(section.sourceKey)) return null;
-  const snapshot = filterPublicationSnapshot(publicSnapshot(rawSnapshot));
+  const snapshot = projectSnapshot(rawSnapshot);
   if (!isCompatibleMetricsSnapshot(snapshot)) {
     return null;
   }
