@@ -94,8 +94,8 @@
     },
     {
       "section": "bettingOdds",
-      "collector": "worker/live-betting-collector.js",
-      "normalizer": "worker/betting-markets.js",
+      "collector": "feeds/betting-odds/parse.js",
+      "normalizer": "contracts/betting-markets.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "Cloudflare Cron every three hours through public-data-jobs Queue",
       "storage": "optional KV section fragment and prepared public artifact when all named markets are current",

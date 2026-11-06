@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { parseOddscheckerRows } from "@/worker/live-betting-collector";
+import { parseOddscheckerRows } from "@/feeds/betting-odds/parse.js";
 import { latestNhsLinks } from "@/feeds/nhs/workbook.js";
 import {
   latestYouGovArticleUrl,

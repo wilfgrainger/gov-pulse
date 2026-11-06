@@ -74,10 +74,13 @@ export function findDrift() {
     const { id } = definition;
     compare(`FEED_CATALOG.${id}`, FEED_CATALOG[id], catalog[id]);
     compare(`SECTION_COLLECTION_PLAN.${id}`, SECTION_COLLECTION_PLAN[id], plan[id]);
-    compare(`OBSERVATION_CONTRACTS.${id}`, {
-      maxAgeDays: OBSERVATION_CONTRACTS[id]?.maxAgeDays,
-      extractor: OBSERVATION_CONTRACTS[id]?.extract?.name,
-    }, contracts[id]);
+    compare(
+      `OBSERVATION_CONTRACTS.${id}`,
+      OBSERVATION_CONTRACTS[id]
+        ? { maxAgeDays: OBSERVATION_CONTRACTS[id].maxAgeDays, extractor: OBSERVATION_CONTRACTS[id].extract?.name }
+        : null,
+      contracts[id] ?? null,
+    );
   }
   for (const [slug, entry] of Object.entries(sectionDiscovery())) {
     compare(`section-discovery.json sections.${slug}`, discovery.sections[slug], entry);

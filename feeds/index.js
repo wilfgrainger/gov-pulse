@@ -23,6 +23,8 @@ import { definition as housePriceIndexDefinition } from "./house-price-index/fee
 import * as housePriceIndexParser from "./house-price-index/parse.js";
 import { definition as realWagesDefinition } from "./real-wages/feed.js";
 import * as realWagesParser from "./real-wages/parse.js";
+import { definition as bettingOddsDefinition } from "./betting-odds/feed.js";
+import * as bettingOddsParser from "./betting-odds/parse.js";
 
 /**
  * @typedef {{definition: Readonly<Record<string, any>>, collect: (ctx: any) => Promise<any>,
@@ -43,4 +45,5 @@ export const FEEDS = Object.freeze([
   { definition: migrationStatsDefinition, collect: migrationStatsParser.collect },
   { definition: housePriceIndexDefinition, collect: housePriceIndexParser.collect },
   { definition: realWagesDefinition, collect: realWagesParser.collect },
+  { definition: bettingOddsDefinition, collect: bettingOddsParser.collect },
 ]);

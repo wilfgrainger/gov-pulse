@@ -130,6 +130,7 @@ export function defineFeed(def) {
     fail(id, "downloads {json, csv, geography} is required");
   }
   if (typeof downloads.geography !== "string" || !downloads.geography) fail(id, "downloads.geography is required");
+  if (downloads.listed !== undefined && typeof downloads.listed !== "boolean") fail(id, "downloads.listed must be a boolean");
 
   if (!Array.isArray(def.releaseTitles)) fail(id, "releaseTitles must be an array");
   for (const title of def.releaseTitles) {

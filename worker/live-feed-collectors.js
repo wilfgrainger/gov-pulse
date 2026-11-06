@@ -1,4 +1,4 @@
-import { collectBettingOdds } from "./live-betting-collector.js";
+import { collectBettingOdds } from "../feeds/betting-odds/parse.js";
 import { collectNhsRttPublication } from "../feeds/nhs/parse.js";
 import { collectElectionPolling } from "../feeds/election-polls/parse.js";
 import { collectOnsReleaseCalendar } from "./ons-release-calendar.js";

@@ -121,6 +121,10 @@ describe("projection parity with the legacy hand-written registries", () => {
     const expected = (legacy.observationContracts as Record<string, unknown>)[id];
     expect(observationContracts()[id]).toEqual(expected);
     const live = (OBSERVATION_CONTRACTS as Record<string, { maxAgeDays: number; extract: { name: string } }>)[id];
+    if (expected === undefined) {
+      expect(live).toBeUndefined();
+      return;
+    }
     expect({ maxAgeDays: live.maxAgeDays, extractor: live.extract.name }).toEqual(expected);
   });
 

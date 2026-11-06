@@ -17,7 +17,7 @@ const SECTION_COLLECTION_PLAN = Object.freeze({
   crimeStatistics: Object.freeze({ ...DECLARED_PLAN.crimeStatistics }),
   electionPolling: Object.freeze({ ...DECLARED_PLAN.electionPolling }),
   nhsStats: Object.freeze({ ...DECLARED_PLAN.nhsStats }),
-  bettingOdds: Object.freeze({ jobType: "refresh-external-section", collector: "external" }),
+  bettingOdds: Object.freeze({ ...DECLARED_PLAN.bettingOdds }),
   releaseCalendar: Object.freeze({ jobType: "refresh-external-section", collector: "external" }),
   nhsReleaseCalendar: Object.freeze({ jobType: "refresh-external-section", collector: "external" }),
 });

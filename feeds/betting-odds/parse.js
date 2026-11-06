@@ -1,13 +1,13 @@
 import {
   MARKET_DEFINITIONS,
   normalizeBettingMarketPayload,
-} from "./betting-markets.js";
+} from "../../contracts/betting-markets.js";
 import {
   decodeHtml,
   fetchResponse,
   parseAttributes,
   readResponseText,
-} from "./live-feed-common.js";
+} from "../../worker/live-feed-common.js";
 
 const ODDSCHECKER_HOST = "www.oddschecker.com";
 const LIMITED_VIEW_PATTERNS = Object.freeze([
@@ -159,8 +159,20 @@ async function collectBettingOdds(fetchImpl = fetch, now = new Date()) {
   );
 }
 
+/**
+ * Feed interface (target design 2.3). Wraps the existing collector without
+ * changing what it fetches or returns: `data` is exactly the payload
+ * collectBettingOdds has always produced.
+ *
+ * @param {{fetch: typeof fetch, now: Date}} ctx
+ */
+async function collect(ctx) {
+  return { data: await collectBettingOdds(ctx.fetch, ctx.now) };
+}
+
 export {
   LIMITED_VIEW_PATTERNS,
+  collect,
   assertCanonicalResponse,
   assertMarketPage,
   canonicalMarketUrl,

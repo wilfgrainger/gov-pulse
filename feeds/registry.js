@@ -15,8 +15,8 @@ import { FEEDS } from "./index.js";
 const definitionsOf = () => FEEDS.map((feed) => feed.definition);
 const byId = () => new Map(definitionsOf().map((def) => [def.id, def]));
 
-function mapById(project) {
-  return Object.fromEntries(definitionsOf().map((def) => [def.id, project(def)]));
+function mapById(project, include = () => true) {
+  return Object.fromEntries(definitionsOf().filter(include).map((def) => [def.id, project(def)]));
 }
 
 /** Legacy FEED_CATALOG entries (contracts/source-catalog.js) for migrated feeds. */
@@ -26,7 +26,12 @@ export function feedCatalog() {
 
 /** Legacy SECTION_COLLECTION_PLAN entries (worker/publication-plan.js). */
 export function collectionPlan() {
-  return mapById((def) => ({ jobType: def.collection.jobType, collector: def.collection.collector }));
+  // Feeds collected outside the section job queue (contracts, comparison) and
+  // static feeds declare no collection.
+  return mapById(
+    (def) => ({ jobType: def.collection.jobType, collector: def.collection.collector }),
+    (def) => def.collection !== undefined,
+  );
 }
 
 /**
@@ -34,13 +39,17 @@ export function collectionPlan() {
  * worker/observation-contract.js binds the name to its function.
  */
 export function observationContracts() {
-  return mapById((def) => ({ maxAgeDays: def.validity.observationMaxAgeDays, extractor: def.validity.extractor }));
+  // Only feeds with an observation-date contract; retrievalOnly feeds have none.
+  return mapById(
+    (def) => ({ maxAgeDays: def.validity.observationMaxAgeDays, extractor: def.validity.extractor }),
+    (def) => def.validity?.observationMaxAgeDays !== undefined,
+  );
 }
 
 /** Legacy contracts/section-discovery.json `sections`, keyed by route slug. */
 export function sectionDiscovery() {
   return Object.fromEntries(
-    definitionsOf().map((def) => [
+    definitionsOf().filter((def) => def.discovery !== undefined).map((def) => [
       def.slug,
       {
         title: def.discovery.title,
@@ -54,9 +63,15 @@ export function sectionDiscovery() {
   );
 }
 
-/** Feed ids with a section download (SECTION_DOWNLOAD_IDS order is FEEDS order). */
+/**
+ * Feed ids with a section distribution (SECTION_DOWNLOAD_IDS order is FEEDS
+ * order). `downloads.listed: false` keeps a feed's /data/sections routes in the
+ * route manifest without offering a distribution for it (bettingOdds).
+ */
 export function downloadIds() {
-  return definitionsOf().filter((def) => def.downloads.json || def.downloads.csv).map((def) => def.id);
+  return definitionsOf()
+    .filter((def) => (def.downloads.json || def.downloads.csv) && def.downloads.listed !== false)
+    .map((def) => def.id);
 }
 
 /** Download geography labels by feed id (app/lib/sectionDownloads.ts). */

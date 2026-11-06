@@ -5,9 +5,10 @@ import { MARKET_DEFINITIONS } from "@/contracts/betting-markets";
 import {
   assertCanonicalResponse,
   assertMarketPage,
+  collect,
   collectBettingOdds,
   parseOddscheckerRows,
-} from "@/worker/live-betting-collector";
+} from "@/feeds/betting-odds/parse.js";
 
 const now = new Date("2026-08-02T04:30:00.000Z");
 
@@ -72,6 +73,7 @@ describe("Cloudflare Oddschecker collector", () => {
     expect(payload.markets[0]).not.toHaveProperty("displayTitle");
     expect(payload.markets[0]).not.toHaveProperty("resolvedSourceUrl");
     expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect((await collect({ fetch: fetchImpl, now })).data).toEqual(payload);
   });
 
   it("retains the best decimal price for each unique runner", () => {

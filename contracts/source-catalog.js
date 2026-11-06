@@ -8,6 +8,7 @@ import { definition as taxRevenueDefinition } from "../feeds/tax/feed.js";
 import { definition as nationalDebtDefinition } from "../feeds/national-debt/feed.js";
 import { definition as sentimentPulseDefinition } from "../feeds/economy/feed.js";
 import { definition as electionPollingDefinition } from "../feeds/election-polls/feed.js";
+import { definition as bettingOddsDefinition } from "../feeds/betting-odds/feed.js";
 import { catalogEntryOf } from "../feeds/define-feed.js";
 import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
 import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
@@ -74,23 +75,8 @@ export const FEED_CATALOG = deepFreeze({
   electionPolling: defineFeed(catalogEntryOf(electionPollingDefinition)),
   // Projected from feeds/nhs/feed.js (the single declaration).
   nhsStats: defineFeed(catalogEntryOf(nhsStatsDefinition)),
-  bettingOdds: defineFeed({
-    id: "bettingOdds", registry: "feed", title: "Strict political betting market snapshots", displayName: "Political Betting Markets",
-    evidenceClass: "market-signal", geography: { code: "UK", label: "United Kingdom" },
-    sourceIds: ["oddschecker-next-pm", "oddschecker-most-seats", "oddschecker-election-year"],
-    automation: "automated", collectionLayer: "worker", frequency: "every 3 hours",
-    retrieval: "scheduled-publication-check", refreshCadence: "every 3 hours", publicationCadence: "continuous market repricing",
-    retrievalMaxAgeMs: 4 * HOUR_MS, publicationRequirement: "optional",
-    freshnessWindow: "Within 4 hours of market observation",
-    freshnessRationale: "Each observation retains its original time and is withdrawn after four hours. Older prices are never presented as current.",
-    uiSourceLabels: ["Oddschecker public politics markets"],
-    editorial: {
-      publicationPeriod: "Latest complete Oddschecker snapshot inside a four-hour observation window",
-      unit: "Decimal odds and raw reciprocal percentage",
-      revisionStatus: "Continuously repriced rather than statistically revised",
-      caveat: "public-data.org shows each named market separately, calculates 100 divided by decimal odds and does not normalize prices to 100%. The results are neither official statistics nor official forecasts. Liquidity, provider coverage, bookmaker margins and market rules affect them; stale, embedded or incomplete prices are unavailable.",
-    },
-  }),
+  // Projected from feeds/betting-odds/feed.js (the single declaration).
+  bettingOdds: defineFeed(catalogEntryOf(bettingOddsDefinition)),
   // Projected from feeds/crime-stats/feed.js (the single declaration).
   crimeStatistics: defineFeed(catalogEntryOf(crimeStatisticsDefinition)),
   governmentContracts: defineFeed({
