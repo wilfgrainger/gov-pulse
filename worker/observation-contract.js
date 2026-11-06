@@ -1,4 +1,8 @@
-const DAY_MS = 24 * 60 * 60 * 1000;
+import {
+  DAY_MS,
+  observationExpiryMs,
+  observationOutsideContract,
+} from "../contracts/evidence-policy.js";
 
 const monthMap = {
   jan: 0,
@@ -190,7 +194,7 @@ export function applyObservationContracts(descriptors, nowProvider = () => new D
       }
 
       const ageMs = Math.max(0, now.getTime() - observation.date.getTime());
-      if (ageMs > contract.maxAgeDays * DAY_MS) {
+      if (observationOutsideContract(ageMs, contract.maxAgeDays)) {
         throw new Error(
           `Feed '${section}' observation '${observation.raw}' is outside its ${contract.maxAgeDays}-day currentness contract`
         );
@@ -201,7 +205,7 @@ export function applyObservationContracts(descriptors, nowProvider = () => new D
         // Statistical releases describe earlier periods. Use the verified
         // publication clock for expiry, while retaining the measured period.
         ...(observation.observedAt ? {
-          expiresAt: new Date(observation.date.getTime() + contract.maxAgeDays * DAY_MS).toISOString(),
+          expiresAt: new Date(observationExpiryMs(observation.date.getTime(), contract.maxAgeDays)).toISOString(),
         } : {}),
         __observation: {
           status: "current",
