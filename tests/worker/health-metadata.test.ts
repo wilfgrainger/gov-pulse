@@ -65,7 +65,7 @@ describe("health metadata", () => {
     );
     expect(result.overflow).toBeNull();
     expect(bytes(result.metadata)).toBeLessThanOrEqual(1000);
-    expect((result.body as any).unavailableSections).toHaveLength(17);
+    expect((result.body as { unavailableSections: unknown[] }).unavailableSections).toHaveLength(17);
   });
 
   it("50 feeds all unavailable stays within 1024 bytes or degrades closed", () => {
