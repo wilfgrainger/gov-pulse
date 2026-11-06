@@ -2,10 +2,10 @@
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { parseMonthlyOnsCsv } from "@/worker/national-debt";
+import { parseMonthlyOnsCsv } from "@/feeds/national-debt/parse.js";
 
 function latest(name: string) {
-  const text = readFileSync(new URL(`../fixtures/${name}`, import.meta.url), "utf8");
+  const text = readFileSync(new URL(`../../fixtures/${name}`, import.meta.url), "utf8");
   const points = parseMonthlyOnsCsv(text);
   return points[points.length - 1];
 }

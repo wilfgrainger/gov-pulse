@@ -8,11 +8,12 @@ import {
   DEBT_SERIES_PATH,
   DEBT_SERIES_URL,
   buildNationalDebt,
+  collect,
   fetchOfficialCsv,
   parseDebtBulletinCheck,
   parseMonthlyOnsCsv,
   parseOnsReleaseDate,
-} from "@/worker/national-debt";
+} from "@/feeds/national-debt/parse.js";
 
 const debtCsv = `Title,PS: Net Debt (excluding public sector banks): £bn: CPNSA
 2025 MAY,2810.0
@@ -55,7 +56,7 @@ const matchingBulletin = `
 `;
 
 const augustBulletin = readFileSync(
-  new URL("../fixtures/ons-public-sector-finances-august-2026.html", import.meta.url),
+  new URL("../../fixtures/ons-public-sector-finances-august-2026.html", import.meta.url),
   "utf8"
 );
 
@@ -91,6 +92,12 @@ describe("official ONS national debt connector", () => {
     });
     const result = await buildNationalDebt(fetchImpl as unknown as typeof fetch);
     expect(result.nextReleaseDate).toBe("2026-10-21");
+  });
+
+  it("collect wraps the unchanged builder output", async () => {
+    const fetchImpl = vi.fn(async (url: string) => sourceResponse(url)) as unknown as typeof fetch;
+    const result = await collect({ fetch: fetchImpl, now: new Date("2026-08-02T04:30:00.000Z") });
+    expect(result.data).toEqual(await buildNationalDebt(fetchImpl));
   });
 
   it("parses only monthly observations and orders them chronologically", () => {

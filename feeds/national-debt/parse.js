@@ -1,7 +1,8 @@
-import { fetchOfficialText as fetchSourceText } from "./official-source-fetch.js";
-import { parseOnsNextReleaseDate } from "./ons-release-date.js";
-import { FINANCES_BULLETIN_URL } from "../feeds/tax/finances.js";
-import { fetchLatestOnsBulletin } from "../feeds/_kit/ons-economy.js";
+import { fetchOfficialText as fetchSourceText } from "../../worker/official-source-fetch.js";
+import { parseOnsNextReleaseDate } from "../../worker/ons-release-date.js";
+import { FINANCES_BULLETIN_URL } from "../tax/finances.js";
+import { fetchLatestOnsBulletin } from "../_kit/ons-economy.js";
+import { parseCsvColumns } from "../_kit/csv.js";
 
 const ONS_ORIGIN = "https://www.ons.gov.uk";
 const ONS_GENERATOR = `${ONS_ORIGIN}/generator?format=csv&uri=`;
@@ -26,22 +27,6 @@ const MONTH_LABELS = ["January","February","March","April","May","June","July","
 function parseNumericValue(value) {
   const parsed = Number.parseFloat(String(value).replace(/,/g, ""));
   return Number.isFinite(parsed) ? parsed : null;
-}
-
-function parseCsvColumns(line) {
-  const columns = [];
-  let current = "";
-  let quoted = false;
-  for (let index = 0; index < line.length; index += 1) {
-    const character = line[index];
-    if (character === '"') {
-      if (quoted && line[index + 1] === '"') { current += '"'; index += 1; }
-      else { quoted = !quoted; }
-    } else if (character === "," && !quoted) { columns.push(current.trim()); current = ""; }
-    else { current += character; }
-  }
-  columns.push(current.trim());
-  return columns;
 }
 
 function parseMonthlyOnsCsv(text) {
@@ -213,8 +198,19 @@ async function buildNationalDebt(fetchImpl = fetch) {
   };
 }
 
+/**
+ * Feed interface (target design 2.3). Wraps the existing collector without
+ * changing what it fetches or returns: `data` is exactly the section payload
+ * buildNationalDebt has always produced.
+ *
+ * @param {{fetch: typeof fetch}} ctx
+ */
+async function collect(ctx) {
+  return { data: await buildNationalDebt(ctx.fetch) };
+}
+
 export {
   DEBT_GDP_SERIES_PATH, DEBT_GDP_SERIES_URL, DEBT_SERIES_PATH, DEBT_SERIES_URL, FINANCES_BULLETIN_URL,
-  buildNationalDebt, fetchOfficialCsv, fetchOfficialPage, parseDebtBulletinCheck, parseMonthlyOnsCsv,
+  buildNationalDebt, collect, fetchOfficialCsv, fetchOfficialPage, parseDebtBulletinCheck, parseMonthlyOnsCsv,
   parseOnsReleaseDate, reconcileDebtWithBulletin,
 };

@@ -5,6 +5,7 @@ import { definition as crimeStatisticsDefinition } from "../feeds/crime-stats/fe
 import { definition as gdpTrackerDefinition } from "../feeds/gdp/feed.js";
 import { definition as employmentStatsDefinition } from "../feeds/employment/feed.js";
 import { definition as taxRevenueDefinition } from "../feeds/tax/feed.js";
+import { definition as nationalDebtDefinition } from "../feeds/national-debt/feed.js";
 import { catalogEntryOf } from "../feeds/define-feed.js";
 import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
 import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
@@ -80,22 +81,8 @@ export const FEED_CATALOG = deepFreeze({
   gdpTracker: defineFeed(catalogEntryOf(gdpTrackerDefinition)),
   // Projected from feeds/employment/feed.js (the single declaration).
   employmentStats: defineFeed(catalogEntryOf(employmentStatsDefinition)),
-  nationalDebt: defineFeed({
-    id: "nationalDebt", registry: "feed", title: "Public sector net debt excluding public sector banks", displayName: "National Debt",
-    evidenceClass: "official-statistics", geography: { code: "UK", label: "United Kingdom" },
-    sourceIds: ["ons-psnd-hf6w", "ons-psnd-hf6x"], automation: "automated", collectionLayer: "worker", frequency: "monthly",
-    retrieval: "scheduled-publication-check", refreshCadence: "daily", publicationCadence: "monthly",
-    retrievalMaxAgeMs: 40 * DAY_MS, publicationRequirement: "required",
-    freshnessWindow: "Checked within 40 days",
-    freshnessRationale: "Public sector finance data is normally monthly; the window allows for weekends, bank holidays and release-calendar variation.",
-    uiSourceLabels: ["ONS Public Sector Finances"],
-    editorial: {
-      publicationPeriod: "Latest monthly public-sector-finance period available",
-      unit: "£ billions and percentage of GDP",
-      revisionStatus: "Subject to routine ONS public-sector-finance revisions",
-      caveat: "Public sector net debt excluding public sector banks (HF6W) and the matching percentage-of-GDP series (HF6X) are shown together. Other debt measures are not interchangeable.",
-    },
-  }),
+  // Projected from feeds/national-debt/feed.js (the single declaration).
+  nationalDebt: defineFeed(catalogEntryOf(nationalDebtDefinition)),
   // Projected from feeds/tax/feed.js (the single declaration).
   taxRevenue: defineFeed(catalogEntryOf(taxRevenueDefinition)),
   // Projected from feeds/migration/feed.js (the single declaration).

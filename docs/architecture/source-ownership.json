@@ -31,8 +31,8 @@
     },
     {
       "section": "nationalDebt",
-      "collector": "worker/national-debt.js",
-      "normalizer": "worker/national-debt.js",
+      "collector": "feeds/national-debt/parse.js",
+      "normalizer": "feeds/national-debt/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",

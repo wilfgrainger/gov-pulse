@@ -9,12 +9,12 @@ import {
   buildNationalDebt,
   parseDebtBulletinCheck,
   parseMonthlyOnsCsv,
-} from "@/worker/national-debt";
+} from "@/feeds/national-debt/parse.js";
 
-const hf6w = readFileSync(new URL("../fixtures/ons-hf6w.csv", import.meta.url), "utf8");
-const hf6x = readFileSync(new URL("../fixtures/ons-hf6x.csv", import.meta.url), "utf8");
+const hf6w = readFileSync(new URL("../../fixtures/ons-hf6w.csv", import.meta.url), "utf8");
+const hf6x = readFileSync(new URL("../../fixtures/ons-hf6x.csv", import.meta.url), "utf8");
 const bulletinHtml = readFileSync(
-  new URL("../fixtures/ons-public-sector-finances-august-2026.html", import.meta.url),
+  new URL("../../fixtures/ons-public-sector-finances-august-2026.html", import.meta.url),
   "utf8"
 );
 const editionUrl = FINANCES_BULLETIN_URL.replace("/latest", "/august2026");

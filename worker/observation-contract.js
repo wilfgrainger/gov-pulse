@@ -127,9 +127,11 @@ function nhsPublishedObservation(data, now) {
 // extractor; this binds the name to the function.
 const EXTRACTORS = { publishedObservation, nhsPublishedObservation };
 
-function declaredContract(section) {
+// A feed whose extractor is not shared passes it as `local`, keyed by the name
+// its definition declares.
+function declaredContract(section, local = {}) {
   const { maxAgeDays, extractor } = observationContracts()[section];
-  const extract = EXTRACTORS[extractor];
+  const extract = local[extractor] ?? EXTRACTORS[extractor];
   if (!extract) throw new Error(`Feed '${section}' names unknown observation extractor '${extractor}'`);
   return { maxAgeDays, extract };
 }
@@ -149,13 +151,12 @@ const contracts = {
   },
   gdpTracker: declaredContract("gdpTracker"),
   employmentStats: declaredContract("employmentStats"),
-  nationalDebt: {
-    maxAgeDays: 70,
+  nationalDebt: declaredContract("nationalDebt", {
     extract(data, now) {
       const date = parsePeriod(data?.baseDate, now);
       return date ? { raw: date.toISOString().slice(0, 10), date } : null;
     },
-  },
+  }),
   taxRevenue: declaredContract("taxRevenue"),
   migrationStats: declaredContract("migrationStats"),
   housePriceIndex: declaredContract("housePriceIndex"),
