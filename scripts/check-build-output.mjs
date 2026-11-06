@@ -1,6 +1,6 @@
 import { access, readFile, readdir, writeFile } from "node:fs/promises";
 import { execFileSync, spawn } from "node:child_process";
-import { publicationEnabled } from "../contracts/publication-policy.js";
+import { publicationPublished } from "../contracts/evidence-policy.js";
 
 execFileSync(process.execPath, ["scripts/generate-social-cards.mjs"], {
   env: process.env,
@@ -81,7 +81,7 @@ if (process.env.STATIC_EXPORT === "true") {
   });
   for (const asset of sectionAssets.filter((file) => /\.(json|csv)$/.test(file))) {
     const section = asset.replace(/\.(json|csv)$/, "");
-    if (!publicationEnabled(section)) {
+    if (!publicationPublished(section)) {
       printDiagnosticTail();
       console.error(`Static export contains a disabled or unknown section download: ${asset}`);
       process.exit(1);
@@ -131,7 +131,7 @@ if (process.env.STATIC_EXPORT === "true") {
   }
 
   const gdpHtml = await readFile("out/section/gdp/index.html", "utf8");
-  if (publicationEnabled("gdpTracker")) {
+  if (publicationPublished("gdpTracker")) {
     const requiredDiscoveryMarkers = [
       "<title>UK GDP growth | public-data.org</title>",
       'rel="canonical" href="https://public-data.org/section/gdp/"',
@@ -166,7 +166,7 @@ if (process.env.STATIC_EXPORT === "true") {
     }
   }
 
-  if (publicationEnabled("nationalDebt")) {
+  if (publicationPublished("nationalDebt")) {
     await checkSectionDownloads({ route: "national-debt", section: "nationalDebt", title: "National debt" });
   }
 }

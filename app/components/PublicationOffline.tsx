@@ -1,7 +1,23 @@
 import Link from "next/link";
 import BrandLogo from "./BrandLogo";
+import { anyEvidencePublished } from "@/contracts/publication-policy";
+import { FEED_CATALOG } from "@/contracts/source-catalog";
 
-export default function PublicationOffline({ title = "Data publications are temporarily offline" }: { title?: string }) {
+const GENERIC_TITLE = "Data publications are temporarily offline";
+
+function feedName(id: string): string {
+  return Object.hasOwn(FEED_CATALOG, id) ? FEED_CATALOG[id as keyof typeof FEED_CATALOG].displayName : id;
+}
+
+/**
+ * With no held feed named, or when nothing at all is published, this keeps the
+ * general "publications are offline" copy. When other evidence is published,
+ * it names the held publication instead of implying everything is offline.
+ */
+export default function PublicationOffline({ title, heldFeeds = [] }: { title?: string; heldFeeds?: string[] }) {
+  const named = heldFeeds.length > 0 && anyEvidencePublished();
+  const names = heldFeeds.map(feedName).join(", ");
+  title ??= named ? `${names} is temporarily offline` : GENERIC_TITLE;
   return (
     <div className="premium-offline">
       <header className="publication-masthead sticky top-0 z-50">
@@ -35,12 +51,20 @@ export default function PublicationOffline({ title = "Data publications are temp
           <article className="premium-offline__panel">
             <p className="eyebrow">Publication review</p>
             <h1 className="font-display mt-4 text-[clamp(2.4rem,7vw,4.75rem)] leading-[0.94]">{title}</h1>
-            <p className="mt-6 max-w-[58ch] text-base leading-7 text-[var(--muted)] md:text-lg md:leading-8">
-              We have taken data publications offline while we reverify the evidence. Figures return one verified section at a time. Nothing is shown until the source, period and geography can be checked.
-            </p>
-            <p className="mt-4 text-sm leading-7 text-[var(--muted)]">
-              NHS referral-to-treatment stays unavailable until a permitted download of the official CSV exists. Debt may appear alone when that series is current.
-            </p>
+            {named ? (
+              <p className="mt-6 max-w-[58ch] text-base leading-7 text-[var(--muted)] md:text-lg md:leading-8">
+                We have taken {names} offline while we reverify the evidence. Other verified publications remain available. Nothing is shown for this one until the source, period and geography can be checked.
+              </p>
+            ) : (
+              <>
+                <p className="mt-6 max-w-[58ch] text-base leading-7 text-[var(--muted)] md:text-lg md:leading-8">
+                  We have taken data publications offline while we reverify the evidence. Figures return one verified section at a time. Nothing is shown until the source, period and geography can be checked.
+                </p>
+                <p className="mt-4 text-sm leading-7 text-[var(--muted)]">
+                  NHS referral-to-treatment stays unavailable until a permitted download of the official CSV exists. Debt may appear alone when that series is current.
+                </p>
+              </>
+            )}
             <div className="premium-offline__actions">
               <Link prefetch={false} href="/about">
                 About

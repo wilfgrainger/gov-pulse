@@ -6,7 +6,7 @@ import {
 import type { MetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import { publicSnapshot } from "@/worker/public-snapshot";
 import { filterCurrentSnapshot, filterPublicationSnapshot } from "@/contracts/evidence-policy";
-import { publicationRouteEnabled } from "@/contracts/publication-policy";
+import { routeServes } from "@/app/lib/gateRoute";
 import householdStory from "@/app/content/stories/household-budgets";
 import publicFinanceStory from "@/app/content/stories/public-finances";
 
@@ -94,7 +94,7 @@ export function renderRssFeed(input: unknown, now: Date = new Date()) {
     "<category>Evidence edition</category>",
     "</item>",
   ].filter(Boolean).join("") : "";
-  const storyEntries = STORIES.filter((story) => publicationRouteEnabled(`/stories/${story.slug}/`)).map((story) => {
+  const storyEntries = STORIES.filter((story) => routeServes(`/stories/${story.slug}/`)).map((story) => {
     const link = absoluteUrl(`/stories/${story.slug}/`);
     const publishedDate = validDate(story.publishedAt);
     return [

@@ -21,7 +21,7 @@ import { sectionDistribution } from "../../lib/sectionDownloads";
 import { filterCurrentSnapshot } from "@/contracts/evidence-policy";
 import type { MetricsSnapshot } from "../../lib/metricsSnapshot";
 import EvidenceHoldNotice from "@/app/components/EvidenceHoldNotice";
-import { publicationEnabled, sectionPublication, productRouteAvailable } from "@/contracts/publication-policy";
+import { gateRoute, routeEvidenceHeld } from "@/app/lib/gateRoute";
 
 export function generateStaticParams() {
   return Object.keys(SECTION_CONTENT).map((id) => ({ id }));
@@ -33,7 +33,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  if (!productRouteAvailable(`/section/${id}/`)) return {};
+  if (gateRoute(`/section/${id}/`).access === "not-found") return {};
   const discovery = SECTION_DISCOVERY[id];
   if (!discovery) return {};
 
@@ -79,12 +79,11 @@ export default async function SectionPage({
   const section = SECTION_CONTENT[id as keyof typeof SECTION_CONTENT];
 
   if (!section) notFound();
-  if (!productRouteAvailable(`/section/${id}/`)) notFound();
+  if (gateRoute(`/section/${id}/`).access === "not-found") notFound();
 
   const SectionComponent = section.component;
   const dataSection = "dataSection" in section ? section.dataSection : null;
-  const publicationId = sectionPublication(id);
-  const evidenceHeld = SECTION_DISCOVERY[id]?.kind === "dataset" && Boolean(publicationId) && !publicationEnabled(publicationId);
+  const evidenceHeld = SECTION_DISCOVERY[id]?.kind === "dataset" && routeEvidenceHeld(`/section/${id}/`);
   const structuredData = evidenceHeld ? null : structuredDataForSection(id);
   const snapshot = dataSection && !evidenceHeld ? await readServerMetricsSnapshot() : null;
   const current = snapshot && filterCurrentSnapshot(snapshot, new Date()) as MetricsSnapshot | null;

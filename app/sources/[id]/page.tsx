@@ -1,5 +1,5 @@
 import EvidenceHoldNotice from "@/app/components/EvidenceHoldNotice";
-import { publicationEnabled } from "@/contracts/publication-policy";
+import { routeEvidenceHeld } from "@/app/lib/gateRoute";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -130,7 +130,7 @@ export async function generateMetadata({ params, searchParams }: SourcePageProps
   const { id } = await params;
   if (!/^[A-Za-z0-9._-]{1,160}$/.test(id)) return {};
   if (!Object.hasOwn(PUBLICATION_SOURCE_REGISTRY, id) && !Object.hasOwn(FEED_REGISTRY, id)) return {};
-  if (!publicationEnabled(id)) {
+  if (routeEvidenceHeld(`/sources/${id}/`)) {
     const title = sourceTitle(id, []);
     return {
       title: `${title} source record`,
@@ -157,7 +157,7 @@ export default async function SourceDetailPage({ params, searchParams }: SourceP
   const query = process.env.STATIC_EXPORT === "true" ? {} : await searchParams;
   const measureId = selectedMeasureId(query.measure);
   if (measureId === null) notFound();
-  if (!publicationEnabled(id)) {
+  if (routeEvidenceHeld(`/sources/${id}/`)) {
     return <HeldSourceRecord id={id} title={sourceTitle(id, [], undefined)} />;
   }
   const [{ snapshot, measures, status, invalidMeasureSelection }, editions] = await Promise.all([sourceData(id, measureId), readEditionSummaries()]);

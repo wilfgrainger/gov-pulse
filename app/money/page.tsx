@@ -1,5 +1,5 @@
 import EvidenceHoldNotice from "@/app/components/EvidenceHoldNotice";
-import { publicationEnabled } from "@/contracts/publication-policy";
+import { routeEvidenceHeld } from "@/app/lib/gateRoute";
 import type { Metadata } from "next";
 import PublicMoneyExplorer from "@/app/components/PublicMoneyExplorer";
 import PageHeader from "@/app/components/PageHeader";
@@ -11,14 +11,14 @@ import { isCurrentGovernmentContractsPayload } from "@/contracts/government-cont
 import { sumContractExclusions, type PublicAward } from "@/app/lib/publicMoney";
 
 export const metadata: Metadata = {
-  robots: { index: publicationEnabled("governmentContracts"), follow: true },
+  robots: { index: !routeEvidenceHeld("/money/"), follow: true },
   title: "Public money dossiers",
   description:
     "Inspect corrected government award notices and their disclosed value, buyer, supplier, revision and source links.",
 };
 
 export default async function PublicMoneyPage() {
-  const publicationIsEnabled = publicationEnabled("governmentContracts");
+  const publicationIsEnabled = !routeEvidenceHeld("/money/");
   const snapshot = publicationIsEnabled ? await readServerMetricsSnapshot() : null;
   const candidate = snapshot?.governmentContracts;
   const available = isCurrentGovernmentContractsPayload(candidate, new Date());

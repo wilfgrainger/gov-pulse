@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "note": "Non-feed routes only. /section/<slug>/ and /data/sections/<id>.{json,csv} are derived from the feed catalogue, /measure/<id>/ from measure-definitions.json and /sources/<id>/ from the publication config, all in contracts/route-manifest.js. [param] segments match one path segment. capability names an entry in config/product-capabilities.json that must also be available.",
+  "routes": [
+    { "path": "/", "kind": "static", "feeds": [], "gate": "product", "capability": "home" },
+    { "path": "/explore/", "kind": "static", "feeds": [], "gate": "product", "capability": "explore" },
+    { "path": "/measure/", "kind": "static", "feeds": [], "gate": "product", "capability": "measureLibrary" },
+    { "path": "/compare/", "kind": "static", "feeds": [], "gate": "product", "capability": "compare" },
+    { "path": "/briefing/", "kind": "static", "feeds": [], "gate": "product", "capability": "briefing" },
+    { "path": "/cost-of-living/", "kind": "static", "feeds": [], "gate": "product", "capability": "costOfLiving" },
+    { "path": "/sources/", "kind": "static", "feeds": [], "gate": "product", "capability": "sources" },
+    { "path": "/calendar/", "kind": "evidence", "feeds": ["releaseCalendar", "nhsReleaseCalendar"], "gate": "any-published", "capability": "calendar" },
+    { "path": "/money/", "kind": "evidence", "feeds": ["governmentContracts"], "gate": "any-published", "capability": "publicMoney" },
+    { "path": "/money/buyer/[id]/", "kind": "evidence", "feeds": ["governmentContracts"], "gate": "any-published", "capability": "publicMoney" },
+    { "path": "/money/supplier/[id]/", "kind": "evidence", "feeds": ["governmentContracts"], "gate": "any-published", "capability": "publicMoney" },
+    { "path": "/editions/", "kind": "evidence", "feeds": ["editionArchive"], "gate": "any-published", "capability": "editionArchive" },
+    { "path": "/editions/[id]/", "kind": "evidence", "feeds": ["editionArchive"], "gate": "any-published", "capability": "editionArchive" },
+    { "path": "/stories/household-budgets/", "kind": "evidence", "feeds": ["storyHouseholdBudgets"], "gate": "any-published", "capability": "storyHouseholdBudgets" },
+    { "path": "/stories/public-finances/", "kind": "evidence", "feeds": ["storyPublicFinances"], "gate": "any-published", "capability": "storyPublicFinances" },
+    { "path": "/stories/[slug]/", "kind": "evidence", "feeds": [], "gate": "all-of" },
+    { "path": "/feed.xml", "kind": "api", "feeds": [], "gate": "none" },
+    { "path": "/sitemap.xml", "kind": "api", "feeds": [], "gate": "none" },
+    { "path": "/robots.txt", "kind": "api", "feeds": [], "gate": "none" },
+    { "path": "/about/", "kind": "static", "feeds": [], "gate": "none" },
+    { "path": "/editorial-policy/", "kind": "static", "feeds": [], "gate": "none" },
+    { "path": "/independence/", "kind": "static", "feeds": [], "gate": "none" },
+    { "path": "/contact/", "kind": "static", "feeds": [], "gate": "none" },
+    { "path": "/corrections/", "kind": "static", "feeds": [], "gate": "none" }
+  ]
+}

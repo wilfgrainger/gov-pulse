@@ -1,5 +1,5 @@
 import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationRouteEnabled, publicRouteAvailable } from "@/contracts/publication-policy";
+import { gateRoute } from "@/app/lib/gateRoute";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PageHeader from "@/app/components/PageHeader";
@@ -18,7 +18,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  if (!publicationRouteEnabled(`/stories/${slug}/`)) {
+  if (gateRoute(`/stories/${slug}/`).access !== "serve") {
     return {
       title: "Data publications are temporarily offline",
       description: "Authored story publications are temporarily unavailable.",
@@ -31,7 +31,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function GuidedStoryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  if (!publicRouteAvailable(`/stories/${slug}/`)) return <PublicationOffline />;
+  const gate = gateRoute(`/stories/${slug}/`);
+  if (gate.access !== "serve") return <PublicationOffline heldFeeds={gate.heldFeeds} />;
   const story = stories.find((candidate) => candidate.slug === slug);
   if (!story) notFound();
   const snapshot = await readServerMetricsSnapshot();
