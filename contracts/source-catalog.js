@@ -1,4 +1,5 @@
 import { SOURCE_CATALOG, SOURCE_CATALOG_VERSION, deepFreeze } from "./source-definitions.js";
+import { definition as migrationStatsDefinition } from "../feeds/migration/feed.js";
 import { catalogEntryOf } from "../feeds/define-feed.js";
 import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
 import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
@@ -132,22 +133,8 @@ export const FEED_CATALOG = deepFreeze({
       caveat: "The monthly receipts measure is not a tax-burden ratio, category breakdown, forecast or average-per-person estimate.",
     },
   }),
-  migrationStats: defineFeed({
-    id: "migrationStats", registry: "feed", title: "Long-term international migration", displayName: "Migration",
-    evidenceClass: "official-statistics", geography: { code: "UK", label: "United Kingdom" },
-    sourceIds: ["ons-long-term-migration-bulletin", "ons-long-term-migration-dataset"], automation: "automated", collectionLayer: "worker", frequency: "periodic",
-    retrieval: "scheduled-publication-check", refreshCadence: "daily", publicationCadence: "periodic",
-    retrievalMaxAgeMs: 36 * HOUR_MS, publicationRequirement: "required",
-    freshnessWindow: "Checked within 36 hours",
-    freshnessRationale: "The latest ONS edition is checked regularly, while its publication period is assessed separately.",
-    uiSourceLabels: ["ONS Long-term international migration"],
-    editorial: {
-      publicationPeriod: "Latest ONS long-term international migration bulletin edition",
-      unit: "People",
-      revisionStatus: "Official statistics in development; the newest estimates are provisional for one year and earlier periods may be revised",
-      caveat: "Long-term migration estimates cover people moving for 12 months or more. Visa grants and nationality tables are different administrative measures and are not mixed into this headline.",
-    },
-  }),
+  // Projected from feeds/migration/feed.js (the single declaration).
+  migrationStats: defineFeed(catalogEntryOf(migrationStatsDefinition)),
   // Projected from feeds/house-price-index/feed.js (the single declaration).
   housePriceIndex: defineFeed(catalogEntryOf(housePriceIndexDefinition)),
   // Projected from feeds/real-wages/feed.js (the single declaration).

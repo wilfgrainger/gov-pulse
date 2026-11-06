@@ -1,5 +1,7 @@
-import { fetchOfficialText as fetchSourceText } from "./official-source-fetch.js";
-import { parseOnsNextReleaseDate } from "./ons-release-date.js";
+import { fetchOfficialText as fetchSourceText } from "../../worker/official-source-fetch.js";
+import { parseOnsNextReleaseDate } from "../../worker/ons-release-date.js";
+import { decodeHtml } from "../_kit/html.js";
+import { onsBulletinCollect } from "../_kit/ons-bulletin.js";
 
 const DATASET_URL =
   "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/longterminternationalimmigrationemigrationandnetmigrationflowsprovisional";
@@ -20,22 +22,6 @@ const MONTHS = {
   november: 10,
   december: 11,
 };
-
-function decodeHtml(value) {
-  return String(value)
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;|&#160;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&minus;|&#8722;/gi, "-")
-    .replace(/&ndash;|&#8211;/gi, "-")
-    .replace(/&mdash;|&#8212;/gi, "-")
-    .replace(/&rsquo;|&#8217;|&#39;/gi, "'")
-    .replace(/&quot;|&#34;/gi, '"')
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 function integer(value, label) {
   const parsed = Number.parseInt(String(value).replace(/,/g, ""), 10);
@@ -294,10 +280,14 @@ async function buildMigrationStats(fetchImpl = fetch) {
   };
 }
 
+/** Feed interface (target design 2.3); see onsBulletinCollect. */
+const collect = onsBulletinCollect(buildMigrationStats);
+
 export {
   BULLETIN_BASE_URL,
   DATASET_URL,
   buildMigrationStats,
+  collect,
   discoverLatestEdition,
   discoverMigrationHistoryUrl,
   fetchOfficialText,

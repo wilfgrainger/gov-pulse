@@ -7,7 +7,7 @@ import { downloadGeography, downloadIds } from "../../feeds/registry.js";
 // order to the pre-migration list.
 const HAND_LISTED_IDS = [
   "electionPolling", "nationalDebt", "gdpTracker", "sentimentPulse",
-  "taxRevenue", "employmentStats", "crimeStatistics", "nhsStats", "migrationStats",
+  "taxRevenue", "employmentStats", "crimeStatistics", "nhsStats",
 ] as const;
 type DownloadIds = readonly [
   "electionPolling", "nationalDebt", "gdpTracker", "sentimentPulse",
@@ -30,7 +30,7 @@ const GEOGRAPHY: Record<(typeof SECTION_DOWNLOAD_IDS)[number], string> = {
   employmentStats: "United Kingdom",
   crimeStatistics: "England and Wales (check each series)",
   nhsStats: "England",
-  migrationStats: "United Kingdom",
+  migrationStats: DECLARED_GEOGRAPHY.migrationStats,
   housePriceIndex: DECLARED_GEOGRAPHY.housePriceIndex,
   realWages: DECLARED_GEOGRAPHY.realWages,
 };

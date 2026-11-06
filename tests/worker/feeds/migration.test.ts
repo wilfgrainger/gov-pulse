@@ -5,12 +5,13 @@ import {
   BULLETIN_BASE_URL,
   DATASET_URL,
   buildMigrationStats,
+  collect,
   discoverLatestEdition,
   discoverMigrationHistoryUrl,
   fetchOfficialText,
   parseMigrationBulletin,
   parseMigrationHistoryCsv,
-} from "@/worker/migration";
+} from "@/feeds/migration/parse.js";
 
 const datasetHtml = `
 <html><body>
@@ -133,6 +134,19 @@ YE Dec 20,93000,662000,569000,,,`
     expect(result.annualDelta.netMigration).toBe(-160_000);
     expect(result).not.toHaveProperty("visaTypes");
     expect(result).not.toHaveProperty("topNationalities");
+  });
+
+  it("collect wraps the unchanged builder output with observation and source", async () => {
+    const fetchImpl = vi.fn(async (url: string) => ({
+      ok: true,
+      status: 200,
+      text: async () => (url === DATASET_URL ? datasetHtml : url.endsWith("data.csv") ? historyCsv : bulletinHtml),
+    })) as unknown as typeof fetch;
+    const now = new Date("2026-05-21T08:00:00Z");
+    const result = await collect({ fetch: fetchImpl, now });
+    expect(result.data).toEqual(await buildMigrationStats(fetchImpl));
+    expect(result.observation).toMatchObject({ period: "YE December 2025", publishedAt: "2026-05-21" });
+    expect(result.source).toMatchObject({ edition: "yearendingdecember2025", fetchedAt: now.toISOString() });
   });
 
   it("fails closed when the ONS headline arithmetic does not reconcile", () => {

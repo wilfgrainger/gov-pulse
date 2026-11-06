@@ -40,7 +40,7 @@ import {
   DEBT_SERIES_URL,
   buildNationalDebt,
 } from "./national-debt.js";
-import { buildMigrationStats } from "./migration.js";
+import { buildMigrationStats } from "../feeds/migration/parse.js";
 import { buildHousePriceIndex } from "../feeds/house-price-index/parse.js";
 import { buildRealWagesStats } from "../feeds/real-wages/parse.js";
 import {

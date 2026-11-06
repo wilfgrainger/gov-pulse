@@ -49,8 +49,8 @@
     },
     {
       "section": "migrationStats",
-      "collector": "worker/migration.js",
-      "normalizer": "worker/migration.js",
+      "collector": "feeds/migration/parse.js",
+      "normalizer": "feeds/migration/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",
