@@ -15,6 +15,36 @@ it("accepts a complete publication after the reader routes report the expected r
   expect(log.info).toHaveBeenCalledWith("Release revision verified on 2 reader routes.");
   expect(log.warn).not.toHaveBeenCalled();
 });
+it("passes a healthy site whose required feed is deliberately held, without a warning", async () => {
+  const log = { info: vi.fn(), warn: vi.fn() };
+  await releaseSmoke({
+    url: "https://public-data.org/",
+    revision,
+    log,
+    fetchImpl: async (url: URL) =>
+      new Response(
+        url.pathname.endsWith("health.json")
+          ? '{"status":"ready","ready":true,"held":["nhsStats"]}'
+          : html,
+      ),
+  });
+  expect(log.warn).not.toHaveBeenCalled();
+  expect(log.info).toHaveBeenCalledWith("Evidence feeds held by publication policy: nhsStats.");
+});
+it.each(['{"ready":true,"held":"nhsStats"}', '{"ready":true,"held":[1]}'])(
+  "rejects a malformed held list: %s",
+  async (body) => {
+    await expect(
+      releaseSmoke({
+        url: "https://public-data.org/",
+        revision,
+        attempts: 1,
+        fetchImpl: async (url: URL) =>
+          new Response(url.pathname.endsWith("health.json") ? body : html),
+      }),
+    ).rejects.toThrow("invalid held list");
+  },
+);
 it("accepts deployed code when evidence is explicitly degraded", async () => {
   const log = { info: vi.fn(), warn: vi.fn() };
   await releaseSmoke({

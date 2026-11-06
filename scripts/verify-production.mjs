@@ -194,6 +194,13 @@ export function degradedMissingSections(text) {
 export function verifyHealthJson(text, options = {}) {
   try {
     const payload = JSON.parse(text);
+    if (
+      payload?.held !== undefined &&
+      (!Array.isArray(payload.held) ||
+        !payload.held.every((id) => typeof id === "string" && id.length > 0))
+    ) {
+      return ["public data health endpoint returned an invalid held list"];
+    }
     if (payload?.status === "ready" && payload?.ready === true) return [];
     if (options.allowDegraded === true && degradedMissingSections(text).length > 0) {
       return [];

@@ -83,6 +83,12 @@ after exact-head route/health checks and the affected public journey.
 - A degraded edition declares `meta.publicationState = "degraded"` and an exact
   `missingRequiredSections` manifest, and `/data/health.json` reports
   `ready: false`.
+- "Required" applies to feeds the publication config publishes. A required
+  feed that `config/publications.json` holds is listed by id in
+  `/data/health.json` as `held: [...]` (omitted when empty). It is not a
+  failure and never makes health degraded; its evidence stays unavailable.
+  A published required feed with no current observation still reports
+  `status: "degraded"` with `missingRequiredSections`.
 - A family that `config/publications.json` marks `published` but that has no
   current section is listed in `/data/health.json` as
   `unavailableSections: [{ id, reason }]`, where `reason` is one of

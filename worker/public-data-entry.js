@@ -477,33 +477,15 @@ function isPublisherStatus(status) {
   );
 }
 
-// Sections the committed publication currently holds, without reading it.
-// Published sections are judged live from the prepared public artifact,
-// which the read path has just currentness-filtered. Sections the public
-// artifact never carries (held evidence) come from the publisher's small
-// status record: present until their recorded presence deadline. A status
-// record written before per-section deadlines existed keeps its sections as
-// included at publish time.
-function currentPublicationSections(publicSnapshot, status, now = new Date()) {
-  const sections = new Set(
+// Sections the public artifact currently carries. The read path has just
+// currentness-filtered it, so presence is live. Held evidence is never a
+// public section: health reports it separately and never counts it as missing.
+function currentPublicationSections(publicSnapshot) {
+  return new Set(
     Object.keys(publicSnapshot.meta.sources).filter((section) =>
       Object.prototype.hasOwnProperty.call(publicSnapshot, section)
     )
   );
-  const deadlines =
-    status.sectionValidUntil && typeof status.sectionValidUntil === "object"
-      ? status.sectionValidUntil
-      : null;
-  for (const section of status.includedSections) {
-    if (publicationPublished(section)) continue;
-    if (!deadlines) {
-      sections.add(section);
-      continue;
-    }
-    const deadline = Date.parse(String(deadlines[section] ?? ""));
-    if (Number.isFinite(deadline) && deadline > now.getTime()) sections.add(section);
-  }
-  return sections;
 }
 
 // Health reads two small-to-bounded records: the prepared public artifact
@@ -527,10 +509,17 @@ async function healthResponse(request, env) {
     );
   }
 
-  const currentSections = currentPublicationSections(prepared.snapshot, status, now);
+  // "Required" applies to feeds the publication config publishes. A required
+  // feed that policy deliberately holds is reported in `held` (ids only) and is
+  // neither missing nor a failure; its evidence stays unavailable.
+  const currentSections = currentPublicationSections(prepared.snapshot);
   const missingRequiredSections = REQUIRED_PUBLISHED_SECTION_IDS.filter(
-    (section) => !currentSections.has(section)
+    (section) => publicationPublished(section) && !currentSections.has(section)
   );
+  const heldSections = REQUIRED_PUBLISHED_SECTION_IDS.filter(
+    (section) => !publicationPublished(section)
+  );
+  const held = heldSections.length > 0 ? { held: heldSections } : {};
   const unavailableSections = publicUnavailableSections(prepared.snapshot, status);
   const unavailable = unavailableSections.length > 0 ? { unavailableSections } : {};
 
@@ -541,6 +530,7 @@ async function healthResponse(request, env) {
         ready: false,
         degraded: true,
         missingRequiredSections,
+        ...held,
         ...unavailable,
       },
       { head: request.method === "HEAD" }
@@ -548,7 +538,7 @@ async function healthResponse(request, env) {
   }
 
   return json(
-    { status: "ready", ready: true, ...unavailable },
+    { status: "ready", ready: true, ...held, ...unavailable },
     { head: request.method === "HEAD" }
   );
 }

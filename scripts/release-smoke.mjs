@@ -57,6 +57,16 @@ export async function releaseSmoke({
         typeof status.ready !== "boolean"
       )
         throw new Error("Evidence health route returned an invalid contract");
+      // `held` lists required feeds that policy deliberately withholds. It is
+      // informational: a held feed is neither a failure nor evidence.
+      if (
+        status.held !== undefined &&
+        (!Array.isArray(status.held) ||
+          !status.held.every((id) => typeof id === "string" && id.length > 0))
+      )
+        throw new Error("Evidence health route returned an invalid held list");
+      if (Array.isArray(status.held) && status.held.length > 0)
+        log.info(`Evidence feeds held by publication policy: ${status.held.join(", ")}.`);
       if (!status.ready)
         log.warn(
           "Evidence is degraded or unavailable; inspect source health separately.",
