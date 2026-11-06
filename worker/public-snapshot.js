@@ -1,8 +1,4 @@
-import { filterPublicationSnapshot } from "../contracts/publication-policy.js";
-import {
-  filterCurrentSnapshot,
-  snapshotValidityDeadline,
-} from "./publication-currentness.js";
+import { filterPublicationSnapshot, filterCurrentSnapshot, snapshotValidityDeadline } from "../contracts/evidence-policy.js";
 
 const PUBLIC_SNAPSHOT_KEY = "v14:publication:public";
 

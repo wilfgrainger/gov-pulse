@@ -12,7 +12,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SECTION_BUILDERS } from "@/worker/section-builders";
-import { BULLETIN_LATEST_URL } from "@/worker/house-price-index";
+import { BULLETIN_LATEST_URL } from "@/feeds/house-price-index/parse.js";
 import { ONS_PUBLICATION_LANDING_URL } from "@/contracts/crime-statistics";
 import publicWorker from "@/worker/public-data-entry";
 import { RUN_PREFIX, createRun, finaliseRun } from "@/worker/queued-publication-entry";
@@ -20,7 +20,7 @@ import { PUBLICATION_CURRENT_KEY, PUBLICATION_STATUS_KEY } from "@/worker/public
 import { FEED_REGISTRY_VERSION, REQUIRED_PUBLISHED_SECTION_IDS } from "@/worker/feed-registry";
 import { PUBLIC_SNAPSHOT_KEY, buildPublicSnapshotArtifact } from "@/worker/public-snapshot";
 import { unavailableReasonFor } from "@/worker/publication-availability";
-import { parseOnsCrimeBulletin } from "@/worker/live-crime-collector";
+import { parseOnsCrimeBulletin } from "@/feeds/crime-stats/parse.js";
 import {
   CRIME_BULLETIN_HTML,
   CRIME_EDITION_URL as LEGACY_CRIME_EDITION_URL,

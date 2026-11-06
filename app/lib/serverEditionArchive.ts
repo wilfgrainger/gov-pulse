@@ -1,5 +1,5 @@
 import { SITE_DISCOVERY } from "@/app/lib/discovery";
-import { filterPublicationCatalog, filterPublicationSummary, publicationPublished } from "@/contracts/publication-policy";
+import { filterPublicationCatalog, filterPublicationSummary, publicationPublished } from "@/contracts/evidence-policy";
 import { validateMeasureRecord } from "@/app/lib/measureCatalog";
 import type { MeasureCatalog } from "@/app/lib/measureCatalog";
 import type { MetricsSnapshot } from "@/app/lib/metricsSnapshot";

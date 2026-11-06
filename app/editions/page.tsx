@@ -1,6 +1,6 @@
 import PublicationOffline from "@/app/components/PublicationOffline";
 import RevisionLedger from "@/app/components/RevisionLedger";
-import { publicRouteAvailable } from "@/contracts/publication-policy";
+import { gateRoute } from "@/app/lib/gateRoute";
 import type { Metadata } from "next";
 import Link from "next/link";
 import SectionNav from "@/app/components/SectionNav";
@@ -15,7 +15,8 @@ export const metadata: Metadata = {
 };
 
 export default async function EditionsPage() {
-  if (!publicRouteAvailable("/editions/")) return <PublicationOffline />;
+  const gate = gateRoute("/editions/");
+  if (gate.access !== "serve") return <PublicationOffline heldFeeds={gate.heldFeeds} />;
   const staticExport = process.env.STATIC_EXPORT === "true";
   const editions = staticExport ? null : await readEditionSummaries();
   return (

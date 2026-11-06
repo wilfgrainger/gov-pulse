@@ -5,7 +5,7 @@ import {
   buildCurrentCrimeStatisticsPayload,
   isCurrentCrimeStatisticsPayload,
 } from "@/contracts/crime-statistics";
-import { parseOnsCrimeBulletin } from "@/worker/live-crime-collector";
+import { parseOnsCrimeBulletin } from "@/feeds/crime-stats/parse.js";
 import {
   CRIME_BULLETIN_HTML,
   CRIME_EDITION_URL,

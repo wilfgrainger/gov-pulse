@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { publicationEnabled } from "@/contracts/publication-policy";
+import { routeEvidenceHeld } from "@/app/lib/gateRoute";
 import { measureForDisplay, validateMeasureRecord } from "@/app/lib/measureCatalog";
 import { MEASURES } from "@/app/lib/measureDefinitions";
 
@@ -13,7 +13,7 @@ function archivedMeasure(catalog: unknown, id: string) {
 export default function StoryEvidence({ measureIds, catalog }: { measureIds: string[]; catalog: unknown }) {
   const measures = measureIds.map((id) => {
     const definition = MEASURES.find((measure) => measure.id === id) ?? null;
-    const evidenceHeld = definition ? !publicationEnabled(definition.section) : false;
+    const evidenceHeld = definition ? routeEvidenceHeld(`/measure/${id}/`) : false;
     const current = evidenceHeld ? null : measureForDisplay(catalog, id);
     return {
       id,

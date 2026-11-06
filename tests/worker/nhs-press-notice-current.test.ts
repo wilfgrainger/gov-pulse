@@ -2,7 +2,7 @@
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { parseNhsRttPressNotice } from "@/worker/nhs-press-notice";
+import { parseNhsRttPressNotice } from "@/feeds/nhs/press-notice.js";
 
 const specialties = [
   "General Surgery Service 381,497 62.7%",

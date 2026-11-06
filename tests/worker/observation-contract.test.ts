@@ -182,7 +182,7 @@ describe("observation currentness contracts", () => {
 });
 
 it('keeps a newly published lagged release valid through the public delivery boundary', async () => {
-  const { sectionCurrentness } = await import('../../worker/publication-currentness.js');
+  const { sectionCurrentness } = await import('../../contracts/evidence-policy.js');
   const now = new Date('2026-09-07T12:00:00Z');
   const descriptors = currentDescriptors();
   applyObservationContracts(descriptors, () => now);

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   isCurrentNhsRttPayload,
   normalizeNhsRttPayload,
-} from "@/worker/nhs-rtt";
+} from "@/feeds/nhs/rtt.js";
 
 const latestHistory = {
   medianWaitWeeks: 12.4,
@@ -119,9 +119,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-// NHS RTT is served in the live queue path by live-nhs-publication-collector.js;
+// NHS RTT is served in the live queue path by feeds/nhs/parse.js;
 // the doll's /ingest + enforceCurrentNhsRtt HTTP layer was removed in the worker
-// flatten. Its fail-closed currentness contract lives in worker/nhs-rtt.js and is
+// flatten. Its fail-closed currentness contract lives in feeds/nhs/rtt.js and is
 // covered here (and in nhs-rtt.test.ts / nhs-press-notice-current.test.ts).
 describe("NHS RTT currentness contract", () => {
   it("normalizes a raw payload and accepts it as current", () => {

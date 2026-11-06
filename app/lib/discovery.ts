@@ -3,8 +3,7 @@ import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
 import { DATA_SOURCES } from "@/app/lib/config";
 import { isCompatibleMetricsSnapshot, type MetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import { publicSnapshot } from "@/worker/public-snapshot";
-import { sectionCurrentness } from "@/worker/publication-currentness";
-import { publicationPublished, filterPublicationSnapshot } from "@/contracts/publication-policy";
+import { sectionCurrentness, publicationPublished, filterPublicationSnapshot, sourceStatusOk } from "@/contracts/evidence-policy";
 
 export type DiscoveryKind = "dataset" | "tool";
 
@@ -92,7 +91,7 @@ export function getBuildPublication(
   const typedSnapshot = snapshot as MetricsSnapshot;
   const source = typedSnapshot.meta.sources[section.sourceKey];
   const data = typedSnapshot[section.sourceKey];
-  if (!source || source.status !== "ok" || !data) {
+  if (!sourceStatusOk(source) || !data) {
     return null;
   }
   if (!sectionCurrentness(section.sourceKey, data, source, now).current) {

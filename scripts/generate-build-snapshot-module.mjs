@@ -1,7 +1,7 @@
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { filterCurrentSnapshot } from "../worker/publication-currentness.js";
+import { filterCurrentSnapshot } from "../contracts/evidence-policy.js";
 import { buildEditionSummary } from "../worker/edition-summary.js";
 import { buildMeasureCatalog } from "../worker/measure-catalog.js";
 import { publicSnapshot } from "../worker/public-snapshot.js";

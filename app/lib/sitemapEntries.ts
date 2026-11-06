@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
-import { publicRouteAvailable } from "@/contracts/publication-policy";
+import { routeServes } from "@/app/lib/gateRoute";
 import {
   PUBLIC_SECTION_IDS,
   SECTION_DISCOVERY,
@@ -51,7 +51,7 @@ export function buildSitemap(
     },
   ];
 
-  const sectionRoutes: MetadataRoute.Sitemap = PUBLIC_SECTION_IDS.filter((id) => publicRouteAvailable(sectionPath(id))).map((id) => {
+  const sectionRoutes: MetadataRoute.Sitemap = PUBLIC_SECTION_IDS.filter((id) => routeServes(sectionPath(id))).map((id) => {
     const publication = getBuildPublication(SECTION_DISCOVERY[id], rawSnapshot, now);
     return {
       url: absoluteUrl(sectionPath(id)),
@@ -61,5 +61,5 @@ export function buildSitemap(
     };
   });
 
-  return [...staticRoutes.filter((entry) => publicRouteAvailable(new URL(entry.url).pathname)), ...sectionRoutes];
+  return [...staticRoutes.filter((entry) => routeServes(new URL(entry.url).pathname)), ...sectionRoutes];
 }

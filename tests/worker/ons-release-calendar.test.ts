@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { collectOnsReleaseCalendar, parseOnsReleaseCalendarPage } from "../../worker/ons-release-calendar.js";
+import { collectOnsReleaseCalendar, parseOnsReleaseCalendarPage } from "@/feeds/release-calendar/parse.js";
 
 const now = new Date("2026-10-03T12:00:00.000Z");
 

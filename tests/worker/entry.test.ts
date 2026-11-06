@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FINANCES_BULLETIN_URL } from "@/worker/economy-evidence";
+import { FINANCES_BULLETIN_URL } from "@/feeds/tax/finances.js";
 import { SECTION_BUILDERS } from "@/worker/section-builders";
 
 const debtCsv = `Title,PS: Net Debt (excluding public sector banks): £bn: CPNSA

@@ -3,7 +3,6 @@ import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 
 const contractPath = "contracts/betting-markets.js";
-const wrapperPath = "worker/betting-markets.js";
 const uiPath = "app/components/BettingOdds.tsx";
 
 function source(path: string) {
@@ -15,13 +14,6 @@ describe("betting contract boundary", () => {
     const contract = source(contractPath);
     expect(contract).not.toMatch(/^import\s/m);
     expect(contract).not.toMatch(/@\/app|\.\.\/worker|cloudflare|zod|ajv/i);
-  });
-
-  it("keeps Worker imports as a small compatibility wrapper", () => {
-    const wrapper = source(wrapperPath);
-    expect(wrapper).toMatch(/from "\.\.\/contracts\/betting-markets\.js"/);
-    expect(wrapper).not.toMatch(/function\s+/);
-    expect(Buffer.byteLength(wrapper)).toBeLessThan(500);
   });
 
   it("removes the duplicate field-by-field UI validator", () => {

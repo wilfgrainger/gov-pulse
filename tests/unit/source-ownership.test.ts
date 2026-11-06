@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
-import { PUBLICATION_CONFIG } from "@/contracts/publication-policy.js";
+import { PUBLICATION_CONFIG } from "@/contracts/evidence-policy.js";
 import { FEED_CATALOG } from "@/contracts/source-catalog.js";
 import { PUBLICATION_SOURCE_REGISTRY } from "@/worker/feed-registry";
-import { INTERNATIONAL_SOURCES } from "@/worker/international-comparison-publication";
+import { INTERNATIONAL_SOURCES } from "@/feeds/international-comparison/parse.js";
 import {
   validateSourceOwnership,
 } from "@/scripts/check-source-ownership.mjs";
@@ -129,7 +129,7 @@ describe("source ownership inventory", () => {
 
   it("rejects nonexistent source implementation paths", () => {
     const invalid = structuredClone(inventory);
-    invalid.sources[0].collector = ["worker/DoesNotExist.js", "worker/economic-indicators.js"];
+    invalid.sources[0].collector = ["worker/DoesNotExist.js", "feeds/economy/parse.js"];
     const failures = validateSourceOwnership(invalid).join(" ");
     expect(failures).toMatch(/collector.*does not exist/i);
 
@@ -146,8 +146,8 @@ describe("source ownership inventory", () => {
     evolved.livePublicationKey = "publication:current";
     evolved.publicPublicationKey = "publication:public";
     evolved.sources[0].collector = [
-      "worker/economic-indicators.js",
-      "worker/economy-evidence.js",
+      "feeds/economy/parse.js",
+      "feeds/_kit/ons-economy.js",
     ];
     delete evolved.simplification;
 

@@ -2,8 +2,8 @@ import { pathToFileURL } from "node:url";
 import { isCurrentGovernmentContractsPayload } from "../contracts/government-contracts.js";
 import {
   FEED_REGISTRY_VERSION,
-} from "../worker/feed-registry.js";
-import { filterCurrentSnapshot } from "../worker/publication-currentness.js";
+} from "../feeds/registry.js";
+import { filterCurrentSnapshot } from "../contracts/evidence-policy.js";
 import { validatePublicProjection, validateSnapshot } from "./lib/publication-validation.mjs";
 
 const maximumBuildAgeMs = 6 * 60 * 60 * 1000;

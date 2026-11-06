@@ -15,7 +15,7 @@ import {
   parseSipriTop40Text,
   parseWorldBankSeries,
   parseWorldBankSeriesHistory,
-} from "@/worker/international-comparison-sources";
+} from "@/feeds/international-comparison/sources.js";
 
 describe("international comparison source transforms", () => {
   it("pins current primary sources and the corrected Ireland comparison membership", () => {

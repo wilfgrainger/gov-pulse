@@ -23,7 +23,7 @@ import {
   previousCompleteDays,
   rankDailyAwards,
   refreshGovernmentContracts,
-} from "@/worker/government-contracts-cloudflare";
+} from "@/feeds/government-contracts/parse.js";
 import { ukNationFromPostcode } from "@/contracts/government-contracts";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 import { archiveEdition, EDITION_INDEX_KEY, readEdition } from "@/worker/edition-archive";

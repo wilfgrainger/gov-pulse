@@ -1,7 +1,7 @@
 import { refreshSectionPayload } from "./publication-entry.js";
 import { collectExternalSection } from "./live-feed-collectors.js";
 import { collectionPlanFor } from "./publication-plan.js";
-import { currentSectionRecord } from "./publication-currentness.js";
+import { currentSectionRecord } from "../contracts/evidence-policy.js";
 import { RUN_PREFIX, RUN_TTL_SECONDS, kvGet, kvPut } from "./publication-run-store.js";
 
 const PUBLICATION_SECTION_PREFIX = "v12:publication:section:";

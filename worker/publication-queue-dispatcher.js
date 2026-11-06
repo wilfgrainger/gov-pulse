@@ -1,4 +1,4 @@
-import { INTERNATIONAL_COMPARISON_REFRESH_BATCHES } from "./international-comparison-publication.js";
+import { INTERNATIONAL_COMPARISON_REFRESH_BATCHES } from "../feeds/international-comparison/parse.js";
 import {
   RUN_TTL_SECONDS,
   bootstrapRunId,

@@ -1,0 +1,58 @@
+// @vitest-environment node
+
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  refreshInternationalComparison: vi.fn().mockResolvedValue({ updated: true, due: false }),
+}));
+
+// Keep the real module surface (feeds/index.js registers its collectShard and
+// combine) and replace only the refresh the queue job calls.
+vi.mock("@/feeds/international-comparison/parse.js", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  ...mocks,
+}));
+
+import { processQueueJob } from "@/worker/queued-publication-entry";
+
+afterEach(() => vi.resetAllMocks());
+
+describe("international comparison queue refresh", () => {
+  it("forwards an explicit forced refresh to the isolated comparison publisher", async () => {
+    const env = {};
+    const fetchImpl = vi.fn();
+    const now = new Date("2026-10-03T12:00:00.000Z");
+
+    await processQueueJob(
+      { type: "refresh-international-comparison", force: true },
+      env,
+      {},
+      { fetchImpl, now },
+    );
+
+    expect(mocks.refreshInternationalComparison).toHaveBeenCalledWith(env, {
+      fetchImpl,
+      now,
+      force: true,
+    });
+  });
+
+  it("forwards a bounded source batch to the isolated comparison publisher", async () => {
+    const env = {};
+    const sourceIds = ["world-bank-health-2024"];
+    mocks.refreshInternationalComparison.mockResolvedValue({ updated: true, due: false });
+
+    await processQueueJob(
+      { type: "refresh-international-comparison", force: true, sourceIds },
+      env,
+      {},
+    );
+
+    expect(mocks.refreshInternationalComparison).toHaveBeenCalledWith(env, {
+      fetchImpl: fetch,
+      now: expect.any(Date),
+      force: true,
+      sourceIds,
+    });
+  });
+});

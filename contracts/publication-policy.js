@@ -1,48 +1,14 @@
-import PUBLICATION_CONFIG from "../config/publications.json" with { type: "json" };
 import PRODUCT_CAPABILITIES from "../config/product-capabilities.json" with { type: "json" };
-import definitions from "./measure-definitions.json" with { type: "json" };
 import { FEED_CATALOG } from "./source-catalog.js";
-
-const PUBLICATION_STATES = Object.freeze(["published", "held", "retired"]);
-const NON_SOURCE_PUBLICATION_IDS = new Set([
-  "editionArchive",
-  "storyHouseholdBudgets",
-  "storyPublicFinances",
-]);
+import { PUBLICATION_CONFIG, publicationPublished } from "./evidence-policy.js";
 
 /**
- * @typedef {{state:"published"|"held"|"retired", reasonCode:string, reason:string, sections?:string[]}} PublicationDecision
- * @typedef {{version:number, publications: Record<string, PublicationDecision>}} PublicationConfig
+ * @typedef {import("./evidence-policy.js").PublicationConfig} PublicationConfig
  * @typedef {{version:number, capabilities: Record<string, {available:boolean}>}} ProductCapabilityConfig
  */
 
-/** @param {string} id @param {PublicationConfig} config */
-function publicationDecision(id, config = PUBLICATION_CONFIG) {
-  const decision = config?.publications?.[id];
-  if (!decision || !PUBLICATION_STATES.includes(decision.state)) return null;
-  return decision;
-}
-
-/** @param {string} id @param {PublicationConfig} config */
-function publicationState(id, config = PUBLICATION_CONFIG) {
-  return publicationDecision(id, config)?.state ?? null;
-}
-
-/** @param {string} id @param {PublicationConfig} config */
-function publicationPublished(id, config = PUBLICATION_CONFIG) {
-  return publicationState(id, config) === "published";
-}
-
-/** @param {string} id @param {PublicationConfig} config */
-function publicationHeld(id, config = PUBLICATION_CONFIG) {
-  return publicationState(id, config) === "held";
-}
-
-/** @param {string} id @param {PublicationConfig} config */
-function publicationRetired(id, config = PUBLICATION_CONFIG) {
-  return publicationState(id, config) === "retired";
-}
-
+// Publication decisions and snapshot projection live in evidence-policy.js;
+// route availability is derived in route-manifest.js (gateRoute).
 /** @param {string} id @param {ProductCapabilityConfig} config */
 function productCapabilityAvailable(id, config = PRODUCT_CAPABILITIES) {
   return config?.capabilities?.[id]?.available === true;
@@ -53,99 +19,17 @@ function anyEvidencePublished(config = PUBLICATION_CONFIG) {
   return Object.keys(FEED_CATALOG).some((id) => publicationPublished(id, config));
 }
 
-/** @param {string} id @param {PublicationConfig} config */
-function publicationEnabled(id, config = PUBLICATION_CONFIG) {
-  return publicationPublished(id, config);
-}
-
 /** @param {PublicationConfig} config */
 function anyPublicationEnabled(config = PUBLICATION_CONFIG) {
   return Object.keys(config.publications ?? {}).some((id) => publicationPublished(id, config));
 }
 
+// The sections the cost-of-living lens reads: prices, house prices and earnings.
+const COST_OF_LIVING_SECTIONS = Object.freeze(["sentimentPulse", "housePriceIndex", "realWages"]);
+
 /** @param {PublicationConfig} config */
-function anyEvidenceSourceEnabled(config = PUBLICATION_CONFIG) {
-  return Object.entries(config.publications ?? {}).some(
-    ([id, entry]) => !NON_SOURCE_PUBLICATION_IDS.has(id) && publicationPublished(id, config),
-  );
-}
-
-/** @param {string} path @param {PublicationConfig} config */
-function publicationRouteEnabled(path, config = PUBLICATION_CONFIG) {
-  const pathname = path.split("?")[0].replace(/\/$/, "");
-  const parts = pathname.split("/").filter(Boolean);
-  if (parts[0] === "section") {
-    return publicationPublished(sectionPublication(parts[1], config), config);
-  }
-  if (parts[0] === "money") return publicationPublished("governmentContracts", config);
-  if (parts[0] === "editions") return publicationPublished("editionArchive", config);
-  if (parts[0] === "stories") {
-    return publicationPublished(
-      {
-        "household-budgets": "storyHouseholdBudgets",
-        "public-finances": "storyPublicFinances",
-      }[parts[1]] ?? "",
-      config,
-    );
-  }
-  if (parts[0] === "measure" && parts[1]) {
-    return publicationPublished(
-      definitions.measures.find((entry) => entry.id === parts[1])?.section ?? "",
-      config,
-    );
-  }
-  if (parts[0] === "sources" && parts[1]) {
-    return publicationPublished(parts[1], config);
-  }
-  if (parts[0] === "calendar") {
-    return (
-      publicationPublished("releaseCalendar", config) ||
-      publicationPublished("nhsReleaseCalendar", config)
-    );
-  }
-  if (
-    ["explore", "measure", "compare", "briefing", "cost-of-living", "sources"].includes(parts[0]) ||
-    parts.length === 0
-  ) {
-    return anyEvidenceSourceEnabled(config);
-  }
-  return true;
-}
-
-/**
- * Whether the application has a reader-facing route for this path.
- *
- * Held datasets can still expose methodology, search and calendar pages; the
- * publication policy controls whether evidence values are returned.
- *
- * @param {string} path
- * @param {PublicationConfig} config
- */
-function productRouteAvailable(path, config = PUBLICATION_CONFIG) {
-  const pathname = path.split("?")[0].replace(/\/$/, "");
-  const parts = pathname.split("/").filter(Boolean);
-  if (parts.length === 0) return true;
-  if (parts[0] === "feed.xml") return true;
-  if (parts[0] === "section") {
-    return Boolean(parts[1] && sectionPublication(parts[1], config));
-  }
-  if (parts[0] === "sources" && parts[1]) {
-    return Object.hasOwn(config.publications ?? {}, parts[1]);
-  }
-  if (parts[0] === "measure" && parts[1]) {
-    return definitions.measures.some((entry) => entry.id === parts[1]);
-  }
-  if (parts[0] === "editions") return publicationPublished("editionArchive", config);
-  if (parts[0] === "stories") return publicationRouteEnabled(path, config);
-  if (
-    ["explore", "measure", "compare", "briefing", "cost-of-living", "sources", "calendar", "money"].includes(
-      parts[0],
-    ) &&
-    parts.length === 1
-  ) {
-    return true;
-  }
-  return false;
+function costOfLivingEvidencePublished(config = PUBLICATION_CONFIG) {
+  return COST_OF_LIVING_SECTIONS.some((id) => publicationPublished(id, config));
 }
 
 /** @param {string} id @param {PublicationConfig} config */
@@ -153,227 +37,11 @@ function sectionPublication(id, config = PUBLICATION_CONFIG) {
   return Object.entries(config.publications ?? {}).find(([, entry]) => entry.sections?.includes(id))?.[0] ?? "";
 }
 
-/**
- * Route existence is deliberately separate from evidence publication.
- * Generic products are governed by product capabilities; evidence-bearing
- * routes additionally require the relevant publication decision.
- *
- * @param {string} path
- * @param {PublicationConfig} publicationConfig
- * @param {ProductCapabilityConfig} capabilityConfig
- */
-function publicRouteAvailable(
-  path,
-  publicationConfig = PUBLICATION_CONFIG,
-  capabilityConfig = PRODUCT_CAPABILITIES,
-) {
-  const pathname = path.split("?")[0].replace(/\/$/, "");
-  const parts = pathname.split("/").filter(Boolean);
-
-  if (parts.length === 0) return productCapabilityAvailable("home", capabilityConfig);
-  if (parts[0] === "section") {
-    return publicationPublished(sectionPublication(parts[1], publicationConfig), publicationConfig);
-  }
-  if (parts[0] === "money") {
-    return productCapabilityAvailable("publicMoney", capabilityConfig) &&
-      publicationPublished("governmentContracts", publicationConfig);
-  }
-  if (parts[0] === "editions") {
-    return productCapabilityAvailable("editionArchive", capabilityConfig) &&
-      publicationPublished("editionArchive", publicationConfig);
-  }
-  if (parts[0] === "stories") {
-    const publicationId = {
-      "household-budgets": "storyHouseholdBudgets",
-      "public-finances": "storyPublicFinances",
-    }[parts[1]] ?? "";
-    return productCapabilityAvailable(publicationId, capabilityConfig) &&
-      publicationPublished(publicationId, publicationConfig);
-  }
-  if (parts[0] === "measure" && parts[1]) {
-    return publicationPublished(
-      definitions.measures.find((entry) => entry.id === parts[1])?.section ?? "",
-      publicationConfig,
-    );
-  }
-  if (parts[0] === "sources" && parts[1]) {
-    return productCapabilityAvailable("sources", capabilityConfig) &&
-      publicationPublished(parts[1], publicationConfig);
-  }
-  if (parts[0] === "calendar") {
-    return productCapabilityAvailable("calendar", capabilityConfig) &&
-      (
-        publicationPublished("releaseCalendar", publicationConfig) ||
-        publicationPublished("nhsReleaseCalendar", publicationConfig)
-      );
-  }
-
-  const genericCapability = {
-    explore: "explore",
-    measure: "measureLibrary",
-    compare: "compare",
-    briefing: "briefing",
-    "cost-of-living": "costOfLiving",
-    sources: "sources",
-  }[parts[0]];
-
-  return genericCapability
-    ? productCapabilityAvailable(genericCapability, capabilityConfig)
-    : true;
-}
-
-/** @param {any} catalog @param {PublicationConfig} config */
-function filterPublicationCatalog(catalog, config = PUBLICATION_CONFIG) {
-  if (!catalog?.measures) return null;
-  return {
-    ...catalog,
-    measures: Object.fromEntries(
-      Object.entries(catalog.measures).filter(([, measure]) => publicationPublished(measure.sourceId, config)),
-    ),
-  };
-}
-
-/** @param {any} summary @param {PublicationConfig} config @param {any} catalog */
-function filterPublicationSummary(summary, config = PUBLICATION_CONFIG, catalog = null) {
-  const changes = (summary?.changes ?? []).filter((change) =>
-    publicationPublished(
-      catalog?.measures?.[change.measureId]?.sourceId ??
-        definitions.measures.find((measure) => measure.id === change.measureId)?.section ??
-        "",
-      config,
-    )
-  );
-  return {
-    id: summary.id,
-    publishedAt: summary.publishedAt,
-    ...(summary.asOf ? { asOf: summary.asOf } : {}),
-    ...(summary.previousEditionId !== undefined ? { previousEditionId: summary.previousEditionId } : {}),
-    ...(changes.length === summary.changes?.length && summary.summaryCorrection
-      ? { summaryCorrection: summary.summaryCorrection }
-      : {}),
-    sourceEditionIds: [...new Set(changes.map((change) => change.nextSourceEditionId))],
-    changes,
-  };
-}
-
-/** @param {any} input @param {PublicationConfig} config */
-function filterPublicationSnapshot(input, config = PUBLICATION_CONFIG) {
-  if (!input?.meta?.sources) return null;
-  const sources = Object.fromEntries(
-    Object.entries(input.meta.sources).filter(([id]) => publicationPublished(id, config)),
-  );
-  if (Object.keys(sources).length === 0) return null;
-
-  const publishedSections = Object.keys(sources).sort();
-  const snapshot = {
-    meta: {
-      registryVersion: input.meta.registryVersion,
-      generatedAt: input.meta.generatedAt,
-      sources,
-      verifiedSections: (input.meta.verifiedSections ?? []).filter((id) => Object.hasOwn(sources, id)),
-      measureCatalog: filterPublicationCatalog(input.meta.measureCatalog, config),
-      publicProjection: {
-        state: "published",
-        publishedSections,
-      },
-      ...(publicationPublished("editionArchive", config) && input.meta.editionSummary
-        ? { editionSummary: filterPublicationSummary(input.meta.editionSummary, config, input.meta.measureCatalog) }
-        : {}),
-    },
-  };
-  for (const id of publishedSections) {
-    if (Object.hasOwn(input, id)) snapshot[id] = structuredClone(input[id]);
-  }
-  return snapshot;
-}
-
-const FILTERED_SNAPSHOT_META_FIELDS = new Set([
-  "registryVersion",
-  "generatedAt",
-  "sources",
-  "verifiedSections",
-  "measureCatalog",
-  "publicProjection",
-  "editionSummary",
-]);
-const FILTERED_SUMMARY_FIELDS = new Set([
-  "id",
-  "publishedAt",
-  "asOf",
-  "previousEditionId",
-  "summaryCorrection",
-  "sourceEditionIds",
-  "changes",
-]);
-
-/**
- * True when `snapshot` already is a filterPublicationSnapshot output under
- * `config`, so filtering it again would withhold nothing. It inspects keys
- * and identifiers only (no copies), letting the public read path accept a
- * publisher-normalised artifact cheaply. Keep it in step with
- * filterPublicationSnapshot: any field that filter drops or narrows must make
- * this return false when present. False only means "filter a copy".
- *
- * @param {any} snapshot @param {PublicationConfig} config
- */
-function isPublicationFilteredSnapshot(snapshot, config = PUBLICATION_CONFIG) {
-  const meta = snapshot?.meta;
-  if (!meta?.sources || typeof meta.sources !== "object") return false;
-  for (const key of Object.keys(meta)) {
-    if (!FILTERED_SNAPSHOT_META_FIELDS.has(key)) return false;
-  }
-  for (const key of Object.keys(snapshot)) {
-    if (key !== "meta" && !Object.hasOwn(meta.sources, key)) return false;
-  }
-  const sourceIds = Object.keys(meta.sources);
-  if (sourceIds.length === 0 || sourceIds.some((id) => !publicationPublished(id, config))) return false;
-  if (!Array.isArray(meta.verifiedSections) || meta.verifiedSections.some((id) => !Object.hasOwn(meta.sources, id))) {
-    return false;
-  }
-  const catalog = meta.measureCatalog;
-  if (catalog !== null) {
-    if (!catalog?.measures || typeof catalog.measures !== "object") return false;
-    if (Object.values(catalog.measures).some((measure) => !publicationPublished(measure?.sourceId, config))) {
-      return false;
-    }
-  }
-  if (Object.hasOwn(meta, "editionSummary")) {
-    const summary = meta.editionSummary;
-    if (!publicationPublished("editionArchive", config) || !summary || !Array.isArray(summary.changes)) return false;
-    if (Object.keys(summary).some((key) => !FILTERED_SUMMARY_FIELDS.has(key))) return false;
-    const changesPublished = summary.changes.every((change) =>
-      publicationPublished(
-        catalog?.measures?.[change?.measureId]?.sourceId ??
-          definitions.measures.find((measure) => measure.id === change?.measureId)?.section ??
-          "",
-        config,
-      )
-    );
-    if (!changesPublished) return false;
-  }
-  return true;
-}
-
 export {
   PRODUCT_CAPABILITIES,
-  PUBLICATION_CONFIG,
-  PUBLICATION_STATES,
   anyEvidencePublished,
-  anyEvidenceSourceEnabled,
   anyPublicationEnabled,
-  filterPublicationCatalog,
-  filterPublicationSnapshot,
-  filterPublicationSummary,
-  isPublicationFilteredSnapshot,
+  costOfLivingEvidencePublished,
   productCapabilityAvailable,
-  productRouteAvailable,
-  publicRouteAvailable,
-  publicationDecision,
-  publicationEnabled,
-  publicationHeld,
-  publicationPublished,
-  publicationRetired,
-  publicationRouteEnabled,
-  publicationState,
   sectionPublication,
 };

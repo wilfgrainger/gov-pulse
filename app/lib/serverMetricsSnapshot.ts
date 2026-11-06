@@ -2,8 +2,8 @@ import { connection } from "next/server";
 import { cache } from "react";
 import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
 import { publicSnapshot } from "@/worker/public-snapshot";
-import { filterCurrentSnapshot } from "@/worker/publication-currentness";
-import { anyEvidencePublished, filterPublicationSnapshot } from "@/contracts/publication-policy";
+import { filterCurrentSnapshot, filterPublicationSnapshot } from "@/contracts/evidence-policy";
+import { anyEvidencePublished } from "@/contracts/publication-policy";
 import {
   isCompatibleMetricsSnapshot,
   requestSnapshot,
@@ -18,6 +18,11 @@ const PRODUCTION_SNAPSHOT_URL =
 export function currentBuildSnapshot(raw: unknown, now: Date = new Date()): MetricsSnapshot | null {
   const current = filterCurrentSnapshot(publicSnapshot(raw), now);
   const snapshot = current ? filterPublicationSnapshot(current) : null;
+  return isCompatibleMetricsSnapshot(snapshot) ? snapshot : null;
+}
+
+function publishableSnapshot(raw: unknown): MetricsSnapshot | null {
+  const snapshot = filterPublicationSnapshot(publicSnapshot(raw));
   return isCompatibleMetricsSnapshot(snapshot) ? snapshot : null;
 }
 
@@ -40,14 +45,12 @@ export const readServerMetricsSnapshot = cache(
     // into production output.
     if (process.env.NODE_ENV !== "production") {
       const { default: fixture } = await import("@/tests/fixtures/publication/current-snapshot.json");
-      const snapshot = filterPublicationSnapshot(publicSnapshot(structuredClone(fixture)));
-      return isCompatibleMetricsSnapshot(snapshot) ? snapshot : null;
+      return publishableSnapshot(structuredClone(fixture));
     }
 
     try {
       const loaded = await requestSnapshot(PRODUCTION_SNAPSHOT_URL, "snapshot");
-      const snapshot = filterPublicationSnapshot(publicSnapshot(loaded.payload));
-      return isCompatibleMetricsSnapshot(snapshot) ? snapshot : null;
+      return publishableSnapshot(loaded.payload);
     } catch {
       return null;
     }

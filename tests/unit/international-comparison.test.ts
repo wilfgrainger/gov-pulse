@@ -6,7 +6,7 @@ import {
   buildComparisonMeasure,
   rankComparisonObservations,
   validateInternationalComparisonPublication,
-} from "@/worker/international-comparison";
+} from "@/feeds/international-comparison/compare.js";
 
 const source = {
   publisher: "Test publisher",

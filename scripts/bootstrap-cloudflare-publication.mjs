@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { isPublicArtifact } from "../contracts/public-artifact.js";
-import { FEED_REGISTRY_VERSION } from "../worker/feed-registry.js";
+import { FEED_REGISTRY_VERSION } from "../feeds/registry.js";
 
 const DEFAULT_QUEUE_NAME = "public-data-jobs";
 const DEFAULT_HEALTH_URL = "https://public-data.org/data/health.json";

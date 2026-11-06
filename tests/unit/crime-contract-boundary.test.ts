@@ -3,7 +3,7 @@ import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 
 const contractPath = "contracts/crime-statistics.js";
-const collectorPath = "worker/live-crime-collector.js";
+const collectorPath = "feeds/crime-stats/parse.js";
 const retiredJusticePath = "data/crime/moj-court-publication.js";
 
 function source(path: string) {
@@ -19,7 +19,7 @@ describe("modular official-publication boundary", () => {
 
   it("collects ONS values at runtime instead of embedding a stale edition", () => {
     const collector = source(collectorPath);
-    const wrapper = source("worker/crime-statistics.js");
+    const wrapper = source(collectorPath);
     expect(fs.existsSync("data/crime/ons-crime-publication.js")).toBe(false);
     expect(collector).toContain("ONS_PUBLICATION_LANDING_URL");
     expect(collector).not.toContain("9_600_000");

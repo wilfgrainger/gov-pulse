@@ -1,6 +1,6 @@
 import { METRICS_SNAPSHOT_PATH, REFRESH_INTERVAL_MS } from "./config";
-import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
-import { filterCurrentSnapshot } from "@/worker/publication-currentness";
+import { FEED_REGISTRY_VERSION } from "@/feeds/registry.js";
+import { filterCurrentSnapshot } from "@/contracts/evidence-policy";
 import type { MeasureCatalog } from "./measureCatalog";
 
 export interface SnapshotSourceStatus {

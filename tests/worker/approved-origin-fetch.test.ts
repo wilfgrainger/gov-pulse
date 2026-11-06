@@ -15,7 +15,7 @@ import {
 import { SOURCE_CATALOG } from "@/contracts/source-catalog";
 import { fetchOfficialResponse } from "@/worker/official-source-fetch";
 import { fetchResponse } from "@/worker/live-feed-common";
-import { fetchSlice } from "@/worker/government-contracts-cloudflare";
+import { fetchSlice } from "@/feeds/government-contracts/parse.js";
 import { fetchPublicationSeedSnapshot } from "@/worker/publication-recovery";
 
 const APPROVED = new Set(["www.ons.gov.uk", "www.gov.uk"]);

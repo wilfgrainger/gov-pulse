@@ -9,8 +9,7 @@ import {
 } from "@/worker/publication-entry";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 import { PUBLIC_SNAPSHOT_KEY, buildPublicProjection } from "@/worker/public-snapshot";
-import { PUBLICATION_CONFIG, publicationPublished } from "@/contracts/publication-policy";
-import { sectionCurrentness } from "@/worker/publication-currentness";
+import { PUBLICATION_CONFIG, publicationPublished, sectionCurrentness } from "@/contracts/evidence-policy";
 
 const REQUIRED = [
   "sentimentPulse",

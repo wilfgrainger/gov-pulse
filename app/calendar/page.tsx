@@ -1,5 +1,5 @@
 import EvidenceHoldNotice from "@/app/components/EvidenceHoldNotice";
-import { publicationEnabled } from "@/contracts/publication-policy";
+import { routeEvidenceHeld } from "@/app/lib/gateRoute";
 import type { Metadata } from "next";
 import ReleaseCalendar from "@/app/components/ReleaseCalendar";
 import WatchlistBoard from "@/app/components/WatchlistBoard";
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 export default async function CalendarPage() {
   const snapshot = await readServerMetricsSnapshot();
   const catalog = snapshot?.meta.measureCatalog as MeasureCatalog | undefined;
-  const calendarHeld = !publicationEnabled("releaseCalendar") && !publicationEnabled("nhsReleaseCalendar");
+  const calendarHeld = routeEvidenceHeld("/calendar/");
   const generatedAt = snapshot?.meta.generatedAt;
   const generatedAtKnown = typeof generatedAt === "string" && Number.isFinite(Date.parse(generatedAt));
   // Without a verified generation time no event can be judged current, so the calendar is empty rather than dated "now".

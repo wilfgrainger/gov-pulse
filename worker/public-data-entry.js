@@ -2,26 +2,21 @@ import queuedWorker, {
   DAILY_CRON,
   enqueueInternationalComparisonRefresh,
 } from "./queued-publication-entry.js";
-import { PUBLICATION_CONFIG, publicationPublished, anyEvidencePublished, filterPublicationCatalog, filterPublicationSummary, isPublicationFilteredSnapshot } from "../contracts/publication-policy.js";
+import { anyEvidencePublished } from "../contracts/publication-policy.js";
+import { PUBLICATION_CONFIG, publicationPublished, filterPublicationCatalog, filterPublicationSummary, isPublicationFilteredSnapshot, cacheLifetime, filterCurrentSnapshot, snapshotIsCurrentAsIs, snapshotValidityDeadline } from "../contracts/evidence-policy.js";
 import { isPublicArtifact } from "../contracts/public-artifact.js";
 import { PUBLICATION_STATUS_KEY, isSnapshot, readCurrentPublication } from "./publication-entry.js";
 import { publicUnavailableSections } from "./publication-availability.js";
 import {
   FEED_REGISTRY_VERSION,
   REQUIRED_PUBLISHED_SECTION_IDS,
-} from "./feed-registry.js";
-import {
-  cacheLifetime,
-  filterCurrentSnapshot,
-  snapshotIsCurrentAsIs,
-  snapshotValidityDeadline,
-} from "./publication-currentness.js";
+} from "../feeds/registry.js";
 import {
   PUBLIC_SNAPSHOT_KEY,
   buildPublicProjection,
   isSanitizedPublishedValue,
 } from "./public-snapshot.js";
-import { readInternationalComparison } from "./international-comparison-publication.js";
+import { readInternationalComparison } from "../feeds/international-comparison/parse.js";
 import { assertSameHttpsHost, MAX_RESPONSE_BYTES, readResponseJson } from "./response-limits.js";
 import { listEditionSummaries, readEdition } from "./edition-archive.js";
 import { fetchPublicationSeedSnapshot } from "./publication-recovery.js";

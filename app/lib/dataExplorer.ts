@@ -1,4 +1,4 @@
-import { filterCurrentSnapshot } from "@/worker/publication-currentness";
+import { filterCurrentSnapshot, sourceUpdateDue } from "@/contracts/evidence-policy";
 import {
   isCompatibleMetricsSnapshot,
   type MetricsSnapshot,
@@ -86,7 +86,7 @@ export function exploreMeasures(raw: unknown, now = new Date()): Measure[] {
       const section = definition.section === "employmentStats" ? "employmentStats"
         : definition.section === "nationalDebt" ? "nationalDebt" : null;
       const updateDue = measure?.availability === "historical" || Boolean(
-        measure?.availability === "current" && source && (source.status !== "ok" || source.cacheState !== "fresh")
+        measure?.availability === "current" && source && sourceUpdateDue(source)
       ) || Boolean(
         measure?.availability === "current" && snapshot && section && hasNewerRelatedRelease(snapshot, section)
       );

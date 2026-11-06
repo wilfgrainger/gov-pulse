@@ -8,7 +8,7 @@ import {
   mergeInternationalComparisonBatchResults,
   readInternationalComparison,
   sourcesDue as comparisonSourcesDue,
-} from "./international-comparison-publication.js";
+} from "../feeds/international-comparison/parse.js";
 import {
   RUN_PREFIX,
   RUN_TTL_SECONDS,

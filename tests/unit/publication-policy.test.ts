@@ -1,19 +1,7 @@
 import { describe, expect, it } from "vitest";
-import {
-  PRODUCT_CAPABILITIES,
-  PUBLICATION_CONFIG,
-  anyEvidencePublished,
-  filterPublicationSnapshot,
-  filterPublicationSummary,
-  publicationDecision,
-  publicationHeld,
-  publicationPublished,
-  productCapabilityAvailable,
-  publicRouteAvailable,
-  publicationRetired,
-  publicationState,
-  sectionPublication,
-} from "@/contracts/publication-policy";
+import { anyEvidencePublished, productCapabilityAvailable, sectionPublication } from "@/contracts/publication-policy";
+import { gateRouteWith } from "@/contracts/route-manifest";
+import { PUBLICATION_CONFIG, filterPublicationSnapshot, filterPublicationSummary, publicationDecision, publicationHeld, publicationPublished, publicationRetired, publicationState } from "@/contracts/evidence-policy";
 import { FEED_REGISTRY, PUBLICATION_SOURCE_REGISTRY } from "@/worker/feed-registry";
 
 const config = {
@@ -87,14 +75,16 @@ const fixture = {
   },
 };
 
+const serves = (path: string, config?: object) => gateRouteWith(path, new Date(), config ? { config: config as typeof PUBLICATION_CONFIG } : {}).access === "serve";
+
 describe("publication decisions", () => {
   it("publishes the verified first wave, holds unresolved feeds, removes retired products, and fails closed for unknown identifiers", () => {
     expect(anyEvidencePublished()).toBe(true);
     expect(productCapabilityAvailable("home")).toBe(true);
     expect(productCapabilityAvailable("calendar")).toBe(false);
-    expect(publicRouteAvailable("/")).toBe(true);
-    expect(publicRouteAvailable("/compare/")).toBe(true);
-    expect(publicRouteAvailable("/calendar/")).toBe(false);
+    expect(serves("/")).toBe(true);
+    expect(serves("/compare/")).toBe(true);
+    expect(serves("/calendar/")).toBe(false);
     expect(publicationPublished("nationalDebt")).toBe(true);
     expect(publicationPublished("gdpTracker")).toBe(true);
     expect(publicationPublished("housePriceIndex")).toBe(true);
@@ -159,9 +149,9 @@ describe("publication decisions", () => {
     } as const;
 
     expect(anyEvidencePublished(heldEvidence)).toBe(false);
-    expect(publicRouteAvailable("/", heldEvidence, PRODUCT_CAPABILITIES)).toBe(true);
-    expect(publicRouteAvailable("/section/national-debt/", heldEvidence, PRODUCT_CAPABILITIES)).toBe(false);
-    expect(publicRouteAvailable("/editions/", heldEvidence, PRODUCT_CAPABILITIES)).toBe(true);
+    expect(serves("/", heldEvidence)).toBe(true);
+    expect(serves("/section/national-debt/", heldEvidence)).toBe(false);
+    expect(serves("/editions/", heldEvidence)).toBe(true);
   });
 
   it("publishes one source without exposing held sources in data, catalogues or revision summaries", () => {

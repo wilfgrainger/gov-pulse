@@ -9,7 +9,7 @@ import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
 import { GET } from "@/app/data/sections/[file]/route";
 import { renderRssFeed } from "@/app/lib/rssFeed";
 import fixture from "@/tests/fixtures/publication/current-snapshot.json";
-import { PUBLICATION_CONFIG } from "@/contracts/publication-policy";
+import { PUBLICATION_CONFIG } from "@/contracts/evidence-policy";
 import StoryEvidence from "@/app/components/StoryEvidence";
 
 vi.mock("@/config/publications.json", async (importOriginal) => {

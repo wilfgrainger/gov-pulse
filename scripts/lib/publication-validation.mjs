@@ -1,4 +1,4 @@
-import { FEED_REGISTRY_VERSION } from "../../worker/feed-registry.js";
+import { FEED_REGISTRY_VERSION } from "../../feeds/registry.js";
 import { validatePublicArtifact } from "../../contracts/public-artifact.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;

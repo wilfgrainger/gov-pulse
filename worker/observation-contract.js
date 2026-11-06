@@ -1,4 +1,9 @@
-const DAY_MS = 24 * 60 * 60 * 1000;
+import {
+  DAY_MS,
+  observationExpiryMs,
+  observationOutsideContract,
+} from "../contracts/evidence-policy.js";
+import { observationContracts } from "../feeds/registry.js";
 
 const monthMap = {
   jan: 0,
@@ -118,59 +123,54 @@ function nhsPublishedObservation(data, now) {
     : null;
 }
 
-const contracts = {
+// Contracts declared by a feed definition (feeds/*/feed.js) name their
+// extractor; this binds the name to the function.
+const EXTRACTORS = { publishedObservation, nhsPublishedObservation };
+
+// A feed whose extractor is not shared passes it as `local`, keyed by the name
+// its definition declares.
+function declaredContract(section, local = {}) {
+  const { maxAgeDays, extractor } = observationContracts()[section];
+  const extract = local[extractor] ?? EXTRACTORS[extractor];
+  if (!extract) throw new Error(`Feed '${section}' names unknown observation extractor '${extractor}'`);
+  return { maxAgeDays, extract };
+}
+
+// Extractors that belong to one feed only, keyed by feed id then by the extractor
+// name its definition declares. Shared extractors live in EXTRACTORS above.
+const FEED_EXTRACTORS = {
   electionPolling: {
-    maxAgeDays: 45,
     extract(data, now) {
       return latestBy(data?.recentPolls, (entry) => entry?.date, now);
     },
   },
   sentimentPulse: {
-    maxAgeDays: 75,
     extract(data, now) {
       return latestBy(data?.economicData, (entry) => entry?.date, now);
     },
   },
-  gdpTracker: {
-    maxAgeDays: 70,
-    extract: publishedObservation,
-  },
-  employmentStats: {
-    maxAgeDays: 70,
-    extract: publishedObservation,
-  },
   nationalDebt: {
-    maxAgeDays: 70,
     extract(data, now) {
       const date = parsePeriod(data?.baseDate, now);
       return date ? { raw: date.toISOString().slice(0, 10), date } : null;
     },
   },
-  taxRevenue: {
-    maxAgeDays: 70,
-    extract: publishedObservation,
-  },
-  migrationStats: {
-    maxAgeDays: 220,
-    extract: publishedObservation,
-  },
-  housePriceIndex: {
-    maxAgeDays: 45,
-    extract: publishedObservation,
-  },
-  realWages: {
-    maxAgeDays: 40,
-    extract: publishedObservation,
-  },
-  nhsStats: {
-    maxAgeDays: 45,
-    extract: nhsPublishedObservation,
-  },
-  crimeStatistics: {
-    maxAgeDays: 450,
-    extract: publishedObservation,
-  },
 };
+
+// Membership is every feed whose definition declares an observation window
+// (feeds/*/feed.js); the order below is the published order of the existing
+// feeds, and feeds added later follow in definition order.
+const OBSERVATION_ORDER = [
+  "electionPolling", "sentimentPulse", "gdpTracker", "employmentStats", "nationalDebt",
+  "taxRevenue", "migrationStats", "housePriceIndex", "realWages", "nhsStats", "crimeStatistics",
+];
+const declaredIds = Object.keys(observationContracts());
+const contracts = Object.fromEntries(
+  [
+    ...OBSERVATION_ORDER.filter((id) => declaredIds.includes(id)),
+    ...declaredIds.filter((id) => !OBSERVATION_ORDER.includes(id)),
+  ].map((id) => [id, declaredContract(id, FEED_EXTRACTORS[id])]),
+);
 
 export function applyObservationContracts(descriptors, nowProvider = () => new Date()) {
   for (const [section, contract] of Object.entries(contracts)) {
@@ -190,7 +190,7 @@ export function applyObservationContracts(descriptors, nowProvider = () => new D
       }
 
       const ageMs = Math.max(0, now.getTime() - observation.date.getTime());
-      if (ageMs > contract.maxAgeDays * DAY_MS) {
+      if (observationOutsideContract(ageMs, contract.maxAgeDays)) {
         throw new Error(
           `Feed '${section}' observation '${observation.raw}' is outside its ${contract.maxAgeDays}-day currentness contract`
         );
@@ -201,7 +201,7 @@ export function applyObservationContracts(descriptors, nowProvider = () => new D
         // Statistical releases describe earlier periods. Use the verified
         // publication clock for expiry, while retaining the measured period.
         ...(observation.observedAt ? {
-          expiresAt: new Date(observation.date.getTime() + contract.maxAgeDays * DAY_MS).toISOString(),
+          expiresAt: new Date(observationExpiryMs(observation.date.getTime(), contract.maxAgeDays)).toISOString(),
         } : {}),
         __observation: {
           status: "current",

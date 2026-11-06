@@ -1,8 +1,8 @@
 // @vitest-environment node
 
 import { describe, expect, it } from "vitest";
-import { discoverRealWagesHistoryUrl } from "@/worker/real-wages";
-import { discoverHousePriceIndexChartUrl } from "@/worker/house-price-index";
+import { discoverRealWagesHistoryUrl } from "@/feeds/real-wages/parse.js";
+import { discoverHousePriceIndexChartUrl } from "@/feeds/house-price-index/parse.js";
 
 const BULLETIN = "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/bulletins/averageweeklyearningsingreatbritain/october2026";
 const wages = (href: string) =>

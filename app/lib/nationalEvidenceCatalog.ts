@@ -1,3 +1,4 @@
+import { sourceHasUsableStatus } from "@/contracts/evidence-policy";
 import {
   type MetricsSnapshot,
   type SnapshotSourceStatus,
@@ -88,7 +89,7 @@ export function projectCatalogMeasures(snapshot: MetricsSnapshot, now: Date): Me
 }
 
 export function sourceState(source: SnapshotSourceStatus | undefined): EvidenceState {
-  if (!source || (source.status !== "ok" && source.status !== "stale")) return "unavailable";
+  if (!sourceHasUsableStatus(source)) return "unavailable";
   if (source.cacheState === "missing" || source.cacheState === "expired") return "unavailable";
   if (source.status === "stale" || source.cacheState === "stale") return "update-due";
   return "current";

@@ -8,12 +8,12 @@ import {
   readInternationalComparison,
   refreshInternationalComparison,
   due,
-} from "@/worker/international-comparison-publication";
+} from "@/feeds/international-comparison/parse.js";
 import {
   COMPARISON_COUNTRIES,
   COMPARISON_MEASURES,
   buildComparisonMeasure,
-} from "@/worker/international-comparison";
+} from "@/feeds/international-comparison/compare.js";
 
 function fixture(now = new Date().toISOString(), withLifecycle = true) {
   const source = {

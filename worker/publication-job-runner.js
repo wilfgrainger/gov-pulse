@@ -1,8 +1,8 @@
-import { refreshGovernmentContracts } from "./government-contracts-cloudflare.js";
+import { refreshGovernmentContracts } from "../feeds/government-contracts/parse.js";
 import {
   INTERNATIONAL_COMPARISON_REFRESH_BATCHES,
   refreshInternationalComparison,
-} from "./international-comparison-publication.js";
+} from "../feeds/international-comparison/parse.js";
 import { kvGet } from "./publication-run-store.js";
 import { comparisonBatchBaseKey } from "./publication-comparison-runner.js";
 import {

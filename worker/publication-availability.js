@@ -14,11 +14,11 @@
  *   - "no-current-observation": collection finished (or no run outcome is
  *     known) but no record inside its currentness contract is available.
  */
-import { publicationPublished } from "../contracts/publication-policy.js";
+import { publicationPublished } from "../contracts/evidence-policy.js";
 import {
   OPTIONAL_PUBLISHED_SECTION_IDS,
   REQUIRED_PUBLISHED_SECTION_IDS,
-} from "./feed-registry.js";
+} from "../feeds/registry.js";
 import { collectionPlanFor } from "./publication-plan.js";
 
 const UNAVAILABLE_REASONS = Object.freeze([

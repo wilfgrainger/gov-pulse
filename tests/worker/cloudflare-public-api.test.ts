@@ -16,7 +16,7 @@ import {
   PUBLIC_SNAPSHOT_KEY,
   buildPublicSnapshotArtifact,
 } from "@/worker/public-snapshot";
-import { PUBLICATION_CONFIG } from "@/contracts/publication-policy";
+import { PUBLICATION_CONFIG } from "@/contracts/evidence-policy";
 
 interface PublicSnapshotPayload {
   meta: {

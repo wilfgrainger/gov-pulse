@@ -1,22 +1,23 @@
-import { publicationPublished } from "../contracts/publication-policy.js";
-import { REQUIRED_PUBLISHED_SECTION_IDS } from "./feed-registry.js";
+import { publicationPublished } from "../contracts/evidence-policy.js";
+import { REQUIRED_PUBLISHED_SECTION_IDS, collectionPlan } from "../feeds/registry.js";
 
-const SECTION_COLLECTION_PLAN = Object.freeze({
-  gdpTracker: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
-  sentimentPulse: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
-  employmentStats: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
-  taxRevenue: Object.freeze({ jobType: "refresh-section", collector: "tax-revenue-live" }),
-  nationalDebt: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
-  migrationStats: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
-  housePriceIndex: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
-  realWages: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
-  crimeStatistics: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
-  electionPolling: Object.freeze({ jobType: "refresh-external-section", collector: "external" }),
-  nhsStats: Object.freeze({ jobType: "refresh-external-section", collector: "external" }),
-  bettingOdds: Object.freeze({ jobType: "refresh-external-section", collector: "external" }),
-  releaseCalendar: Object.freeze({ jobType: "refresh-external-section", collector: "external" }),
-  nhsReleaseCalendar: Object.freeze({ jobType: "refresh-external-section", collector: "external" }),
-});
+const DECLARED_PLAN = collectionPlan();
+
+// Membership is every feed that declares a collection (feeds/*/feed.js). The
+// order below is the published job order of the existing feeds; feeds added
+// later follow in definition order.
+const PLAN_ORDER = [
+  "gdpTracker", "sentimentPulse", "employmentStats", "taxRevenue", "nationalDebt", "migrationStats",
+  "housePriceIndex", "realWages", "crimeStatistics", "electionPolling", "nhsStats", "bettingOdds",
+  "releaseCalendar", "nhsReleaseCalendar",
+];
+const declaredIds = Object.keys(DECLARED_PLAN);
+const SECTION_COLLECTION_PLAN = Object.freeze(Object.fromEntries(
+  [
+    ...PLAN_ORDER.filter((id) => declaredIds.includes(id)),
+    ...declaredIds.filter((id) => !PLAN_ORDER.includes(id)),
+  ].map((id) => [id, Object.freeze({ ...DECLARED_PLAN[id] })]),
+));
 
 const GENERIC_SECTIONS = Object.freeze(
   Object.entries(SECTION_COLLECTION_PLAN)
