@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "capabilities": {
+    "home": {
+      "available": true
+    },
+    "explore": {
+      "available": true
+    },
+    "measureLibrary": {
+      "available": true
+    },
+    "compare": {
+      "available": true
+    },
+    "briefing": {
+      "available": true
+    },
+    "costOfLiving": {
+      "available": true
+    },
+    "sources": {
+      "available": true
+    },
+    "calendar": {
+      "available": false
+    },
+    "publicMoney": {
+      "available": false
+    },
+    "editionArchive": {
+      "available": true
+    },
+    "storyHouseholdBudgets": {
+      "available": false
+    },
+    "storyPublicFinances": {
+      "available": false
+    }
+  }
+}

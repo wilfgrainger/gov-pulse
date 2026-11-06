@@ -1,6 +1,10 @@
+import { APPROVED_SOURCE_HOSTS } from "./approved-source-hosts.js";
 import {
+  ApprovedOriginError,
   MAX_RESPONSE_BYTES,
-  assertSameHttpsHost,
+  assertApprovedSourceUrl,
+  cancelResponseBody,
+  fetchWithApprovedRedirects,
   readResponseText,
 } from "./response-limits.js";
 
@@ -56,14 +60,6 @@ function retryDelay(response, fallbackMs) {
   return fallbackMs;
 }
 
-async function cancelBody(response) {
-  try {
-    await response.body?.cancel();
-  } catch {
-    // Releasing an unsuccessful response body is best effort only.
-  }
-}
-
 async function fetchOfficialResponse(
   url,
   {
@@ -71,8 +67,11 @@ async function fetchOfficialResponse(
     fetchImpl = fetch,
     timeoutMs = DEFAULT_TIMEOUT_MS,
     sourceName = isOnsUrl(url) ? "ONS" : "Official source",
+    approvedHosts = APPROVED_SOURCE_HOSTS,
   } = {}
 ) {
+  // Never send (or retry) a request whose origin is not approved.
+  assertApprovedSourceUrl(url, approvedHosts, sourceName);
   let lastError = null;
   let nextDelayMs = 0;
 
@@ -86,24 +85,28 @@ async function fetchOfficialResponse(
 
     let response;
     try {
-      response = await fetchImpl(url, {
-        headers: { Accept: accept, "User-Agent": USER_AGENT },
-        redirect: "follow",
-        signal: AbortSignal.timeout(timeoutMs),
-      });
+      response = await fetchWithApprovedRedirects(
+        url,
+        {
+          headers: { Accept: accept, "User-Agent": USER_AGENT },
+          signal: AbortSignal.timeout(timeoutMs),
+        },
+        approvedHosts,
+        fetchImpl,
+        sourceName
+      );
     } catch (error) {
+      // An origin rejection is a policy decision, not a transient failure.
+      if (error instanceof ApprovedOriginError) throw error;
       lastError = error;
       continue;
     }
 
-    if (response.ok) {
-      assertSameHttpsHost(response, url, sourceName);
-      return response;
-    }
+    if (response.ok) return response;
 
     lastError = new Error(`${sourceName} returned ${response.status} for ${url}`);
     const transient = response.status === 429 || response.status >= 500;
-    await cancelBody(response);
+    await cancelResponseBody(response);
     if (!transient) throw lastError;
 
     if (index + 1 < TRANSIENT_RETRY_DELAYS_MS.length && fetchImpl === NATIVE_FETCH) {

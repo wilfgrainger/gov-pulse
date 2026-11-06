@@ -3,9 +3,9 @@ import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
 import { DATA_SOURCES } from "@/app/lib/config";
 import { isCompatibleMetricsSnapshot, type MetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import { publicSnapshot } from "@/worker/public-snapshot";
-import { publicationEnabled, filterPublicationSnapshot } from "@/contracts/publication-policy";
+import { sectionCurrentness, publicationPublished, filterPublicationSnapshot, sourceStatusOk } from "@/contracts/evidence-policy";
 
-export type DiscoveryKind = "dataset" | "tool" | "withdrawn";
+export type DiscoveryKind = "dataset" | "tool";
 
 export interface SectionDiscovery {
   title: string;
@@ -56,9 +56,34 @@ export function serializeJsonLd(value: unknown) {
   return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
-export function getBuildPublication(section: SectionDiscovery, rawSnapshot: unknown = BUILD_METRICS_SNAPSHOT) {
-  if (!publicationEnabled(section.sourceKey)) return null;
-  const snapshot = filterPublicationSnapshot(publicSnapshot(rawSnapshot));
+// The imported build snapshot is constant for the isolate's lifetime and only
+// read, so its now-independent public projection is computed once. Currentness
+// is still evaluated per call against the caller's `now`.
+let projectedBuildSnapshot: unknown;
+let projectedBuildSnapshotReady = false;
+
+function projectSnapshot(rawSnapshot: unknown) {
+  if (rawSnapshot !== BUILD_METRICS_SNAPSHOT) {
+    return filterPublicationSnapshot(publicSnapshot(rawSnapshot));
+  }
+  if (!projectedBuildSnapshotReady) {
+    projectedBuildSnapshot = filterPublicationSnapshot(publicSnapshot(rawSnapshot));
+    projectedBuildSnapshotReady = true;
+  }
+  return projectedBuildSnapshot;
+}
+
+/**
+ * Build-time publication facts for a section. The evidence must be current at
+ * `now`; expired, held, unavailable or null evidence yields no publication.
+ */
+export function getBuildPublication(
+  section: SectionDiscovery,
+  rawSnapshot: unknown = BUILD_METRICS_SNAPSHOT,
+  now: Date = new Date()
+) {
+  if (!publicationPublished(section.sourceKey)) return null;
+  const snapshot = projectSnapshot(rawSnapshot);
   if (!isCompatibleMetricsSnapshot(snapshot)) {
     return null;
   }
@@ -66,7 +91,10 @@ export function getBuildPublication(section: SectionDiscovery, rawSnapshot: unkn
   const typedSnapshot = snapshot as MetricsSnapshot;
   const source = typedSnapshot.meta.sources[section.sourceKey];
   const data = typedSnapshot[section.sourceKey];
-  if (!source || source.status !== "ok" || !data) {
+  if (!sourceStatusOk(source) || !data) {
+    return null;
+  }
+  if (!sectionCurrentness(section.sourceKey, data, source, now).current) {
     return null;
   }
 
@@ -147,14 +175,6 @@ export function structuredDataForSection(id: string) {
     };
   }
 
-  if (section.kind === "withdrawn") {
-    return {
-      ...common,
-      "@type": "Article",
-      articleSection: section.category,
-    };
-  }
-
   if (section.sourceKey === "internationalComparison") {
     return {
       ...common,
@@ -181,14 +201,14 @@ export function structuredDataForSection(id: string) {
   };
 }
 
-export function publicationEntries(rawSnapshot: unknown = BUILD_METRICS_SNAPSHOT) {
+export function publicationEntries(rawSnapshot: unknown = BUILD_METRICS_SNAPSHOT, now: Date = new Date()) {
   return Object.entries(SECTION_DISCOVERY)
     .filter(([, section]) => section.kind === "dataset")
     .map(([id, section]) => ({
       id,
       ...section,
       path: sectionPath(id),
-      publication: getBuildPublication(section, rawSnapshot),
+      publication: getBuildPublication(section, rawSnapshot, now),
     }))
     .filter((entry) => entry.publication);
 }

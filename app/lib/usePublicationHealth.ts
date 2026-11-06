@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// Mirrors worker/health-report.js buildHealthReport() — the Cloudflare data
-// Worker's own health endpoint, already used by the deploy bootstrap check
+// Shape of the Cloudflare data Worker's own health endpoint (served from
+// worker/public-data-entry.js), already used by the deploy bootstrap check
 // (scripts/bootstrap-cloudflare-publication.mjs, PR #106). The frontend reuses
 // this as the single source of truth for "data as of" rather than inventing a
 // second freshness signal.

@@ -16,8 +16,8 @@
  *   - buildCurrentEconomicIndicators          (was worker/series-entry.js)
  * In-place validators are reused where they already live:
  *   - isCurrentCrimeStatisticsPayload         (contracts/crime-statistics.js)
- *   - isEconomicIndicatorsPayload             (worker/economic-indicators.js)
- *   - isOfficialEconomyRecord                 (worker/economy-section-cache.js)
+ *   - isEconomicIndicatorsPayload             (feeds/economy/parse.js)
+ *   - isOfficialEconomyRecord                 (defined below; was worker/economy-section-cache.js)
  *
  * The generic-economy sections (gdpTracker, employmentStats), and the ONS
  * observation-dated sections (migrationStats), keep the exact __observation /
@@ -27,66 +27,36 @@
  * special-cases it to the live collector in publication-entry.js, exactly as
  * before.
  */
+import { buildEmploymentStats } from "../feeds/employment/parse.js";
+import { buildGdpTracker } from "../feeds/gdp/parse.js";
 import {
-  buildEmploymentStats,
-  buildGdpTracker,
-} from "./economy-evidence.js";
-import {
-  buildEconomicIndicators,
+  ONS_MAX_PUBLICATION_AGE_MS,
+  buildCurrentEconomicIndicators,
   isEconomicIndicatorsPayload,
-} from "./economic-indicators.js";
+  publicationCurrent,
+} from "../feeds/economy/parse.js";
 import {
   DEBT_GDP_SERIES_URL,
   DEBT_SERIES_URL,
   buildNationalDebt,
-} from "./national-debt.js";
-import { buildMigrationStats } from "./migration.js";
-import { buildHousePriceIndex } from "./house-price-index.js";
-import { buildRealWagesStats } from "./real-wages.js";
-import {
-  buildCrimeStatistics,
-  isCurrentCrimeStatisticsPayload,
-} from "./crime-statistics.js";
-import { isOfficialEconomyRecord } from "./economy-section-cache.js";
+} from "../feeds/national-debt/parse.js";
+import { buildMigrationStats } from "../feeds/migration/parse.js";
+import { buildHousePriceIndex } from "../feeds/house-price-index/parse.js";
+import { buildRealWagesStats } from "../feeds/real-wages/parse.js";
+import { buildCrimeStatistics } from "../feeds/crime-stats/parse.js";
+import { isCurrentCrimeStatisticsPayload } from "../contracts/crime-statistics.js";
 import {
   FEED_REGISTRY,
   applyFeedRegistry,
   provenanceFor,
-} from "./feed-registry.js";
-import { applyFreshnessPolicy } from "./freshness-policy.js";
+} from "../feeds/registry.js";
 import { applyObservationContracts } from "./observation-contract.js";
 
-const ONS_MAX_PUBLICATION_AGE_MS = 75 * 24 * 60 * 60 * 1000;
 const DEBT_MAX_PUBLICATION_AGE_MS = 75 * 24 * 60 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Validators moved VERBATIM from worker/series-entry.js
 // ---------------------------------------------------------------------------
-
-function publicationCurrent(data, now = new Date()) {
-  const nowMs = now.getTime();
-  if (!Number.isFinite(nowMs)) return false;
-
-  return ["inflation", "unemployment"].every((id) => {
-    const publishedAt = Date.parse(data?.series?.[id]?.publishedAt ?? "");
-    return (
-      Number.isFinite(publishedAt) &&
-      Math.max(0, nowMs - publishedAt) <= ONS_MAX_PUBLICATION_AGE_MS
-    );
-  });
-}
-
-async function buildCurrentEconomicIndicators(
-  fetchImpl = fetch,
-  nowProvider = () => new Date()
-) {
-  const now = nowProvider();
-  const data = await buildEconomicIndicators(fetchImpl, () => now);
-  if (!isEconomicIndicatorsPayload(data, now) || !publicationCurrent(data, now)) {
-    throw new Error("Official indicator series are outside their currentness contract");
-  }
-  return data;
-}
 
 // observationFor moved VERBATIM from worker/series-entry.js — the sentimentPulse
 // section built its own three-series observation summary here (the shared
@@ -169,19 +139,101 @@ function validDebtPayload(data, now = new Date()) {
 // wrapping so their behaviour matches the doll exactly.
 // ---------------------------------------------------------------------------
 
-const GENERIC_SECTIONS = Object.freeze([
-  "gdpTracker",
-  "sentimentPulse",
-  "employmentStats",
-  "nationalDebt",
-  "migrationStats",
-  "housePriceIndex",
-  "realWages",
-  "crimeStatistics",
-]);
-
 function sectionLabel(section) {
   return FEED_REGISTRY[section].upstreams.map((upstream) => upstream.label).join(" + ");
+}
+
+// Moved verbatim from the deleted worker/economy-section-cache.js.
+function finite(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function onsSource(data) {
+  return (
+    typeof data?.source?.bulletinUrl === "string" &&
+    data.source.bulletinUrl.startsWith("https://www.ons.gov.uk/")
+  );
+}
+
+function isOfficialEconomyRecord(section, record, nowMs = Date.now()) {
+  const data = record?.data;
+
+  if (section === "sentimentPulse") {
+    return isEconomicIndicatorsPayload(data, new Date(nowMs));
+  }
+
+  const headline = data?.headline;
+  if (data?.available !== true || !onsSource(data) || typeof headline?.releaseDate !== "string") {
+    return false;
+  }
+
+  if (section === "gdpTracker") {
+    return (
+      finite(headline.observedAt) &&
+      finite(headline.monthlyGrowth) &&
+      finite(headline.threeMonthGrowth) &&
+      finite(headline.annualGrowth) &&
+      Array.isArray(data.history) &&
+      data.history.length >= 13 &&
+      data.history.every(
+        (point) =>
+          finite(point?.observedAt) &&
+          finite(point?.index) &&
+          finite(point?.monthlyGrowth) &&
+          finite(point?.annualGrowth) &&
+          finite(point?.threeMonthGrowth)
+      ) &&
+      !("gdpHistory" in data) &&
+      !("g7Comparison" in data) &&
+      !("sectorBreakdown" in data)
+    );
+  }
+
+  if (section === "employmentStats") {
+    return (
+      finite(headline.observedAt) &&
+      finite(headline.employmentRate) &&
+      finite(headline.unemploymentRate) &&
+      finite(headline.inactivityRate) &&
+      finite(headline.vacancies) &&
+      Array.isArray(data.history?.labourForce) &&
+      data.history.labourForce.length >= 13 &&
+      Array.isArray(data.history?.vacancies) &&
+      data.history.vacancies.length >= 13 &&
+      data.history.labourForce.every(
+        (point) =>
+          finite(point?.observedAt) &&
+          finite(point?.employmentRate) &&
+          finite(point?.unemploymentRate) &&
+          finite(point?.inactivityRate)
+      ) &&
+      data.history.vacancies.every(
+        (point) => finite(point?.observedAt) && finite(point?.vacancies)
+      ) &&
+      Object.values(data.annualDelta ?? {}).every(finite) &&
+      !("publicVsPrivate" in data) &&
+      !("publicBreakdown" in data) &&
+      !("employmentTrend" in data)
+    );
+  }
+
+  if (section === "taxRevenue") {
+    return (
+      finite(headline.observedAt) &&
+      finite(headline.receiptsBillion) &&
+      finite(headline.yearChangeBillion) &&
+      Array.isArray(data.history) &&
+      data.history.length >= 13 &&
+      data.history.every(
+        (point) => finite(point?.observedAt) && finite(point?.receiptsBillion)
+      ) &&
+      !("taxCategories" in data) &&
+      !("taxBurdenHistory" in data) &&
+      !("totalReceipts" in data)
+    );
+  }
+
+  return false;
 }
 
 // A descriptor map limited to the sections whose observation contract we reuse.
@@ -228,7 +280,6 @@ observationDescriptors.bettingOdds.build = async () => {
 };
 
 applyFeedRegistry(observationDescriptors);
-applyFreshnessPolicy(observationDescriptors);
 applyObservationContracts(observationDescriptors);
 
 // ---------------------------------------------------------------------------
@@ -327,7 +378,6 @@ const SECTION_BUILDERS = Object.freeze({
 });
 
 export {
-  GENERIC_SECTIONS,
   SECTION_BUILDERS,
   buildCurrentEconomicIndicators,
   measureValidityFor,

@@ -8,9 +8,19 @@ does not restrict product scope.
 
 `pr-validation.yml` sends Markdown-only changes through a no-install
 documentation lane; it runs no prose, encoding or newline gate. Code and
-executable configuration changes run source/architecture guards, install the
-root and OpenNext toolchains once each, run lint and all unit/Worker tests, then
-build the deployable OpenNext artifact once (which compiles the Next app).
+executable configuration changes run source/architecture guards, run one locked
+`npm ci` (a single root toolchain; `@opennextjs/cloudflare` is pinned exactly in
+`package.json`), run `npm run build:prepare`, then lint, all unit/Worker tests
+and the deployable OpenNext build once (which compiles the Next app).
+
+`npm run build:prepare` must precede lint, test and build. It fetches the public
+metrics artifact (`https://public-data.org/data/metrics-snapshot.json`, 10 s
+timeout, 2 MiB cap) into the untracked `app/generated/metricsSnapshot.ts`. If the
+fetch or validation fails it writes a `null` export, so the RSS feed carries no
+dataset items and the sitemap carries no dates; GitHub Actions shows a
+`::warning::` annotation. `pretest` and `predev` run
+`generate-build-snapshot-module.mjs --ensure`, a network-free guard that creates
+the null module only when it is missing.
 The required `quality` result reflects the selected lane.
 Lighthouse is opt-in through `lighthouse.yml`; it builds only when explicitly
 requested.
@@ -22,7 +32,7 @@ other code changes.
 
 The previous workflow baseline measured 235 seconds of aggregate runner time
 and 135 seconds end to end. The current workflow runs lint, tests and the single
-OpenNext build in parallel after both locked installs; remeasure comparable PR
+OpenNext build in parallel after the single locked install and build:prepare; remeasure comparable PR
 runs before claiming a new duration. Task 1 of the active round-two plan keeps
 all checks while reducing duplicated setup and build work.
 
@@ -31,14 +41,17 @@ all checks while reducing duplicated setup and build work.
 The `quality` PR result is required by the `main` branch ruleset. A merged PR
 therefore carries the source checks, tests and application build used to gate
 that release. On a relevant push to `main`, `deploy.yml` builds and deploys
-the web Worker and data Worker on separate runners. Each individual-Worker
-token is injected only into its own deploy/metadata steps after locked
-dependency installation. The existing Queue must already be provisioned;
-routine CI has Queue Edit only in the separate manual recovery environment and
-no Queue Read or create permission. Route bindings are dashboard-managed and
-omitted from Wrangler config, so deployment does not need zone route-write
-access. A credential-free verification job checks both deployments, reader
-routes and health contract without waiting for source collection.
+the web Worker and data Worker on separate runners. Each runner runs the single
+locked `npm ci`, then prepares generated data and assets (`build:prepare`)
+before manual deployments run the source checks; the web runner then performs
+one OpenNext build. Each individual-Worker token is injected only into its own
+deploy/metadata steps after locked dependency installation. The existing Queue
+must already be provisioned; routine CI has Queue Edit only in the separate
+manual recovery environment and no Queue Read or create permission. Route
+bindings are dashboard-managed and omitted from Wrangler config, so deployment
+does not need zone route-write access. A credential-free verification job
+checks both deployments, reader routes and health contract without waiting for
+source collection. Each Worker deploy job has a 20-minute timeout.
 
 Manual dispatch can run a separate evidence-recovery job after successful
 deployment or refresh the secondary Cloudflare Pages seed. Recovery uses its
@@ -51,6 +64,20 @@ the run. Pages publishing uses a main-only, project-bound Cloudflare deploy
 hook instead of Pages Write. Recovery failure remains visible on its own job
 and cannot invalidate a completed code release. Runtime data collection and KV
 publication continue independently.
+
+## GitHub Actions allow-list
+
+The repository restricts which third-party actions workflows may use. The
+allow-list in repository settings is exactly:
+
+`actions/checkout@*, actions/setup-node@*, actions/upload-artifact@*`
+
+Any `uses:` outside this list is rejected before the workflow starts.
+Symptom: the workflow never starts or shows a zero-second failed run with no
+job logs, and the run annotation names the rejected action. Fix it by removing
+the action or by adding it to the allow-list in repository settings and to
+`tests/unit/workflow-actions-allow-list.test.ts` together. That test fails when
+a workflow uses an action outside the list or this section drifts from it.
 
 ## Runtime and cost accounting
 

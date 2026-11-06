@@ -28,9 +28,9 @@ describe("MetricsStatus", () => {
 
     expect(
       screen.getByRole("link", {
-        name: "Open Verified primary pollster publications source website",
+        name: "Open YouGov Westminster voting-intention primary tables source website",
       })
-    ).toHaveAttribute("href", "https://yougov.com/en-gb/topics/topic/British_Politics");
+    ).toHaveAttribute("href", "https://yougov.com/en-gb/articles");
     expect(screen.getByText(/One poll is not evidence of a durable trend/i)).toBeInTheDocument();
   });
 

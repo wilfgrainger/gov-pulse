@@ -1,0 +1,257 @@
+// @vitest-environment node
+
+import { readFileSync } from "node:fs";
+import { describe, expect, it, vi } from "vitest";
+import { FINANCES_BULLETIN_URL } from "@/feeds/tax/finances.js";
+import {
+  DEBT_GDP_SERIES_URL,
+  DEBT_SERIES_PATH,
+  DEBT_SERIES_URL,
+  buildNationalDebt,
+  collect,
+  fetchOfficialCsv,
+  parseDebtBulletinCheck,
+  parseMonthlyOnsCsv,
+  parseOnsReleaseDate,
+} from "@/feeds/national-debt/parse.js";
+
+const debtCsv = `Title,PS: Net Debt (excluding public sector banks): £bn: CPNSA
+2025 MAY,2810.0
+2025 JUN,2820.0
+2025 JUL,2830.0
+2025 AUG,2840.0
+2025 SEP,2850.0
+2025 OCT,2860.0
+2025 NOV,2870.0
+2025 DEC,2925.5
+2026 JAN,2871.6
+2026 FEB,2883.2
+2026 MAR,2918.5
+2026 APR,2940.8
+2026 MAY,2984.3
+`;
+
+const debtGdpCsv = `Title,PS: Net Debt (excluding public sector banks) as a % of GDP: NSA
+2025 MAY,93.0
+2025 JUN,93.1
+2025 JUL,93.2
+2025 AUG,93.3
+2025 SEP,93.4
+2025 OCT,93.5
+2025 NOV,93.6
+2025 DEC,94.7
+2026 JAN,92.7
+2026 FEB,92.9
+2026 MAR,93.8
+2026 APR,94.1
+2026 MAY,95.1
+`;
+
+const debtPage = `<main><p>Release date: 19 June 2026</p></main>`;
+const editionUrl = FINANCES_BULLETIN_URL.replace("/latest", "/may2026");
+const matchingBulletin = `
+  <h1>Public sector finances, UK: May 2026</h1>
+  <p>Release date: 19 June 2026</p>
+  <p>Public sector net debt - the amount owed to the UK private sector and overseas, less liquid assets - was provisionally estimated at £2,984.3 billion at the end of May 2026, £174.3 billion more than a year earlier. Debt at the end of May 2026 was equivalent to 95.1% of GDP.</p>
+`;
+
+const augustBulletin = readFileSync(
+  new URL("../../fixtures/ons-public-sector-finances-august-2026.html", import.meta.url),
+  "utf8"
+);
+
+function htmlResponse(body: string) {
+  return {
+    ok: true,
+    status: 200,
+    url: "",
+    text: async () => body,
+  };
+}
+
+function sourceResponse(url: string, ratio = debtGdpCsv, page = debtPage) {
+  if (url === FINANCES_BULLETIN_URL) {
+    return htmlResponse(`<a href="${editionUrl}">Latest release</a>`);
+  }
+  if (url === editionUrl) {
+    return htmlResponse(matchingBulletin);
+  }
+  if (url === DEBT_SERIES_URL) return htmlResponse(page);
+  return htmlResponse(url.includes("hf6x") ? ratio : debtCsv);
+}
+
+describe("official ONS national debt connector", () => {
+  it("retains the next release announced on the ONS series page when the bulletin agrees", async () => {
+    const page = `<main><p>Release date: 19 June 2026</p><p>Next release: 21 October 2026</p></main>`;
+    const bulletin = `${matchingBulletin}<p>Next release: 21 October 2026</p>`;
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url === FINANCES_BULLETIN_URL) return htmlResponse(`<a href="${editionUrl}">Latest release</a>`);
+      if (url === editionUrl) return htmlResponse(bulletin);
+      if (url === DEBT_SERIES_URL) return htmlResponse(page);
+      return htmlResponse(url.includes("hf6x") ? debtGdpCsv : debtCsv);
+    });
+    const result = await buildNationalDebt(fetchImpl as unknown as typeof fetch);
+    expect(result.nextReleaseDate).toBe("2026-10-21");
+  });
+
+  it("collect wraps the unchanged builder output", async () => {
+    const fetchImpl = vi.fn(async (url: string) => sourceResponse(url)) as unknown as typeof fetch;
+    const result = await collect({ fetch: fetchImpl, now: new Date("2026-08-02T04:30:00.000Z") });
+    expect(result.data).toEqual(await buildNationalDebt(fetchImpl));
+  });
+
+  it("parses only monthly observations and orders them chronologically", () => {
+    const points = parseMonthlyOnsCsv(`Period,Value
+2026,2925.5
+2026 Q1,2918.5
+2026 APR,2940.8
+"2026 MAY","2,984.3"
+`);
+
+    expect(points).toHaveLength(2);
+    expect(points.map((point) => point.period)).toEqual(["2026 APR", "2026 MAY"]);
+    expect(points[1]).toMatchObject({ value: 2984.3, observedAt: Date.UTC(2026, 5, 0) });
+  });
+
+  it("parses full and abbreviated publication months from the official series page", () => {
+    expect(parseOnsReleaseDate(debtPage)).toBe("2026-06-19");
+    expect(parseOnsReleaseDate("<main>Release date: 19 Jun 2026</main>")).toBe("2026-06-19");
+    expect(parseOnsReleaseDate("<main>Release date: 7 Sept 2026</main>")).toBe("2026-09-07");
+    expect(() => parseOnsReleaseDate("<main>No date</main>")).toThrow(
+      /did not expose a release date/i
+    );
+  });
+
+  it("parses the August 2026 public-finances bulletin debt check without inventing figures", () => {
+    const parsed = parseDebtBulletinCheck(
+      augustBulletin,
+      FINANCES_BULLETIN_URL.replace("/latest", "/august2026")
+    );
+    expect(parsed).toMatchObject({
+      period: "August 2026",
+      debtBillion: 2985.5,
+      debtToGdp: 93.8,
+      releaseDate: "2026-09-22",
+      nextReleaseDate: "2026-10-21",
+      source: {
+        bulletinUrl: FINANCES_BULLETIN_URL.replace("/latest", "/august2026"),
+        landingUrl: FINANCES_BULLETIN_URL,
+      },
+    });
+  });
+
+  it("builds the debt stock, matching ratio and publication evidence after the bulletin check", async () => {
+    const fetchImpl = vi.fn(async (url: string) =>
+      sourceResponse(url)
+    ) as unknown as typeof fetch;
+
+    const result = await buildNationalDebt(fetchImpl);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(5);
+    expect(result).toMatchObject({
+      baseDebt: 2_984_300_000_000,
+      baseDate: Date.UTC(2026, 5, 0),
+      debtToGdp: 95.1,
+      observationPeriod: "2026 MAY",
+      publicationDate: "2026-06-19",
+      annualDelta: {
+        debtBillion: 174.3,
+        debtToGdpPoints: 2.1,
+      },
+      revisionStatus:
+        "Public-sector-finance estimates can be revised as source data and classifications are updated.",
+      source: {
+        publisher: "Office for National Statistics",
+        debtUrl: DEBT_SERIES_URL,
+        debtToGdpUrl: DEBT_GDP_SERIES_URL,
+        bulletinUrl: editionUrl,
+        landingUrl: FINANCES_BULLETIN_URL,
+      },
+      series: {
+        debt: "HF6W",
+        debtToGdp: "HF6X",
+      },
+    });
+    expect(result.history).toHaveLength(13);
+    expect(result).not.toHaveProperty("debtPerSecond");
+  });
+
+  it("fails closed immediately for a permanent ONS HTTP error", async () => {
+    const fetchImpl = vi.fn(async () => ({
+      ok: false,
+      status: 404,
+      text: async () => "",
+    })) as unknown as typeof fetch;
+
+    await expect(fetchOfficialCsv(DEBT_SERIES_PATH, fetchImpl)).rejects.toThrow(
+      "ONS returned 404"
+    );
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails closed when the official series periods do not align", async () => {
+    const mismatchedRatio = debtGdpCsv.replace("2026 MAY,95.1", "");
+    const fetchImpl = vi.fn(async (url: string) =>
+      sourceResponse(url, mismatchedRatio)
+    ) as unknown as typeof fetch;
+
+    await expect(buildNationalDebt(fetchImpl)).rejects.toThrow(
+      "ONS national debt series periods do not align"
+    );
+  });
+
+  it("fails closed when the generator stock does not match the bulletin", async () => {
+    const mismatchedBulletin = matchingBulletin.replace("£2,984.3", "£2,999.9");
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url === FINANCES_BULLETIN_URL) return htmlResponse(`<a href="${editionUrl}">Latest release</a>`);
+      if (url === editionUrl) return htmlResponse(mismatchedBulletin);
+      if (url === DEBT_SERIES_URL) return htmlResponse(debtPage);
+      return htmlResponse(url.includes("hf6x") ? debtGdpCsv : debtCsv);
+    }) as unknown as typeof fetch;
+
+    await expect(buildNationalDebt(fetchImpl)).rejects.toThrow(
+      /HF6W debt stock does not reconcile with the public-finances bulletin/i
+    );
+  });
+
+  it("fails closed when the generator ratio does not match the bulletin", async () => {
+    const mismatchedBulletin = matchingBulletin.replace("95.1% of GDP", "99.9% of GDP");
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url === FINANCES_BULLETIN_URL) return htmlResponse(`<a href="${editionUrl}">Latest release</a>`);
+      if (url === editionUrl) return htmlResponse(mismatchedBulletin);
+      if (url === DEBT_SERIES_URL) return htmlResponse(debtPage);
+      return htmlResponse(url.includes("hf6x") ? debtGdpCsv : debtCsv);
+    }) as unknown as typeof fetch;
+
+    await expect(buildNationalDebt(fetchImpl)).rejects.toThrow(
+      /HF6X debt-to-GDP does not reconcile with the public-finances bulletin/i
+    );
+  });
+
+  it("fails closed when the bulletin period does not match the generator tip", async () => {
+    const mismatchedBulletin = matchingBulletin
+      .replaceAll("May 2026", "April 2026")
+      .replace("Public sector finances, UK: April 2026", "Public sector finances, UK: April 2026");
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url === FINANCES_BULLETIN_URL) return htmlResponse(`<a href="${editionUrl}">Latest release</a>`);
+      if (url === editionUrl) return htmlResponse(mismatchedBulletin);
+      if (url === DEBT_SERIES_URL) return htmlResponse(debtPage);
+      return htmlResponse(url.includes("hf6x") ? debtGdpCsv : debtCsv);
+    }) as unknown as typeof fetch;
+
+    await expect(buildNationalDebt(fetchImpl)).rejects.toThrow(
+      /generator period does not match the public-finances bulletin/i
+    );
+  });
+
+  it("retries a transient ONS failure exactly three times and then fails closed", async () => {
+    const fetchImpl = vi.fn(async () => ({
+      ok: false,
+      status: 503,
+      text: async () => "",
+    })) as unknown as typeof fetch;
+
+    await expect(fetchOfficialCsv(DEBT_SERIES_PATH, fetchImpl)).rejects.toThrow(/503|unavailable|failed/i);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+  });
+});

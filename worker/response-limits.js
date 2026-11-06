@@ -34,6 +34,114 @@ function assertSameHttpsHost(response, requestedUrl, label = "Upstream") {
   return resolved.toString();
 }
 
+const MAX_APPROVED_REDIRECTS = 3;
+
+// Raised when a request or redirect hop falls outside the approved origin
+// policy. Callers must treat it as final: retrying cannot make it succeed.
+class ApprovedOriginError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "ApprovedOriginError";
+  }
+}
+
+function hostnameOf(url) {
+  return url.hostname.toLowerCase().replace(/\.$/, "");
+}
+
+// Validate a URL *before* any request is sent. Collectors build some URLs
+// from downloaded (untrusted) publisher content, so the requested URL itself
+// must be proven to be on an approved HTTPS origin: comparing a response with
+// a hostile requested URL proves nothing.
+function assertApprovedSourceUrl(url, approvedHosts, label = "Upstream") {
+  if (!approvedHosts || typeof approvedHosts.has !== "function") {
+    throw new ApprovedOriginError(`${label} requires an approved host set`);
+  }
+  let parsed;
+  try {
+    parsed = url instanceof URL ? new URL(url.toString()) : new URL(String(url));
+  } catch {
+    throw new ApprovedOriginError(`${label} URL is not a valid approved HTTPS source URL`);
+  }
+  if (parsed.protocol !== "https:") {
+    throw new ApprovedOriginError(`${label} URL must use HTTPS on an approved host`);
+  }
+  if (parsed.username || parsed.password) {
+    throw new ApprovedOriginError(`${label} URL must not carry credentials for an approved host`);
+  }
+  if (parsed.port) {
+    throw new ApprovedOriginError(`${label} URL must use the default HTTPS port of an approved host`);
+  }
+  if (!approvedHosts.has(hostnameOf(parsed))) {
+    throw new ApprovedOriginError(`${label} URL host '${hostnameOf(parsed)}' is not an approved source host`);
+  }
+  return parsed;
+}
+
+async function cancelResponseBody(response) {
+  try {
+    await response?.body?.cancel?.();
+  } catch {
+    // Releasing a rejected response body is best effort only.
+  }
+}
+
+function isRedirectStatus(status) {
+  return status === 301 || status === 302 || status === 303 || status === 307 || status === 308;
+}
+
+function redirectedAway(label) {
+  return new ApprovedOriginError(`${label} redirected away from its approved HTTPS host`);
+}
+
+// Fetch with manual redirects so every hop, including the first, is checked
+// against the approved host set before the request leaves the Worker. At most
+// MAX_APPROVED_REDIRECTS hops are followed; rejected responses are cancelled.
+async function fetchWithApprovedRedirects(
+  url,
+  init = {},
+  approvedHosts,
+  fetchImpl = fetch,
+  label = "Upstream"
+) {
+  let current = assertApprovedSourceUrl(url, approvedHosts, label);
+  for (let hop = 0; ; hop += 1) {
+    const response = await fetchImpl(current.toString(), { ...init, redirect: "manual" });
+    const status = Number(response?.status);
+
+    if (isRedirectStatus(status)) {
+      const location = response.headers?.get?.("location");
+      await cancelResponseBody(response);
+      if (!location) {
+        throw new ApprovedOriginError(`${label} returned a ${status} redirect without a Location header`);
+      }
+      if (hop >= MAX_APPROVED_REDIRECTS) {
+        throw new ApprovedOriginError(`${label} followed more than ${MAX_APPROVED_REDIRECTS} redirects`);
+      }
+      let next;
+      try {
+        next = assertApprovedSourceUrl(new URL(location, current), approvedHosts, label);
+      } catch {
+        throw redirectedAway(label);
+      }
+      current = next;
+      continue;
+    }
+
+    // Defence in depth: a runtime that ignored redirect: "manual" reports the
+    // final URL; it must still be on an approved HTTPS host.
+    if (response?.url) {
+      try {
+        assertApprovedSourceUrl(response.url, approvedHosts, label);
+      } catch {
+        await cancelResponseBody(response);
+        throw redirectedAway(label);
+      }
+    }
+    return response;
+  }
+}
+
 async function readResponseBytes(response, { limit, label = "Upstream" } = {}) {
   assertResponseSize(response, limit, label);
 
@@ -107,9 +215,14 @@ async function readResponseArrayBuffer(response, options = {}) {
 }
 
 export {
+  ApprovedOriginError,
+  MAX_APPROVED_REDIRECTS,
   MAX_RESPONSE_BYTES,
+  assertApprovedSourceUrl,
   assertResponseSize,
   assertSameHttpsHost,
+  cancelResponseBody,
+  fetchWithApprovedRedirects,
   headerContentLength,
   readResponseArrayBuffer,
   readResponseBytes,

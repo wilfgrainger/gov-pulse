@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { collectNhsReleaseCalendar, parseNhsReleaseCalendarPage, parseNhsReleaseSchedule } from "../../worker/nhs-release-calendar.js";
+import { collectNhsReleaseCalendar, parseNhsReleaseCalendarPage, parseNhsReleaseSchedule } from "@/feeds/nhs-release-calendar/parse.js";
 
 const now = new Date("2026-10-03T12:00:00.000Z");
 const pdfUrl = "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2026/09/20260924_Proposed-12-month-plan-for-2026-27-for-publication.pdf";

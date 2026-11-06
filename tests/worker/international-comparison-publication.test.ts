@@ -1,12 +1,12 @@
 // @vitest-environment node
 
 import { describe, expect, it } from "vitest";
-import { COMPARISON_COUNTRIES } from "@/worker/international-comparison";
+import { COMPARISON_COUNTRIES } from "@/feeds/international-comparison/compare.js";
 import {
   buildInternationalComparisonPublication,
   collectInternationalComparison,
   comparisonSourceBundle,
-} from "@/worker/international-comparison-publication";
+} from "@/feeds/international-comparison/parse.js";
 
 const ids = COMPARISON_COUNTRIES.map(({ id }) => id);
 const mapAll = (value: number) => new Map(ids.map((id) => [id, value]));
@@ -285,5 +285,22 @@ describe("international comparison publication", () => {
       source: { publisher: "SIPRI", additionalSources: [{ publisher: "World Bank World Development Indicators" }] },
     });
     expect(publication.measures.defenceSpending.countryHistory?.find((row) => row.country === "GBR" && row.observationYear === 2025)?.valueType).toBe("estimate");
+  });
+});
+
+describe("comparison ranking basis", () => {
+  it("refuses to rank observations from different years or value types together", async () => {
+    const { buildComparisonMeasure } = await import("@/feeds/international-comparison/compare.js");
+    const source = { publisher: "IMF", series: "x", url: "https://www.imf.org/x", publicationDate: "2026-04-01" };
+    const base = { definition: "d", sourceReferences: [] };
+    expect(() => buildComparisonMeasure({
+      id: "governmentDebt",
+      ...base,
+      observationYear: 2026,
+      observations: [
+        { country: "GBR", value: 100, observationYear: 2026, valueType: "projection", source },
+        { country: "FRA", value: 110, observationYear: 2024, valueType: "historical", source },
+      ],
+    })).toThrow("share one observationYear and valueType");
   });
 });

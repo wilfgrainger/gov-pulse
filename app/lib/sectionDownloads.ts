@@ -1,25 +1,18 @@
 import type { MetricsSnapshot, SnapshotSourceStatus } from "./metricsSnapshot";
+import { downloadGeography, downloadIds } from "../../feeds/registry.js";
 
-export const SECTION_DOWNLOAD_IDS = [
+// Every feed with a section download declares it in feeds/<slug>/feed.js; the
+// list and its order are FEEDS order (feeds/index.js). The tuple type keeps the
+// literal id union for typed callers; tests/worker/feed-registry-projection.test.ts
+// pins the runtime list to the pre-migration list and order.
+type DownloadIds = readonly [
   "electionPolling", "nationalDebt", "gdpTracker", "sentimentPulse",
   "taxRevenue", "employmentStats", "crimeStatistics", "nhsStats", "migrationStats",
-  "housePriceIndex",
-  "realWages",
-] as const;
+  "housePriceIndex", "realWages",
+];
+export const SECTION_DOWNLOAD_IDS = downloadIds() as unknown as DownloadIds;
 
-const GEOGRAPHY: Record<(typeof SECTION_DOWNLOAD_IDS)[number], string> = {
-  electionPolling: "United Kingdom (check each poll's sample)",
-  nationalDebt: "United Kingdom",
-  gdpTracker: "United Kingdom",
-  sentimentPulse: "United Kingdom (check each series)",
-  taxRevenue: "United Kingdom",
-  employmentStats: "United Kingdom",
-  crimeStatistics: "England and Wales (check each series)",
-  nhsStats: "England",
-  migrationStats: "United Kingdom",
-  housePriceIndex: "United Kingdom",
-  realWages: "United Kingdom",
-};
+const GEOGRAPHY: Record<(typeof SECTION_DOWNLOAD_IDS)[number], string> = downloadGeography();
 
 const OGL = {
   name: "Open Government Licence v3.0, except where otherwise stated",

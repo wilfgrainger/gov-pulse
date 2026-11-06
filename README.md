@@ -61,6 +61,8 @@ The project intentionally retains Node 20 type definitions while running on Node
 
 ## Quality gates
 
+`app/generated/metricsSnapshot.ts` is untracked build output. `npm run build:prepare` fetches current published evidence into it (or writes a `null` export); `pretest` and `predev` run `--ensure`, which only creates the null module if it is missing and never touches the network. Run `npm run build:prepare` before `tsc`, `next build` or a lint run on a fresh clone.
+
 ```bash
 npm run toolchain:check
 npm run lint

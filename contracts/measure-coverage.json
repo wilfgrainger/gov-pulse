@@ -2,6 +2,6 @@
   "version": 1,
   "routeSource": "app/lib/sectionContent.ts",
   "measureSource": "contracts/measure-definitions.json",
-  "topics": ["pm-approval", "election-polls", "betting-odds", "govt-approval", "gov-trust-trend", "national-debt", "gdp", "economy", "tax", "uk-in-context", "government-contracts", "employment", "crime-stats", "nhs", "migration", "real-wages", "house-price-index", "early-years", "uk-regions", "policy-links"],
+  "topics": ["election-polls", "betting-odds", "national-debt", "gdp", "economy", "tax", "uk-in-context", "government-contracts", "employment", "crime-stats", "nhs", "migration", "real-wages", "house-price-index", "early-years"],
   "measureCoverage": "Every definition is represented in the worker catalog and browser library; live omissions carry a reason."
 }

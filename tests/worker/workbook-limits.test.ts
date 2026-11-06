@@ -2,7 +2,7 @@
 
 import { deflateRawSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { sharedStrings, workbookSheetCells, worksheetCells, zipEntries } from "../../worker/xlsx-workbook.js";
+import { sharedStrings, workbookSheetCells, worksheetCells, zipEntries } from "@/feeds/_kit/xlsx.js";
 
 type ZipFixtureEntry = {
   name: string;

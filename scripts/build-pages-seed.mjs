@@ -2,14 +2,14 @@ import { copyFile, mkdir, rm, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { anyPublicationEnabled } from "../contracts/publication-policy.js";
+import { anyEvidencePublished } from "../contracts/publication-policy.js";
 import { fetchCandidate } from "./fetch-cloudflare-publication-candidate.mjs";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const OFFLINE_MESSAGE = "Data publications are temporarily offline.\n";
 
 export async function buildPagesSeed({
-  enabled = anyPublicationEnabled(),
+  enabled = anyEvidencePublished(),
   root = projectRoot,
   outputDirectory = "out",
   offlineEntry = "worker/offline-pages-entry.js",

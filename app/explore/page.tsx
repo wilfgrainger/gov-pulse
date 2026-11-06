@@ -1,5 +1,5 @@
 import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationRouteEnabled } from "@/contracts/publication-policy";
+import { gateRoute } from "@/app/lib/gateRoute";
 import type { Metadata } from "next";
 import DataExplorer from "@/app/components/DataExplorer";
 import PlaceLookup from "@/app/components/PlaceLookup";
@@ -16,7 +16,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://public-data.org/explore/" },
 };
 export default async function ExplorePage() {
-  if (!publicationRouteEnabled("/explore/")) return <PublicationOffline />;
+  const gate = gateRoute("/explore/");
+  if (gate.access !== "serve") return <PublicationOffline heldFeeds={gate.heldFeeds} />;
   const snapshot = await readServerMetricsSnapshot();
   return (
     <div className="min-h-screen bg-background text-foreground">

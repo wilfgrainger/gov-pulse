@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  filterCurrentSnapshot,
-  sectionValidityDeadline,
-} from "@/worker/publication-currentness";
+import { filterCurrentSnapshot, sectionValidityDeadline, sourceHasUsableStatus } from "@/contracts/evidence-policy";
 import { DATA_SOURCES, REFRESH_INTERVAL_MS } from "./config";
 import { useInitialMetricsSnapshot } from "./MetricsSnapshotProvider";
 import {
@@ -187,8 +184,7 @@ export function metricsResultFromSnapshot<T>(
   const sourceStatus = typedSnapshot.meta.sources[section];
   const raw = typedSnapshot[section];
   if (
-    !sourceStatus ||
-    (sourceStatus.status !== "ok" && sourceStatus.status !== "stale") ||
+    !sourceHasUsableStatus(sourceStatus) ||
     raw === null ||
     raw === undefined ||
     !acceptsCompleteLivePayload(fallback, raw)

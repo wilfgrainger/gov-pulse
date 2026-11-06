@@ -1,7 +1,0 @@
-{
-  "name": "gov-pulse-worker-toolchain",
-  "private": true,
-  "devDependencies": {
-    "@opennextjs/cloudflare": "1.20.2"
-  }
-}

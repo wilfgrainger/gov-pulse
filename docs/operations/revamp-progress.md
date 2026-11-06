@@ -1,6 +1,6 @@
 # Revamp progress
 
-Updated 5 October 2026.
+Updated 12 October 2026.
 
 ## Signed off
 
@@ -17,6 +17,7 @@ Updated 5 October 2026.
 | #207 Compare one indicator | Local `oneIndicatorCompare` unit tests; PR validation classify, quality and full-quality on `d37ed53` | 7 passed locally. Squash-merged as `0a9ee2f`. |
 | #209 Polling table | Local `pollingTable` and `ElectionPolling` suites; PR validation classify, quality and full-quality on `cdf1aad` | 17 passed locally. Squash-merged as `3a9a063`. |
 | #210 Edition page and read API | Local edition archive suites; PR validation classify, quality and full-quality on `70f072a` | 38 passed locally. Squash-merged as `cd44854`. |
+| #212 Premium look | Local `premiumLook`, `SectionNav` and `LeadHistoryCards` suites; live deployment verification of `/`, `/editions/` and `/data/editions.json` on 9 October 2026 | 14 passed locally. Squash-merged as `2ef54a4`. Live chrome, edition ledger and health contract verified. |
 
 ## Features
 
@@ -32,7 +33,7 @@ Updated 5 October 2026.
 | 8 | Compare, one indicator | Merged. One-indicator Compare door; overlay peers only when definitions match; country peers unavailable while UK-in-context is offline. |
 | 9 | Polling table | Merged. Aligned party-column table; no average; shares require a source URL; corrections are separate rows; betting markets absent from the table. `electionPolling` stays disabled. |
 | 10 | Edition page and read API | Merged. `/editions/` and `/editions/[id]` open with `editionArchive` enabled; `/data/editions.json` and `/data/edition.json` are the public read path; revision ledger on the index. Disabled source values stay redacted from archived responses. Squash-merged as `cd44854`. |
-| 11 | Premium look | In progress on `premium-look`. Ink chrome, warm paper surfaces, vermillion accent, asymmetric masthead, designed offline shell. Debt-only publication behaviour unchanged. |
+| 11 | Premium look | Merged as `2ef54a4`. Ink chrome, warm paper surfaces, vermillion accent, asymmetric masthead and designed offline shell are on `main`; live deployment verified on 9 October 2026. Debt-only publication behaviour unchanged. |
 
 ## Premium look evidence
 
@@ -40,10 +41,28 @@ Updated 5 October 2026.
 - Display face remains Familjen Grotesk (`--font-display-file`). Inter stays body only.
 - Signature moves: asymmetric masthead, extreme type contrast, ink paper, single accent, tabular nums, hairline furniture, lead breakout, designed offline state, reduced-motion, focus-visible AA.
 - Hard bans kept: no purple-to-blue gradient, no glassmorphism, no Inter display, no centred AI hero.
-- Publications config untouched. NHS stays unavailable. `governmentContracts`, polling and betting stay disabled.
+- Evidence-family publication switches remain fail-closed: only `nationalDebt` and `editionArchive` are enabled; NHS, `governmentContracts`, polling, betting and other data families remain held. The current implementation changes the two authored-story routes from disabled to enabled. Stories are not dataset activation, but publishing them still requires review of their evidence links, metadata gate and editorial content before integration.
 - Local: `npx vitest run tests/unit/premiumLook.test.tsx tests/unit/SectionNav.test.tsx tests/unit/LeadHistoryCards.test.tsx` — 14 passed.
+- Live (9 October 2026): `/` serves 200 with ink `#0c0f12` and vermillion `#e8352e` on the chrome and warm paper `#f6f2ea` in the deployed CSS chunk; `/editions/` serves 200 with the revision ledger; `/editions/<id>` resolves 308 to the trailing-slash 200 detail route; `/data/editions.json` returns the archive (latest edition published 2026-09-22, asOf 2026-10-03); `/data/health.json` reports `degraded`/`ready:false` for `nhsStats` only, consistent with NHS staying unavailable.
 
-## Next
+## V1 continuation
 
-1. Merge premium look after quality checks. Deploy verification of live homepage chrome and `/editions/`.
-2. Do not invent NHS figures. Do not mark NHS optional. `governmentContracts` stays disabled unless this progress note says otherwise.
+The active ten-priority scope and execution sequence are in the [V1 master delivery plan](../v1/MASTER-DELIVERY-PLAN.md). This file remains the concise record of signed-off work, verified commands, deployment receipts and immediate handoff.
+
+### Production baseline (12 October 2026)
+
+At the 12 October baseline check, production served revision `5b6773046769c0a8262d564692d520dca7175eb7` (recorded in [workflow run 38220398551](https://github.com/wilfgrainger/gov-pulse/actions/runs/38220398551)). This is a dated deployment receipt, not current release status. `/data/health.json` was degraded/not ready with `nhsStats` missing. The data Worker served a debt-only metrics snapshot; international comparison and procurement history were held, and the public Pages snapshot returned `503 publication_disabled`. The V1 candidate was not deployed at that check. Requery before a release decision.
+
+- **Scope:** the ten priorities in the V1 master plan remain in scope. Existing code and tests are implementation assets, not proof of complete populated reader journeys. No new data-family activation is authorized. NHS remains unavailable. Authored stories require editorial review separately from evidence-family approval.
+- **Static publication boundary repaired:** The Pages candidate writer validates the complete required current candidate, then applies publication policy before sanitizing it. Static section downloads apply currentness and publication policy, and remove stale known section files. If the JSON candidate is absent in an optional local build, downloads use the same generated snapshot as the static app and apply the same currentness and publication filters. The static output check rejects disabled or unknown download assets, checks that current national-debt HTML and downloads agree, and checks that held GDP renders unavailable without download links or files. This is a build-time boundary check; no claim is made about an artifact served in production.
+- **Static fallback and route build gaps repaired:** RSS and source-directory data helpers now live outside Next route/page modules. Buyer and supplier dossier routes generate an explicitly unavailable static fallback. Static source pages do not resolve request-only search parameters.
+- **Verified checks (12 October):** A14 reran `npm run toolchain:check`, `npm run lint`, `npm test`, `node scripts/check-static-architecture.mjs` (six public routes), and `node scripts/check-source-ownership.mjs` (12 active sources; 5 withdrawn sources/routes) on `e48a71a13056ac3be02db15262472adab8d58ecc`; all exited 0. Unit tests passed 1,127/1,127 across 175 files. Lint had 0 errors and 1 warning at `worker/offline-pages-entry.js`. A fresh `npm run test:e2e` passed 28 desktop/mobile cases; 12 deployment-only cases were skipped without a production base URL. The earlier same-day `STATIC_EXPORT=true npm run build:check` rendered 111 pages with only current, enabled national-debt JSON/CSV downloads; the OpenNext Cloudflare Webpack build passed. These local checks are not a hosted `quality` result or candidate production release verification.
+- **Build path:** `package.json` now runs `next build --webpack`. In this environment the default Turbopack build failed while its CSS worker tried to bind a port (`Operation not permitted`); the Webpack build passed through the exact OpenNext adapter build. The underlying Turbopack environment issue has not been diagnosed further.
+- **Release and reader acceptance:** The local checks do not complete the required hosted `quality` workflow, all-ten browser/accessibility acceptance, populated production journeys, or source approvals. No hosted PR validation or deployment verification exists for this change set. An unavailable HTTP 200 page is not a populated acceptance journey. Keep code-release health separate from source-evidence readiness and refresh both before release.
+
+### Next
+
+1. Wave 0 confirmed the public Pages snapshot returns `503 publication_disabled`; direct KV inspection remains open because this environment has no Cloudflare API token. Keep it read-only and do not ask for or record credentials.
+2. Review authored-story content and evidence links before any integration that would publish the currently enabled story routes; the metadata gate is covered locally, but editorial approval remains separate.
+3. Enter Wave 1 after the inventory and architecture interfaces are agreed. Keep all held data families offline until each family is independently verified and explicitly authorized.
+4. Continue the ten-priority sequence in the V1 master plan; record local checks, reader journeys, evidence approvals and exact-revision release/rollback proof as they occur. Supporting factual records are in `docs/v1/`.

@@ -106,6 +106,14 @@ async function readIndex(env) {
   return index;
 }
 
+function listedSummary(entry) {
+  const id = validateEditionId(entry.id);
+  const original = validateSummary(entry.summary, id);
+  if (original.previousEditionId || original.summaryCorrection || entry.correctedSummary === undefined) return original;
+  const corrected = validateSummary(entry.correctedSummary, id);
+  return corrected.summaryCorrection?.kind === "baseline-reconciliation" && corrected.previousEditionId === corrected.summaryCorrection.baselineEditionId ? corrected : original;
+}
+
 async function writeIndex(env, entries) {
   const encoded = stableStringify(entries);
   if (new TextEncoder().encode(encoded).byteLength > MAX_INDEX_BYTES) throw new Error("Edition index exceeds the configured byte limit");
@@ -115,7 +123,7 @@ async function writeIndex(env, entries) {
 async function retainIndex(env, entries) {
   const datedEntries = await Promise.all(entries.map(async (entry) => {
     if (validInstant(entry.asOf)) return entry;
-    const archived = await readEditionRaw(env, entry.id);
+    const archived = await readEditionRaw(env, entry.id, entries);
     return archived ? { ...entry, asOf: archived.asOf } : entry;
   }));
   const ordered = datedEntries.toSorted((left, right) =>
@@ -145,32 +153,43 @@ async function archiveEdition(env, catalogInput, summaryInput) {
   const fingerprint = catalogRevisionIdentity(catalog.measures);
   const summaryKey = `${EDITION_SUMMARY_PREFIX}${id}`;
   const contentKey = `${EDITION_CONTENT_PREFIX}${contentHash}`;
-  const existing = await env.METRICS_CACHE.getWithMetadata(summaryKey, "json");
   const index = await readIndex(env);
-  if (existing?.value) {
-    if (existing.metadata?.fingerprint === fingerprint) {
-      const archivedHash = existing.metadata.contentHash;
-      const archivedSummary = validateSummary(existing.value.summary, id);
-      if (!index.some((entry) => entry.id === id && entry.contentHash === archivedHash && stableStringify(entry.summary) === stableStringify(archivedSummary))) {
-        const fixed = await retainIndex(env, [...index.filter((entry) => entry.id !== id), { id, contentHash: archivedHash, summary: archivedSummary }]);
-        return { archived: false, duplicate: true, id, contentHash: archivedHash, retained: fixed.length };
-      }
-      return { archived: false, duplicate: true, id, contentHash: archivedHash, retained: index.length };
+  const indexed = index.find((entry) => entry.id === id);
+  // Older editions kept their identity in a per-edition summary key; read it only to confirm identity, never to write it.
+  const legacy = indexed && typeof indexed.fingerprint === "string" ? null : await env.METRICS_CACHE.getWithMetadata(summaryKey, "json");
+  const knownFingerprint = indexed?.fingerprint ?? legacy?.metadata?.fingerprint;
+  if (indexed) {
+    if (knownFingerprint === fingerprint || knownFingerprint === undefined && indexed.contentHash === contentHash) {
+      return { archived: false, duplicate: true, id, contentHash: indexed.contentHash, retained: index.length };
+    }
+    throw new Error("An archived edition id cannot be rewritten");
+  }
+  if (legacy?.value) {
+    if (legacy.metadata?.fingerprint === fingerprint) {
+      const archivedHash = legacy.metadata.contentHash;
+      const archivedSummary = validateSummary(legacy.value.summary, id);
+      const fixed = await retainIndex(env, [...index, { id, contentHash: archivedHash, fingerprint, summary: archivedSummary }]);
+      return { archived: false, duplicate: true, id, contentHash: archivedHash, retained: fixed.length };
     }
     throw new Error("An archived edition id cannot be rewritten");
   }
   const contentExisting = await env.METRICS_CACHE.get(contentKey, "text");
   if (contentExisting && contentExisting !== content) throw new Error("Content-addressed edition hash collision");
-  if (!contentExisting) await env.METRICS_CACHE.put(contentKey, content, { metadata: { contentHash, schemaVersion: 2 } });
-  await env.METRICS_CACHE.put(summaryKey, JSON.stringify({ summary }), { metadata: { contentHash, fingerprint, publishedAt: summary.publishedAt } });
-  const retained = await retainIndex(env, [...index.filter((entry) => entry.id !== id), { id, contentHash, summary, asOf: catalog.generatedAt }]);
+  if (!contentExisting) {
+    await env.METRICS_CACHE.put(contentKey, content, { metadata: { contentHash, schemaVersion: 2 } });
+    const stored = await env.METRICS_CACHE.get(contentKey, "text");
+    if (stored !== content || await sha256(stored) !== contentHash) throw new Error("Archived edition content hash mismatch; the edition was not indexed");
+  }
+  const retained = await retainIndex(env, [...index, { id, contentHash, fingerprint, summary, asOf: catalog.generatedAt }]);
   return { archived: true, duplicate: false, id, contentHash, retained: retained.length };
 }
 
-async function readEditionRaw(env, id) {
+async function readEditionRaw(env, id, preloadedIndex) {
   validateEditionId(id);
-  if (!env?.METRICS_CACHE?.getWithMetadata) return null;
-  const record = await env.METRICS_CACHE.getWithMetadata(`${EDITION_SUMMARY_PREFIX}${id}`, "json");
+  if (!env?.METRICS_CACHE?.getWithMetadata || !env?.METRICS_CACHE?.get) return null;
+  const indexed = (preloadedIndex ?? await readIndex(env)).find((entry) => entry.id === id);
+  // Editions archived before the index carried their identity fall back to the per-edition summary key.
+  const record = indexed ? { value: { summary: indexed.summary }, metadata: { contentHash: indexed.contentHash } } : await env.METRICS_CACHE.getWithMetadata(`${EDITION_SUMMARY_PREFIX}${id}`, "json");
   const contentHash = record?.metadata?.contentHash;
   if (typeof contentHash !== "string" || !/^[a-f0-9]{64}$/.test(contentHash) || !record.value?.summary) return null;
   const content = await env.METRICS_CACHE.get(`${EDITION_CONTENT_PREFIX}${contentHash}`, "text");
@@ -218,28 +237,38 @@ async function readEdition(env, id) {
   return correctedSummary ? { ...archived, summary: correctedSummary } : archived;
 }
 
+// The list reads only the index, so a validated correction is mirrored there. The original summary stays untouched.
+async function mirrorCorrectionInIndex(env, index, id, correctedSummary) {
+  const entry = index.find((candidate) => candidate.id === id);
+  if (!entry || stableStringify(entry.correctedSummary ?? null) === stableStringify(correctedSummary)) return;
+  await writeIndex(env, index.map((candidate) => candidate.id === id ? { ...candidate, correctedSummary } : candidate));
+}
+
 async function reconcileEditionSummaryFromRetainedPrior(env, id) {
   validateEditionId(id);
   if (!env?.METRICS_CACHE?.getWithMetadata || !env?.METRICS_CACHE?.get || !env?.METRICS_CACHE?.put) {
     throw new Error("METRICS_CACHE summary reconciliation operations are required");
   }
 
-  const archived = await readEditionRaw(env, id);
+  const index = await readIndex(env);
+  const archived = await readEditionRaw(env, id, index);
   if (!archived) return { corrected: false, duplicate: false, summary: null };
   if (archived.summary.previousEditionId || archived.summary.summaryCorrection) {
     return { corrected: false, duplicate: Boolean(archived.summary.summaryCorrection), summary: archived.summary };
   }
   const existingCorrection = await readSummaryCorrection(env, archived);
-  if (existingCorrection) return { corrected: false, duplicate: true, summary: existingCorrection };
+  if (existingCorrection) {
+    await mirrorCorrectionInIndex(env, index, id, existingCorrection);
+    return { corrected: false, duplicate: true, summary: existingCorrection };
+  }
   if (archived.summary.previousEditionId) {
     return { corrected: false, duplicate: false, summary: archived.summary };
   }
 
-  const index = await readIndex(env);
   let prior = null;
   for (const entry of index) {
     if (entry.id === id) continue;
-    const candidate = await readEditionRaw(env, entry.id);
+    const candidate = await readEditionRaw(env, entry.id, index);
     if (candidate && Date.parse(candidate.asOf) < Date.parse(archived.asOf) &&
       (!prior || Date.parse(candidate.asOf) > Date.parse(prior.asOf))) {
       prior = candidate;
@@ -271,6 +300,7 @@ async function reconcileEditionSummaryFromRetainedPrior(env, id) {
   if (existing?.value) {
     const existingSummary = await readSummaryCorrection(env, archived);
     if (existingSummary && stableStringify(existingSummary) === stableStringify(summary)) {
+      await mirrorCorrectionInIndex(env, index, id, existingSummary);
       return { corrected: false, duplicate: true, summary: existingSummary };
     }
     throw new Error("A corrected edition summary cannot be rewritten");
@@ -283,6 +313,7 @@ async function reconcileEditionSummaryFromRetainedPrior(env, id) {
       schemaVersion: 1,
     },
   });
+  await mirrorCorrectionInIndex(env, index, id, summary);
   return { corrected: true, duplicate: false, summary };
 }
 
@@ -305,26 +336,21 @@ async function reconcileRetainedEditionSummaries(env, currentId) {
 async function listEditionSummaries(env, limit = EDITION_SUMMARY_RETENTION) {
   if (!env?.METRICS_CACHE?.get) return [];
   if (!Number.isInteger(limit) || limit < 1 || limit > EDITION_SUMMARY_RETENTION) throw new Error("Edition summary limit is invalid");
+  // One KV read. The index entry carries the validated summary and archive time; the content is not re-hashed per request.
   const index = await readIndex(env);
-  const editions = await Promise.all(index.map(async (entry) => {
+  const editions = [];
+  for (const entry of index) {
     try {
-      const id = validateEditionId(entry.id);
-      const summary = validateSummary(entry.summary, id);
-      const archived = await readEditionRaw(env, id);
-      if (!archived || archived.contentHash !== entry.contentHash || stableStringify(archived.summary) !== stableStringify(summary)) return null;
-      const correctedSummary = archived.summary.previousEditionId || archived.summary.summaryCorrection
-        ? archived.summary
-        : await readSummaryCorrection(env, archived) ?? summary;
-      return { summary: correctedSummary, asOf: archived.asOf };
-    } catch {
-      return null;
-    }
-  }));
+      editions.push({ summary: listedSummary(entry), asOf: validInstant(entry.asOf) ? entry.asOf : undefined });
+    } catch { /* an invalid entry is not advertised */ }
+  }
   return editions
-    .filter((edition) => edition !== null)
-    .toSorted((left, right) => right.asOf.localeCompare(left.asOf) || right.summary.id.localeCompare(left.summary.id))
+    .toSorted((left, right) =>
+      (right.asOf ?? right.summary.publishedAt).localeCompare(left.asOf ?? left.summary.publishedAt) ||
+      right.summary.publishedAt.localeCompare(left.summary.publishedAt) ||
+      right.summary.id.localeCompare(left.summary.id))
     .slice(0, limit)
-    .map(({ summary, asOf }) => ({ ...summary, asOf }));
+    .map(({ summary, asOf }) => ({ ...summary, ...(asOf ? { asOf } : {}) }));
 }
 
 export {

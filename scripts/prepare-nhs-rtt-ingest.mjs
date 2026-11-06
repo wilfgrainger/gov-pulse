@@ -9,7 +9,7 @@ import {
   discoverRttTimeseriesUrl,
   parseNhsRttPressNotice,
 } from "./nhs-rtt-parser.mjs";
-import { normalizeNhsRttPayload } from "../worker/nhs-rtt.js";
+import { normalizeNhsRttPayload } from "../feeds/nhs/rtt.js";
 
 const LANDING_URL =
   "https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/";

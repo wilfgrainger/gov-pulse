@@ -172,14 +172,12 @@ describe("HousePriceIndex evidence integrity", () => {
 
     render(<HousePriceIndex />);
 
-    fireEvent.click(screen.getByRole("button", { name: "View screen-reader table" }));
-    const rows = within(screen.getByRole("table", { name: /historical comparison table/i })).getAllByRole("row");
-    expect(rows).toHaveLength(3);
-    for (const row of rows.slice(1)) {
-      const unavailableCells = within(row).getAllByText("Unavailable");
-      expect(unavailableCells).toHaveLength(2);
-      expect(unavailableCells[1].closest("td")).toHaveClass("text-slate-500");
-    }
+    fireEvent.click(screen.getByRole("button", { name: "View screen-reader tables" }));
+    const payRows = within(screen.getByRole("table", { name: /real regular pay growth/i })).getAllByRole("row");
+    expect(payRows).toHaveLength(2);
+    expect(within(payRows[1]).getAllByText("Unavailable")).toHaveLength(2);
+    const hpiRows = within(screen.getByRole("table", { name: /house price annual change/i })).getAllByRole("row");
+    expect(hpiRows).toHaveLength(3);
   });
 
   it.each([

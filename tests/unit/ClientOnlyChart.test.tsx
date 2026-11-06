@@ -59,4 +59,46 @@ describe("ClientOnlyChart", () => {
     act(() => resizeCallback?.());
     expect(await screen.findByText("Rendered chart")).toBeInTheDocument();
   });
+
+  it("renders accessible observation content when fallbackContent is provided before client hydration", () => {
+    const html = renderToStaticMarkup(
+      <ClientOnlyChart
+        heightClass="h-64"
+        fallbackLabel="Chart unavailable without JavaScript"
+        fallbackContent={
+          <table data-testid="fallback-table">
+            <tbody>
+              <tr><td>June 2026</td><td>100.5%</td></tr>
+            </tbody>
+          </table>
+        }
+      >
+        <div>Rendered chart</div>
+      </ClientOnlyChart>,
+    );
+
+    expect(html).toContain("Chart unavailable without JavaScript");
+    expect(html).toContain("fallback-table");
+    expect(html).toContain("June 2026");
+    expect(html).toContain("100.5%");
+    expect(html).not.toContain("Rendered chart");
+  });
+
+  it("renders the SSR fallback summary instead of a loading skeleton", () => {
+    const html = renderToStaticMarkup(
+      <ClientOnlyChart
+        heightClass="h-64"
+        fallbackLabel="Chart unavailable without JavaScript"
+        fallbackContent={<p>Fallback summary: latest value 100.5%</p>}
+      >
+        <div>Rendered chart</div>
+      </ClientOnlyChart>,
+    );
+
+    expect(html).toContain("Chart unavailable without JavaScript");
+    expect(html).toContain("Fallback summary: latest value 100.5%");
+    expect(html).not.toContain("Rendered chart");
+    expect(html).not.toContain("animate-pulse");
+    expect(html).toContain('aria-busy="false"');
+  });
 });

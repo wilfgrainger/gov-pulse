@@ -53,15 +53,15 @@ async function assertNoHorizontalOverflow(page: Parameters<typeof test>[0]["page
 async function assertPulseApp(page: Parameters<typeof test>[0]["page"]) {
   await page.goto("./");
   await expect(page.getByRole("heading", { level: 1, name: "Britain, in evidence." })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Explore the data/i })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Read the latest briefing" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Look up a measure or place/i })).toBeVisible();
+  await expect(page.locator(".v3-home-cover").getByRole("link", { name: "Edition archive" })).toBeVisible();
   await expect(page.locator("header").getByRole("link", { name: "Sources and dates" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Latest figures" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "The country at a glance" })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Go deeper by topic/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Number, period, source." })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: /Inspect the claim, not our confidence/i })).toHaveCount(0);
-  await expect(page.getByTestId("signal-card")).toHaveCount(7);
+  await expect(page.getByTestId("signal-card")).toHaveCount(6);
   await expect(page.locator("details[id^='category-']")).toHaveCount(0);
   await expect(page.locator("#more-evidence").getByRole("link", { name: /Crime statistics/i })).toBeVisible();
   await expect(page.locator("#more-evidence").getByRole("link", { name: /Government contracts/i })).toBeVisible();
@@ -113,6 +113,7 @@ test("topics panel exposes the complete evidence library and closes with Escape"
 test("legacy evidence hashes land on the matching signal", async ({ page }) => {
   await page.goto("./#gdp");
   await expect(page.locator("#gdp").getByRole("heading", { name: "GDP" })).toBeVisible();
+  await expect(page.locator("#gdp").getByRole("link", { name: "GDP" })).toHaveAttribute("href", "/section/gdp/");
   await expect(page.locator("details#category-economy")).toHaveCount(0);
 });
 
@@ -142,9 +143,9 @@ test("sources page and public trust record load cleanly", async ({ page }) => {
 
 test("all new publication routes render their honest server state without overflow", async ({ page }) => {
   const routes = [
-    ["/explore", "Explore the numbers"],
+    ["/explore", "Look up a place or a measure"],
     ["/measure", "Measure library"],
-    ["/compare", "Comparison studio"],
+    ["/compare", "Compare one indicator."],
     ["/briefing", "The briefing"],
     ["/calendar", "Release calendar"],
     ["/cost-of-living", "Cost of living"],
@@ -196,15 +197,15 @@ test("measure-library route keeps its truthful HTML available without JavaScript
   const page = await browser.newPage({ baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173", javaScriptEnabled: false });
   await page.goto("./measure");
   await expect(page.getByRole("heading", { level: 1, name: "Measure library" })).toBeVisible();
-  await expect(page.getByRole("status")).toContainText("No validated measure catalog is available");
+  await expect(page.getByRole("status")).toContainText("Showing 38 of 38 measures");
   await page.close();
 });
 
-test("section pages explain absent downloads in an unseeded local edition", async ({ page }) => {
+test("held GDP evidence remains unavailable without download links", async ({ page }) => {
   await page.goto("./section/gdp");
-  const downloads = page.getByLabel("GDP data downloads");
-  await expect(downloads).toContainText("A download will appear when this section has current verified evidence.");
-  await expect(downloads.getByRole("link", { name: "Download JSON" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1, name: "GDP" })).toBeVisible();
+  await expect(page.getByTestId("section-publication-held")).toContainText("held from public release");
+  await expect(page.getByLabel("GDP data downloads")).toHaveCount(0);
 });
 
 test("mobile journeys preserve touch targets and avoid horizontal overflow", async ({ page }, testInfo) => {
@@ -237,11 +238,8 @@ test("all section pages render cleanly without global feed telemetry", async ({ 
   await assertPulseApp(page);
 
   for (const path of [
-    "/section/pm-approval",
     "/section/election-polls",
     "/section/betting-odds",
-    "/section/govt-approval",
-    "/section/gov-trust-trend",
     "/section/national-debt",
     "/section/gdp",
     "/section/economy",
@@ -253,35 +251,36 @@ test("all section pages render cleanly without global feed telemetry", async ({ 
     "/section/nhs",
     "/section/migration",
     "/section/early-years",
-    "/section/uk-regions",
-    "/section/policy-links",
   ]) {
     await page.goto(`.${path}`);
     await expect(page.locator("main")).toBeVisible();
     await assertNoGlobalFeedTelemetry(page);
     if (path === "/section/uk-in-context") {
-      await expect(page.getByRole("heading", { name: /What does Britain spend and owe per resident/i })).toBeVisible();
-      await expect(page.getByRole("row", { name: /Government debt outstanding/i })).toBeVisible();
-      await expect(page.getByRole("row", { name: /Debt interest/i })).toBeVisible();
+      await expect(page.getByTestId("section-publication-held")).toContainText("held from public release");
     }
 
     if (path === "/section/betting-odds") {
-      const unavailable = page.getByRole("heading", {
-        name: "Current betting market snapshot unavailable",
-      });
-      const current = page.getByText("Fresh commercial market snapshot");
-      await expect(unavailable.or(current)).toBeVisible();
-      if (await unavailable.isVisible()) {
-        await expect(
-          page.getByText(
-            /will not display stale, partial, redirected or embedded political betting prices/i
-          )
-        ).toBeVisible();
-      }
+      await expect(page.getByTestId("section-publication-held")).toContainText("held from public release");
+      await expect(page.getByRole("heading", { name: "Current betting market snapshot unavailable" })).toHaveCount(0);
+      await expect(page.getByText("Fresh commercial market snapshot")).toHaveCount(0);
     }
   }
 
   expect(errors).toEqual([]);
+});
+
+test("retired product routes are removed rather than kept alive as withdrawn pages", async ({ page }) => {
+  // See docs/history/2026-10-07-retired-product-ledger.md.
+  for (const path of [
+    "/section/pm-approval/",
+    "/section/govt-approval/",
+    "/section/gov-trust-trend/",
+    "/section/uk-regions/",
+    "/section/policy-links/",
+  ]) {
+    const response = await page.goto(`.${path}`);
+    expect(response?.status(), path).toBe(404);
+  }
 });
 
 test("topic and feature routes stay usable at a 200% zoom-equivalent width with reduced motion", async ({ page }, testInfo) => {
@@ -290,12 +289,10 @@ test("topic and feature routes stay usable at a 200% zoom-equivalent width with 
   await page.emulateMedia({ reducedMotion: "reduce" });
 
   const routes = [
-    "/section/pm-approval", "/section/election-polls", "/section/betting-odds",
-    "/section/govt-approval", "/section/gov-trust-trend", "/section/national-debt",
+    "/section/election-polls", "/section/betting-odds", "/section/national-debt",
     "/section/gdp", "/section/economy", "/section/tax", "/section/employment",
     "/section/uk-in-context", "/section/government-contracts", "/section/crime-stats",
-    "/section/nhs", "/section/migration", "/section/early-years", "/section/uk-regions",
-    "/section/policy-links", "/measure", "/compare", "/briefing", "/calendar",
+    "/section/nhs", "/section/migration", "/section/early-years", "/measure", "/compare", "/briefing", "/calendar",
     "/cost-of-living", "/money", "/editions", "/sources",
   ];
 

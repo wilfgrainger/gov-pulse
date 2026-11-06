@@ -1,7 +1,6 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import GovernmentContracts from "@/app/components/GovernmentContracts";
-import * as chartExport from "@/app/lib/chartExport";
 import {
   CAVEATS,
   EVIDENCE_POLICY,
@@ -137,44 +136,27 @@ describe("GovernmentContracts nation breakdown and supplier concentration", () =
     ).toBeInTheDocument();
   });
 
-  it("renders supplier values as an ID-aware equal-share scenario", () => {
+  it("renders no equal-split supplier attribution anywhere in the section", () => {
     useMetrics.mockReturnValue(result(currentPayload({ withNations: true })));
-    const exportSpy = vi.spyOn(chartExport, "downloadChartSvg").mockImplementation(() => {});
 
-    render(<GovernmentContracts />);
+    const { container } = render(<GovernmentContracts />);
 
-    expect(
-      screen.getByRole("heading", { name: "disclosed award value under an equal-share scenario" })
-    ).toBeInTheDocument();
-    expect(screen.getByText("Showing the first 20 of 100 filtered supplier groups (100 in the full publication)."))
-      .toBeInTheDocument();
-    expect(screen.getByRole("img", { name: /equal-share supplier disclosed award value scenario in pounds/i })).toBeInTheDocument();
-    expect(screen.getByRole("table", { name: "Supplier equal-share scenario rows shown in the chart" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "SVG" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "SVG" }));
-    expect(exportSpy).toHaveBeenCalledOnce();
-    const chartMetadata = exportSpy.mock.calls[0][2]?.chartMetadata;
-    expect(chartMetadata?.title).toBe("Supplier equal-share disclosed award value scenario");
-    expect(chartMetadata?.series[0]).toMatchObject({
-      key: "id:supplier-1",
-      label: expect.stringContaining("£500,000,000"),
-    });
-    expect(chartMetadata?.sourceCitation).toMatch(/not supplier revenue/i);
+    expect(container.textContent).not.toMatch(/equal-share|equal share|split equally|Scenario value/i);
+    expect(screen.getByRole("heading", { name: "Ranked awards with every named supplier" })).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: /equal-share/i })).not.toBeInTheDocument();
     expect(screen.getAllByText("Supplier 1").length).toBeGreaterThan(0);
     expect(
       screen.queryByText(/Supplier nation is currently Other\/Unknown for every ranked supplier/i)
     ).not.toBeInTheDocument();
   });
 
-  it("filters the top-100 explorer and concentration view by supplier nation", () => {
+  it("filters the award explorer by supplier nation", () => {
     useMetrics.mockReturnValue(result(currentPayload({ withNations: true })));
 
     render(<GovernmentContracts />);
 
-    const nationSelect = screen.getByLabelText("Filter by supplier nation");
-    expect(nationSelect).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Scotland" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Northern Ireland" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Scotland" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Northern Ireland" })).toBeInTheDocument();
   });
 
   it("never infers a nation from a supplier name: unmapped postcodes stay Other/Unknown", () => {

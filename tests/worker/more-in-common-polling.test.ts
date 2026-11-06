@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   parseMoreInCommonArchiveLinks,
   parseMoreInCommonPoll,
-} from "../../worker/more-in-common-polling.js";
+} from "@/feeds/election-polls/more-in-common.js";
 
 describe("More in Common primary polling tables", () => {
   it("discovers only voting-intention workbooks hosted by the publisher", () => {

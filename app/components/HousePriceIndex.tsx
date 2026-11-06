@@ -6,7 +6,7 @@ import FinancialTimeSeriesChart from "@/app/components/FinancialTimeSeriesChart"
 import MetricsStatus from "@/app/components/MetricsStatus";
 import ReleaseNoteStrip from "@/app/components/ReleaseNoteStrip";
 import HousingAffordabilityVisual, {
-  type TrendComparisonPoint,
+  type HousingSeriesPoint,
 } from "@/app/components/visuals/HousingAffordabilityVisual";
 import { buildReleaseNote } from "@/app/lib/releaseNote";
 import { useMetrics } from "@/app/lib/useMetrics";
@@ -201,6 +201,7 @@ export default function HousePriceIndex() {
     };
     history?: Array<{
       period: string;
+      observedAt?: number;
       regularPayRealGrowthPercent?: number | null;
     }>;
   } | null;
@@ -222,28 +223,26 @@ export default function HousePriceIndex() {
   const direction = change >= 0 ? "rose" : "fell";
   const comparisonDirection = change >= 0 ? "higher" : "lower";
 
-  const comparisonPoints = useMemo<TrendComparisonPoint[]>(() => {
+  const housePriceSeries = useMemo<HousingSeriesPoint[]>(() => {
     if (!valid || !payload?.history) return [];
+    return payload.history
+      .filter((h) => h.hpiChangePercent !== null && Number.isFinite(h.observedAt))
+      .map((h) => ({ period: h.period, observedAt: h.observedAt, value: h.hpiChangePercent! }));
+  }, [payload, valid]);
+
+  const realPaySeries = useMemo<HousingSeriesPoint[]>(() => {
     const wageHistory =
-      wagesAreCurrent && Array.isArray(wagesData?.history)
-        ? wagesData.history
-        : [];
-    const wageByPeriod = new Map<string, number>();
-    for (const item of wageHistory) {
-      if (
-        nonEmptyString(item.period) &&
-        typeof item.regularPayRealGrowthPercent === "number" &&
-        Number.isFinite(item.regularPayRealGrowthPercent)
-      ) {
-        wageByPeriod.set(item.period, item.regularPayRealGrowthPercent);
-      }
-    }
-    return payload.history.filter((h) => h.hpiChangePercent !== null).map((h) => ({
-      date: h.period,
-      housePriceGrowthPct: h.hpiChangePercent!,
-      realWageGrowthPct: wageByPeriod.get(h.period) ?? null,
-    }));
-  }, [payload, valid, wagesAreCurrent, wagesData]);
+      wagesAreCurrent && Array.isArray(wagesData?.history) ? wagesData.history : [];
+    return wageHistory.flatMap((item) =>
+      nonEmptyString(item.period) &&
+      typeof item.observedAt === "number" &&
+      Number.isFinite(item.observedAt) &&
+      typeof item.regularPayRealGrowthPercent === "number" &&
+      Number.isFinite(item.regularPayRealGrowthPercent)
+        ? [{ period: item.period, observedAt: item.observedAt, value: item.regularPayRealGrowthPercent }]
+        : []
+    );
+  }, [wagesAreCurrent, wagesData]);
 
   const releaseNote =
     valid && headline
@@ -316,9 +315,8 @@ export default function HousePriceIndex() {
 
           {/* Visual 4: Housing Affordability & Real Wages Trend */}
           <HousingAffordabilityVisual
-            points={comparisonPoints}
-            currentHpiChange={headline.changePercent}
-            currentRealWageGrowth={currentRealWageGrowth}
+            housePrice={housePriceSeries}
+            realPay={realPaySeries}
             hpiPeriod={headline.period}
             wagesPeriod={wagesPeriod}
           />

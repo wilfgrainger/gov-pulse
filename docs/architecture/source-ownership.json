@@ -4,8 +4,8 @@
   "sources": [
     {
       "section": "sentimentPulse",
-      "collector": "worker/economic-indicators.js",
-      "normalizer": "worker/economic-indicators.js",
+      "collector": "feeds/economy/parse.js",
+      "normalizer": "feeds/economy/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",
@@ -13,8 +13,8 @@
     },
     {
       "section": "gdpTracker",
-      "collector": "worker/economy-evidence.js",
-      "normalizer": "worker/economy-evidence.js",
+      "collector": "feeds/gdp/parse.js",
+      "normalizer": "feeds/gdp/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",
@@ -22,8 +22,8 @@
     },
     {
       "section": "employmentStats",
-      "collector": "worker/economy-evidence.js",
-      "normalizer": "worker/economy-evidence.js",
+      "collector": "feeds/employment/parse.js",
+      "normalizer": "feeds/employment/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",
@@ -31,8 +31,8 @@
     },
     {
       "section": "nationalDebt",
-      "collector": "worker/national-debt.js",
-      "normalizer": "worker/national-debt.js",
+      "collector": "feeds/national-debt/parse.js",
+      "normalizer": "feeds/national-debt/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",
@@ -40,8 +40,8 @@
     },
     {
       "section": "taxRevenue",
-      "collector": "worker/live-tax-revenue-collector.js",
-      "normalizer": "worker/live-tax-revenue-collector.js",
+      "collector": "feeds/tax/parse.js",
+      "normalizer": "feeds/tax/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",
@@ -49,8 +49,8 @@
     },
     {
       "section": "migrationStats",
-      "collector": "worker/migration.js",
-      "normalizer": "worker/migration.js",
+      "collector": "feeds/migration/parse.js",
+      "normalizer": "feeds/migration/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",
@@ -58,8 +58,8 @@
     },
     {
       "section": "housePriceIndex",
-      "collector": "worker/house-price-index.js",
-      "normalizer": "worker/house-price-index.js",
+      "collector": "feeds/house-price-index/parse.js",
+      "normalizer": "feeds/house-price-index/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",
@@ -67,8 +67,8 @@
     },
     {
       "section": "realWages",
-      "collector": "worker/real-wages.js",
-      "normalizer": "worker/real-wages.js",
+      "collector": "feeds/real-wages/parse.js",
+      "normalizer": "feeds/real-wages/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",
@@ -76,8 +76,8 @@
     },
     {
       "section": "electionPolling",
-      "collector": "worker/live-polling-collector.js",
-      "normalizer": "worker/election-polls.js",
+      "collector": "feeds/election-polls/parse.js",
+      "normalizer": "feeds/election-polls/normalize.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron run through public-data-jobs Queue and deployment bootstrap when no ready publication exists",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",
@@ -85,8 +85,8 @@
     },
     {
       "section": "nhsStats",
-      "collector": "worker/live-nhs-publication-collector.js",
-      "normalizer": "worker/nhs-rtt.js",
+      "collector": "feeds/nhs/parse.js",
+      "normalizer": "feeds/nhs/rtt.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron through public-data-jobs Queue and deployment bootstrap when no ready publication exists; NHS England currently returns AWS WAF challenge HTML to the Worker egress, so the collector fails closed and the required section remains unavailable until a supported source path is verified",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",
@@ -94,8 +94,8 @@
     },
     {
       "section": "bettingOdds",
-      "collector": "worker/live-betting-collector.js",
-      "normalizer": "worker/betting-markets.js",
+      "collector": "feeds/betting-odds/parse.js",
+      "normalizer": "contracts/betting-markets.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "Cloudflare Cron every three hours through public-data-jobs Queue",
       "storage": "optional KV section fragment and prepared public artifact when all named markets are current",
@@ -103,7 +103,7 @@
     },
     {
       "section": "crimeStatistics",
-      "collector": "worker/crime-statistics.js",
+      "collector": "feeds/crime-stats/parse.js",
       "normalizer": "contracts/crime-statistics.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Queue validation of the versioned named-source publication",
@@ -114,8 +114,8 @@
   "publicationSources": [
     {
       "section": "releaseCalendar",
-      "collector": "worker/ons-release-calendar.js",
-      "normalizer": "worker/ons-release-calendar.js",
+      "collector": "feeds/release-calendar/parse.js",
+      "normalizer": "feeds/release-calendar/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "optional daily Cloudflare Queue job reading the ONS upcoming and cancelled release calendars",
       "storage": "optional KV section fragment and current public artifact when the source identity and retrieval clock are valid",
@@ -123,8 +123,8 @@
     },
     {
       "section": "nhsReleaseCalendar",
-      "collector": "worker/nhs-release-calendar.js",
-      "normalizer": "worker/nhs-release-calendar.js",
+      "collector": "feeds/nhs-release-calendar/parse.js",
+      "normalizer": "feeds/nhs-release-calendar/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "optional daily Cloudflare Queue job reading the current NHS England financial-year plan through its public statistics API",
       "storage": "optional KV section fragment and current public artifact when the current-year plan PDF reconciles to future RTT release rows",
@@ -132,7 +132,7 @@
     },
     {
       "section": "governmentContracts",
-      "collector": "worker/government-contracts-cloudflare.js",
+      "collector": "feeds/government-contracts/parse.js",
       "normalizer": "contracts/government-contracts.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "one bounded daily Cloudflare Queue job",
@@ -141,8 +141,8 @@
     },
     {
       "section": "internationalComparison",
-      "collector": "worker/international-comparison-publication.js",
-      "normalizer": "worker/international-comparison.js",
+      "collector": "feeds/international-comparison/parse.js",
+      "normalizer": "feeds/international-comparison/compare.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "scheduled and explicit Cloudflare Queue refreshes in bounded per-measure source batches",
       "storage": "independent versioned KV publication at v1:international-comparison:current, committed after batch reconciliation",
@@ -182,80 +182,6 @@
       ],
       "automation": "static",
       "fallback": "dated checked-in publication values; no silent refresh or synthetic replacement"
-    }
-  ],
-  "withdrawnSources": [
-    {
-      "section": "pmApproval",
-      "collector": null,
-      "normalizer": null,
-      "consumer": "app/components/PMApproval.tsx",
-      "schedule": "none",
-      "storage": "none",
-      "fallback": "withdrawn; no current value"
-    },
-    {
-      "section": "polarizationMeter",
-      "collector": null,
-      "normalizer": null,
-      "consumer": "app/components/PolarizationMeter.tsx",
-      "schedule": "none",
-      "storage": "none",
-      "fallback": "withdrawn; no derived score"
-    },
-    {
-      "section": "trendLines",
-      "collector": null,
-      "normalizer": null,
-      "consumer": "app/components/TrendLines.tsx",
-      "schedule": "none",
-      "storage": "none",
-      "fallback": "withdrawn; no embedded trend"
-    },
-    {
-      "section": "geographicHeatmap",
-      "collector": null,
-      "normalizer": null,
-      "consumer": "app/components/GeographicHeatmap.tsx",
-      "schedule": "none",
-      "storage": "none",
-      "fallback": "withdrawn; no reproducible regional comparison"
-    },
-    {
-      "section": "echoChamberMap",
-      "collector": null,
-      "normalizer": null,
-      "consumer": "app/components/EchoChamberMap.tsx",
-      "schedule": "none",
-      "storage": "none",
-      "fallback": "withdrawn; no reproducible relationship matrix"
-    }
-  ],
-  "withdrawnRoutes": [
-    {
-      "route": "pm-approval",
-      "source": "pmApproval",
-      "consumer": "app/components/PMApproval.tsx"
-    },
-    {
-      "route": "govt-approval",
-      "source": "polarizationMeter",
-      "consumer": "app/components/PolarizationMeter.tsx"
-    },
-    {
-      "route": "gov-trust-trend",
-      "source": "trendLines",
-      "consumer": "app/components/TrendLines.tsx"
-    },
-    {
-      "route": "uk-regions",
-      "source": "geographicHeatmap",
-      "consumer": "app/components/GeographicHeatmap.tsx"
-    },
-    {
-      "route": "policy-links",
-      "source": "echoChamberMap",
-      "consumer": "app/components/EchoChamberMap.tsx"
     }
   ]
 }

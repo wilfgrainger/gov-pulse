@@ -7,7 +7,6 @@ import {
   isCurrentBettingMarketPayload,
   normalizeBettingMarketPayload,
 } from "@/contracts/betting-markets";
-import * as workerContract from "@/worker/betting-markets";
 
 const now = new Date("2026-07-14T12:00:00.000Z");
 
@@ -48,12 +47,6 @@ function canonicalSnapshot() {
 }
 
 describe("shared betting market evidence contract", () => {
-  it("keeps existing Worker imports as a thin compatibility boundary", () => {
-    expect(workerContract.normalizeBettingMarketPayload).toBe(normalizeBettingMarketPayload);
-    expect(workerContract.isCurrentBettingMarketPayload).toBe(isCurrentBettingMarketPayload);
-    expect(workerContract.MARKET_DEFINITIONS).toBe(MARKET_DEFINITIONS);
-  });
-
   it("preserves raw decimal odds and calculates reciprocal percentages without normalization", () => {
     const result = canonicalSnapshot();
 

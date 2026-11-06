@@ -86,37 +86,30 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            worker/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install locked dependencies without Cloudflare credentials
         run: npm ci --prefer-offline --no-audit --no-fund
-
-      - name: Install locked OpenNext toolchain without Cloudflare credentials
-        run: npm ci --prefix worker --prefer-offline --no-audit --no-fund
-
-      - name: Validate manually dispatched release source
-        if: github.event_name == 'workflow_dispatch'
-        run: npm run lint && npm run test
 
       - name: Prepare generated data and assets
         run: npm run build:prepare
         env:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
 
+      # build:prepare runs first: the untracked generated evidence module must
+      # exist before the manual lint and test validation imports it.
+      # Main updates arrive through PRs whose required `quality` result has
+      # already validated this code. Manual deployments keep the local guard.
+      - name: Validate manually dispatched release source
+        if: github.event_name == 'workflow_dispatch'
+        run: npm run lint && npm run test
+
       - name: Stage OpenNext adapter config
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p node_modules/@opennextjs
-          rm -rf node_modules/@opennextjs/cloudflare
-          ln -s "$PWD/worker/node_modules/@opennextjs/cloudflare" node_modules/@opennextjs/cloudflare
-          cp worker/open-next.config.template open-next.config.ts
+        run: cp worker/open-next.config.template open-next.config.ts
 
       - name: Adapt Next.js build for Cloudflare Workers
         run: >-
-          ./worker/node_modules/.bin/opennextjs-cloudflare build
+          npx opennextjs-cloudflare build
           --config worker/web-wrangler.toml
         env:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
@@ -128,7 +121,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          ./worker/node_modules/.bin/opennextjs-cloudflare deploy \
+          npx opennextjs-cloudflare deploy \
             --config worker/web-wrangler.toml \
             --tag "$GITHUB_SHA" \
             --message "public-data.org web Worker $GITHUB_SHA"
@@ -141,7 +134,7 @@ jobs:
 
       - name: Check publication controls
         id: publication_controls
-        run: node --input-type=module -e 'import {anyPublicationEnabled} from "./contracts/publication-policy.js"; console.log(`paused=${!anyPublicationEnabled()}`)' >> "$GITHUB_OUTPUT"
+        run: node --input-type=module -e 'import {anyEvidencePublished} from "./contracts/publication-policy.js"; console.log(`paused=${!anyEvidencePublished()}`)' >> "$GITHUB_OUTPUT"
 
   deploy_data_worker:
     needs: release_gate
@@ -162,24 +155,23 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            worker/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install locked dependencies without Cloudflare credentials
         run: npm ci --prefer-offline --no-audit --no-fund
-
-      - name: Install locked OpenNext toolchain without Cloudflare credentials
-        run: npm ci --prefix worker --prefer-offline --no-audit --no-fund
-
-      - name: Validate manually dispatched release source
-        if: github.event_name == 'workflow_dispatch'
-        run: npm run lint && npm run test
 
       - name: Prepare generated data and assets
         run: npm run build:prepare
         env:
           NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
+
+      # build:prepare runs first: the untracked generated evidence module must
+      # exist before the manual lint and test validation imports it.
+      # Main updates arrive through PRs whose required `quality` result has
+      # already validated this code. Manual deployments keep the local guard.
+      - name: Validate manually dispatched release source
+        if: github.event_name == 'workflow_dispatch'
+        run: npm run lint && npm run test
 
       - name: Deploy and verify the exact data Worker revision with its isolated credential
         shell: bash
@@ -212,14 +204,12 @@ jobs:
         with:
           persist-credentials: false
 
+      # The release smoke test uses only Node built-ins, so this
+      # credential-free job needs no dependency install.
       - name: Setup Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version-file: .nvmrc
-          cache: npm
-
-      - name: Install locked dependencies without Cloudflare credentials
-        run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: Verify deployed revision and reader routes
         run: npm run test:release -- "https://public-data.org/" "${{ github.sha }}"

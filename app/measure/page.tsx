@@ -1,5 +1,5 @@
 import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationRouteEnabled } from "@/contracts/publication-policy";
+import { gateRoute } from "@/app/lib/gateRoute";
 import type { Metadata } from "next";
 import MeasureLibrary from "@/app/components/MeasureLibrary";
 import type { MeasureLibraryItem } from "@/app/components/MeasureLibrary";
@@ -18,7 +18,8 @@ export const metadata: Metadata = {
 };
 
 export default async function MeasureIndexPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  if (!publicationRouteEnabled("/measure/")) return <PublicationOffline />;
+  const gate = gateRoute("/measure/");
+  if (gate.access !== "serve") return <PublicationOffline heldFeeds={gate.heldFeeds} />;
   const query = process.env.STATIC_EXPORT === "true" ? {} : await searchParams;
   const queryEntries: [string, string][] = [];
   for (const [key, value] of Object.entries(query)) {

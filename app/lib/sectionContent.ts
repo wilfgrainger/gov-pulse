@@ -1,8 +1,5 @@
-import PMApproval from "@/app/components/PMApproval";
 import ElectionPolling from "@/app/components/ElectionPolling";
 import BettingOdds from "@/app/components/BettingOdds";
-import PolarizationMeter from "@/app/components/PolarizationMeter";
-import TrendLines from "@/app/components/TrendLines";
 import NationalDebtCounter from "@/app/components/NationalDebtCounter";
 import GDPTracker from "@/app/components/GDPTracker";
 import SentimentPulse from "@/app/components/SentimentPulse";
@@ -16,17 +13,8 @@ import MigrationStats from "@/app/components/MigrationStats";
 import HousePriceIndex from "@/app/components/HousePriceIndex";
 import RealWages from "@/app/components/RealWages";
 import EarlyYearsStats from "@/app/components/EarlyYearsStats";
-import GeographicHeatmap from "@/app/components/GeographicHeatmap";
-import EchoChamberMap from "@/app/components/EchoChamberMap";
 
 export const SECTION_CONTENT = {
-  "pm-approval": {
-    category: "Politics",
-    tag: "Withdrawn polling evidence",
-    title: "Prime minister approval",
-    subtitle: "No current series is shown until a reproducible primary-poll method is available.",
-    component: PMApproval,
-  },
   "election-polls": {
     category: "Politics",
     tag: "Primary polling evidence",
@@ -42,20 +30,6 @@ export const SECTION_CONTENT = {
     subtitle: "Three named Oddschecker markets with raw reciprocal prices.",
     component: BettingOdds,
     dataSection: "bettingOdds",
-  },
-  "govt-approval": {
-    category: "Politics",
-    tag: "Withdrawn derived evidence",
-    title: "Polarisation measure",
-    subtitle: "No current score is shown because the former inputs and calculation were not reproducible.",
-    component: PolarizationMeter,
-  },
-  "gov-trust-trend": {
-    category: "Politics",
-    tag: "Withdrawn polling evidence",
-    title: "Government satisfaction",
-    subtitle: "The former hard-coded trend and event annotations have been withdrawn.",
-    component: TrendLines,
   },
   "national-debt": {
     category: "Economy",
@@ -158,18 +132,5 @@ export const SECTION_CONTENT = {
     subtitle: "Child vaccination and development indicators in England.",
     component: EarlyYearsStats,
   },
-  "uk-regions": {
-    category: "Data",
-    tag: "Withdrawn derived evidence",
-    title: "UK regional comparison",
-    subtitle: "The former hard-coded values and non-standard geographies have been withdrawn.",
-    component: GeographicHeatmap,
-  },
-  "policy-links": {
-    category: "Data",
-    tag: "Withdrawn derived evidence",
-    title: "Policy relationships",
-    subtitle: "No current matrix is shown because the former inputs and method were not reproducible.",
-    component: EchoChamberMap,
-  },
+
 } as const;

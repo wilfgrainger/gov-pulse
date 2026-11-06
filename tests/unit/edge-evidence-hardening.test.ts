@@ -23,15 +23,10 @@ describe("edge evidence hardening", () => {
     expect(config).not.toMatch(/export const BOE_SERIES/);
   });
 
-  it("keeps the retired worker implementation replaced by a small compatibility core", () => {
-    const compatibility = fs.readFileSync("worker/index.js", "utf8");
-    expect(compatibility.length).toBeLessThan(12_000);
-    expect(compatibility).toContain("Internal compatibility core");
-    expect(compatibility).not.toMatch(/Wikipedia/i);
-    expect(compatibility).not.toMatch(/ELECTION_POLLING_FALLBACK/);
-    expect(compatibility).not.toMatch(/TAX_REVENUE_FALLBACK/);
-    expect(compatibility).not.toMatch(/GDP_FALLBACK/);
-    expect(compatibility).not.toMatch(/NATIONAL_DEBT_CONTEXT/);
+  it("removes the retired compatibility Worker core and placeholder metric fallbacks", () => {
+    // See docs/history/2026-10-07-retired-product-ledger.md.
+    expect(fs.existsSync("worker/index.js")).toBe(false);
+    expect(fs.existsSync("app/lib/metricFallbacks.ts")).toBe(false);
   });
 
   it("renders the app from request-bound server evidence instead of the generated build snapshot", () => {
@@ -41,30 +36,37 @@ describe("edge evidence hardening", () => {
     const serverReader = fs.readFileSync("app/lib/serverMetricsSnapshot.ts", "utf8");
     expect(page).toMatch(/readServerMetricsSnapshot/);
     expect(page).not.toMatch(/BUILD_METRICS_SNAPSHOT/);
-    expect(layout).toMatch(/MetricsSnapshotProvider/);
+    // A shared layout must not force even held/static pages into request-time
+    // SSR and a fresh cross-Worker fetch. Data-bearing routes own their context.
+    const section = fs.readFileSync("app/section/[id]/page.tsx", "utf8");
+    expect(layout).not.toMatch(/readServerMetricsSnapshot/);
+    expect(layout).toContain("MetricsSnapshotProvider snapshot={null}");
+    expect(page).toContain("MetricsSnapshotProvider snapshot={createClientMetricsSnapshot(snapshot)}");
+    expect(section).toContain("MetricsSnapshotProvider snapshot={createClientMetricsSnapshot(snapshot)}");
     expect(hook).toMatch(/useInitialMetricsSnapshot/);
     expect(hook).not.toMatch(/BUILD_METRICS_SNAPSHOT/);
     expect(serverReader).toMatch(/await connection\(\)/);
     expect(serverReader).toMatch(/cache: "no-store"|requestSnapshot/);
   });
 
-  it("deploys OpenNext from a worker-local lockfile while keeping Pages only as the seed fallback", () => {
+  it("deploys OpenNext from the single root lockfile while keeping Pages only as the seed fallback", () => {
     const deploy = fs.readFileSync(".github/workflows/deploy.yml", "utf8");
     const webWrangler = fs.readFileSync("worker/web-wrangler.toml", "utf8");
     const openNext = fs.readFileSync("worker/open-next.config.template", "utf8");
-    const workerPackage = JSON.parse(fs.readFileSync("worker/package.json", "utf8"));
-    const workerLock = JSON.parse(fs.readFileSync("worker/package-lock.json", "utf8"));
+    const rootPackage = JSON.parse(fs.readFileSync("package.json", "utf8"));
 
-    expect(workerPackage.devDependencies?.["@opennextjs/cloudflare"]).toBe("1.20.2");
-    expect(workerLock.packages?.[""]?.devDependencies?.["@opennextjs/cloudflare"]).toBe("1.20.2");
+    expect(rootPackage.devDependencies?.["@opennextjs/cloudflare"]).toBe("1.20.7");
+    expect(fs.existsSync("worker/package.json")).toBe(false);
+    expect(fs.existsSync("worker/package-lock.json")).toBe(false);
 
     for (const workflow of [deploy]) {
       expect(workflow).not.toMatch(/npm install --no-save --package-lock=false @opennextjs\/cloudflare/);
-      expect(workflow).toMatch(/npm ci --prefix worker/);
-      expect(workflow).toMatch(/worker\/node_modules\/\.bin\/opennextjs-cloudflare build/);
+      expect(workflow).not.toMatch(/npm ci --prefix worker/);
+      expect(workflow).not.toMatch(/worker\/node_modules/);
+      expect(workflow).toMatch(/npx opennextjs-cloudflare build/);
       expect(workflow).toMatch(/cp worker\/open-next\.config\.template open-next\.config\.ts/);
     }
-    expect(deploy).toMatch(/worker\/node_modules\/\.bin\/opennextjs-cloudflare deploy/);
+    expect(deploy).toMatch(/npx opennextjs-cloudflare deploy/);
     const pagesFallback = deploy.slice(deploy.indexOf("\n  publish_pages:\n"));
     expect(pagesFallback).toContain("Trigger the main-only Pages deploy hook");
     expect(pagesFallback).toContain("CLOUDFLARE_PAGES_DEPLOY_HOOK_URL");

@@ -139,7 +139,7 @@ describe("government contracts publication", () => {
     expect(sections).toMatch(/id:\s*["']government-contracts["']/);
     expect(presentation).toContain('href: "/section/government-contracts"');
     expect(edition).toContain("DIRECT_EVIDENCE_LINKS");
-    expect(edition).toContain('if (!publicationRouteEnabled("/money/")) return null;');
+    expect(edition).toContain('if (!routeServes("/money/")) return null;');
     expect(workflow).toContain("deploy_data_worker:");
     expect(workflow).toContain("CLOUDFLARE_RECOVERY_QUEUES_TOKEN");
     expect(workflow).not.toContain("public-data-jobs");

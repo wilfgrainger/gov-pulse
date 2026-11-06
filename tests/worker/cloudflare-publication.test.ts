@@ -23,11 +23,14 @@ import {
   previousCompleteDays,
   rankDailyAwards,
   refreshGovernmentContracts,
-} from "@/worker/government-contracts-cloudflare";
+} from "@/feeds/government-contracts/parse.js";
 import { ukNationFromPostcode } from "@/contracts/government-contracts";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
-import { archiveEdition, readEdition } from "@/worker/edition-archive";
+import { archiveEdition, EDITION_INDEX_KEY, readEdition } from "@/worker/edition-archive";
+import { PUBLIC_SNAPSHOT_KEY } from "@/worker/public-snapshot";
 import { catalogRevisionIdentity } from "@/worker/measure-catalog";
+
+const RETIRED_COMMIT_MANIFEST_KEY = "v12:publication:commit";
 
 const REQUIRED = [
   "sentimentPulse",
@@ -246,6 +249,87 @@ describe("Cloudflare data publication", () => {
     expect(env.METRICS_CACHE.get).not.toHaveBeenCalled();
     expect(env.METRICS_CACHE.put).not.toHaveBeenCalled();
     expect(waitUntil).not.toHaveBeenCalled();
+  });
+
+  it("does not publish a current snapshot when immutable edition archival fails", async () => {
+    const current = snapshot();
+    const { env, store } = kvEnv({ [PUBLICATION_CURRENT_KEY]: current });
+    const write = env.METRICS_CACHE.put;
+    env.METRICS_CACHE.put = vi.fn(async (key, value, options) => {
+      if (key === EDITION_INDEX_KEY) throw new Error("simulated archive index failure");
+      return write(key, value, options);
+    });
+
+    await expect(publishFromCaches(env, {
+      now: new Date("2026-07-18T03:30:00.000Z"),
+    })).rejects.toThrow("simulated archive index failure");
+
+    expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(current);
+    expect(store.has(PUBLIC_SNAPSHOT_KEY)).toBe(false);
+  });
+
+  it("rolls back staged public writes when publication current write fails", async () => {
+    const current = snapshot();
+    const fragment = {
+      section: "gdpTracker",
+      data: { headline: { monthlyGrowth: 0.1, period: "May 2026" } },
+      source: {
+        status: "ok",
+        cacheState: "fresh",
+        fetchedAt: "2026-07-18T03:20:00.000Z",
+        source: "ONS GDP monthly estimate",
+      },
+      fetchedAt: "2026-07-18T03:20:00.000Z",
+    };
+    const { env, store } = kvEnv({
+      [PUBLICATION_CURRENT_KEY]: current,
+      "v12:publication:section:gdpTracker": fragment,
+    });
+    const write = env.METRICS_CACHE.put;
+    env.METRICS_CACHE.put = vi.fn(async (key, value, options) => {
+      if (key === PUBLICATION_CURRENT_KEY && JSON.parse(value).gdpTracker) {
+        throw new Error("simulated current write failure");
+      }
+      return write(key, value, options);
+    });
+
+    await expect(publishFromCaches(env, {
+      now: new Date("2026-07-18T03:30:00.000Z"),
+    })).rejects.toThrow("simulated current write failure");
+
+    expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(current);
+    expect(store.has(PUBLIC_SNAPSHOT_KEY)).toBe(false);
+    expect(store.has(RETIRED_COMMIT_MANIFEST_KEY)).toBe(false);
+  });
+
+  it("writes no unread commit manifest on successful publication", async () => {
+    const current = snapshot();
+    const fragment = {
+      section: "gdpTracker",
+      data: { headline: { monthlyGrowth: 0.2, period: "May 2026" } },
+      source: {
+        status: "ok",
+        cacheState: "fresh",
+        fetchedAt: "2026-07-18T03:20:00.000Z",
+        source: "ONS GDP monthly estimate",
+      },
+      fetchedAt: "2026-07-18T03:20:00.000Z",
+    };
+    const { env, store } = kvEnv({
+      [PUBLICATION_CURRENT_KEY]: current,
+      "v12:publication:section:gdpTracker": fragment,
+    });
+
+    const result = await publishFromCaches(env, {
+      now: new Date("2026-07-18T03:30:00.000Z"),
+    });
+
+    // Nothing read the manifest, so it cost a KV write per publication. The
+    // public artifact, current record and status record are the commit.
+    expect(result).not.toHaveProperty("commitManifest");
+    expect(store.has(RETIRED_COMMIT_MANIFEST_KEY)).toBe(false);
+    expect((store.get(PUBLICATION_CURRENT_KEY) as { meta: object }).meta).not.toHaveProperty("commitManifest");
+    expect(store.has(PUBLIC_SNAPSHOT_KEY)).toBe(true);
   });
 
   it("overlays current fragments while retaining current last-known-good evidence", async () => {

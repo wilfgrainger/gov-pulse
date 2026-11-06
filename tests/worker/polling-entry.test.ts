@@ -1,8 +1,8 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { parseOddscheckerRows } from "@/worker/live-betting-collector";
-import { latestNhsLinks } from "@/worker/live-nhs-collector";
+import { parseOddscheckerRows } from "@/feeds/betting-odds/parse.js";
+import { latestNhsLinks } from "@/feeds/nhs/workbook.js";
 import {
   latestYouGovArticleUrl,
   findPdfUrl,
@@ -12,8 +12,8 @@ import {
   parsePartyShares,
   pdfStrings,
   sampleSizeFromPdfText,
-} from "@/worker/live-polling-collector";
-import { parseNhsRttPressNotice } from "@/worker/nhs-press-notice";
+} from "@/feeds/election-polls/parse.js";
+import { parseNhsRttPressNotice } from "@/feeds/nhs/press-notice.js";
 
 const specialties = [
   "General Surgery Service 381,497 62.7%",

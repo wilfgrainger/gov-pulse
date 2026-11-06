@@ -1,5 +1,5 @@
-import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationEnabled } from "@/contracts/publication-policy";
+import EvidenceHoldNotice from "@/app/components/EvidenceHoldNotice";
+import { routeEvidenceHeld } from "@/app/lib/gateRoute";
 import type { Metadata } from "next";
 import PublicMoneyExplorer from "@/app/components/PublicMoneyExplorer";
 import PageHeader from "@/app/components/PageHeader";
@@ -11,18 +11,15 @@ import { isCurrentGovernmentContractsPayload } from "@/contracts/government-cont
 import { sumContractExclusions, type PublicAward } from "@/app/lib/publicMoney";
 
 export const metadata: Metadata = {
-  robots: { index: publicationEnabled("governmentContracts"), follow: true },
+  robots: { index: !routeEvidenceHeld("/money/"), follow: true },
   title: "Public money dossiers",
   description:
     "Inspect corrected government award notices and their disclosed value, buyer, supplier, revision and source links.",
 };
 
 export default async function PublicMoneyPage() {
-  if (!publicationEnabled("governmentContracts")) {
-    return <PublicationOffline title="Public money is temporarily unavailable" />;
-  }
-
-  const snapshot = await readServerMetricsSnapshot();
+  const publicationIsEnabled = !routeEvidenceHeld("/money/");
+  const snapshot = publicationIsEnabled ? await readServerMetricsSnapshot() : null;
   const candidate = snapshot?.governmentContracts;
   const available = isCurrentGovernmentContractsPayload(candidate, new Date());
   const data = available
@@ -53,11 +50,17 @@ export default async function PublicMoneyPage() {
         <PageHeader
           eyebrow="Public procurement notices"
           title="Public money dossiers"
-          subtitle="Search the published top-ranked Find a Tender notices, inspect disclosed values, and open source-linked buyer and supplier records."
+          subtitle={publicationIsEnabled
+            ? "Search the published top-ranked Find a Tender notices, inspect disclosed values, and open source-linked buyer and supplier records."
+            : "A reader-facing procurement tool with source-linked buyer and supplier dossiers. Find a Tender records and derived totals are currently held from publication."}
           current="Public money"
         />
         <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 md:px-6 md:py-12">
-          {data ? (
+          {!publicationIsEnabled ? (
+            <EvidenceHoldNotice id="government-contracts-publication-held">
+              Procurement records and derived totals are held from public release. No awards, buyer or supplier dossiers, or totals are returned while publication is held.
+            </EvidenceHoldNotice>
+          ) : data ? (
             <>
               <p className="text-sm text-gray-700">
                 Current complete window: {data.window.label}. Notices updated in this period, not money spent that

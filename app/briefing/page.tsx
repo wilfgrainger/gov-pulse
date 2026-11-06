@@ -1,5 +1,5 @@
 import PublicationOffline from "@/app/components/PublicationOffline";
-import { publicationRouteEnabled } from "@/contracts/publication-policy";
+import { gateRoute } from "@/app/lib/gateRoute";
 import type { Metadata } from "next";
 import Link from "next/link";
 import BriefingEdition from "@/app/components/BriefingEdition";
@@ -15,7 +15,8 @@ export const metadata: Metadata = {
 };
 
 export default async function BriefingPage() {
-  if (!publicationRouteEnabled("/briefing/")) return <PublicationOffline />;
+  const gate = gateRoute("/briefing/");
+  if (gate.access !== "serve") return <PublicationOffline heldFeeds={gate.heldFeeds} />;
   const snapshot = await readServerMetricsSnapshot();
   return <div className="min-h-screen bg-background text-foreground">
     <a href="#briefing" className="sr-only focus:not-sr-only focus:block focus:bg-white focus:p-4">Skip to latest briefing</a>

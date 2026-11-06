@@ -62,7 +62,7 @@ function deriveScheduledWork(registry, crons, { retryDeliveries = 0 } = {}) {
 export { deriveScheduledWork, executionsPerDay };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const { FEED_REGISTRY } = await import("../worker/feed-registry.js");
+  const { FEED_REGISTRY } = await import("../feeds/registry.js");
   const { DAILY_CRON, BETTING_CRON } = await import("../worker/queued-publication-entry.js");
   console.log(JSON.stringify(deriveScheduledWork(FEED_REGISTRY, [DAILY_CRON, BETTING_CRON]), null, 2));
 }

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   isCurrentNhsRttPayload,
   normalizeNhsRttPayload,
-} from "@/worker/nhs-rtt";
+} from "@/feeds/nhs/rtt.js";
 
 const latestHistory = {
   medianWaitWeeks: 12.4,

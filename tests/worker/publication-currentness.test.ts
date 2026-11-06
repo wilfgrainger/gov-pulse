@@ -1,12 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it } from "vitest";
-import {
-  filterCurrentSnapshot,
-  cacheLifetime,
-  sectionCurrentness,
-  snapshotValidityDeadline,
-} from "@/worker/publication-currentness";
+import { filterCurrentSnapshot, cacheLifetime, sectionCurrentness, snapshotValidityDeadline } from "@/contracts/evidence-policy";
 import { FEED_REGISTRY_VERSION, provenanceFor } from "@/worker/feed-registry";
 
 function source(overrides: Record<string, unknown> = {}) {

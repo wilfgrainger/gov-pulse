@@ -1,5 +1,5 @@
 import { SECTION_BUILDERS } from "./section-builders.js";
-import { FEED_REGISTRY_VERSION } from "./feed-registry.js";
+import { FEED_REGISTRY_VERSION } from "../feeds/registry.js";
 import { buildMeasureCatalog } from "./measure-catalog.js";
 import { buildEditionSummary } from "./edition-summary.js";
 
@@ -16,7 +16,6 @@ import { buildEditionSummary } from "./edition-summary.js";
 
 const PUBLICATION_CURRENT_KEY = "v12:publication:current";
 const PUBLICATION_STATUS_KEY = "v12:publication:status";
-const PUBLICATION_HISTORY_PREFIX = "v12:publication:history:";
 
 function isRecord(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -47,7 +46,7 @@ async function readCurrentPublication(env) {
 // fail-closed currentness behaviour) the internal-worker doll produced.
 async function refreshSectionPayload(section, env, ctx, now = new Date()) {
   if (section === "taxRevenue") {
-    const { collectTaxRevenue } = await import("./live-tax-revenue-collector.js");
+    const { collectTaxRevenue } = await import("../feeds/tax/parse.js");
     return collectTaxRevenue(fetch, now);
   }
 
@@ -127,7 +126,6 @@ function mergePublication(previous, refreshedRecords, contractsRecord, now = new
 
 export {
   PUBLICATION_CURRENT_KEY,
-  PUBLICATION_HISTORY_PREFIX,
   PUBLICATION_STATUS_KEY,
   isSnapshot,
   mergePublication,

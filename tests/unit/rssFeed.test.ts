@@ -1,13 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
-import { GET, renderRssFeed } from "@/app/feed.xml/route";
-import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
+import { GET } from "@/app/feed.xml/route";
+import { renderRssFeed } from "@/app/lib/rssFeed";
+import fixture from "@/tests/fixtures/publication/current-snapshot.json";
 import { SITE_DISCOVERY } from "@/app/lib/discovery";
 import type { MetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import type { MeasureRecord } from "@/app/lib/measureCatalog";
 import { publicSnapshot } from "@/worker/public-snapshot";
 
+const NOW = new Date("2026-11-05T12:00:00.000Z");
+
+function fixtureSnapshot() {
+  return publicSnapshot(structuredClone(fixture)) as MetricsSnapshot;
+}
+
 function rssSnapshot() {
-  const snapshot = publicSnapshot(BUILD_METRICS_SNAPSHOT) as MetricsSnapshot;
+  const snapshot = fixtureSnapshot();
   const publishedAt = "2026-09-11T06:00:00.000Z";
   const gdp: MeasureRecord = {
     id: "gdp-monthlyGrowth",
@@ -32,7 +39,7 @@ function rssSnapshot() {
     caveats: ["Monthly growth is volatile and subject to revision."],
   };
 
-  snapshot.meta.sources.gdpTracker = { status: "ok", fetchedAt: "2026-10-03T00:00:00.000Z" };
+  snapshot.meta.sources.gdpTracker = { status: "ok", cacheState: "fresh", fetchedAt: "2026-11-05T06:00:00.000Z" };
   snapshot.meta.measureCatalog = {
     schemaVersion: 2,
     editionId: "catalog-rss-test",
@@ -49,7 +56,7 @@ function rssSnapshot() {
   };
   snapshot.gdpTracker = {
     publishedAt,
-    __observation: { period: "July 2026", observedAt: "2026-07-31", status: "published" },
+    __observation: { period: "July 2026", observedAt: "2026-07-31T00:00:00.000Z", status: "current", maxAgeDays: 120 },
   };
   return snapshot;
 }
@@ -57,7 +64,7 @@ function rssSnapshot() {
 describe("RSS publication feed", () => {
   it("emits parseable source publications and authored stories with stable identities", async () => {
     const response = GET();
-    const xml = renderRssFeed(rssSnapshot());
+    const xml = renderRssFeed(rssSnapshot(), NOW);
     const document = new DOMParser().parseFromString(xml, "application/xml");
     const items = [...document.querySelectorAll("channel > item")];
     const snapshot = rssSnapshot();
@@ -99,8 +106,8 @@ describe("RSS publication feed", () => {
   });
 
   it("dates polling and debt RSS entries from publisher records", () => {
-    const snapshot = publicSnapshot(BUILD_METRICS_SNAPSHOT) as MetricsSnapshot;
-    const document = new DOMParser().parseFromString(renderRssFeed(snapshot), "application/xml");
+    const snapshot = fixtureSnapshot();
+    const document = new DOMParser().parseFromString(renderRssFeed(snapshot, NOW), "application/xml");
     const polling = snapshot.electionPolling as { latestPublicationDate?: string };
     const debt = snapshot.nationalDebt as { publicationDate?: string };
 
@@ -128,7 +135,7 @@ describe("RSS publication feed", () => {
       previousEditionId,
       changes: [],
     };
-    const xml = renderRssFeed(snapshot);
+    const xml = renderRssFeed(snapshot, NOW);
     const document = new DOMParser().parseFromString(xml, "application/xml");
     const edition = [...document.querySelectorAll("channel > item")]
       .find((item) => item.querySelector("category")?.textContent === "Evidence edition");
@@ -145,7 +152,7 @@ describe("RSS publication feed", () => {
       previousEditionId: "catalog-same",
       changes: [],
     };
-    const xml = renderRssFeed(snapshot);
+    const xml = renderRssFeed(snapshot, NOW);
     const document = new DOMParser().parseFromString(xml, "application/xml");
     const edition = [...document.querySelectorAll("channel > item")]
       .find((item) => item.querySelector("category")?.textContent === "Evidence edition");
@@ -169,7 +176,7 @@ describe("RSS publication feed", () => {
         previousUnit: "%", nextUnit: "%", previous: null, next: null, changedFields: ["sourceUrl"],
       }],
     };
-    const xml = renderRssFeed(snapshot);
+    const xml = renderRssFeed(snapshot, NOW);
     const document = new DOMParser().parseFromString(xml, "application/xml");
     const edition = [...document.querySelectorAll("channel > item")]
       .find((item) => item.querySelector("category")?.textContent === "Evidence edition");
@@ -182,10 +189,45 @@ describe("RSS publication feed", () => {
     expect(description).toContain("https://www.ons.gov.uk/prices/new");
     expect(description).not.toContain("not previously reported → unavailable");
   });
+
+  it("omits a dataset whose validity ended before build time", () => {
+    const links = (xml: string) => [...new DOMParser().parseFromString(xml, "application/xml").querySelectorAll("channel > item > link")]
+      .map((link) => link.textContent);
+    const current = fixtureSnapshot();
+    expect(links(renderRssFeed(current, NOW))).toContain(`${SITE_DISCOVERY.origin}/section/election-polls/`);
+
+    const expired = fixtureSnapshot();
+    (expired.electionPolling as { expiresAt: string }).expiresAt = "2026-09-30T00:00:00.000Z";
+    const feed = links(renderRssFeed(expired, new Date("2026-11-06T00:00:00.000Z")));
+    expect(feed).not.toContain(`${SITE_DISCOVERY.origin}/section/election-polls/`);
+  });
+
+  it("renders no dataset items when snapshot is null", () => {
+    const xml = renderRssFeed(null, NOW);
+    const document = new DOMParser().parseFromString(xml, "application/xml");
+    expect(document.querySelector("parsererror")).toBeNull();
+    const categories = [...document.querySelectorAll("channel > item > category")].map((category) => category.textContent);
+    expect(categories).not.toContain("Source data publication");
+    expect(categories).not.toContain("Evidence edition");
+    expect(xml).not.toContain("/section/");
+  });
 });
 
-// Exercise the enabled-publication behavior independently of the production pause.
+// Exercise the published-publication behavior independently of the production pause.
 vi.mock("@/config/publications.json", async (importOriginal) => {
-  const { default: config } = await importOriginal<{ default: { publications: Record<string, { enabled: boolean }> } }>();
-  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, enabled: true }])), ons: { enabled: true } } } };
+  const { default: config } = await importOriginal<{ default: { publications: Record<string, { state: string }> } }>();
+  return { default: { ...config, publications: { ...Object.fromEntries(Object.entries(config.publications).map(([id, entry]) => [id, { ...entry, state: "published" }])), ons: { state: "published" } } } };
+});
+
+
+vi.mock("@/config/product-capabilities.json", async (importOriginal) => {
+  const { default: config } = await importOriginal<{ default: { capabilities: Record<string, { available: boolean }> } }>();
+  return {
+    default: {
+      ...config,
+      capabilities: Object.fromEntries(
+        Object.entries(config.capabilities).map(([id, entry]) => [id, { ...entry, available: true }])
+      ),
+    },
+  };
 });

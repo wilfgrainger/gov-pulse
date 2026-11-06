@@ -1,6 +1,6 @@
 import type { MeasureDefinition } from "@/app/lib/measureDefinitions";
 import type { MeasureRecord } from "@/app/lib/measureCatalog";
-import { provenanceFor } from "@/worker/feed-registry.js";
+import { provenanceFor } from "@/feeds/registry.js";
 
 type MeasureSource = {
   status?: string;

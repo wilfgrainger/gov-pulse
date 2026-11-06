@@ -1,11 +1,10 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   fetchCandidate,
-  publicCandidate,
-  validateCandidate,
+  validateAcceptedArtifact,
 } from "../../scripts/fetch-cloudflare-publication-candidate.mjs";
 import {
   FEED_REGISTRY_VERSION,
@@ -15,7 +14,7 @@ import {
 const NOW = new Date("2026-08-02T09:00:00.000Z");
 const FETCHED_AT = "2026-08-02T08:00:00.000Z";
 
-function completeSnapshot() {
+function acceptedArtifact() {
   const sections = Object.fromEntries(
     REQUIRED_PUBLISHED_SECTION_IDS.map((section) => [
       section,
@@ -38,8 +37,6 @@ function completeSnapshot() {
     meta: {
       registryVersion: FEED_REGISTRY_VERSION,
       generatedAt: FETCHED_AT,
-      publicationMode: "queue-free-tier",
-      freeTierBudget: { reads: 1 },
       sources: Object.fromEntries(
         REQUIRED_PUBLISHED_SECTION_IDS.map((section) => [
           section,
@@ -50,45 +47,53 @@ function completeSnapshot() {
           },
         ])
       ),
+      publicProjection: {
+        state: "published",
+        publishedSections: [...REQUIRED_PUBLISHED_SECTION_IDS].sort(),
+      },
     },
     ...sections,
   };
 }
 
-describe("Cloudflare Pages publication candidate", () => {
-  it("accepts only a current complete required publication", () => {
-    const candidate = validateCandidate(completeSnapshot(), NOW);
+describe("Cloudflare Pages accepted-artifact recovery", () => {
+  it("accepts a pre-sanitized current publication artifact", () => {
+    const candidate = validateAcceptedArtifact(acceptedArtifact(), NOW);
 
     expect(Object.keys(candidate.meta.sources).sort()).toEqual(
       [...REQUIRED_PUBLISHED_SECTION_IDS].sort()
     );
-    expect(
-      REQUIRED_PUBLISHED_SECTION_IDS.every((section) =>
-        Object.prototype.hasOwnProperty.call(candidate, section)
-      )
-    ).toBe(true);
   });
 
-  it("rejects a candidate when filtering removes one required section", () => {
-    const candidate = completeSnapshot();
+  it("rejects an accepted artifact once any published section has expired", () => {
+    const candidate = acceptedArtifact();
     candidate.meta.sources.sentimentPulse.fetchedAt =
       "2026-07-31T20:59:59.000Z";
     for (const measure of Object.values(candidate.sentimentPulse.__measureValidity)) {
       measure.validUntil = "2026-08-01T00:00:00.000Z";
     }
 
-    expect(() => validateCandidate(candidate, NOW)).toThrow(
-      /missing current required evidence: sentimentPulse/i
+    expect(() => validateAcceptedArtifact(candidate, NOW)).toThrow(
+      /not a current accepted public artifact/i
     );
   });
 
-  it("sanitises deployment-only metadata after the completeness gate", () => {
-    const candidate = publicCandidate(completeSnapshot(), NOW);
+  it("rejects deployment-only or private metadata instead of sanitizing it during recovery", () => {
+    const candidate = acceptedArtifact();
+    candidate.meta.publicationMode = "queue-free-tier";
+    candidate.meta.sources.gdpTracker.backend = "private-worker";
 
-    expect(candidate.meta).not.toHaveProperty("publicationMode");
-    expect(candidate.meta).not.toHaveProperty("freeTierBudget");
-    expect(Object.keys(candidate.meta.sources)).toHaveLength(
-      REQUIRED_PUBLISHED_SECTION_IDS.length
+    expect(() => validateAcceptedArtifact(candidate, NOW)).toThrow(
+      /not a current accepted public artifact/i
+    );
+  });
+
+  it("rejects private source diagnostics", () => {
+    const candidate = acceptedArtifact();
+    candidate.meta.sources.gdpTracker.error = "private upstream response";
+
+    expect(() => validateAcceptedArtifact(candidate, NOW)).toThrow(
+      /not a current accepted public artifact/i
     );
   });
 
@@ -102,7 +107,7 @@ describe("Cloudflare Pages publication candidate", () => {
         now: NOW,
         fetchImpl: async (url, options) => {
           request = { url, options };
-          return new Response(JSON.stringify(completeSnapshot()), {
+          return new Response(JSON.stringify(acceptedArtifact()), {
             status: 200,
             headers: {
               "Content-Type": "application/json",
@@ -115,7 +120,7 @@ describe("Cloudflare Pages publication candidate", () => {
       expect(String(request.url)).toBe("https://public-data.org/data/metrics-snapshot.json");
       expect(request.options.headers).not.toHaveProperty("Authorization");
       expect(result.sections).toHaveLength(REQUIRED_PUBLISHED_SECTION_IDS.length);
-      expect(JSON.parse(await readFile(output, "utf8")).meta).not.toHaveProperty("freeTierBudget");
+      expect(JSON.parse(await readFile(output, "utf8"))).toEqual(acceptedArtifact());
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
@@ -126,7 +131,8 @@ describe("Cloudflare Pages publication candidate", () => {
     try {
       await expect(fetchCandidate({
         output: join(directory, "snapshot.json"),
-        fetchImpl: async () => new Response(JSON.stringify(completeSnapshot()), {
+        now: NOW,
+        fetchImpl: async () => new Response(JSON.stringify(acceptedArtifact()), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         }),
@@ -141,8 +147,9 @@ describe("Cloudflare Pages publication candidate", () => {
     try {
       await expect(fetchCandidate({
         output: join(directory, "snapshot.json"),
+        now: NOW,
         fetchImpl: async () => {
-          const response = new Response(JSON.stringify(completeSnapshot()), {
+          const response = new Response(JSON.stringify(acceptedArtifact()), {
             status: 200,
             headers: {
               "Content-Type": "application/json",
@@ -162,4 +169,20 @@ describe("Cloudflare Pages publication candidate", () => {
       await rm(directory, { recursive: true, force: true });
     }
   });
+});
+
+
+vi.mock("../../config/publications.json", async (importOriginal) => {
+  const { default: config } = await importOriginal();
+  return {
+    default: {
+      ...config,
+      publications: Object.fromEntries(
+        Object.entries(config.publications).map(([id, entry]) => [
+          id,
+          { ...entry, state: "published" },
+        ])
+      ),
+    },
+  };
 });

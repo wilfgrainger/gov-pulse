@@ -31,23 +31,17 @@ describe("data source evidence metadata", () => {
     expect(DATA_SOURCES.nhsStats.geographicCoverage).toBe("England");
     expect(DATA_SOURCES.electionPolling.geographicCoverage).toBe("Great Britain");
     expect(DATA_SOURCES.bettingOdds.evidenceClass).toBe("market-signal");
-    expect(DATA_SOURCES.politicalCompass.evidenceClass).toBe("user-generated");
     expect(DATA_SOURCE_DETAILS.bettingOdds.caveat).toContain("neither official statistics nor official forecasts");
     expect(DATA_SOURCE_DETAILS.crimeStatistics.caveat).toContain("never added into one total");
     expect(DATA_SOURCE_DETAILS.crimeStatistics.caveat).toContain("Regional rankings remain unavailable");
     expect(DATA_SOURCE_DETAILS.employmentStats.caveat).toContain("rolling three-month periods");
-    expect(DATA_SOURCE_DETAILS.politicalCompass.caveat).toContain("not a validated diagnosis");
   });
 
-  it("does not retain active publisher claims for withdrawn routes", () => {
-    for (const section of [
-      "pmApproval",
-      "polarizationMeter",
-      "trendLines",
-    ]) {
-      expect(DATA_SOURCES[section].automation).toBe("withdrawn");
-      expect(DATA_SOURCES[section].sources.join(" ")).toMatch(/No current/i);
-      expect(DATA_SOURCE_DETAILS[section].publicationPeriod).toMatch(/No .* publication/i);
+  it("removes retired products from source metadata instead of keeping withdrawn pseudo-sources", () => {
+    for (const section of ["pmApproval", "polarizationMeter", "trendLines", "geographicHeatmap", "echoChamberMap", "politicalCompass"]) {
+      expect(DATA_SOURCES).not.toHaveProperty(section);
+      expect(DATA_SOURCE_DETAILS).not.toHaveProperty(section);
     }
+    expect(Object.values(DATA_SOURCES).filter((source) => source.automation === "withdrawn")).toEqual([]);
   });
 });

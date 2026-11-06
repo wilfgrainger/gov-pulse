@@ -6,7 +6,7 @@ import {
   approvedNhsUrl,
   discoverNhsRttDataPage,
   discoverNhsRttPublicationLinks,
-} from "@/worker/nhs-rtt-source-discovery";
+} from "@/feeds/nhs/source-discovery.js";
 
 const DATA_PAGE =
   "https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/rtt-data-2026-27/";
