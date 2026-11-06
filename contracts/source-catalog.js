@@ -1,5 +1,6 @@
 import { SOURCE_CATALOG, SOURCE_CATALOG_VERSION, deepFreeze } from "./source-definitions.js";
 import { definition as migrationStatsDefinition } from "../feeds/migration/feed.js";
+import { definition as nhsStatsDefinition } from "../feeds/nhs/feed.js";
 import { catalogEntryOf } from "../feeds/define-feed.js";
 import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
 import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
@@ -156,21 +157,8 @@ export const FEED_CATALOG = deepFreeze({
       caveat: "Each poll is shown separately with fieldwork, sample, question or headline method, commissioner, uncertainty and a direct primary source. One poll is not evidence of a durable trend.",
     },
   }),
-  nhsStats: defineFeed({
-    id: "nhsStats", registry: "feed", title: "Referral-to-treatment waiting times", displayName: "NHS Referral to Treatment",
-    evidenceClass: "administrative-data", geography: { code: "ENG", label: "England" },
-    sourceIds: ["nhs-england-rtt"], automation: "automated", collectionLayer: "worker", frequency: "monthly",
-    retrieval: "scheduled-publication-check", refreshCadence: "daily", publicationCadence: "monthly",
-    retrievalMaxAgeMs: 45 * DAY_MS, publicationRequirement: "required",
-    freshnessWindow: "Within 45 days of primary publication",
-    freshnessRationale: "Each accepted RTT publication retains its NHS England publication date and is withdrawn after 45 days.",
-    editorial: {
-      publicationPeriod: "Latest verified NHS England referral-to-treatment month",
-      unit: "Incomplete pathways, weeks or percentage, as labelled",
-      revisionStatus: "NHS England may revise provider submissions, usually through periodic revision releases",
-      caveat: "The headline counts consultant-led pathways rather than unique people. National figures include estimates for non-reporting acute trusts, while treatment-function rows exclude those estimates.",
-    },
-  }),
+  // Projected from feeds/nhs/feed.js (the single declaration).
+  nhsStats: defineFeed(catalogEntryOf(nhsStatsDefinition)),
   bettingOdds: defineFeed({
     id: "bettingOdds", registry: "feed", title: "Strict political betting market snapshots", displayName: "Political Betting Markets",
     evidenceClass: "market-signal", geography: { code: "UK", label: "United Kingdom" },

@@ -2,7 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parseOddscheckerRows } from "@/worker/live-betting-collector";
-import { latestNhsLinks } from "@/worker/live-nhs-collector";
+import { latestNhsLinks } from "@/feeds/nhs/workbook.js";
 import {
   latestYouGovArticleUrl,
   findPdfUrl,
@@ -13,7 +13,7 @@ import {
   pdfStrings,
   sampleSizeFromPdfText,
 } from "@/worker/live-polling-collector";
-import { parseNhsRttPressNotice } from "@/worker/nhs-press-notice";
+import { parseNhsRttPressNotice } from "@/feeds/nhs/press-notice.js";
 
 const specialties = [
   "General Surgery Service 381,497 62.7%",

@@ -125,7 +125,7 @@ function nhsPublishedObservation(data, now) {
 
 // Contracts declared by a feed definition (feeds/*/feed.js) name their
 // extractor; this binds the name to the function.
-const EXTRACTORS = { publishedObservation };
+const EXTRACTORS = { publishedObservation, nhsPublishedObservation };
 
 function declaredContract(section) {
   const { maxAgeDays, extractor } = observationContracts()[section];
@@ -169,10 +169,7 @@ const contracts = {
   migrationStats: declaredContract("migrationStats"),
   housePriceIndex: declaredContract("housePriceIndex"),
   realWages: declaredContract("realWages"),
-  nhsStats: {
-    maxAgeDays: 45,
-    extract: nhsPublishedObservation,
-  },
+  nhsStats: declaredContract("nhsStats"),
   crimeStatistics: {
     maxAgeDays: 450,
     extract: publishedObservation,

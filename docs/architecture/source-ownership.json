@@ -85,8 +85,8 @@
     },
     {
       "section": "nhsStats",
-      "collector": "worker/live-nhs-publication-collector.js",
-      "normalizer": "worker/nhs-rtt.js",
+      "collector": "feeds/nhs/parse.js",
+      "normalizer": "feeds/nhs/rtt.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron through public-data-jobs Queue and deployment bootstrap when no ready publication exists; NHS England currently returns AWS WAF challenge HTML to the Worker egress, so the collector fails closed and the required section remains unavailable until a supported source path is verified",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",

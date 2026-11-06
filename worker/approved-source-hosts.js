@@ -22,7 +22,7 @@ export const YOU_GOV_RESULTS_HOSTS = frozenHostSet([
 ]);
 
 // NHS England pages and workbook links are published under both the apex and
-// www. hosts (worker/nhs-rtt-source-discovery.js and worker/nhs-rtt.js).
+// www. hosts (feeds/nhs/source-discovery.js and feeds/nhs/rtt.js).
 export const NHS_ENGLAND_HOSTS = frozenHostSet(["www.england.nhs.uk", "england.nhs.uk"]);
 
 const SUPPLEMENTARY_RETRIEVAL_HOSTS = Object.freeze({

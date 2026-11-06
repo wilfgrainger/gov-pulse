@@ -1,18 +1,18 @@
-import { normalizeNhsRttPayload } from "./nhs-rtt.js";
-import { parseNhsWorkbook } from "./live-nhs-collector.js";
-import { extractPdfText } from "./live-polling-collector.js";
-import { parseNhsRttPressNotice } from "./nhs-press-notice.js";
+import { normalizeNhsRttPayload } from "./rtt.js";
+import { parseNhsWorkbook } from "./workbook.js";
+import { extractPdfText } from "../../worker/live-polling-collector.js";
+import { parseNhsRttPressNotice } from "./press-notice.js";
 import {
   fetchResponse,
   MAX_RESPONSE_BYTES,
   readResponseArrayBuffer,
   readResponseText,
-} from "./live-feed-common.js";
+} from "../../worker/live-feed-common.js";
 import {
   NHS_RTT_LANDING_PAGE,
   discoverNhsRttDataPage,
   discoverNhsRttPublicationLinks,
-} from "./nhs-rtt-source-discovery.js";
+} from "./source-discovery.js";
 
 async function collectNhsRttPublication(fetchImpl = fetch, now = new Date()) {
   const landingResponse = await fetchResponse(NHS_RTT_LANDING_PAGE, fetchImpl);
@@ -68,4 +68,15 @@ async function collectNhsRttPublication(fetchImpl = fetch, now = new Date()) {
   );
 }
 
-export { collectNhsRttPublication };
+/**
+ * Feed interface (target design 2.3). Wraps the existing collector without
+ * changing what it fetches or returns: `data` is exactly the normalised NHS RTT
+ * payload collectNhsRttPublication has always produced.
+ *
+ * @param {{fetch: typeof fetch, now: Date}} ctx
+ */
+async function collect(ctx) {
+  return { data: await collectNhsRttPublication(ctx.fetch, ctx.now) };
+}
+
+export { collect, collectNhsRttPublication };

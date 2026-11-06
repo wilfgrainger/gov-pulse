@@ -1,5 +1,5 @@
 import { collectBettingOdds } from "./live-betting-collector.js";
-import { collectNhsRttPublication } from "./live-nhs-publication-collector.js";
+import { collectNhsRttPublication } from "../feeds/nhs/parse.js";
 import { collectElectionPolling } from "./live-polling-collector.js";
 import { collectOnsReleaseCalendar } from "./ons-release-calendar.js";
 import { collectNhsReleaseCalendar } from "./nhs-release-calendar.js";

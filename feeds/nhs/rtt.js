@@ -1,4 +1,4 @@
-import { NHS_ENGLAND_HOSTS as NHS_HOSTS } from "./approved-source-hosts.js";
+import { NHS_ENGLAND_HOSTS as NHS_HOSTS } from "../../worker/approved-source-hosts.js";
 
 const NHS_RTT_MAX_AGE_DAYS = 45;
 const DAY_MS = 24 * 60 * 60 * 1000;

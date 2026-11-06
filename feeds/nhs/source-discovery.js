@@ -1,9 +1,9 @@
-import { NHS_ENGLAND_HOSTS as NHS_HOSTS } from "./approved-source-hosts.js";
+import { NHS_ENGLAND_HOSTS as NHS_HOSTS } from "../../worker/approved-source-hosts.js";
 import {
   absoluteUrl,
   decodeHtml,
   parseAttributes,
-} from "./live-feed-common.js";
+} from "../../worker/live-feed-common.js";
 
 const NHS_RTT_LANDING_PAGE =
   "https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/";

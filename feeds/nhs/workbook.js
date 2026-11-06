@@ -1,6 +1,6 @@
-import { normalizeNhsRttPayload } from "./nhs-rtt.js";
-import { extractPdfText } from "./live-polling-collector.js";
-import { parseNhsRttPressNotice } from "./nhs-press-notice.js";
+import { normalizeNhsRttPayload } from "./rtt.js";
+import { extractPdfText } from "../../worker/live-polling-collector.js";
+import { parseNhsRttPressNotice } from "./press-notice.js";
 import {
   absoluteUrl,
   decodeHtml,
@@ -9,7 +9,7 @@ import {
   parseAttributes,
   readResponseArrayBuffer,
   readResponseText,
-} from "./live-feed-common.js";
+} from "../../worker/live-feed-common.js";
 
 const NHS_RTT_DATA_PAGE =
   "https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/rtt-data-2026-27/";
