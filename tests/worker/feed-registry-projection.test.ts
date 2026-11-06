@@ -36,6 +36,10 @@ describe("feed index", () => {
     expect(FEEDS.map((feed) => feed.definition.slug).sort()).toEqual(folders.sort());
   });
 
+  it("registers a collect function for every feed", () => {
+    for (const feed of FEEDS) expect(typeof feed.collect, feed.definition.id).toBe("function");
+  });
+
   it("has unique ids and slugs", () => {
     const ids = FEEDS.map((feed) => feed.definition.id);
     const slugs = FEEDS.map((feed) => feed.definition.slug);

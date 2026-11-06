@@ -8,12 +8,16 @@ import { downloadGeography, downloadIds } from "../../feeds/registry.js";
 const HAND_LISTED_IDS = [
   "electionPolling", "nationalDebt", "gdpTracker", "sentimentPulse",
   "taxRevenue", "employmentStats", "crimeStatistics", "nhsStats", "migrationStats",
-  "housePriceIndex",
 ] as const;
+type DownloadIds = readonly [
+  "electionPolling", "nationalDebt", "gdpTracker", "sentimentPulse",
+  "taxRevenue", "employmentStats", "crimeStatistics", "nhsStats", "migrationStats",
+  "housePriceIndex", "realWages",
+];
 export const SECTION_DOWNLOAD_IDS = [
   ...HAND_LISTED_IDS,
   ...downloadIds(),
-] as unknown as readonly [...typeof HAND_LISTED_IDS, "realWages"];
+] as unknown as DownloadIds;
 
 const DECLARED_GEOGRAPHY: Record<string, string> = downloadGeography();
 
@@ -27,7 +31,7 @@ const GEOGRAPHY: Record<(typeof SECTION_DOWNLOAD_IDS)[number], string> = {
   crimeStatistics: "England and Wales (check each series)",
   nhsStats: "England",
   migrationStats: "United Kingdom",
-  housePriceIndex: "United Kingdom",
+  housePriceIndex: DECLARED_GEOGRAPHY.housePriceIndex,
   realWages: DECLARED_GEOGRAPHY.realWages,
 };
 

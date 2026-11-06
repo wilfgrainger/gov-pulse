@@ -1,52 +1,13 @@
-import { fetchOfficialText } from "./official-source-fetch.js";
-import { parseOnsNextReleaseDate } from "./ons-release-date.js";
+import { fetchOfficialText } from "../../worker/official-source-fetch.js";
+import { parseOnsNextReleaseDate } from "../../worker/ons-release-date.js";
+import { onsBulletinCollect } from "../_kit/ons-bulletin.js";
+import { decodeHtml } from "../_kit/html.js";
+import { parseCsvColumns } from "../_kit/csv.js";
+import { MONTHS, isoDateFromDayMonthYear as isoDate } from "../_kit/dates.js";
 
 const BULLETIN_BASE_URL =
   "https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/privaterentandhousepricesuk";
 const BULLETIN_LATEST_URL = `${BULLETIN_BASE_URL}/latest`;
-
-const MONTHS = {
-  january: 0,
-  jan: 0,
-  february: 1,
-  feb: 1,
-  march: 2,
-  mar: 2,
-  april: 3,
-  apr: 3,
-  may: 4,
-  june: 5,
-  jun: 5,
-  july: 6,
-  jul: 6,
-  august: 7,
-  aug: 7,
-  september: 8,
-  sep: 8,
-  sept: 8,
-  october: 9,
-  oct: 9,
-  november: 10,
-  nov: 10,
-  december: 11,
-  dec: 11,
-};
-
-function decodeHtml(value) {
-  return String(value)
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;|&#160;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&minus;|&#8722;/gi, "-")
-    .replace(/&ndash;|&#8211;/gi, "-")
-    .replace(/&mdash;|&#8212;/gi, "-")
-    .replace(/&rsquo;|&#8217;|&#39;/gi, "'")
-    .replace(/&quot;|&#34;/gi, '"')
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 function matchRequired(text, expression, label) {
   const match = text.match(expression);
@@ -62,23 +23,6 @@ function numeric(value, label) {
     throw new Error(`Unable to parse ${label}`);
   }
   return parsed;
-}
-
-function isoDate(value, label) {
-  const match = String(value).trim().match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
-  const month = match ? MONTHS[match[2].toLowerCase()] : undefined;
-  if (!match || month === undefined) {
-    throw new Error(`Unable to parse ${label} '${value}'`);
-  }
-  const parsed = new Date(Date.UTC(Number(match[3]), month, Number(match[1])));
-  if (
-    parsed.getUTCFullYear() !== Number(match[3]) ||
-    parsed.getUTCMonth() !== month ||
-    parsed.getUTCDate() !== Number(match[1])
-  ) {
-    throw new Error(`Unable to parse ${label} '${value}'`);
-  }
-  return parsed.toISOString().slice(0, 10);
 }
 
 function monthlyPeriodEnd(period) {
@@ -174,31 +118,6 @@ function discoverHousePriceIndexChartUrl(html, bulletinUrl) {
     throw new Error("ONS house price index bulletin CSV link left the bulletin's HTTPS origin");
   }
   return resolved.toString();
-}
-
-function parseCsvColumns(line) {
-  const columns = [];
-  let current = "";
-  let quoted = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const character = line[index];
-    if (character === '"') {
-      if (quoted && line[index + 1] === '"') {
-        current += '"';
-        index += 1;
-      } else {
-        quoted = !quoted;
-      }
-    } else if (character === "," && !quoted) {
-      columns.push(current.trim());
-      current = "";
-    } else {
-      current += character;
-    }
-  }
-  columns.push(current.trim());
-  return columns;
 }
 
 function parseHpiHistoryCsv(text) {
@@ -392,10 +311,14 @@ async function buildHousePriceIndex(fetchImpl = fetch) {
   };
 }
 
+/** Feed interface (target design 2.3); see onsBulletinCollect. */
+const collect = onsBulletinCollect(buildHousePriceIndex);
+
 export {
   BULLETIN_BASE_URL,
   BULLETIN_LATEST_URL,
   buildHousePriceIndex,
+  collect,
   discoverHousePriceIndexChartUrl,
   discoverLatestEdition,
   fetchLatestHousePriceIndexBulletin,

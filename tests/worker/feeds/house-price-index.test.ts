@@ -5,11 +5,12 @@ import {
   BULLETIN_BASE_URL,
   BULLETIN_LATEST_URL,
   buildHousePriceIndex,
+  collect,
   discoverHousePriceIndexChartUrl,
   discoverLatestEdition,
   parseHpiBulletin,
   parseHpiHistoryCsv,
-} from "@/worker/house-price-index";
+} from "@/feeds/house-price-index/parse.js";
 
 const bulletinHtml = `
 <html><head>
@@ -191,5 +192,19 @@ describe("latest ONS house price index connector", () => {
     })) as unknown as typeof fetch;
 
     await expect(buildHousePriceIndex(fetchImpl)).rejects.toThrow("private-rent history does not reconcile");
+  });
+
+  it("collect wraps the unchanged builder output with observation and source", async () => {
+    const fetchImpl = vi.fn(async (url: string) => ({
+      ok: true,
+      status: 200,
+      url: BULLETIN_LATEST_URL,
+      text: async () => url.includes("/generator?uri=") ? historyCsv : bulletinHtml,
+    })) as unknown as typeof fetch;
+    const now = new Date("2026-09-16T08:00:00Z");
+    const result = await collect({ fetch: fetchImpl, now });
+    expect(result.data).toEqual(await buildHousePriceIndex(fetchImpl));
+    expect(result.observation).toMatchObject({ period: "Jul 2026", publishedAt: "2026-09-16" });
+    expect(result.source).toMatchObject({ edition: "september2026", fetchedAt: now.toISOString() });
   });
 });

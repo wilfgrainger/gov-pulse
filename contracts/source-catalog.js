@@ -1,5 +1,6 @@
 import { SOURCE_CATALOG, SOURCE_CATALOG_VERSION, deepFreeze } from "./source-definitions.js";
 import { catalogEntryOf } from "../feeds/define-feed.js";
+import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
 import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -147,21 +148,8 @@ export const FEED_CATALOG = deepFreeze({
       caveat: "Long-term migration estimates cover people moving for 12 months or more. Visa grants and nationality tables are different administrative measures and are not mixed into this headline.",
     },
   }),
-  housePriceIndex: defineFeed({
-    id: "housePriceIndex", registry: "feed", title: "UK House Price Index", displayName: "House Price Index",
-    evidenceClass: "official-statistics", geography: { code: "UK", label: "United Kingdom" },
-    sourceIds: ["ons-private-rent-house-prices"], automation: "automated", collectionLayer: "worker", frequency: "monthly",
-    retrieval: "scheduled-publication-check", refreshCadence: "daily", publicationCadence: "monthly",
-    retrievalMaxAgeMs: 45 * DAY_MS, publicationRequirement: "required",
-    freshnessWindow: "Checked within 45 days",
-    freshnessRationale: "The latest ONS edition is discovered from the rolling bulletin; the house-price percentage-change series can lag the bulletin's publication.",
-    editorial: {
-      publicationPeriod: "Latest ONS Private rent and house prices, UK bulletin edition",
-      unit: "Average price (£, headline-only) and annual %-change (with monthly history)",
-      revisionStatus: "UK HPI first estimates are provisional and subject to revision as later transaction data is incorporated",
-      caveat: "The average price level is headline-only and is not presented as a fabricated historical series. The annual percentage-change figure can lag the bulletin's publication by one to two months.",
-    },
-  }),
+  // Projected from feeds/house-price-index/feed.js (the single declaration).
+  housePriceIndex: defineFeed(catalogEntryOf(housePriceIndexDefinition)),
   // Projected from feeds/real-wages/feed.js (the single declaration).
   realWages: defineFeed(catalogEntryOf(realWagesDefinition)),
   electionPolling: defineFeed({

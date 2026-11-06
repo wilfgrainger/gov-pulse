@@ -1,6 +1,8 @@
 // The feed list: one guarded line per feed. A test fails if a feeds/<slug>
 // folder is missing here or listed twice. Adding a feed here does not publish
 // it: publication state lives only in config/publications.json.
+import { definition as housePriceIndexDefinition } from "./house-price-index/feed.js";
+import * as housePriceIndexParser from "./house-price-index/parse.js";
 import { definition as realWagesDefinition } from "./real-wages/feed.js";
 import * as realWagesParser from "./real-wages/parse.js";
 
@@ -12,5 +14,6 @@ import * as realWagesParser from "./real-wages/parse.js";
 
 /** @type {readonly FeedModule[]} */
 export const FEEDS = Object.freeze([
+  { definition: housePriceIndexDefinition, collect: housePriceIndexParser.collect },
   { definition: realWagesDefinition, collect: realWagesParser.collect },
 ]);

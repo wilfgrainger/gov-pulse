@@ -170,10 +170,7 @@ const contracts = {
     maxAgeDays: 220,
     extract: publishedObservation,
   },
-  housePriceIndex: {
-    maxAgeDays: 45,
-    extract: publishedObservation,
-  },
+  housePriceIndex: declaredContract("housePriceIndex"),
   realWages: declaredContract("realWages"),
   nhsStats: {
     maxAgeDays: 45,

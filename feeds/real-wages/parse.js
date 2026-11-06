@@ -3,7 +3,7 @@ import { parseCsvColumns, parseStrictNumber as numeric } from "../_kit/csv.js";
 import { MONTHS, SHORT_MONTHS, isoDateFromDayMonthYear as isoDate } from "../_kit/dates.js";
 import { fetchOfficialText } from "../_kit/fetch.js";
 import { decodeHtml } from "../_kit/html.js";
-import { editionFromUrl } from "../_kit/ons-bulletin.js";
+import { editionFromUrl, onsBulletinCollect } from "../_kit/ons-bulletin.js";
 
 const BULLETIN_BASE_URL =
   "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/averageweeklyearningsingreatbritain";
@@ -245,31 +245,8 @@ async function buildRealWagesStats(fetchImpl = fetch) {
   };
 }
 
-/**
- * Feed interface (target design 2.3). Wraps the existing collector without
- * changing what it fetches or returns: `data` is exactly the section payload
- * buildRealWagesStats has always produced. Throws on any shape, identity or
- * reconciliation failure.
- *
- * @param {{fetch: typeof fetch, now: Date}} ctx
- */
-async function collect(ctx) {
-  const data = await buildRealWagesStats(ctx.fetch);
-  const { headline, source } = data;
-  return {
-    data,
-    observation: {
-      period: headline.period,
-      observedAt: new Date(headline.observedAt).toISOString(),
-      publishedAt: headline.releaseDate,
-    },
-    source: {
-      url: source.bulletinUrl,
-      fetchedAt: ctx.now.toISOString(),
-      edition: source.edition,
-    },
-  };
-}
+/** Feed interface (target design 2.3); see onsBulletinCollect. */
+const collect = onsBulletinCollect(buildRealWagesStats);
 
 export {
   BULLETIN_BASE_URL,

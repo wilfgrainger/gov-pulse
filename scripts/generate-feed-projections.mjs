@@ -82,12 +82,16 @@ export function findDrift() {
   for (const [slug, entry] of Object.entries(sectionDiscovery())) {
     compare(`section-discovery.json sections.${slug}`, discovery.sections[slug], entry);
   }
-  const feedIds = new Set(FEEDS.map(({ definition }) => definition.id));
-  compare(
-    "measure-definitions.json measures (feed-owned)",
-    measureDefinitions.measures.filter((measure) => feedIds.has(measure.section)),
-    projectedMeasures(),
-  );
+  // Measures are compared per feed: the file orders sections by measure
+  // library layout, the projection by FEEDS order.
+  const projected = projectedMeasures();
+  for (const { definition } of FEEDS) {
+    compare(
+      `measure-definitions.json measures (${definition.id})`,
+      measureDefinitions.measures.filter((measure) => measure.section === definition.id),
+      projected.filter((measure) => measure.section === definition.id),
+    );
+  }
   const ids = downloadIds();
   compare("SECTION_DOWNLOAD_IDS (feed-owned, in order)", SECTION_DOWNLOAD_IDS.filter((id) => ids.includes(id)), ids);
   return drift;

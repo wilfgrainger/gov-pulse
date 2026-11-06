@@ -41,7 +41,7 @@ import {
   buildNationalDebt,
 } from "./national-debt.js";
 import { buildMigrationStats } from "./migration.js";
-import { buildHousePriceIndex } from "./house-price-index.js";
+import { buildHousePriceIndex } from "../feeds/house-price-index/parse.js";
 import { buildRealWagesStats } from "../feeds/real-wages/parse.js";
 import {
   buildCrimeStatistics,
