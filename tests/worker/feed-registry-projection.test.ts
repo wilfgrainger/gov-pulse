@@ -25,7 +25,7 @@ import discovery from "@/contracts/section-discovery.json";
 import measureFile from "@/contracts/measure-definitions.json";
 import { definition as realWagesDefinition } from "@/feeds/real-wages/feed.js";
 
-const plain = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
+const plain = <T,>(value: T): T => (value === undefined ? value : JSON.parse(JSON.stringify(value)));
 const FEEDS_DIR = join(process.cwd(), "feeds");
 
 describe("feed index", () => {
@@ -36,8 +36,11 @@ describe("feed index", () => {
     expect(FEEDS.map((feed) => feed.definition.slug).sort()).toEqual(folders.sort());
   });
 
-  it("registers a collect function for every feed", () => {
-    for (const feed of FEEDS) expect(typeof feed.collect, feed.definition.id).toBe("function");
+  it("registers a collect function for every feed except static ones", () => {
+    for (const feed of FEEDS) {
+      if (feed.definition.automation === "static") expect(feed.collect, feed.definition.id).toBeUndefined();
+      else expect(typeof feed.collect, feed.definition.id).toBe("function");
+    }
   });
 
   it("has unique ids and slugs", () => {

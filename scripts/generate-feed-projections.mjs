@@ -57,7 +57,7 @@ if (process.argv.includes("--capture-legacy")) {
   console.log(`wrote ${target}`);
 }
 
-const plain = (value) => JSON.parse(JSON.stringify(value));
+const plain = (value) => (value === undefined ? null : JSON.parse(JSON.stringify(value)));
 const DISCOVERY_PATH = resolve(root, "contracts/section-discovery.json");
 const MEASURES_PATH = resolve(root, "contracts/measure-definitions.json");
 

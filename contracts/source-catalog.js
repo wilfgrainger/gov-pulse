@@ -11,6 +11,7 @@ import { definition as electionPollingDefinition } from "../feeds/election-polls
 import { definition as bettingOddsDefinition } from "../feeds/betting-odds/feed.js";
 import { definition as releaseCalendarDefinition } from "../feeds/release-calendar/feed.js";
 import { definition as nhsReleaseCalendarDefinition } from "../feeds/nhs-release-calendar/feed.js";
+import { definition as earlyYearsDefinition } from "../feeds/early-years/feed.js";
 import { catalogEntryOf } from "../feeds/define-feed.js";
 import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
 import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
@@ -116,18 +117,8 @@ export const FEED_CATALOG = deepFreeze({
     publicationCadence: "publisher-specific annual releases", retrievalMaxAgeMs: 30 * DAY_MS,
     publicationRequirement: "independent",
   }),
-  earlyYears: defineFeed({
-    id: "earlyYears", registry: null, title: "Early years evidence", displayName: "Early Years Spotlight",
-    evidenceClass: "official-statistics", geography: { code: "ENG", label: "England" },
-    sourceIds: ["ukhsa-cover", "dfe-eyfs"], automation: "static", collectionLayer: "worker", frequency: "periodic",
-    uiSourceLabels: ["UKHSA COVER childhood vaccination statistics", "DfE School Readiness"],
-    editorial: {
-      publicationPeriod: "UKHSA COVER 2024/25 and DfE EYFS profile 2024/25",
-      unit: "Rates (%) as labelled",
-      revisionStatus: "UKHSA immunisation data can be corrected; DfE profiles may receive publication updates",
-      caveat: "EYFSP profiles were cancelled during the COVID-19 pandemic (2019/20 and 2020/21). A new EYFS profile baseline was introduced in 2021/22, so earlier and later rates are not directly comparable.",
-    },
-  }),
+  // Projected from feeds/early-years/feed.js (the single declaration).
+  earlyYears: defineFeed(catalogEntryOf(earlyYearsDefinition)),
 });
 
 export function sourceFor(id) {

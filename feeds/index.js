@@ -29,9 +29,11 @@ import { definition as releaseCalendarDefinition } from "./release-calendar/feed
 import * as releaseCalendarParser from "./release-calendar/parse.js";
 import { definition as nhsReleaseCalendarDefinition } from "./nhs-release-calendar/feed.js";
 import * as nhsReleaseCalendarParser from "./nhs-release-calendar/parse.js";
+import { definition as earlyYearsDefinition } from "./early-years/feed.js";
 
 /**
- * @typedef {{definition: Readonly<Record<string, any>>, collect: (ctx: any) => Promise<any>,
+ * `collect` is absent only for automation "static" feeds, which have no collector.
+ * @typedef {{definition: Readonly<Record<string, any>>, collect?: (ctx: any) => Promise<any>,
  *   collectShard?: (ctx: any, shardKey: string) => Promise<object>,
  *   combine?: (shards: Record<string, object>, ctx: any) => any}} FeedModule
  */
@@ -52,4 +54,5 @@ export const FEEDS = Object.freeze([
   { definition: bettingOddsDefinition, collect: bettingOddsParser.collect },
   { definition: releaseCalendarDefinition, collect: releaseCalendarParser.collect },
   { definition: nhsReleaseCalendarDefinition, collect: nhsReleaseCalendarParser.collect },
+  { definition: earlyYearsDefinition },
 ]);
