@@ -13,6 +13,7 @@ import { definition as releaseCalendarDefinition } from "../feeds/release-calend
 import { definition as nhsReleaseCalendarDefinition } from "../feeds/nhs-release-calendar/feed.js";
 import { definition as earlyYearsDefinition } from "../feeds/early-years/feed.js";
 import { definition as governmentContractsDefinition } from "../feeds/government-contracts/feed.js";
+import { definition as internationalComparisonDefinition } from "../feeds/international-comparison/feed.js";
 import { catalogEntryOf } from "../feeds/define-feed.js";
 import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
 import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
@@ -89,21 +90,8 @@ export const FEED_CATALOG = deepFreeze({
   releaseCalendar: defineFeed(catalogEntryOf(releaseCalendarDefinition)),
   // Projected from feeds/nhs-release-calendar/feed.js (the single declaration).
   nhsReleaseCalendar: defineFeed(catalogEntryOf(nhsReleaseCalendarDefinition)),
-  internationalComparison: defineFeed({
-    id: "internationalComparison", registry: "publication", title: "International country comparisons", displayName: "International Comparison",
-    evidenceClass: "official-statistics", legacyEvidenceClass: "international-comparative-statistics",
-    geography: { code: "INT", label: "United Kingdom and twelve named peer countries, with measure-specific coverage" },
-    sourceIds: ["imf-data", "world-bank-wdi", "oecd-data-explorer", "sipri-milex", "who-world-bank-health"],
-    runtimeSourceIds: [
-      "imf-gdp-2026", "world-bank-population-2025", "imf-debt-2026", "imf-interest-2024",
-      "oecd-oda-2025", "sipri-2025", "oecd-socx-2023", "world-bank-health-2024",
-      "oecd-tax-2024", "world-bank-gdp-per-capita-2023", "world-bank-gdp-per-capita-2024",
-    ],
-    automation: "automated", collectionLayer: "publication", frequency: "weekly and on-demand by measure",
-    retrieval: "scheduled-publication-check", refreshCadence: "weekly and on-demand by measure",
-    publicationCadence: "publisher-specific annual releases", retrievalMaxAgeMs: 30 * DAY_MS,
-    publicationRequirement: "independent",
-  }),
+  // Projected from feeds/international-comparison/feed.js (the single declaration).
+  internationalComparison: defineFeed(catalogEntryOf(internationalComparisonDefinition)),
   // Projected from feeds/early-years/feed.js (the single declaration).
   earlyYears: defineFeed(catalogEntryOf(earlyYearsDefinition)),
 });

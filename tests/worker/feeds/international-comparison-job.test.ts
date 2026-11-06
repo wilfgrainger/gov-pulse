@@ -6,7 +6,12 @@ const mocks = vi.hoisted(() => ({
   refreshInternationalComparison: vi.fn().mockResolvedValue({ updated: true, due: false }),
 }));
 
-vi.mock("@/worker/international-comparison-publication.js", () => mocks);
+// Keep the real module surface (feeds/index.js registers its collectShard and
+// combine) and replace only the refresh the queue job calls.
+vi.mock("@/feeds/international-comparison/parse.js", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  ...mocks,
+}));
 
 import { processQueueJob } from "@/worker/queued-publication-entry";
 

@@ -15,7 +15,7 @@ import {
   PUBLIC_SNAPSHOT_KEY,
   buildPublicProjection,
 } from "./public-snapshot.js";
-import { readInternationalComparison } from "./international-comparison-publication.js";
+import { readInternationalComparison } from "../feeds/international-comparison/parse.js";
 import { assertSameHttpsHost, MAX_RESPONSE_BYTES, readResponseJson } from "./response-limits.js";
 import { listEditionSummaries, readEdition } from "./edition-archive.js";
 import { fetchPublicationSeedSnapshot } from "./publication-recovery.js";

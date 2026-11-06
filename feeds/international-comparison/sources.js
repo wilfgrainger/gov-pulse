@@ -4,8 +4,8 @@ import {
   fetchResponse,
   readResponseArrayBuffer,
   readResponseText,
-} from "./live-feed-common.js";
-import { workbookSheetCells } from "../feeds/_kit/xlsx.js";
+} from "../../worker/live-feed-common.js";
+import { workbookSheetCells } from "../_kit/xlsx.js";
 
 const IMF_DATAMAPPER = "https://www.imf.org/external/datamapper/api/v2";
 const OECD_SDMX = "https://sdmx.oecd.org/public/rest/data";

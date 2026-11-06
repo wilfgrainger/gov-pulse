@@ -5,8 +5,9 @@ import {
   COMPARISON_SET_ID,
   buildComparisonMeasure,
   validateInternationalComparisonPublication,
-} from "./international-comparison.js";
-import { PUBLICATION_SOURCE_REGISTRY } from "./feed-registry.js";
+} from "./compare.js";
+import { PUBLICATION_SOURCE_REGISTRY } from "../../worker/feed-registry.js";
+import { definition } from "./feed.js";
 import {
   OECD_COMPARABLE_IDS,
   SOURCE_QUERIES,
@@ -17,7 +18,7 @@ import {
   fetchSipriCurrentUsdHistory,
   fetchWorldBankSeries,
   fetchWorldBankSeriesHistory,
-} from "./international-comparison-sources.js";
+} from "./sources.js";
 
 const COUNTRY_IDS = COMPARISON_COUNTRIES.map(({ id }) => id);
 const OECD_IDS = new Set(OECD_COMPARABLE_IDS);
@@ -32,15 +33,8 @@ const MEASURE_SOURCE_DEPENDENCIES = Object.freeze({
   debtInterest: ["world-bank-gdp-per-capita-2024", "imf-interest-2024"],
 });
 const INTERNATIONAL_SOURCES = PUBLICATION_SOURCE_REGISTRY.internationalComparison.sourceIds;
-const INTERNATIONAL_COMPARISON_REFRESH_BATCHES = Object.freeze([
-  Object.freeze({ id: "government-debt", sourceIds: Object.freeze(["imf-gdp-2026", "imf-debt-2026"]), measureIds: Object.freeze(["governmentDebt"]) }),
-  Object.freeze({ id: "oda", sourceIds: Object.freeze(["world-bank-population-2025", "oecd-oda-2025"]), measureIds: Object.freeze(["officialDevelopmentAssistance"]) }),
-  Object.freeze({ id: "defence", sourceIds: Object.freeze(["world-bank-population-2025", "sipri-2025"]), measureIds: Object.freeze(["defenceSpending"]) }),
-  Object.freeze({ id: "social-spending", sourceIds: Object.freeze(["world-bank-gdp-per-capita-2023", "oecd-socx-2023"]), measureIds: Object.freeze(["publicSocialExpenditure"]) }),
-  Object.freeze({ id: "healthcare", sourceIds: Object.freeze(["world-bank-health-2024"]), measureIds: Object.freeze(["healthcareSpending"]) }),
-  Object.freeze({ id: "tax-revenue", sourceIds: Object.freeze(["world-bank-gdp-per-capita-2024", "oecd-tax-2024"]), measureIds: Object.freeze(["taxRevenue"]) }),
-  Object.freeze({ id: "debt-interest", sourceIds: Object.freeze(["world-bank-gdp-per-capita-2024", "imf-interest-2024"]), measureIds: Object.freeze(["debtInterest"]) }),
-]);
+// Declared once, as the feed's shards (feeds/international-comparison/feed.js).
+const INTERNATIONAL_COMPARISON_REFRESH_BATCHES = definition.shards.batches;
 const COMPARISON_VALIDITY_MS = 30 * 24 * 60 * 60 * 1000;
 
 const SOURCES = Object.freeze({
@@ -617,12 +611,11 @@ async function readInternationalComparison(env, now = new Date()) {
   }
 }
 
-async function refreshInternationalComparison(env, options = {}) {
-  if (!env?.METRICS_CACHE?.put) throw new Error("METRICS_CACHE KV binding is required");
+// The storage-free core of refreshInternationalComparison: given the current
+// publication, decide whether a refresh is due and build the merged candidate.
+// The KV read and write stay in refreshInternationalComparison.
+async function buildInternationalComparisonRefresh(current, options = {}) {
   const now = options.now ?? new Date();
-  const current = Object.prototype.hasOwnProperty.call(options, "currentPublication")
-    ? options.currentPublication
-    : await readInternationalComparison(env, now);
   if (!options.force && current && !due(current, now)) {
     return { updated: false, reason: "not-due", publication: current };
   }
@@ -703,18 +696,28 @@ async function refreshInternationalComparison(env, options = {}) {
   const availableMeasureCount = Object.values(publication.measures).filter(
     (measure) => measure.comparableCountryCount > 0
   ).length;
-  if (options.publish !== false) {
-    await env.METRICS_CACHE.put(
-      INTERNATIONAL_COMPARISON_KEY,
-      JSON.stringify(publication)
-    );
-  }
   return {
     updated: true,
     reason: current ? "refreshed" : "published",
     publication,
     availableMeasureCount,
   };
+}
+
+async function refreshInternationalComparison(env, options = {}) {
+  if (!env?.METRICS_CACHE?.put) throw new Error("METRICS_CACHE KV binding is required");
+  const now = options.now ?? new Date();
+  const current = Object.prototype.hasOwnProperty.call(options, "currentPublication")
+    ? options.currentPublication
+    : await readInternationalComparison(env, now);
+  const result = await buildInternationalComparisonRefresh(current, { ...options, now });
+  if (result.updated && options.publish !== false) {
+    await env.METRICS_CACHE.put(
+      INTERNATIONAL_COMPARISON_KEY,
+      JSON.stringify(result.publication)
+    );
+  }
+  return result;
 }
 
 function mergeInternationalComparisonBatchResults(basePublication, batchResults, now = new Date()) {
@@ -777,7 +780,52 @@ function mergeInternationalComparisonBatchResults(basePublication, batchResults,
   });
 }
 
+/**
+ * Feed interface (target design 2.3), sharded form: one shard per source batch.
+ * `ctx.previous` is the baseline publication the batch is merged against. Does
+ * not touch storage; the result is the fragment mergeInternationalComparisonBatchResults
+ * consumes, exactly as the queue job produces it.
+ *
+ * @param {{fetch: typeof fetch, now: Date, previous: object, force?: boolean}} ctx
+ * @param {string} batchId
+ */
+async function collectShard(ctx, batchId) {
+  const batch = INTERNATIONAL_COMPARISON_REFRESH_BATCHES.find(({ id }) => id === batchId);
+  if (!batch || !ctx.previous || typeof ctx.previous !== "object") {
+    throw new Error("International comparison batch baseline is not available");
+  }
+  const result = await buildInternationalComparisonRefresh(ctx.previous, {
+    fetchImpl: ctx.fetch,
+    now: ctx.now,
+    force: ctx.force === true,
+    sourceIds: batch.sourceIds,
+  });
+  const { publication } = result;
+  return {
+    batchId: batch.id,
+    meta: {
+      generatedAt: publication.meta.generatedAt,
+      checkedAt: publication.meta.checkedAt,
+      attemptedSources: publication.meta.attemptedSources ?? [...batch.sourceIds],
+      sourceFailures: publication.meta.sourceFailures ?? [],
+    },
+    measures: Object.fromEntries(batch.measureIds.map((id) => [id, publication.measures[id]])),
+  };
+}
+
+/**
+ * Merge the collected batch fragments into the baseline publication.
+ *
+ * @param {Record<string, object>} shards  batchId -> fragment
+ * @param {{previous: object, now: Date}} ctx
+ */
+function combine(shards, ctx) {
+  return { data: mergeInternationalComparisonBatchResults(ctx.previous, Object.values(shards), ctx.now) };
+}
+
 export {
+  collectShard,
+  combine,
   COMPARISON_REFRESH_MAX_AGE_MS,
   INTERNATIONAL_COMPARISON_KEY,
   SOURCES,

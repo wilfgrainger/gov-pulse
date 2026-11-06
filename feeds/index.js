@@ -31,6 +31,8 @@ import { definition as releaseCalendarDefinition } from "./release-calendar/feed
 import * as releaseCalendarParser from "./release-calendar/parse.js";
 import { definition as nhsReleaseCalendarDefinition } from "./nhs-release-calendar/feed.js";
 import * as nhsReleaseCalendarParser from "./nhs-release-calendar/parse.js";
+import { definition as internationalComparisonDefinition } from "./international-comparison/feed.js";
+import * as internationalComparisonParser from "./international-comparison/parse.js";
 import { definition as earlyYearsDefinition } from "./early-years/feed.js";
 
 /**
@@ -58,5 +60,6 @@ export const FEEDS = Object.freeze([
   { definition: governmentContractsDefinition, collectShard: governmentContractsParser.collectShard, combine: governmentContractsParser.combine },
   { definition: releaseCalendarDefinition, collect: releaseCalendarParser.collect },
   { definition: nhsReleaseCalendarDefinition, collect: nhsReleaseCalendarParser.collect },
+  { definition: internationalComparisonDefinition, collectShard: internationalComparisonParser.collectShard, combine: internationalComparisonParser.combine },
   { definition: earlyYearsDefinition },
 ]);

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { PUBLICATION_CONFIG } from "@/contracts/evidence-policy.js";
 import { FEED_CATALOG } from "@/contracts/source-catalog.js";
 import { PUBLICATION_SOURCE_REGISTRY } from "@/worker/feed-registry";
-import { INTERNATIONAL_SOURCES } from "@/worker/international-comparison-publication";
+import { INTERNATIONAL_SOURCES } from "@/feeds/international-comparison/parse.js";
 import {
   validateSourceOwnership,
 } from "@/scripts/check-source-ownership.mjs";

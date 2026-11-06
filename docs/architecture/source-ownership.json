@@ -141,8 +141,8 @@
     },
     {
       "section": "internationalComparison",
-      "collector": "worker/international-comparison-publication.js",
-      "normalizer": "worker/international-comparison.js",
+      "collector": "feeds/international-comparison/parse.js",
+      "normalizer": "feeds/international-comparison/compare.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "scheduled and explicit Cloudflare Queue refreshes in bounded per-measure source batches",
       "storage": "independent versioned KV publication at v1:international-comparison:current, committed after batch reconciliation",

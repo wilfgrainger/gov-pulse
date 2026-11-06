@@ -6,9 +6,9 @@ const mocks = vi.hoisted(() => ({
   refreshInternationalComparison: vi.fn(),
 }));
 
-vi.mock("@/worker/international-comparison-publication.js", async () => {
-  const actual = await vi.importActual<typeof import("@/worker/international-comparison-publication.js")>(
-    "@/worker/international-comparison-publication.js"
+vi.mock("@/feeds/international-comparison/parse.js", async () => {
+  const actual = await vi.importActual<typeof import("@/feeds/international-comparison/parse.js")>(
+    "@/feeds/international-comparison/parse.js"
   );
   return {
     ...actual,
@@ -20,7 +20,7 @@ import queuedWorker, {
   RUN_PREFIX,
   enqueueInternationalComparisonRefresh,
 } from "@/worker/queued-publication-entry";
-import { COMPARISON_COUNTRIES } from "@/worker/international-comparison";
+import { COMPARISON_COUNTRIES } from "@/feeds/international-comparison/compare.js";
 import {
   INTERNATIONAL_COMPARISON_KEY,
   INTERNATIONAL_COMPARISON_REFRESH_BATCHES,
@@ -28,7 +28,7 @@ import {
   buildInternationalComparisonPublication,
   comparisonSourceBundle,
   mergeInternationalComparisonBatchResults,
-} from "@/worker/international-comparison-publication";
+} from "@/feeds/international-comparison/parse.js";
 
 function environment() {
   const store = new Map<string, unknown>();

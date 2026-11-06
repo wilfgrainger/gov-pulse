@@ -119,8 +119,23 @@ export function defineFeed(def) {
     if (def.requirement === undefined) fail(id, "requirement is required");
   }
 
-  if (def.shards !== undefined && (def.shards.kind !== "day" || !(def.shards.window > 0))) {
-    fail(id, "shards must be {kind: \"day\", window: positive number}");
+  if (def.shards !== undefined) {
+    const { kind, window, batches } = def.shards;
+    if (kind === "day") {
+      if (!(window > 0)) fail(id, "day shards need a positive window");
+    } else if (kind === "batch") {
+      const ids = (batches ?? []).map((batch) => batch?.id);
+      if (!Array.isArray(batches) || batches.length === 0 || new Set(ids).size !== ids.length) {
+        fail(id, "batch shards need a non-empty list of uniquely named batches");
+      }
+      for (const batch of batches) {
+        if (typeof batch.id !== "string" || !Array.isArray(batch.sourceIds) || !Array.isArray(batch.measureIds)) {
+          fail(id, "every batch needs an id, sourceIds and measureIds");
+        }
+      }
+    } else {
+      fail(id, "shards.kind must be day or batch");
+    }
   }
 
   if (!Array.isArray(def.measures)) fail(id, "measures must be an array");

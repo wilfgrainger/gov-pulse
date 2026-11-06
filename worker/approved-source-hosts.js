@@ -28,7 +28,7 @@ export const NHS_ENGLAND_HOSTS = frozenHostSet(["www.england.nhs.uk", "england.n
 const SUPPLEMENTARY_RETRIEVAL_HOSTS = Object.freeze({
   // The OECD catalog primary URL is the human-facing Data Explorer; the
   // machine-readable SDMX REST API it presents is served from sdmx.oecd.org
-  // (worker/international-comparison-sources.js OECD_SDMX).
+  // (feeds/international-comparison/sources.js OECD_SDMX).
   "sdmx.oecd.org": "OECD SDMX REST API behind data-explorer.oecd.org",
 });
 
