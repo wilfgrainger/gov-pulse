@@ -240,6 +240,7 @@ describe("published families with no section", () => {
       ready: false,
       degraded: true,
       missingRequiredSections: ["housePriceIndex"],
+      held: ["nhsStats"],
       unavailableSections: status.unavailableSections,
     });
     // No collector internals reach the public health contract.

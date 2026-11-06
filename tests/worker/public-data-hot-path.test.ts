@@ -326,7 +326,7 @@ describe("free-tier public read path", () => {
     expect(await response.json()).toEqual({ status: "bootstrapping", ready: false });
   });
 
-  it("/data/health.json reports a held required section that aged out after publication as missing", async () => {
+  it("/data/health.json reports a held required section that aged out after publication as held, not missing", async () => {
     const { env, store } = await publishedEnv();
     expect(publicationPublished("nhsStats")).toBe(false);
     const status = JSON.parse(String(store.get(PUBLICATION_STATUS_KEY)));
@@ -338,10 +338,9 @@ describe("free-tier public read path", () => {
     const response = await get("/data/health.json", env);
 
     expect(await response.json()).toMatchObject({
-      status: "degraded",
-      ready: false,
-      degraded: true,
-      missingRequiredSections: ["nhsStats"],
+      status: "ready",
+      ready: true,
+      held: ["nhsStats"],
     });
   });
 

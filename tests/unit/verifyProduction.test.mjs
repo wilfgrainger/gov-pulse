@@ -225,6 +225,13 @@ describe("production deployment verifier", () => {
     );
   });
 
+  it("accepts ready health that lists deliberately held feeds and rejects a malformed list", () => {
+    expect(verifyHealthJson(JSON.stringify({ status: "ready", ready: true, held: ["nhsStats"] }))).toEqual([]);
+    expect(verifyHealthJson(JSON.stringify({ status: "ready", ready: true, held: "nhsStats" }))).toEqual([
+      "public data health endpoint returned an invalid held list",
+    ]);
+  });
+
   it("accepts ready health, complete national snapshot, international comparison and section routes", () => {
     expect(verifyHealthJson(validHealth)).toEqual([]);
     expect(verifySnapshotJson(validSnapshot)).toEqual([]);
