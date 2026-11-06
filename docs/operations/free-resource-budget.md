@@ -1,31 +1,39 @@
-# Current Cloudflare workload baseline (revised 22 October 2026)
+# Current Cloudflare workload baseline (revised 6 November 2026)
 
 > This is a workload estimate. The 20% headroom figure below is a planning
 > target, not a product, code-size or blanket release gate; reassess it against
 > measured traffic and current account limits.
 
 This is a repository workload model, not evidence of Cloudflare account
-entitlement. It is derived from `worker/feed-registry.js`, the scheduled cron
-expressions in `worker/queued-publication-entry.js`, and `worker/wrangler.toml`.
+entitlement. It is derived from `config/publications.json`, the collection plan in
+`worker/publication-plan.js`, the cron expressions in
+`worker/publication-schedule.js`, and `worker/wrangler.toml`.
 
 The deployment still receives nine cron invocations daily: one national run and
-eight three-hour betting checks. **Only enabled evidence publications generate
-scheduled work**; held feeds no longer write KV or enqueue Queue jobs. The
-current V1 switches enable only the nationalDebt source. Thus the proposed
-healthy schedule queues one section refresh and one finaliser per day: **two
-Queue deliveries/day**, compared with the former all-feed model's 30.
-The eight betting cron invocations return without Queue or KV calls. The
-independently scheduled international-comparison refresh also skips while held.
+eight three-hour betting checks. **Only published evidence generates scheduled
+work**; held feeds do not write KV or enqueue Queue jobs. On 6 November 2026
+`config/publications.json` publishes 11 collected sources: ten section
+collectors (gdpTracker, sentimentPulse, employmentStats, taxRevenue,
+nationalDebt, migrationStats, housePriceIndex, realWages, crimeStatistics,
+electionPolling) and governmentContracts. (The file also publishes
+`editionArchive`, which is an archive gate, not a collected source.)
+`refreshJobs("x", "daily", { publishedOnly: true })` returns exactly 11 jobs:
+10 `refresh-section`/`refresh-external-section` plus one `refresh-contracts`.
+With the finaliser that is **12 Queue deliveries/day**. bettingOdds is held, so
+the eight betting cron invocations return without Queue or KV calls, and the
+international-comparison refresh also skips while held.
 These are deterministic projections from code/config, **not measured Cloudflare
 usage or proof of plan headroom**. Manual bootstraps, replay and account-wide
 workload are separate.
 
 The planning factor of three Queue operations per delivery makes the current
-two-delivery example six project operations/day. This is a conservative
+twelve-delivery schedule 36 project operations/day. This is a conservative
 estimate, not the platform's billing definition. When another source is
-enabled its daily collection automatically resumes; update the projection.
+published its daily collection automatically resumes; update the projection.
 Stored held-source evidence remains private and manual recovery remains
-available.
+available. (`scripts/audit-free-budget.mjs` models the legacy
+`feeds/registry.js` operational status and still reports 30 messages/day; it
+does not read `config/publications.json` and over-counts held feeds.)
 
 The national finaliser checks the edition archive once per daily run. A steady
 duplicate publication costs two KV reads for the existing summary and index.
@@ -37,7 +45,7 @@ separate from source-fragment KV activity and origin cache misses on the
 read-only edition routes.
 
 The public archive was measured on 2 October 2026. Its list contained two
-editions and used 6,015 UTF-8 bytes; their immutable detail responses used
+editions and used 6,015 UTF-8 bytes; their detail responses used
 281,446 and 18,162 bytes. A local adapter run with 36 validated records
 produced a 347,998-byte catalog. These samples are not whole-namespace storage
 telemetry. The code's 60-entry rolling retention would hold about 20.9 MB at
@@ -49,7 +57,9 @@ An uncached archive-list request performs one index read and validates each
 listed edition by reading its summary and immutable content: five KV reads at
 the current two-entry live count and up to 121 at the configured 60-entry
 maximum. The list is publicly cached for 60 seconds. A detail request reads two
-keys and is cached as immutable for one year. Reader request frequency and
+keys and is `Cache-Control: no-store` (worker/public-data-entry.js; the app also
+fetches it with `cache: "no-store"`), so every detail view is a KV read; only the
+versioned `/_next/static/*` assets are immutable. Reader request frequency and
 whole-namespace stored bytes have not been measured; check those before
 changing the 60-edition rolling retention. Cloudflare currently documents a
 1 GB Workers KV namespace storage allowance and per-day Free-plan operation
@@ -57,11 +67,11 @@ limits; those published limits describe the platform, not the account's
 remaining headroom ([pricing](https://developers.cloudflare.com/workers/platform/pricing/),
 [KV limits](https://developers.cloudflare.com/kv/platform/limits/)).
 
-The queue allows three retries. If the two projected daily deliveries each
-exhaust all three retries, their modeled upper bound is eight deliveries/day,
-not including new jobs explicitly enqueued by application retry handling.
-The former 120-delivery/day failure projection applied only to the old 30-job
-all-source schedule. Bootstrap, manual recovery and re-sends are separate.
+The queue allows three retries. If the twelve projected daily deliveries each
+exhaust all three retries, their modeled upper bound is 48 deliveries/day,
+not including new jobs explicitly enqueued by application retry handling or
+the finaliser's own pending re-sends. The former 120-delivery/day failure
+projection applied only to the old 30-job all-source schedule. Bootstrap, manual recovery and re-sends are separate.
 The scheduled collection tests cover disabled-feed no-ops and preserve the
 ability to force a verified bootstrap. Measure actual Queue deliveries,
 retries and KV writes before trusting either estimate.
@@ -105,3 +115,67 @@ the public record behind the current one). The unread commit manifest
 archive is the durable history. Stale copies of those keys already in KV are
 inert and expire or can be deleted by an operator. These counts come from unit
 tests with a recording KV, not Cloudflare metrics.
+
+## Indicative collector cost per feed (6 November 2026)
+
+**INDICATIVE ONLY.** Node CPU is not Workers CPU: different engine build, no
+isolate limits, different JIT and GC behaviour, no network wait. These numbers
+rank feeds and expose outliers; they are not evidence of Free-tier headroom.
+
+Produced by `node scripts/measure-collector-cost.mjs --all` (add `--runs N`,
+`--json`, or a feed id). Method: each collector's `collect()` runs offline
+against existing checked-in fixture files behind a stub `fetch` (no network).
+CPU is `process.cpuUsage()` user+system deltas, median of 7 calls after one
+discarded warm-up. `--cpu-prof` is not used for the table because one process
+cannot attribute CPU to a single feed; profile one feed with
+`node --cpu-prof scripts/measure-collector-cost.mjs <feedId>`. `bytes` is the
+UTF-8 size of the fixture bodies the collector read. Repeated invocations varied
+by up to about 2x (JIT/GC noise), so treat figures as order-of-magnitude.
+Fetches are counted at the stub for measured feeds. For feeds without fixtures
+they are derived by reading the collector (upper bound; ONS bulletin discovery
+counted as 2 fetches), and listed in `STATIC_FETCHES` in the script.
+
+| feed | indicative Node cpuMs (range over 3 invocations) | fixture bytes | external fetches per job | vs 50 subrequests |
+| --- | --- | --- | --- | --- |
+| nationalDebt | 3.8 (1.9-4.3) | 28,443 | 5 (counted) | within |
+| crimeStatistics | 7.25 (6.6-9.4) | 271,056 | 2 (counted) | within |
+| housePriceIndex | 2.9 (2.1-3.4) | 98,063 | 2 (counted) | within |
+| realWages | 0.35 (0.15-0.35) | 1,606 | 2 (counted) | within |
+| electionPolling | no-fixture | n/a | up to 16 (code-read: YouGov 3 + archive 1 + up to 12 workbooks) | within |
+| gdpTracker | no-fixture | n/a | 6 (code-read) | within |
+| sentimentPulse | no-fixture | n/a | 5 (code-read) | within |
+| taxRevenue | no-fixture (fixtures are inline test strings) | n/a | 3 (code-read) | within |
+| employmentStats | no-fixture | n/a | 6 (code-read) | within |
+| migrationStats | no-fixture | n/a | 3 (code-read) | within |
+| governmentContracts | no-fixture (sharded: collectShard/combine) | n/a | ceiling 64 (MAX_PAGES_PER_REFRESH), usual use unmeasured | **ceiling above 50** |
+| nhsStats (held) | no-fixture | n/a | 4 (code-read) | within |
+| bettingOdds (held) | no-fixture | n/a | 3 (code-read) | within |
+| releaseCalendar, nhsReleaseCalendar (held) | no-fixture | n/a | 2 and 2 (code-read) | within |
+| internationalComparison (held) | no-fixture (sharded batches) | n/a | not derived | unknown |
+| earlyYears | static feed, no collector | n/a | 0 | n/a |
+
+Reading the table honestly: only 4 of 11 published feeds could be measured
+offline. The measured four are single-digit milliseconds of Node CPU for parse
+work, but the Free per-invocation CPU budget that matters here (queue consumer
+default 30 s, configurable to 5 min; 10 ms per request and per cron trigger)
+applies to Workers CPU, which this does not measure. The unmeasured published
+feeds include the likeliest CPU-heavy ones (electionPolling parses XLSX and PDF;
+governmentContracts pages through up to 64 requests), so no Free-tier
+conclusion is drawn here. Subrequests: 10 of the 11 published jobs make at most
+16 external fetches; the `refresh-contracts` ceiling of 64 pages exceeds the
+50-subrequest Free limit if reached and is listed for G-CPU. KV and Queue
+binding calls were not counted in these figures, and whether they count toward
+the 50 limit has not been verified here.
+
+### TODO (owner-run, not done): measured Workers CPU and wall time
+
+During the next scheduled daily run on the current pipeline, with the Cloudflare
+token kept local:
+
+```
+npx wrangler tail pulse-data-worker --format json > tail.json
+```
+
+Record `cpuTime` and wall time per queue message type and section, including
+`finalise-run`, and the p95 job durations Task 10 needs. Until that is done
+there is no measured Workers CPU figure in this repository.
