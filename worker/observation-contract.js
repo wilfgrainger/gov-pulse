@@ -143,12 +143,11 @@ const contracts = {
       return latestBy(data?.recentPolls, (entry) => entry?.date, now);
     },
   },
-  sentimentPulse: {
-    maxAgeDays: 75,
+  sentimentPulse: declaredContract("sentimentPulse", {
     extract(data, now) {
       return latestBy(data?.economicData, (entry) => entry?.date, now);
     },
-  },
+  }),
   gdpTracker: declaredContract("gdpTracker"),
   employmentStats: declaredContract("employmentStats"),
   nationalDebt: declaredContract("nationalDebt", {

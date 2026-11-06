@@ -10,7 +10,7 @@ import {
   parseOnsMonthlyCsv,
   parseOnsPublicationPage,
   rollingThreeMonthPeriod,
-} from "@/worker/economic-indicators";
+} from "@/feeds/economy/parse.js";
 
 const CPI_CSV = `Title,CPI annual rate
 "2026 MAR","2.6"

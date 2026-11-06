@@ -8,7 +8,8 @@ import {
 import {
   BOE_BANK_RATE_URL,
   SERIES_DEFINITIONS,
-} from "@/worker/economic-indicators";
+  collect,
+} from "@/feeds/economy/parse.js";
 
 const CPI_CSV = `"2026 APR","2.8"\n"2026 MAY","3.4"`;
 const UNEMPLOYMENT_CSV = `"2026 FEB","5.0"\n"2026 MAR","4.9"`;
@@ -95,5 +96,14 @@ describe("sentiment pulse section builder", () => {
       available: true,
       order: ["inflation", "bankRate", "unemployment"],
     });
+  });
+
+  it("feed collect returns the unchanged currentness-gated payload", async () => {
+    const now = new Date("2026-07-14T12:00:00.000Z");
+    const result = await collect({ fetch: fetchFixture as unknown as typeof fetch, now });
+    expect(result.data).toEqual(await buildCurrentEconomicIndicators(fetchFixture, () => now));
+    await expect(
+      collect({ fetch: fetchFixture as unknown as typeof fetch, now: new Date("2026-09-05T12:00:00.000Z") })
+    ).rejects.toThrow(/outside their currentness contract/i);
   });
 });

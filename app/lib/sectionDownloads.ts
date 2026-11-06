@@ -6,7 +6,7 @@ import { downloadGeography, downloadIds } from "../../feeds/registry.js";
 // id union; tests/worker/feed-registry-projection.test.ts pins the list and
 // order to the pre-migration list.
 const HAND_LISTED_IDS = [
-  "electionPolling", "sentimentPulse",
+  "electionPolling",
 ] as const;
 // Published order of the download list. Until every feed is declared, the two
 // sources are merged into this order; afterwards FEEDS order is this order.
@@ -24,7 +24,7 @@ const GEOGRAPHY: Record<(typeof SECTION_DOWNLOAD_IDS)[number], string> = {
   electionPolling: "United Kingdom (check each poll's sample)",
   nationalDebt: DECLARED_GEOGRAPHY.nationalDebt,
   gdpTracker: DECLARED_GEOGRAPHY.gdpTracker,
-  sentimentPulse: "United Kingdom (check each series)",
+  sentimentPulse: DECLARED_GEOGRAPHY.sentimentPulse,
   taxRevenue: DECLARED_GEOGRAPHY.taxRevenue,
   employmentStats: DECLARED_GEOGRAPHY.employmentStats,
   crimeStatistics: DECLARED_GEOGRAPHY.crimeStatistics,

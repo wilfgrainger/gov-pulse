@@ -6,6 +6,7 @@ import { definition as gdpTrackerDefinition } from "../feeds/gdp/feed.js";
 import { definition as employmentStatsDefinition } from "../feeds/employment/feed.js";
 import { definition as taxRevenueDefinition } from "../feeds/tax/feed.js";
 import { definition as nationalDebtDefinition } from "../feeds/national-debt/feed.js";
+import { definition as sentimentPulseDefinition } from "../feeds/economy/feed.js";
 import { catalogEntryOf } from "../feeds/define-feed.js";
 import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
 import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
@@ -52,31 +53,8 @@ const UI_CLASS = Object.freeze({
 });
 
 export const FEED_CATALOG = deepFreeze({
-  sentimentPulse: defineFeed({
-    id: "sentimentPulse",
-    registry: "feed",
-    title: "Series-level economic indicators",
-    displayName: "Key Economic Indicators",
-    evidenceClass: "official-statistics",
-    geography: { code: "UK", label: "United Kingdom" },
-    sourceIds: ["ons-cpi-d7g7", "boe-bank-rate-iudbedr", "ons-unemployment-mgsx"],
-    automation: "automated",
-    collectionLayer: "worker",
-    frequency: "series-specific",
-    retrieval: "scheduled-publication-check",
-    refreshCadence: "daily",
-    publicationCadence: "series-specific: monthly and event-driven",
-    retrievalMaxAgeMs: 36 * HOUR_MS,
-    publicationRequirement: "required",
-    freshnessWindow: "Checked within 36 hours",
-    freshnessRationale: "CPI, Bank Rate and unemployment keep separate observation periods, publication dates and revision status.",
-    editorial: {
-      publicationPeriod: "Separate latest periods for CPI, Bank Rate and unemployment",
-      unit: "Percentage for each named series",
-      revisionStatus: "CPI and Labour Force Survey estimates may be revised; Bank Rate is event-dated",
-      caveat: "CPI is monthly, unemployment is a rolling three-month estimate and Bank Rate changes after Monetary Policy Committee decisions. Their observation periods, publication dates, check dates and revision status stay separate.",
-    },
-  }),
+  // Projected from feeds/economy/feed.js (the single declaration).
+  sentimentPulse: defineFeed(catalogEntryOf(sentimentPulseDefinition)),
   // Projected from feeds/gdp/feed.js (the single declaration).
   gdpTracker: defineFeed(catalogEntryOf(gdpTrackerDefinition)),
   // Projected from feeds/employment/feed.js (the single declaration).

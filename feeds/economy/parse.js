@@ -1,11 +1,12 @@
-import { fetchOfficialText as fetchSourceText } from "./official-source-fetch.js";
-import { SENTIMENT_MEASURE_IDS } from "../contracts/evidence-policy.js";
+import { fetchOfficialText as fetchSourceText } from "../../worker/official-source-fetch.js";
+import { SENTIMENT_MEASURE_IDS } from "../../contracts/evidence-policy.js";
 
 const ONS_ORIGIN = "https://www.ons.gov.uk";
 const ONS_GENERATOR = `${ONS_ORIGIN}/generator?format=csv&uri=`;
 const BOE_BANK_RATE_URL = "https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp";
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
 const TEN_YEARS_MONTHLY = 120;
+const ONS_MAX_PUBLICATION_AGE_MS = 75 * 24 * 60 * 60 * 1000;
 const TEN_YEARS_MS = 10 * 365.25 * 24 * 60 * 60 * 1000;
 
 const MONTHS = Object.freeze({
@@ -491,13 +492,54 @@ function isEconomicIndicatorsPayload(data, now = new Date()) {
   );
 }
 
+// Moved VERBATIM from worker/series-entry.js (via worker/section-builders.js).
+function publicationCurrent(data, now = new Date()) {
+  const nowMs = now.getTime();
+  if (!Number.isFinite(nowMs)) return false;
+
+  return ["inflation", "unemployment"].every((id) => {
+    const publishedAt = Date.parse(data?.series?.[id]?.publishedAt ?? "");
+    return (
+      Number.isFinite(publishedAt) &&
+      Math.max(0, nowMs - publishedAt) <= ONS_MAX_PUBLICATION_AGE_MS
+    );
+  });
+}
+
+async function buildCurrentEconomicIndicators(
+  fetchImpl = fetch,
+  nowProvider = () => new Date()
+) {
+  const now = nowProvider();
+  const data = await buildEconomicIndicators(fetchImpl, () => now);
+  if (!isEconomicIndicatorsPayload(data, now) || !publicationCurrent(data, now)) {
+    throw new Error("Official indicator series are outside their currentness contract");
+  }
+  return data;
+}
+
+/**
+ * Feed interface (target design 2.3). `data` is exactly the section payload
+ * buildCurrentEconomicIndicators has always produced: the build plus its
+ * fail-closed currentness gate.
+ *
+ * @param {{fetch: typeof fetch, now: Date}} ctx
+ */
+async function collect(ctx) {
+  return { data: await buildCurrentEconomicIndicators(ctx.fetch, () => ctx.now) };
+}
+
 export {
   BOE_BANK_RATE_URL,
+  ONS_MAX_PUBLICATION_AGE_MS,
   SERIES_DEFINITIONS,
+  buildCurrentEconomicIndicators,
   buildEconomicIndicators,
+  collect,
   isEconomicIndicatorsPayload,
   parseBankRateHtml,
   parseOnsMonthlyCsv,
   parseOnsPublicationPage,
+  publicationCurrent,
   rollingThreeMonthPeriod,
 };

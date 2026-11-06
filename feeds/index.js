@@ -5,6 +5,8 @@ import { definition as nationalDebtDefinition } from "./national-debt/feed.js";
 import * as nationalDebtParser from "./national-debt/parse.js";
 import { definition as gdpTrackerDefinition } from "./gdp/feed.js";
 import * as gdpTrackerParser from "./gdp/parse.js";
+import { definition as sentimentPulseDefinition } from "./economy/feed.js";
+import * as sentimentPulseParser from "./economy/parse.js";
 import { definition as taxRevenueDefinition } from "./tax/feed.js";
 import * as taxRevenueParser from "./tax/parse.js";
 import { definition as employmentStatsDefinition } from "./employment/feed.js";
@@ -30,6 +32,7 @@ import * as realWagesParser from "./real-wages/parse.js";
 export const FEEDS = Object.freeze([
   { definition: nationalDebtDefinition, collect: nationalDebtParser.collect },
   { definition: gdpTrackerDefinition, collect: gdpTrackerParser.collect },
+  { definition: sentimentPulseDefinition, collect: sentimentPulseParser.collect },
   { definition: taxRevenueDefinition, collect: taxRevenueParser.collect },
   { definition: employmentStatsDefinition, collect: employmentStatsParser.collect },
   { definition: crimeStatisticsDefinition, collect: crimeStatisticsParser.collect },

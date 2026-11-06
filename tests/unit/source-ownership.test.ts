@@ -129,7 +129,7 @@ describe("source ownership inventory", () => {
 
   it("rejects nonexistent source implementation paths", () => {
     const invalid = structuredClone(inventory);
-    invalid.sources[0].collector = ["worker/DoesNotExist.js", "worker/economic-indicators.js"];
+    invalid.sources[0].collector = ["worker/DoesNotExist.js", "feeds/economy/parse.js"];
     const failures = validateSourceOwnership(invalid).join(" ");
     expect(failures).toMatch(/collector.*does not exist/i);
 
@@ -146,7 +146,7 @@ describe("source ownership inventory", () => {
     evolved.livePublicationKey = "publication:current";
     evolved.publicPublicationKey = "publication:public";
     evolved.sources[0].collector = [
-      "worker/economic-indicators.js",
+      "feeds/economy/parse.js",
       "feeds/_kit/ons-economy.js",
     ];
     delete evolved.simplification;

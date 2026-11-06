@@ -16,7 +16,7 @@
  *   - buildCurrentEconomicIndicators          (was worker/series-entry.js)
  * In-place validators are reused where they already live:
  *   - isCurrentCrimeStatisticsPayload         (contracts/crime-statistics.js)
- *   - isEconomicIndicatorsPayload             (worker/economic-indicators.js)
+ *   - isEconomicIndicatorsPayload             (feeds/economy/parse.js)
  *   - isOfficialEconomyRecord                 (defined below; was worker/economy-section-cache.js)
  *
  * The generic-economy sections (gdpTracker, employmentStats), and the ONS
@@ -30,9 +30,11 @@
 import { buildEmploymentStats } from "../feeds/employment/parse.js";
 import { buildGdpTracker } from "../feeds/gdp/parse.js";
 import {
-  buildEconomicIndicators,
+  ONS_MAX_PUBLICATION_AGE_MS,
+  buildCurrentEconomicIndicators,
   isEconomicIndicatorsPayload,
-} from "./economic-indicators.js";
+  publicationCurrent,
+} from "../feeds/economy/parse.js";
 import {
   DEBT_GDP_SERIES_URL,
   DEBT_SERIES_URL,
@@ -50,37 +52,11 @@ import {
 } from "./feed-registry.js";
 import { applyObservationContracts } from "./observation-contract.js";
 
-const ONS_MAX_PUBLICATION_AGE_MS = 75 * 24 * 60 * 60 * 1000;
 const DEBT_MAX_PUBLICATION_AGE_MS = 75 * 24 * 60 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Validators moved VERBATIM from worker/series-entry.js
 // ---------------------------------------------------------------------------
-
-function publicationCurrent(data, now = new Date()) {
-  const nowMs = now.getTime();
-  if (!Number.isFinite(nowMs)) return false;
-
-  return ["inflation", "unemployment"].every((id) => {
-    const publishedAt = Date.parse(data?.series?.[id]?.publishedAt ?? "");
-    return (
-      Number.isFinite(publishedAt) &&
-      Math.max(0, nowMs - publishedAt) <= ONS_MAX_PUBLICATION_AGE_MS
-    );
-  });
-}
-
-async function buildCurrentEconomicIndicators(
-  fetchImpl = fetch,
-  nowProvider = () => new Date()
-) {
-  const now = nowProvider();
-  const data = await buildEconomicIndicators(fetchImpl, () => now);
-  if (!isEconomicIndicatorsPayload(data, now) || !publicationCurrent(data, now)) {
-    throw new Error("Official indicator series are outside their currentness contract");
-  }
-  return data;
-}
 
 // observationFor moved VERBATIM from worker/series-entry.js — the sentimentPulse
 // section built its own three-series observation summary here (the shared
