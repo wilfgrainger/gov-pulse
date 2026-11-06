@@ -76,8 +76,8 @@
     },
     {
       "section": "electionPolling",
-      "collector": "worker/live-polling-collector.js",
-      "normalizer": "worker/election-polls.js",
+      "collector": "feeds/election-polls/parse.js",
+      "normalizer": "feeds/election-polls/normalize.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron run through public-data-jobs Queue and deployment bootstrap when no ready publication exists",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",

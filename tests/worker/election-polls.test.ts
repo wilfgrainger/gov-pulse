@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   isCurrentPrimaryPollPayload,
   normalizePrimaryPollPayload,
-} from "@/worker/election-polls";
+} from "@/feeds/election-polls/normalize.js";
 
 function poll(overrides: Record<string, unknown> = {}) {
   return {

@@ -7,6 +7,7 @@ import { definition as employmentStatsDefinition } from "../feeds/employment/fee
 import { definition as taxRevenueDefinition } from "../feeds/tax/feed.js";
 import { definition as nationalDebtDefinition } from "../feeds/national-debt/feed.js";
 import { definition as sentimentPulseDefinition } from "../feeds/economy/feed.js";
+import { definition as electionPollingDefinition } from "../feeds/election-polls/feed.js";
 import { catalogEntryOf } from "../feeds/define-feed.js";
 import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
 import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
@@ -69,23 +70,8 @@ export const FEED_CATALOG = deepFreeze({
   housePriceIndex: defineFeed(catalogEntryOf(housePriceIndexDefinition)),
   // Projected from feeds/real-wages/feed.js (the single declaration).
   realWages: defineFeed(catalogEntryOf(realWagesDefinition)),
-  electionPolling: defineFeed({
-    id: "electionPolling", registry: "feed", title: "Primary voting-intention poll publications", displayName: "Election Polling",
-    evidenceClass: "polling", geography: { code: "GB", label: "Great Britain" },
-    sourceIds: ["yougov-voting-intention", "more-in-common-voting-intention", "british-polling-council-rules"],
-    automation: "automated", collectionLayer: "worker", frequency: "as published",
-    retrieval: "scheduled-publication-check", refreshCadence: "daily", publicationCadence: "as published",
-    retrievalMaxAgeMs: 14 * DAY_MS, publicationRequirement: "required",
-    freshnessWindow: "Within 14 days of primary publication",
-    freshnessRationale: "Each accepted poll retains its original publication date and is withdrawn after 14 days.",
-    uiSourceLabels: ["Verified primary pollster publications", "British Polling Council disclosure rules"],
-    editorial: {
-      publicationPeriod: "Latest verified primary pollster publication inside a 14-day evidence window",
-      unit: "Published party share (%)",
-      revisionStatus: "Individual poll publications are normally final; the site does not revise or average them",
-      caveat: "Each poll is shown separately with fieldwork, sample, question or headline method, commissioner, uncertainty and a direct primary source. One poll is not evidence of a durable trend.",
-    },
-  }),
+  // Projected from feeds/election-polls/feed.js (the single declaration).
+  electionPolling: defineFeed(catalogEntryOf(electionPollingDefinition)),
   // Projected from feeds/nhs/feed.js (the single declaration).
   nhsStats: defineFeed(catalogEntryOf(nhsStatsDefinition)),
   bettingOdds: defineFeed({

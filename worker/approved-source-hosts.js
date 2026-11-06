@@ -16,7 +16,7 @@ import { SOURCE_CATALOG } from "../contracts/source-catalog.js";
 export const YOU_GOV_ARTICLE_HOSTS = frozenHostSet(["yougov.com", "www.yougov.com"]);
 
 // YouGov hosts its primary result-table PDFs on its editorial asset CDN, which
-// articles link to directly (worker/live-polling-collector.js findPdfUrl).
+// articles link to directly (feeds/election-polls/parse.js findPdfUrl).
 export const YOU_GOV_RESULTS_HOSTS = frozenHostSet([
   "ygo-assets-websites-editorial-emea.yougov.net",
 ]);

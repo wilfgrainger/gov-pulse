@@ -1,38 +1,18 @@
 import type { MetricsSnapshot, SnapshotSourceStatus } from "./metricsSnapshot";
 import { downloadGeography, downloadIds } from "../../feeds/registry.js";
 
-// Feeds declared under feeds/ list their own download (feeds/<slug>/feed.js);
-// the rest are still listed here until they migrate. The cast keeps the literal
-// id union; tests/worker/feed-registry-projection.test.ts pins the list and
-// order to the pre-migration list.
-const HAND_LISTED_IDS = [
-  "electionPolling",
-] as const;
-// Published order of the download list. Until every feed is declared, the two
-// sources are merged into this order; afterwards FEEDS order is this order.
-const DOWNLOAD_ORDER = [
+// Every feed with a section download declares it in feeds/<slug>/feed.js; the
+// list and its order are FEEDS order (feeds/index.js). The tuple type keeps the
+// literal id union for typed callers; tests/worker/feed-registry-projection.test.ts
+// pins the runtime list to the pre-migration list and order.
+type DownloadIds = readonly [
   "electionPolling", "nationalDebt", "gdpTracker", "sentimentPulse",
   "taxRevenue", "employmentStats", "crimeStatistics", "nhsStats", "migrationStats",
   "housePriceIndex", "realWages",
-] as const;
-const LISTED = new Set<string>([...HAND_LISTED_IDS, ...downloadIds()]);
-export const SECTION_DOWNLOAD_IDS = DOWNLOAD_ORDER.filter((id) => LISTED.has(id)) as unknown as typeof DOWNLOAD_ORDER;
+];
+export const SECTION_DOWNLOAD_IDS = downloadIds() as unknown as DownloadIds;
 
-const DECLARED_GEOGRAPHY: Record<string, string> = downloadGeography();
-
-const GEOGRAPHY: Record<(typeof SECTION_DOWNLOAD_IDS)[number], string> = {
-  electionPolling: "United Kingdom (check each poll's sample)",
-  nationalDebt: DECLARED_GEOGRAPHY.nationalDebt,
-  gdpTracker: DECLARED_GEOGRAPHY.gdpTracker,
-  sentimentPulse: DECLARED_GEOGRAPHY.sentimentPulse,
-  taxRevenue: DECLARED_GEOGRAPHY.taxRevenue,
-  employmentStats: DECLARED_GEOGRAPHY.employmentStats,
-  crimeStatistics: DECLARED_GEOGRAPHY.crimeStatistics,
-  nhsStats: DECLARED_GEOGRAPHY.nhsStats,
-  migrationStats: DECLARED_GEOGRAPHY.migrationStats,
-  housePriceIndex: DECLARED_GEOGRAPHY.housePriceIndex,
-  realWages: DECLARED_GEOGRAPHY.realWages,
-};
+const GEOGRAPHY: Record<(typeof SECTION_DOWNLOAD_IDS)[number], string> = downloadGeography();
 
 const OGL = {
   name: "Open Government Licence v3.0, except where otherwise stated",

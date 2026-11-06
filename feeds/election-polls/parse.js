@@ -1,7 +1,7 @@
-import { YOU_GOV_ARTICLE_HOSTS, YOU_GOV_RESULTS_HOSTS } from "./approved-source-hosts.js";
-import { PARTY_LABELS, normalizePrimaryPollPayload } from "./election-polls.js";
-import { collectMoreInCommonPolls } from "./more-in-common-polling.js";
-import { extractPdfText, pdfStrings } from "../feeds/_kit/pdf.js";
+import { YOU_GOV_ARTICLE_HOSTS, YOU_GOV_RESULTS_HOSTS } from "../../worker/approved-source-hosts.js";
+import { PARTY_LABELS, normalizePrimaryPollPayload } from "./normalize.js";
+import { collectMoreInCommonPolls } from "./more-in-common.js";
+import { extractPdfText, pdfStrings } from "../_kit/pdf.js";
 import {
   absoluteUrl,
   MAX_RESPONSE_BYTES,
@@ -9,7 +9,7 @@ import {
   fetchResponse,
   readResponseArrayBuffer,
   readResponseText,
-} from "./live-feed-common.js";
+} from "../../worker/live-feed-common.js";
 
 const YOU_GOV_ARTICLES_URL = "https://yougov.com/en-gb/articles";
 const YOU_GOV_METHOD_URL =
@@ -291,8 +291,20 @@ async function collectElectionPolling(fetchImpl = fetch, now = new Date()) {
   return normalizePrimaryPollPayload({ polls, sources }, now);
 }
 
+/**
+ * Feed interface (target design 2.3). Wraps the existing collector without
+ * changing what it fetches or returns: `data` is exactly the payload
+ * collectElectionPolling has always produced.
+ *
+ * @param {{fetch: typeof fetch, now: Date}} ctx
+ */
+async function collect(ctx) {
+  return { data: await collectElectionPolling(ctx.fetch, ctx.now) };
+}
+
 export {
   YOU_GOV_ARTICLES_URL,
+  collect,
   collectYouGovPoll,
   findPdfUrl,
   collectElectionPolling,

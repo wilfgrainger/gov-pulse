@@ -15,7 +15,7 @@ const SECTION_COLLECTION_PLAN = Object.freeze({
   housePriceIndex: Object.freeze({ ...DECLARED_PLAN.housePriceIndex }),
   realWages: Object.freeze({ ...DECLARED_PLAN.realWages }),
   crimeStatistics: Object.freeze({ ...DECLARED_PLAN.crimeStatistics }),
-  electionPolling: Object.freeze({ jobType: "refresh-external-section", collector: "external" }),
+  electionPolling: Object.freeze({ ...DECLARED_PLAN.electionPolling }),
   nhsStats: Object.freeze({ ...DECLARED_PLAN.nhsStats }),
   bettingOdds: Object.freeze({ jobType: "refresh-external-section", collector: "external" }),
   releaseCalendar: Object.freeze({ jobType: "refresh-external-section", collector: "external" }),

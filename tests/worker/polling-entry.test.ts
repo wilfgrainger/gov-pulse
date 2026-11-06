@@ -12,7 +12,7 @@ import {
   parsePartyShares,
   pdfStrings,
   sampleSizeFromPdfText,
-} from "@/worker/live-polling-collector";
+} from "@/feeds/election-polls/parse.js";
 import { parseNhsRttPressNotice } from "@/feeds/nhs/press-notice.js";
 
 const specialties = [

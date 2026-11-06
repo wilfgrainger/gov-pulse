@@ -1,6 +1,8 @@
 // The feed list: one guarded line per feed. A test fails if a feeds/<slug>
 // folder is missing here or listed twice. Adding a feed here does not publish
 // it: publication state lives only in config/publications.json.
+import { definition as electionPollingDefinition } from "./election-polls/feed.js";
+import * as electionPollingParser from "./election-polls/parse.js";
 import { definition as nationalDebtDefinition } from "./national-debt/feed.js";
 import * as nationalDebtParser from "./national-debt/parse.js";
 import { definition as gdpTrackerDefinition } from "./gdp/feed.js";
@@ -30,6 +32,7 @@ import * as realWagesParser from "./real-wages/parse.js";
 
 /** @type {readonly FeedModule[]} */
 export const FEEDS = Object.freeze([
+  { definition: electionPollingDefinition, collect: electionPollingParser.collect },
   { definition: nationalDebtDefinition, collect: nationalDebtParser.collect },
   { definition: gdpTrackerDefinition, collect: gdpTrackerParser.collect },
   { definition: sentimentPulseDefinition, collect: sentimentPulseParser.collect },

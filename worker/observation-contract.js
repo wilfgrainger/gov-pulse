@@ -137,12 +137,11 @@ function declaredContract(section, local = {}) {
 }
 
 const contracts = {
-  electionPolling: {
-    maxAgeDays: 45,
+  electionPolling: declaredContract("electionPolling", {
     extract(data, now) {
       return latestBy(data?.recentPolls, (entry) => entry?.date, now);
     },
-  },
+  }),
   sentimentPulse: declaredContract("sentimentPulse", {
     extract(data, now) {
       return latestBy(data?.economicData, (entry) => entry?.date, now);

@@ -1,4 +1,4 @@
-import { decodeHtml, parseAttributes } from "./live-feed-common.js";
+import { decodeHtml, parseAttributes } from "../../worker/live-feed-common.js";
 
 const DEFAULT_LIMITS = Object.freeze({
   maxEntryBytes: 8 * 1024 * 1024,

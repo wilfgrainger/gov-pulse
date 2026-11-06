@@ -4,8 +4,8 @@ import {
   MAX_RESPONSE_BYTES,
   readResponseArrayBuffer,
   readResponseText,
-} from "./live-feed-common.js";
-import { workbookSheetCells } from "./xlsx-workbook.js";
+} from "../../worker/live-feed-common.js";
+import { workbookSheetCells } from "../_kit/xlsx.js";
 
 const MORE_IN_COMMON_ARCHIVE_URL =
   "https://www.moreincommon.org.uk/polling-tables/?_polling_tables_type=voting-intention";
