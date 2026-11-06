@@ -1,0 +1,792 @@
+{
+  "meta": {
+    "registryVersion": "2026-08-02.1",
+    "generatedAt": "2026-11-05T12:00:00.000Z",
+    "sources": {
+      "electionPolling": {
+        "status": "ok",
+        "cacheState": "fresh",
+        "fetchedAt": "2026-11-05T03:18:58.265Z",
+        "source": "YouGov and More in Common primary voting-intention publications",
+        "provenance": {
+          "registryVersion": "2026-08-02.1",
+          "section": "electionPolling",
+          "title": "Primary voting-intention poll publications",
+          "evidenceClass": "public-opinion",
+          "geography": "Great Britain",
+          "retrieval": "scheduled-publication-check",
+          "refreshCadence": "daily",
+          "publicationCadence": "as published",
+          "operationalStatus": "active",
+          "publicationRequirement": "required",
+          "upstreams": [
+            {
+              "publisher": "YouGov",
+              "label": "YouGov Westminster voting-intention primary tables",
+              "url": "https://yougov.com/en-gb/articles",
+              "sourceClass": "primary-pollster-publication",
+              "caveat": "The collector retains the direct primary result-table URL and each accepted poll expires after the defined polling evidence window."
+            },
+            {
+              "publisher": "More in Common",
+              "label": "More in Common voting-intention tracker archive",
+              "url": "https://www.moreincommon.org.uk/polling-tables/?_polling_tables_type=voting-intention",
+              "sourceClass": "primary-pollster-publication",
+              "caveat": "The collector reconciles the publisher workbook and retains disclosed fieldwork and method metadata without inventing missing disclosure."
+            },
+            {
+              "publisher": "British Polling Council",
+              "label": "British Polling Council disclosure rules",
+              "url": "https://www.britishpollingcouncil.org/objects-and-rules/",
+              "sourceClass": "methodology-standard"
+            }
+          ]
+        }
+      },
+      "nationalDebt": {
+        "status": "ok",
+        "cacheState": "fresh",
+        "fetchedAt": "2026-10-21T03:18:56.324Z",
+        "source": "Public sector net debt excluding public sector banks + Public sector net debt excluding public sector banks as a percentage of GDP",
+        "provenance": {
+          "registryVersion": "2026-08-02.1",
+          "section": "nationalDebt",
+          "title": "Public sector net debt excluding public sector banks",
+          "evidenceClass": "official-data",
+          "geography": "United Kingdom",
+          "retrieval": "scheduled-publication-check",
+          "refreshCadence": "daily",
+          "publicationCadence": "monthly",
+          "operationalStatus": "active",
+          "publicationRequirement": "required",
+          "upstreams": [
+            {
+              "publisher": "Office for National Statistics",
+              "label": "Public sector net debt excluding public sector banks",
+              "seriesId": "HF6W",
+              "datasetId": "PUSF",
+              "url": "https://www.ons.gov.uk/generator?format=csv&uri=/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6w/pusf",
+              "sourceClass": "official-primary"
+            },
+            {
+              "publisher": "Office for National Statistics",
+              "label": "Public sector net debt excluding public sector banks as a percentage of GDP",
+              "seriesId": "HF6X",
+              "datasetId": "PUSF",
+              "url": "https://www.ons.gov.uk/generator?format=csv&uri=/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6x/pusf",
+              "sourceClass": "official-primary"
+            }
+          ]
+        }
+      },
+      "gdpTracker": {
+        "status": "ok",
+        "cacheState": "fresh",
+        "fetchedAt": "2026-11-05T03:17:09.552Z",
+        "source": "GDP monthly estimate, UK bulletin",
+        "provenance": {
+          "registryVersion": "2026-08-02.1",
+          "section": "gdpTracker",
+          "title": "Monthly gross domestic product",
+          "evidenceClass": "official-data",
+          "geography": "United Kingdom",
+          "retrieval": "scheduled-publication-check",
+          "refreshCadence": "daily",
+          "publicationCadence": "monthly",
+          "operationalStatus": "active",
+          "publicationRequirement": "required",
+          "upstreams": [
+            {
+              "publisher": "Office for National Statistics",
+              "label": "GDP monthly estimate, UK bulletin",
+              "url": "https://www.ons.gov.uk/economy/grossdomesticproductgdp/bulletins/gdpmonthlyestimateuk/latest",
+              "sourceClass": "official-primary",
+              "caveat": "The latest bulletin edition is discovered and validated from the rolling publication page."
+            }
+          ]
+        }
+      }
+    },
+    "measureCatalog": {
+      "schemaVersion": 2,
+      "editionId": "catalog-6962a31c48cf1a25",
+      "generatedAt": "2026-11-05T03:42:12.523Z",
+      "validUntil": "2026-11-06T15:17:15.760Z",
+      "measures": {
+        "gdp-monthlyGrowth": {
+          "id": "gdp-monthlyGrowth",
+          "label": "GDP: monthly growth",
+          "evidenceClass": "official-statistics",
+          "comparisonKey": "uk-real-gdp-monthly-growth",
+          "cadence": "monthly",
+          "unit": "%",
+          "basis": "Monthly change in real gross domestic product at market prices",
+          "note": "Monthly real GDP growth is volatile and subject to revision.",
+          "publisher": "Office for National Statistics",
+          "geography": {
+            "code": "UK",
+            "label": "United Kingdom"
+          },
+          "sourceId": "gdpTracker",
+          "sourceUrl": "https://www.ons.gov.uk/economy/grossdomesticproductgdp/bulletins/gdpmonthlyestimateuk/august2026",
+          "sourceEditionId": "source-gdp-monthlyGrowth-2026-10-15-2cc1fbd967a67c25",
+          "observationPeriod": {
+            "start": "2026-08-01",
+            "end": "2026-08-31",
+            "label": "August 2026"
+          },
+          "publishedAt": "2026-10-15T00:00:00.000Z",
+          "fetchedAt": "2026-11-05T03:17:09.552Z",
+          "validUntil": "2026-12-24T00:00:00.000Z",
+          "availability": "current",
+          "value": 0.1,
+          "revisionId": "source-gdp-monthlyGrowth-2026-10-15-2cc1fbd967a67c25-r7865b72fcd493ff2",
+          "points": [
+            {
+              "period": "March 2026",
+              "observedAt": "2026-03-31",
+              "value": 0.5,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-monthlyGrowth-2026-10-15-2cc1fbd967a67c25-r7865b72fcd493ff2"
+            },
+            {
+              "period": "April 2026",
+              "observedAt": "2026-04-30",
+              "value": -0.1,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-monthlyGrowth-2026-10-15-2cc1fbd967a67c25-r7865b72fcd493ff2"
+            },
+            {
+              "period": "May 2026",
+              "observedAt": "2026-05-31",
+              "value": 0,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-monthlyGrowth-2026-10-15-2cc1fbd967a67c25-r7865b72fcd493ff2"
+            },
+            {
+              "period": "June 2026",
+              "observedAt": "2026-06-30",
+              "value": 0.4,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-monthlyGrowth-2026-10-15-2cc1fbd967a67c25-r7865b72fcd493ff2"
+            },
+            {
+              "period": "July 2026",
+              "observedAt": "2026-07-31",
+              "value": 0.4,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-monthlyGrowth-2026-10-15-2cc1fbd967a67c25-r7865b72fcd493ff2"
+            },
+            {
+              "period": "August 2026",
+              "observedAt": "2026-08-31",
+              "value": 0.1,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-monthlyGrowth-2026-10-15-2cc1fbd967a67c25-r7865b72fcd493ff2"
+            }
+          ],
+          "caveats": [
+            "Early estimate; subject to revision."
+          ]
+        },
+        "gdp-threeMonthGrowth": {
+          "id": "gdp-threeMonthGrowth",
+          "label": "GDP: three-month growth",
+          "evidenceClass": "official-statistics",
+          "comparisonKey": "uk-real-gdp-three-month-growth",
+          "cadence": "monthly",
+          "unit": "%",
+          "basis": "Real GDP growth across the latest three months",
+          "note": "A rolling three-month estimate that can be revised.",
+          "publisher": "Office for National Statistics",
+          "geography": {
+            "code": "UK",
+            "label": "United Kingdom"
+          },
+          "sourceId": "gdpTracker",
+          "sourceUrl": "https://www.ons.gov.uk/economy/grossdomesticproductgdp/bulletins/gdpmonthlyestimateuk/august2026",
+          "sourceEditionId": "source-gdp-threeMonthGrowth-2026-10-15-2cc1fbd967a67c25",
+          "observationPeriod": {
+            "start": "2026-08-01",
+            "end": "2026-08-31",
+            "label": "August 2026"
+          },
+          "publishedAt": "2026-10-15T00:00:00.000Z",
+          "fetchedAt": "2026-11-05T03:17:09.552Z",
+          "validUntil": "2026-12-24T00:00:00.000Z",
+          "availability": "current",
+          "value": 0.7,
+          "revisionId": "source-gdp-threeMonthGrowth-2026-10-15-2cc1fbd967a67c25-r37b127da65adc0b7",
+          "points": [
+            {
+              "period": "March 2026",
+              "observedAt": "2026-03-31",
+              "value": 0.6,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-threeMonthGrowth-2026-10-15-2cc1fbd967a67c25-r37b127da65adc0b7"
+            },
+            {
+              "period": "April 2026",
+              "observedAt": "2026-04-30",
+              "value": 0.8,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-threeMonthGrowth-2026-10-15-2cc1fbd967a67c25-r37b127da65adc0b7"
+            },
+            {
+              "period": "May 2026",
+              "observedAt": "2026-05-31",
+              "value": 0.7,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-threeMonthGrowth-2026-10-15-2cc1fbd967a67c25-r37b127da65adc0b7"
+            },
+            {
+              "period": "June 2026",
+              "observedAt": "2026-06-30",
+              "value": 0.5,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-threeMonthGrowth-2026-10-15-2cc1fbd967a67c25-r37b127da65adc0b7"
+            },
+            {
+              "period": "July 2026",
+              "observedAt": "2026-07-31",
+              "value": 0.5,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-threeMonthGrowth-2026-10-15-2cc1fbd967a67c25-r37b127da65adc0b7"
+            },
+            {
+              "period": "August 2026",
+              "observedAt": "2026-08-31",
+              "value": 0.7,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-threeMonthGrowth-2026-10-15-2cc1fbd967a67c25-r37b127da65adc0b7"
+            }
+          ],
+          "caveats": [
+            "Early estimate; subject to revision."
+          ]
+        },
+        "gdp-annualGrowth": {
+          "id": "gdp-annualGrowth",
+          "label": "GDP: annual growth",
+          "evidenceClass": "official-statistics",
+          "comparisonKey": "uk-real-gdp-annual-growth",
+          "cadence": "monthly",
+          "unit": "%",
+          "basis": "Change in real GDP compared with the same month one year earlier",
+          "note": "Annual GDP growth is an estimate and can be revised.",
+          "publisher": "Office for National Statistics",
+          "geography": {
+            "code": "UK",
+            "label": "United Kingdom"
+          },
+          "sourceId": "gdpTracker",
+          "sourceUrl": "https://www.ons.gov.uk/economy/grossdomesticproductgdp/bulletins/gdpmonthlyestimateuk/august2026",
+          "sourceEditionId": "source-gdp-annualGrowth-2026-10-15-2cc1fbd967a67c25",
+          "observationPeriod": {
+            "start": "2026-08-01",
+            "end": "2026-08-31",
+            "label": "August 2026"
+          },
+          "publishedAt": "2026-10-15T00:00:00.000Z",
+          "fetchedAt": "2026-11-05T03:17:09.552Z",
+          "validUntil": "2026-12-24T00:00:00.000Z",
+          "availability": "current",
+          "value": 2.1,
+          "revisionId": "source-gdp-annualGrowth-2026-10-15-2cc1fbd967a67c25-r859d1dff0c7ed82c",
+          "points": [
+            {
+              "period": "March 2026",
+              "observedAt": "2026-03-31",
+              "value": 1.1,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-annualGrowth-2026-10-15-2cc1fbd967a67c25-r859d1dff0c7ed82c"
+            },
+            {
+              "period": "April 2026",
+              "observedAt": "2026-04-30",
+              "value": 1.2,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-annualGrowth-2026-10-15-2cc1fbd967a67c25-r859d1dff0c7ed82c"
+            },
+            {
+              "period": "May 2026",
+              "observedAt": "2026-05-31",
+              "value": 1.4,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-annualGrowth-2026-10-15-2cc1fbd967a67c25-r859d1dff0c7ed82c"
+            },
+            {
+              "period": "June 2026",
+              "observedAt": "2026-06-30",
+              "value": 1.4,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-annualGrowth-2026-10-15-2cc1fbd967a67c25-r859d1dff0c7ed82c"
+            },
+            {
+              "period": "July 2026",
+              "observedAt": "2026-07-31",
+              "value": 1.8,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-annualGrowth-2026-10-15-2cc1fbd967a67c25-r859d1dff0c7ed82c"
+            },
+            {
+              "period": "August 2026",
+              "observedAt": "2026-08-31",
+              "value": 2.1,
+              "valueStatus": "estimate",
+              "revisionId": "source-gdp-annualGrowth-2026-10-15-2cc1fbd967a67c25-r859d1dff0c7ed82c"
+            }
+          ],
+          "caveats": [
+            "Early estimate; subject to revision."
+          ]
+        },
+        "debt-ratio": {
+          "id": "debt-ratio",
+          "label": "Debt as a share of GDP",
+          "evidenceClass": "official-statistics",
+          "comparisonKey": "uk-psnd-gdp-ratio",
+          "cadence": "monthly",
+          "unit": "%",
+          "basis": "Public sector net debt excluding public sector banks divided by GDP",
+          "note": "A fiscal stock-to-GDP ratio, not an annual borrowing flow.",
+          "publisher": "Office for National Statistics",
+          "geography": {
+            "code": "UK",
+            "label": "United Kingdom"
+          },
+          "sourceId": "nationalDebt",
+          "sourceUrl": "https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6x/pusf",
+          "sourceEditionId": "source-debt-ratio-2026-09-22-1e771b32418370be",
+          "observationPeriod": {
+            "start": "2026-08-01",
+            "end": "2026-08-31",
+            "label": "2026 AUG"
+          },
+          "publishedAt": "2026-09-22T00:00:00.000Z",
+          "fetchedAt": "2026-10-21T03:18:56.324Z",
+          "validUntil": "2026-11-14T00:00:00.000Z",
+          "availability": "current",
+          "value": 93.8,
+          "revisionId": "source-debt-ratio-2026-09-22-1e771b32418370be-r1b08964498f06885",
+          "points": [
+            {
+              "period": "2026 MAR",
+              "observedAt": "2026-03-31",
+              "value": 93.3,
+              "valueStatus": "observed",
+              "revisionId": "source-debt-ratio-2026-09-22-1e771b32418370be-r1b08964498f06885"
+            },
+            {
+              "period": "2026 APR",
+              "observedAt": "2026-04-30",
+              "value": 93.6,
+              "valueStatus": "observed",
+              "revisionId": "source-debt-ratio-2026-09-22-1e771b32418370be-r1b08964498f06885"
+            },
+            {
+              "period": "2026 MAY",
+              "observedAt": "2026-05-31",
+              "value": 94.3,
+              "valueStatus": "observed",
+              "revisionId": "source-debt-ratio-2026-09-22-1e771b32418370be-r1b08964498f06885"
+            },
+            {
+              "period": "2026 JUN",
+              "observedAt": "2026-06-30",
+              "value": 94.6,
+              "valueStatus": "observed",
+              "revisionId": "source-debt-ratio-2026-09-22-1e771b32418370be-r1b08964498f06885"
+            },
+            {
+              "period": "2026 JUL",
+              "observedAt": "2026-07-31",
+              "value": 94,
+              "valueStatus": "observed",
+              "revisionId": "source-debt-ratio-2026-09-22-1e771b32418370be-r1b08964498f06885"
+            },
+            {
+              "period": "2026 AUG",
+              "observedAt": "2026-08-31",
+              "value": 93.8,
+              "valueStatus": "observed",
+              "revisionId": "source-debt-ratio-2026-09-22-1e771b32418370be-r1b08964498f06885"
+            }
+          ],
+          "caveats": [
+            "A fiscal stock-to-GDP ratio, not an annual borrowing flow."
+          ]
+        },
+        "debt-stock": {
+          "id": "debt-stock",
+          "label": "Public sector net debt",
+          "evidenceClass": "official-statistics",
+          "comparisonKey": "uk-psnd-cash-value",
+          "cadence": "monthly",
+          "unit": "£bn",
+          "basis": "Public sector net debt excluding public sector banks, in current prices",
+          "note": "A debt stock in cash terms; it is not the amount borrowed during the month.",
+          "publisher": "Office for National Statistics",
+          "geography": {
+            "code": "UK",
+            "label": "United Kingdom"
+          },
+          "sourceId": "nationalDebt",
+          "sourceUrl": "https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6w/pusf",
+          "sourceEditionId": "source-debt-stock-2026-09-22-731da26a9fbb056f",
+          "observationPeriod": {
+            "start": "2026-08-01",
+            "end": "2026-08-31",
+            "label": "2026 AUG"
+          },
+          "publishedAt": "2026-09-22T00:00:00.000Z",
+          "fetchedAt": "2026-10-21T03:18:56.324Z",
+          "validUntil": "2026-11-14T00:00:00.000Z",
+          "availability": "current",
+          "value": 2985.5,
+          "revisionId": "source-debt-stock-2026-09-22-731da26a9fbb056f-rbffe288a9f85f2e0",
+          "points": [
+            {
+              "period": "2026 MAR",
+              "observedAt": "2026-03-31",
+              "value": 2916.8,
+              "valueStatus": "observed",
+              "revisionId": "source-debt-stock-2026-09-22-731da26a9fbb056f-rbffe288a9f85f2e0"
+            },
+            {
+              "period": "2026 APR",
+              "observedAt": "2026-04-30",
+              "value": 2938.2,
+              "valueStatus": "observed",
+              "revisionId": "source-debt-stock-2026-09-22-731da26a9fbb056f-rbffe288a9f85f2e0"
+            },
+            {
+              "period": "2026 MAY",
+              "observedAt": "2026-05-31",
+              "value": 2972.6,
+              "valueStatus": "observed",
+              "revisionId": "source-debt-stock-2026-09-22-731da26a9fbb056f-rbffe288a9f85f2e0"
+            },
+            {
+              "period": "2026 JUN",
+              "observedAt": "2026-06-30",
+              "value": 2992.5,
+              "valueStatus": "observed",
+              "revisionId": "source-debt-stock-2026-09-22-731da26a9fbb056f-rbffe288a9f85f2e0"
+            },
+            {
+              "period": "2026 JUL",
+              "observedAt": "2026-07-31",
+              "value": 2982,
+              "valueStatus": "observed",
+              "revisionId": "source-debt-stock-2026-09-22-731da26a9fbb056f-rbffe288a9f85f2e0"
+            },
+            {
+              "period": "2026 AUG",
+              "observedAt": "2026-08-31",
+              "value": 2985.5,
+              "valueStatus": "observed",
+              "revisionId": "source-debt-stock-2026-09-22-731da26a9fbb056f-rbffe288a9f85f2e0"
+            }
+          ],
+          "caveats": [
+            "This is a fiscal stock, not an annual borrowing flow."
+          ]
+        }
+      }
+    },
+    "editionSummary": {
+      "id": "catalog-6962a31c48cf1a25",
+      "publishedAt": "2026-10-21T00:00:00.000Z",
+      "previousEditionId": "catalog-18f83e1a9dc7c0b2",
+      "sourceEditionIds": [],
+      "changes": []
+    },
+    "fixture": true
+  },
+  "electionPolling": {
+    "available": true,
+    "latestPublicationDate": "2026-11-03",
+    "latestFieldworkEnd": "2026-11-02",
+    "sources": [
+      {
+        "pollster": "YouGov",
+        "status": "current",
+        "recordCount": 1
+      },
+      {
+        "pollster": "More in Common",
+        "status": "unavailable",
+        "recordCount": 0
+      }
+    ],
+    "expiresAt": "2026-11-17T00:00:00.000Z",
+    "polls": [
+      {
+        "id": "yougov-2026-11-02",
+        "pollster": "YouGov",
+        "commissioner": "The Times and Sky News",
+        "title": "Voting intention, 1-2 November 2026: Lab 26%, Con 24%, Ref 21%, LD 11%, Grn 10%",
+        "questionText": "Now, thinking specifically about your own constituency, if there were a general election held tomorrow and these were the parties standing, which party would you vote for?",
+        "publicationDate": "2026-11-03",
+        "publicationDateStatus": "published",
+        "fieldworkStart": "2026-11-01",
+        "fieldworkEnd": "2026-11-02",
+        "sampleSize": 2355,
+        "sampleSizeNote": null,
+        "geography": "Great Britain",
+        "population": "GB adults",
+        "mode": "Online panel",
+        "headlineMethod": "Headline voting intention from constituency vote projected by YouGov's MRP model",
+        "parties": {
+          "conservative": 24,
+          "labour": 26,
+          "liberalDemocrats": 11,
+          "reformUK": 21,
+          "green": 10,
+          "snp": 3,
+          "plaidCymru": 2,
+          "restoreBritain": 3,
+          "other": 1
+        },
+        "sourceUrl": "https://ygo-assets-websites-editorial-emea.yougov.net/documents/VotingIntention_Results_261102_w.pdf",
+        "methodologyUrl": "https://yougov.com/en-gb/articles/54278-how-yougov-conducts-voting-intention-polling",
+        "bpcMember": true,
+        "uncertainty": null
+      }
+    ],
+    "aggregation": {
+      "method": "none",
+      "explanation": "public-data.org shows each verified primary poll publication separately and does not calculate an average."
+    },
+    "evidencePolicy": {
+      "sourceClass": "primary-pollster-publication",
+      "bpcDisclosureRequired": true,
+      "secondaryAggregatorsUsedAsData": false
+    },
+    "__observation": {
+      "status": "current",
+      "period": "2026-11-01/2026-11-02",
+      "observedAt": "2026-11-02T00:00:00.000Z",
+      "checkedAt": "2026-11-05T03:18:58.265Z",
+      "maxAgeDays": 14
+    }
+  },
+  "nationalDebt": {
+    "baseDebt": 2985500000000,
+    "baseDate": 1788134400000,
+    "debtToGdp": 93.8,
+    "observationPeriod": "2026 AUG",
+    "publicationDate": "2026-09-22",
+    "nextReleaseDate": "2026-10-21",
+    "annualDelta": {
+      "debtBillion": 78.5,
+      "debtToGdpPoints": -1.3
+    },
+    "history": [
+      {
+        "period": "2026 MAR",
+        "observedAt": 1774915200000,
+        "debtBillion": 2916.8,
+        "debtToGdp": 93.3
+      },
+      {
+        "period": "2026 APR",
+        "observedAt": 1777507200000,
+        "debtBillion": 2938.2,
+        "debtToGdp": 93.6
+      },
+      {
+        "period": "2026 MAY",
+        "observedAt": 1780185600000,
+        "debtBillion": 2972.6,
+        "debtToGdp": 94.3
+      },
+      {
+        "period": "2026 JUN",
+        "observedAt": 1782777600000,
+        "debtBillion": 2992.5,
+        "debtToGdp": 94.6
+      },
+      {
+        "period": "2026 JUL",
+        "observedAt": 1785456000000,
+        "debtBillion": 2982,
+        "debtToGdp": 94
+      },
+      {
+        "period": "2026 AUG",
+        "observedAt": 1788134400000,
+        "debtBillion": 2985.5,
+        "debtToGdp": 93.8
+      }
+    ],
+    "revisionStatus": "Public-sector-finance estimates can be revised as source data and classifications are updated.",
+    "source": {
+      "publisher": "Office for National Statistics",
+      "debtUrl": "https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6w/pusf",
+      "debtToGdpUrl": "https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6x/pusf",
+      "bulletinUrl": "https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/bulletins/publicsectorfinances/august2026",
+      "landingUrl": "https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/bulletins/publicsectorfinances/latest"
+    },
+    "series": {
+      "debt": "HF6W",
+      "debtToGdp": "HF6X"
+    },
+    "__observation": {
+      "status": "current",
+      "period": "2026 AUG",
+      "observedAt": "2026-08-31T00:00:00.000Z",
+      "checkedAt": "2026-10-21T03:18:56.324Z",
+      "maxAgeDays": 75
+    },
+    "__provenance": {
+      "registryVersion": "2026-08-02.1",
+      "section": "nationalDebt",
+      "title": "Public sector net debt excluding public sector banks",
+      "evidenceClass": "official-data",
+      "geography": "United Kingdom",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "monthly",
+      "operationalStatus": "active",
+      "publicationRequirement": "required",
+      "upstreams": [
+        {
+          "publisher": "Office for National Statistics",
+          "label": "Public sector net debt excluding public sector banks",
+          "seriesId": "HF6W",
+          "datasetId": "PUSF",
+          "url": "https://www.ons.gov.uk/generator?format=csv&uri=/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6w/pusf",
+          "sourceClass": "official-primary"
+        },
+        {
+          "publisher": "Office for National Statistics",
+          "label": "Public sector net debt excluding public sector banks as a percentage of GDP",
+          "seriesId": "HF6X",
+          "datasetId": "PUSF",
+          "url": "https://www.ons.gov.uk/generator?format=csv&uri=/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6x/pusf",
+          "sourceClass": "official-primary"
+        }
+      ]
+    }
+  },
+  "gdpTracker": {
+    "available": true,
+    "headline": {
+      "period": "August 2026",
+      "observedAt": 1788134400000,
+      "releaseDate": "2026-10-15",
+      "nextReleaseDate": "2026-11-12",
+      "monthlyGrowth": 0.1,
+      "threeMonthGrowth": 0.7,
+      "annualGrowth": 2.1
+    },
+    "methodology": {
+      "measure": "Real gross domestic product, seasonally adjusted",
+      "status": "Official statistics",
+      "revisionNote": "Monthly GDP is an early estimate and is revised as fuller source data become available."
+    },
+    "source": {
+      "bulletinUrl": "https://www.ons.gov.uk/economy/grossdomesticproductgdp/bulletins/gdpmonthlyestimateuk/august2026",
+      "landingUrl": "https://www.ons.gov.uk/economy/grossdomesticproductgdp/bulletins/gdpmonthlyestimateuk/latest"
+    },
+    "history": [
+      {
+        "period": "March 2026",
+        "observedAt": 1774915200000,
+        "index": 102.3,
+        "monthlyGrowth": 0.5,
+        "annualGrowth": 1.1,
+        "threeMonthGrowth": 0.6
+      },
+      {
+        "period": "April 2026",
+        "observedAt": 1777507200000,
+        "index": 102.2,
+        "monthlyGrowth": -0.1,
+        "annualGrowth": 1.2,
+        "threeMonthGrowth": 0.8
+      },
+      {
+        "period": "May 2026",
+        "observedAt": 1780185600000,
+        "index": 102.2,
+        "monthlyGrowth": 0,
+        "annualGrowth": 1.4,
+        "threeMonthGrowth": 0.7
+      },
+      {
+        "period": "June 2026",
+        "observedAt": 1782777600000,
+        "index": 102.6,
+        "monthlyGrowth": 0.4,
+        "annualGrowth": 1.4,
+        "threeMonthGrowth": 0.5
+      },
+      {
+        "period": "July 2026",
+        "observedAt": 1785456000000,
+        "index": 103,
+        "monthlyGrowth": 0.4,
+        "annualGrowth": 1.8,
+        "threeMonthGrowth": 0.5
+      },
+      {
+        "period": "August 2026",
+        "observedAt": 1788134400000,
+        "index": 103.1,
+        "monthlyGrowth": 0.1,
+        "annualGrowth": 2.1,
+        "threeMonthGrowth": 0.7
+      }
+    ],
+    "series": {
+      "index": {
+        "id": "ECY2",
+        "url": "https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/ecy2/mgdp"
+      },
+      "monthlyGrowth": {
+        "id": "ECYX",
+        "url": "https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/ecyx/mgdp"
+      },
+      "annualGrowth": {
+        "id": "ED2R",
+        "url": "https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/ed2r/mgdp"
+      },
+      "threeMonthGrowth": {
+        "id": "ED3H",
+        "url": "https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/ed3h/mgdp"
+      }
+    },
+    "expiresAt": "2026-12-24T00:00:00.000Z",
+    "__observation": {
+      "status": "current",
+      "period": "August 2026",
+      "observedAt": "2026-08-31T00:00:00.000Z",
+      "checkedAt": "2026-11-05T03:17:14.565Z",
+      "maxAgeDays": 70
+    },
+    "__provenance": {
+      "registryVersion": "2026-08-02.1",
+      "section": "gdpTracker",
+      "title": "Monthly gross domestic product",
+      "evidenceClass": "official-data",
+      "geography": "United Kingdom",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "monthly",
+      "operationalStatus": "active",
+      "publicationRequirement": "required",
+      "upstreams": [
+        {
+          "publisher": "Office for National Statistics",
+          "label": "GDP monthly estimate, UK bulletin",
+          "url": "https://www.ons.gov.uk/economy/grossdomesticproductgdp/bulletins/gdpmonthlyestimateuk/latest",
+          "sourceClass": "official-primary",
+          "caveat": "The latest bulletin edition is discovered and validated from the rolling publication page."
+        }
+      ]
+    }
+  }
+}

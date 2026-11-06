@@ -8,9 +8,19 @@ does not restrict product scope.
 
 `pr-validation.yml` sends Markdown-only changes through a no-install
 documentation lane; it runs no prose, encoding or newline gate. Code and
-executable configuration changes run source/architecture guards, install the
-root and OpenNext toolchains once each, run lint and all unit/Worker tests, then
-build the deployable OpenNext artifact once (which compiles the Next app).
+executable configuration changes run source/architecture guards, run one locked
+`npm ci` (a single root toolchain; `@opennextjs/cloudflare` is pinned exactly in
+`package.json`), run `npm run build:prepare`, then lint, all unit/Worker tests
+and the deployable OpenNext build once (which compiles the Next app).
+
+`npm run build:prepare` must precede lint, test and build. It fetches the public
+metrics artifact (`https://public-data.org/data/metrics-snapshot.json`, 10 s
+timeout, 2 MiB cap) into the untracked `app/generated/metricsSnapshot.ts`. If the
+fetch or validation fails it writes a `null` export, so the RSS feed carries no
+dataset items and the sitemap carries no dates; GitHub Actions shows a
+`::warning::` annotation. `pretest` and `predev` run
+`generate-build-snapshot-module.mjs --ensure`, a network-free guard that creates
+the null module only when it is missing.
 The required `quality` result reflects the selected lane.
 Lighthouse is opt-in through `lighthouse.yml`; it builds only when explicitly
 requested.
@@ -22,7 +32,7 @@ other code changes.
 
 The previous workflow baseline measured 235 seconds of aggregate runner time
 and 135 seconds end to end. The current workflow runs lint, tests and the single
-OpenNext build in parallel after both locked installs; remeasure comparable PR
+OpenNext build in parallel after the single locked install and build:prepare; remeasure comparable PR
 runs before claiming a new duration. Task 1 of the active round-two plan keeps
 all checks while reducing duplicated setup and build work.
 
@@ -30,8 +40,8 @@ all checks while reducing duplicated setup and build work.
 
 The `quality` PR result is required by the `main` branch ruleset. A merged PR
 therefore carries the source checks, tests and application build used to gate
-that release. On a relevant push to `main`, `deploy.yml` installs both locked
-root and worker-local npm toolchains, prepares assets, performs one OpenNext
+that release. On a relevant push to `main`, `deploy.yml` runs the single locked
+`npm ci`, prepares generated data and assets (`build:prepare`), performs one OpenNext
 build and deploys the web Worker. Manual deployments run the source checks.
 It reconciles the Queue, then deploys
 and verifies the data Worker. It then checks the deployed revision, reader

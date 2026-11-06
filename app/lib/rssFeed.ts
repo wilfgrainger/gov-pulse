@@ -5,6 +5,7 @@ import {
 } from "@/app/lib/discovery";
 import type { MetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import { publicSnapshot } from "@/worker/public-snapshot";
+import { filterCurrentSnapshot } from "@/worker/publication-currentness";
 import { filterPublicationSnapshot, publicationRouteEnabled } from "@/contracts/publication-policy";
 import householdStory from "@/app/content/stories/household-budgets";
 import publicFinanceStory from "@/app/content/stories/public-finances";
@@ -26,9 +27,12 @@ function validDate(value: string | undefined) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function renderRssFeed(input: unknown) {
-  const snapshot = filterPublicationSnapshot(publicSnapshot(input)) as MetricsSnapshot | null;
-  const publications = publicationEntries(input).sort((left, right) =>
+export function renderRssFeed(input: unknown, now: Date = new Date()) {
+  // Only evidence that is still valid at build time may be described; an
+  // expired or missing snapshot contributes no dataset or edition items.
+  const current = filterCurrentSnapshot(publicSnapshot(input), now);
+  const snapshot = (current ? filterPublicationSnapshot(current) : null) as MetricsSnapshot | null;
+  const publications = publicationEntries(input, now).sort((left, right) =>
     (right.publication?.dateModified ?? "").localeCompare(left.publication?.dateModified ?? "")
   );
   const datasetEntries = publications

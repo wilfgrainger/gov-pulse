@@ -4,7 +4,6 @@ import { pathToFileURL } from "node:url";
 import { filterCurrentSnapshot } from "../worker/publication-currentness.js";
 import { filterPublicationSnapshot } from "../contracts/publication-policy.js";
 import { publicSnapshot } from "../worker/public-snapshot.js";
-import { BUILD_METRICS_SNAPSHOT } from "../app/generated/metricsSnapshot.ts";
 import {
   SECTION_DOWNLOAD_IDS,
   sectionDistribution,
@@ -46,7 +45,7 @@ export async function generateSectionDownloads({
   outputDirectory = DEFAULT_SECTION_DOWNLOAD_OUTPUT,
   now = new Date(),
   optionalMissing = false,
-  fallbackSnapshot = BUILD_METRICS_SNAPSHOT,
+  fallbackSnapshot = null,
 } = {}) {
   const output = assertSafeOutputDirectory(outputDirectory);
   let raw;

@@ -1,10 +1,7 @@
 // @vitest-environment node
 
-import { describe, expect, it, vi } from "vitest";
-import {
-  createEconomySectionCache,
-  isOfficialEconomyRecord,
-} from "@/worker/economy-section-cache";
+import { describe, expect, it } from "vitest";
+import { isOfficialEconomyRecord } from "@/worker/section-builders";
 
 const points = Array.from({ length: 13 }, (_, index) => ({
   period: `Month ${index + 1}`,
@@ -86,7 +83,7 @@ const taxData = {
   history: points.map((point) => ({ ...point, receiptsBillion: 93.7 })),
 };
 
-describe("economy evidence cache migration", () => {
+describe("economy evidence record validation", () => {
   it("rejects each legacy mixed dashboard shape", () => {
     expect(isOfficialEconomyRecord("gdpTracker", { data: { gdpHistory: [] } })).toBe(false);
     expect(isOfficialEconomyRecord("employmentStats", { data: { publicVsPrivate: [] } })).toBe(false);
@@ -97,75 +94,5 @@ describe("economy evidence cache migration", () => {
     expect(isOfficialEconomyRecord("gdpTracker", { data: gdpData })).toBe(true);
     expect(isOfficialEconomyRecord("employmentStats", { data: employmentData })).toBe(true);
     expect(isOfficialEconomyRecord("taxRevenue", { data: taxData })).toBe(true);
-  });
-
-  it("replaces a legacy cached GDP record on first request", async () => {
-    const store = new Map<string, unknown>([
-      [
-        "v10:section:gdpTracker",
-        {
-          section: "gdpTracker",
-          data: { gdpHistory: [{ year: "2025F", growth: 1.1 }] },
-          fetchedAt: new Date().toISOString(),
-        },
-      ],
-    ]);
-    const put = vi.fn(async (key: string, value: string) => {
-      store.set(key, JSON.parse(value));
-    });
-    const descriptors = {
-      gdpTracker: {
-        source: "ONS GDP bulletin",
-        freshTtlSeconds: 36 * 60 * 60,
-        build: vi.fn().mockResolvedValue(gdpData),
-      },
-      employmentStats: {
-        source: "ONS labour bulletin",
-        freshTtlSeconds: 36 * 60 * 60,
-        build: vi.fn().mockResolvedValue(employmentData),
-      },
-      taxRevenue: {
-        source: "ONS finances bulletin",
-        freshTtlSeconds: 36 * 60 * 60,
-        build: vi.fn().mockResolvedValue(taxData),
-      },
-    };
-    const cache = createEconomySectionCache(descriptors);
-    const env = {
-      METRICS_CACHE: {
-        get: vi.fn(async (key: string) => store.get(key) ?? null),
-        put,
-      },
-    };
-
-    const record = await cache.ensure("gdpTracker", env);
-
-    expect(record.data).toEqual(gdpData);
-    expect(descriptors.gdpTracker.build).toHaveBeenCalledTimes(1);
-    expect(put).toHaveBeenCalledWith("v10:section:gdpTracker", expect.any(String));
-  });
-
-  it("reuses a complete fresh official record without another upstream request", async () => {
-    const record = {
-      section: "taxRevenue",
-      data: taxData,
-      fetchedAt: new Date().toISOString(),
-      backend: "verified-data-service",
-    };
-    const descriptors = {
-      gdpTracker: { source: "ONS", freshTtlSeconds: 3600, build: vi.fn() },
-      employmentStats: { source: "ONS", freshTtlSeconds: 3600, build: vi.fn() },
-      taxRevenue: { source: "ONS", freshTtlSeconds: 3600, build: vi.fn() },
-    };
-    const cache = createEconomySectionCache(descriptors);
-    const env = {
-      METRICS_CACHE: {
-        get: vi.fn().mockResolvedValue(record),
-        put: vi.fn(),
-      },
-    };
-
-    await expect(cache.ensure("taxRevenue", env)).resolves.toBe(record);
-    expect(descriptors.taxRevenue.build).not.toHaveBeenCalled();
   });
 });
