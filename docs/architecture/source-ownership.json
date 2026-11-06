@@ -114,8 +114,8 @@
   "publicationSources": [
     {
       "section": "releaseCalendar",
-      "collector": "worker/ons-release-calendar.js",
-      "normalizer": "worker/ons-release-calendar.js",
+      "collector": "feeds/release-calendar/parse.js",
+      "normalizer": "feeds/release-calendar/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "optional daily Cloudflare Queue job reading the ONS upcoming and cancelled release calendars",
       "storage": "optional KV section fragment and current public artifact when the source identity and retrieval clock are valid",
@@ -123,8 +123,8 @@
     },
     {
       "section": "nhsReleaseCalendar",
-      "collector": "worker/nhs-release-calendar.js",
-      "normalizer": "worker/nhs-release-calendar.js",
+      "collector": "feeds/nhs-release-calendar/parse.js",
+      "normalizer": "feeds/nhs-release-calendar/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "optional daily Cloudflare Queue job reading the current NHS England financial-year plan through its public statistics API",
       "storage": "optional KV section fragment and current public artifact when the current-year plan PDF reconciles to future RTT release rows",

@@ -90,6 +90,33 @@ export function releaseFamilies() {
   );
 }
 
+/**
+ * The ONS release-calendar title families: one entry per distinct title
+ * pattern, naming every feed (or the explicit `familyIds` override on a title)
+ * that follows that release. Pure; worker/ons-release-calendar.js matches
+ * calendar titles against it.
+ *
+ * @returns {Array<{familyIds: string[], pattern: RegExp, exclude?: RegExp}>}
+ */
+export function releaseFamilyGroups() {
+  const groups = new Map();
+  for (const def of definitionsOf()) {
+    for (const title of def.releaseTitles) {
+      const key = JSON.stringify([title.pattern, title.flags ?? "", title.exclude ?? null, title.excludeFlags ?? ""]);
+      if (!groups.has(key)) {
+        groups.set(key, {
+          familyIds: [],
+          pattern: new RegExp(title.pattern, title.flags ?? ""),
+          ...(title.exclude ? { exclude: new RegExp(title.exclude, title.excludeFlags ?? "") } : {}),
+        });
+      }
+      const group = groups.get(key);
+      for (const id of title.familyIds ?? [def.id]) if (!group.familyIds.includes(id)) group.familyIds.push(id);
+    }
+  }
+  return [...groups.values()];
+}
+
 /** Legacy contracts/measure-definitions.json `measures` entries for migrated feeds. */
 export function measureDefinitions() {
   return definitionsOf().flatMap((def) => def.measures.map((measure) => structuredClone(measure)));
@@ -110,9 +137,10 @@ function derivedEntries(config) {
   const publications = config?.publications ?? {};
 
   for (const [id, decision] of Object.entries(publications)) {
-    // A feed's section route is its slug; publications without a feed
-    // definition still declare theirs in config until they are migrated.
-    const slugs = feedDefs.has(id) ? [feedDefs.get(id).slug] : (decision.sections ?? []);
+    // A feed with a public section page routes it by slug; publications with no
+    // page of their own (release calendars) or no definition still declare
+    // theirs in config.
+    const slugs = feedDefs.get(id)?.discovery ? [feedDefs.get(id).slug] : (decision.sections ?? []);
     for (const slug of slugs) {
       entries.push({ path: `/section/${slug}/`, kind: "evidence", feeds: [id], gate: "any-published" });
     }

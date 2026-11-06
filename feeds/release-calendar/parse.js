@@ -1,20 +1,19 @@
-import { sectionRecord, decodeHtml, fetchResponse, readResponseText } from "./live-feed-common.js";
+import { sectionRecord, decodeHtml, fetchResponse, readResponseText } from "../../worker/live-feed-common.js";
+import { releaseFamilyGroups } from "../registry.js";
 
 const ONS_RELEASE_CALENDAR_URL = "https://www.ons.gov.uk/releasecalendar";
 const MAX_CALENDAR_BYTES = 512 * 1024;
-const RELEASE_FAMILIES = Object.freeze([
-  { familyIds: ["gdpTracker"], pattern: /^GDP monthly estimate, UK:/i, exclude: /time series/i },
-  { familyIds: ["inflation"], pattern: /^Consumer price inflation, UK:/i, exclude: /time series/i },
-  { familyIds: ["employmentStats", "realWages"], pattern: /^UK Labour Market:/i },
-  { familyIds: ["realWages"], pattern: /^Average weekly earnings in Great Britain:/i, exclude: /time series/i },
-  { familyIds: ["nationalDebt", "taxRevenue"], pattern: /^Public sector finances, UK:/i, exclude: /time series/i },
-  { familyIds: ["housePriceIndex"], pattern: /^Private rent and house prices, UK:/i, exclude: /time series/i },
-  { familyIds: ["migrationStats"], pattern: /^Long-term international migration/i, exclude: /time series/i },
-  { familyIds: ["crimeStatistics"], pattern: /^Crime in England and Wales:/i, exclude: /time series/i },
-]);
+// The title families come from the feeds' own releaseTitles (feeds/*/feed.js).
+// They are read on first use: feeds/registry.js imports feeds/index.js, which
+// imports this module, so an eager read would see the registry half-initialised.
+let releaseFamilies;
+function familyList() {
+  releaseFamilies ??= Object.freeze(releaseFamilyGroups().map((family) => Object.freeze(family)));
+  return releaseFamilies;
+}
 
 function familiesForTitle(title) {
-  return RELEASE_FAMILIES.find(({ pattern, exclude }) => pattern.test(title) && !exclude?.test(title))?.familyIds ?? [];
+  return familyList().find(({ pattern, exclude }) => pattern.test(title) && !exclude?.test(title))?.familyIds ?? [];
 }
 
 function isoDate(raw) {
@@ -123,4 +122,16 @@ async function collectOnsReleaseCalendar(fetchImpl = fetch, now = new Date()) {
   return sectionRecord("releaseCalendar", data, now, "ONS release calendar, upcoming and cancelled notices", "cloudflare-official-release-calendar");
 }
 
-export { ONS_RELEASE_CALENDAR_URL, RELEASE_FAMILIES, collectOnsReleaseCalendar, parseOnsReleaseCalendarPage };
+/**
+ * Feed interface (target design 2.3). Wraps the existing collector without
+ * changing what it fetches or returns: `data` is exactly the payload of the
+ * section record collectOnsReleaseCalendar has always produced.
+ *
+ * @param {{fetch: typeof fetch, now: Date}} ctx
+ */
+async function collect(ctx) {
+  const record = await collectOnsReleaseCalendar(ctx.fetch, ctx.now);
+  return { data: record.data };
+}
+
+export { ONS_RELEASE_CALENDAR_URL, collect, collectOnsReleaseCalendar, parseOnsReleaseCalendarPage };

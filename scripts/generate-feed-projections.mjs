@@ -12,7 +12,6 @@ import { fileURLToPath } from "node:url";
 import { FEED_CATALOG } from "../contracts/source-catalog.js";
 import { SECTION_COLLECTION_PLAN } from "../worker/publication-plan.js";
 import { OBSERVATION_CONTRACTS } from "../worker/observation-contract.js";
-import { RELEASE_FAMILIES } from "../worker/ons-release-calendar.js";
 import { routeManifest } from "../contracts/route-manifest.js";
 import { SECTION_DOWNLOAD_IDS } from "../app/lib/sectionDownloads.ts";
 import discovery from "../contracts/section-discovery.json" with { type: "json" };
@@ -24,6 +23,7 @@ import {
   feedCatalog,
   measureDefinitions as projectedMeasures,
   observationContracts,
+  releaseFamilyGroups,
   sectionDiscovery,
 } from "../feeds/registry.js";
 
@@ -40,7 +40,7 @@ export function captureLegacy() {
     sectionDiscovery: discovery.sections,
     measureDefinitions: measureDefinitions.measures,
     downloadIds: [...SECTION_DOWNLOAD_IDS],
-    releaseFamilies: RELEASE_FAMILIES.map((f) => ({
+    releaseFamilies: releaseFamilyGroups().map((f) => ({
       familyIds: f.familyIds,
       pattern: f.pattern.source,
       flags: f.pattern.flags,

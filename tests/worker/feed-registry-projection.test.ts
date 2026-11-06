@@ -12,7 +12,7 @@ import {
   feedCatalog,
   measureDefinitions,
   observationContracts,
-  releaseFamilies,
+  releaseFamilyGroups,
   routeManifest,
   sectionDiscovery,
 } from "@/feeds/registry.js";
@@ -151,24 +151,41 @@ describe("projection parity with the legacy hand-written registries", () => {
     expect([...SECTION_DOWNLOAD_IDS].filter((id) => declared.includes(id))).toEqual(declared);
   });
 
-  it.each(migrated.map((def) => [def.id]))("%s release titles equal the legacy families that name it", (id) => {
-    const expected = (legacy.releaseFamilies as LegacyFamily[])
-      .filter((family) => family.familyIds.includes(id))
-      .map((family) => ({
-        pattern: family.pattern,
-        flags: family.flags,
-        ...(family.exclude ? { exclude: family.exclude, excludeFlags: family.excludeFlags } : {}),
-      }))
-      .sort((x, y) => x.pattern.localeCompare(y.pattern));
-    const actual = releaseFamilies()
-      .filter((family) => family.feedId === id)
-      .map((family) => ({
-        pattern: family.pattern.source,
-        flags: family.pattern.flags,
-        ...(family.exclude ? { exclude: family.exclude.source, excludeFlags: family.exclude.flags } : {}),
-      }))
-      .sort((x, y) => x.pattern.localeCompare(y.pattern));
+  it("release families equal the legacy ONS release-calendar families", () => {
+    const describeFamily = (family: { familyIds: string[]; pattern: string; flags: string; exclude?: string; excludeFlags?: string }) =>
+      JSON.stringify([family.pattern, family.flags, family.exclude ?? null, family.excludeFlags ?? null, family.familyIds]);
+    const actual = releaseFamilyGroups()
+      .map((family) =>
+        describeFamily({
+          familyIds: family.familyIds,
+          pattern: family.pattern.source,
+          flags: family.pattern.flags,
+          ...(family.exclude ? { exclude: family.exclude.source, excludeFlags: family.exclude.flags } : {}),
+        }),
+      )
+      .sort();
+    const expected = (legacy.releaseFamilies as LegacyFamily[]).map(describeFamily).sort();
     expect(actual).toEqual(expected);
+  });
+
+  it.each([
+    ["GDP monthly estimate, UK: May 2026", ["gdpTracker"]],
+    ["GDP monthly estimate, UK: time series", []],
+    ["Consumer price inflation, UK: June 2026", ["inflation"]],
+    ["UK Labour Market: July 2026", ["employmentStats", "realWages"]],
+    ["Average weekly earnings in Great Britain: July 2026", ["realWages"]],
+    ["Public sector finances, UK: June 2026", ["nationalDebt", "taxRevenue"]],
+    ["Private rent and house prices, UK: June 2026", ["housePriceIndex"]],
+    ["Long-term international migration, provisional: year ending December 2025", ["migrationStats"]],
+    ["Crime in England and Wales: year ending March 2026", ["crimeStatistics"]],
+    ["Something else entirely", []],
+  ])("release title %j maps to %j exactly as the legacy first-match list did", (title, expected) => {
+    const legacyMatch = (legacy.releaseFamilies as LegacyFamily[]).find(
+      (family) => new RegExp(family.pattern, family.flags).test(title) && !(family.exclude && new RegExp(family.exclude, family.excludeFlags).test(title)),
+    );
+    const projected = releaseFamilyGroups().find((family) => family.pattern.test(title) && !family.exclude?.test(title));
+    expect(legacyMatch?.familyIds ?? []).toEqual(expected);
+    expect(projected?.familyIds ?? []).toEqual(expected);
   });
 
   it("route manifest equals the manifest captured before the migration", () => {

@@ -25,6 +25,10 @@ import { definition as realWagesDefinition } from "./real-wages/feed.js";
 import * as realWagesParser from "./real-wages/parse.js";
 import { definition as bettingOddsDefinition } from "./betting-odds/feed.js";
 import * as bettingOddsParser from "./betting-odds/parse.js";
+import { definition as releaseCalendarDefinition } from "./release-calendar/feed.js";
+import * as releaseCalendarParser from "./release-calendar/parse.js";
+import { definition as nhsReleaseCalendarDefinition } from "./nhs-release-calendar/feed.js";
+import * as nhsReleaseCalendarParser from "./nhs-release-calendar/parse.js";
 
 /**
  * @typedef {{definition: Readonly<Record<string, any>>, collect: (ctx: any) => Promise<any>,
@@ -46,4 +50,6 @@ export const FEEDS = Object.freeze([
   { definition: housePriceIndexDefinition, collect: housePriceIndexParser.collect },
   { definition: realWagesDefinition, collect: realWagesParser.collect },
   { definition: bettingOddsDefinition, collect: bettingOddsParser.collect },
+  { definition: releaseCalendarDefinition, collect: releaseCalendarParser.collect },
+  { definition: nhsReleaseCalendarDefinition, collect: nhsReleaseCalendarParser.collect },
 ]);

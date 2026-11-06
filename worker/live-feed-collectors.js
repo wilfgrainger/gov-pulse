@@ -1,8 +1,8 @@
 import { collectBettingOdds } from "../feeds/betting-odds/parse.js";
 import { collectNhsRttPublication } from "../feeds/nhs/parse.js";
 import { collectElectionPolling } from "../feeds/election-polls/parse.js";
-import { collectOnsReleaseCalendar } from "./ons-release-calendar.js";
-import { collectNhsReleaseCalendar } from "./nhs-release-calendar.js";
+import { collectOnsReleaseCalendar } from "../feeds/release-calendar/parse.js";
+import { collectNhsReleaseCalendar } from "../feeds/nhs-release-calendar/parse.js";
 import { sectionRecord } from "./live-feed-common.js";
 
 async function collectExternalSection(section, options = {}) {

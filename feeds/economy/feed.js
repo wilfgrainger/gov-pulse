@@ -88,7 +88,10 @@ export const definition = defineFeed({
     },
   ],
   downloads: { json: true, csv: true, geography: "United Kingdom (check each series)" },
-  releaseTitles: [],
+  releaseTitles: [
+    // The CPI bulletin follows the "inflation" family, which names no feed of its own.
+    { pattern: "^Consumer price inflation, UK:", flags: "i", exclude: "time series", excludeFlags: "i", familyIds: ["inflation"] },
+  ],
   discovery: {
     title: "UK inflation, Bank Rate and unemployment",
     kind: "dataset",

@@ -9,6 +9,8 @@ import { definition as nationalDebtDefinition } from "../feeds/national-debt/fee
 import { definition as sentimentPulseDefinition } from "../feeds/economy/feed.js";
 import { definition as electionPollingDefinition } from "../feeds/election-polls/feed.js";
 import { definition as bettingOddsDefinition } from "../feeds/betting-odds/feed.js";
+import { definition as releaseCalendarDefinition } from "../feeds/release-calendar/feed.js";
+import { definition as nhsReleaseCalendarDefinition } from "../feeds/nhs-release-calendar/feed.js";
 import { catalogEntryOf } from "../feeds/define-feed.js";
 import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
 import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
@@ -95,22 +97,10 @@ export const FEED_CATALOG = deepFreeze({
       caveat: "Award values are not invoices or confirmed lifetime expenditure. Framework ceilings, lots and multi-supplier awards may not be fully spent; missing, redacted and non-GBP values are excluded.",
     },
   }),
-  releaseCalendar: defineFeed({
-    id: "releaseCalendar", registry: "publication", title: "Official release calendar", displayName: "Release Calendar",
-    evidenceClass: "administrative-data", legacyEvidenceClass: "official-publication-schedule",
-    geography: { code: "UK", label: "United Kingdom" }, sourceIds: ["ons-release-calendar"],
-    automation: "automated", collectionLayer: "publication", frequency: "daily",
-    retrieval: "scheduled-publication-check", refreshCadence: "daily", publicationCadence: "publisher-announced dates",
-    retrievalMaxAgeMs: 36 * HOUR_MS, publicationRequirement: "optional",
-  }),
-  nhsReleaseCalendar: defineFeed({
-    id: "nhsReleaseCalendar", registry: "publication", title: "NHS England RTT release schedule", displayName: "NHS Release Calendar",
-    evidenceClass: "administrative-data", legacyEvidenceClass: "official-publication-schedule",
-    geography: { code: "ENG", label: "England" }, sourceIds: ["nhs-release-calendar"],
-    automation: "automated", collectionLayer: "publication", frequency: "daily",
-    retrieval: "scheduled-publication-check", refreshCadence: "daily", publicationCadence: "publisher-announced dates",
-    retrievalMaxAgeMs: 36 * HOUR_MS, publicationRequirement: "optional",
-  }),
+  // Projected from feeds/release-calendar/feed.js (the single declaration).
+  releaseCalendar: defineFeed(catalogEntryOf(releaseCalendarDefinition)),
+  // Projected from feeds/nhs-release-calendar/feed.js (the single declaration).
+  nhsReleaseCalendar: defineFeed(catalogEntryOf(nhsReleaseCalendarDefinition)),
   internationalComparison: defineFeed({
     id: "internationalComparison", registry: "publication", title: "International country comparisons", displayName: "International Comparison",
     evidenceClass: "official-statistics", legacyEvidenceClass: "international-comparative-statistics",

@@ -1,11 +1,11 @@
-import { extractPdfText } from "../feeds/_kit/pdf.js";
+import { extractPdfText } from "../_kit/pdf.js";
 import {
   decodeHtml,
   fetchResponse,
   readResponseArrayBuffer,
   readResponseText,
   sectionRecord,
-} from "./live-feed-common.js";
+} from "../../worker/live-feed-common.js";
 
 const NHS_CALENDAR_URL = "https://www.england.nhs.uk/statistics/12-months-statistics-calendar/";
 const NHS_CALENDAR_API_URL = "https://www.england.nhs.uk/statistics/wp-json/wp/v2/pages?slug=12-months-statistics-calendar&_fields=content%2Clink%2Cmodified%2Ctitle";
@@ -142,8 +142,21 @@ async function collectNhsReleaseCalendar(fetchImpl = fetch, now = new Date()) {
   return sectionRecord("nhsReleaseCalendar", data, now, "NHS England 12-month statistics plan, RTT schedule", "cloudflare-official-release-calendar");
 }
 
+/**
+ * Feed interface (target design 2.3). Wraps the existing collector without
+ * changing what it fetches or returns: `data` is exactly the payload of the
+ * section record collectNhsReleaseCalendar has always produced.
+ *
+ * @param {{fetch: typeof fetch, now: Date}} ctx
+ */
+async function collect(ctx) {
+  const record = await collectNhsReleaseCalendar(ctx.fetch, ctx.now);
+  return { data: record.data };
+}
+
 export {
   MAX_PLAN_PDF_BYTES,
+  collect,
   NHS_CALENDAR_API_URL,
   NHS_CALENDAR_URL,
   collectNhsReleaseCalendar,
