@@ -63,7 +63,7 @@ function unpackUnavailable(value) {
  * unavailable feeds into KV metadata; when that exceeds the byte budget it
  * stores a marker (`t: 1`) and returns the full detail as `overflow`.
  */
-function buildHealthMetadata(edition, _now = new Date()) {
+function buildHealthMetadata(edition) {
   const missing = edition.missingRequired ?? [];
   const held = edition.held ?? [];
   const unavailable = edition.unavailableSections ?? [];
