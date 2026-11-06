@@ -67,8 +67,8 @@
     },
     {
       "section": "realWages",
-      "collector": "worker/real-wages.js",
-      "normalizer": "worker/real-wages.js",
+      "collector": "feeds/real-wages/parse.js",
+      "normalizer": "feeds/real-wages/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",

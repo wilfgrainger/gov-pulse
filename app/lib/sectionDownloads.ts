@@ -1,11 +1,21 @@
 import type { MetricsSnapshot, SnapshotSourceStatus } from "./metricsSnapshot";
+import { downloadGeography, downloadIds } from "../../feeds/registry.js";
 
-export const SECTION_DOWNLOAD_IDS = [
+// Feeds declared under feeds/ list their own download (feeds/<slug>/feed.js);
+// the rest are still listed here until they migrate. The cast keeps the literal
+// id union; tests/worker/feed-registry-projection.test.ts pins the list and
+// order to the pre-migration list.
+const HAND_LISTED_IDS = [
   "electionPolling", "nationalDebt", "gdpTracker", "sentimentPulse",
   "taxRevenue", "employmentStats", "crimeStatistics", "nhsStats", "migrationStats",
   "housePriceIndex",
-  "realWages",
 ] as const;
+export const SECTION_DOWNLOAD_IDS = [
+  ...HAND_LISTED_IDS,
+  ...downloadIds(),
+] as unknown as readonly [...typeof HAND_LISTED_IDS, "realWages"];
+
+const DECLARED_GEOGRAPHY: Record<string, string> = downloadGeography();
 
 const GEOGRAPHY: Record<(typeof SECTION_DOWNLOAD_IDS)[number], string> = {
   electionPolling: "United Kingdom (check each poll's sample)",
@@ -18,7 +28,7 @@ const GEOGRAPHY: Record<(typeof SECTION_DOWNLOAD_IDS)[number], string> = {
   nhsStats: "England",
   migrationStats: "United Kingdom",
   housePriceIndex: "United Kingdom",
-  realWages: "United Kingdom",
+  realWages: DECLARED_GEOGRAPHY.realWages,
 };
 
 const OGL = {

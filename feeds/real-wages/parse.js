@@ -1,65 +1,13 @@
-import { fetchOfficialResponse } from "./official-source-fetch.js";
-import { readResponseText } from "./response-limits.js";
-import { parseOnsNextReleaseDate } from "./ons-release-date.js";
+import { parseOnsNextReleaseDate } from "../../worker/ons-release-date.js";
+import { parseCsvColumns, parseStrictNumber as numeric } from "../_kit/csv.js";
+import { MONTHS, SHORT_MONTHS, isoDateFromDayMonthYear as isoDate } from "../_kit/dates.js";
+import { fetchOfficialText } from "../_kit/fetch.js";
+import { decodeHtml } from "../_kit/html.js";
+import { editionFromUrl } from "../_kit/ons-bulletin.js";
 
 const BULLETIN_BASE_URL =
   "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/averageweeklyearningsingreatbritain";
 const BULLETIN_LATEST_URL = `${BULLETIN_BASE_URL}/latest`;
-
-const MONTHS = {
-  january: 0,
-  jan: 0,
-  february: 1,
-  feb: 1,
-  march: 2,
-  mar: 2,
-  april: 3,
-  apr: 3,
-  may: 4,
-  june: 5,
-  jun: 5,
-  july: 6,
-  jul: 6,
-  august: 7,
-  aug: 7,
-  september: 8,
-  sep: 8,
-  sept: 8,
-  october: 9,
-  oct: 9,
-  november: 10,
-  nov: 10,
-  december: 11,
-  dec: 11,
-};
-
-function decodeHtml(value) {
-  return String(value)
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;|&#160;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&minus;|&#8722;/gi, "-")
-    .replace(/&ndash;|&#8211;/gi, "-")
-    .replace(/&mdash;|&#8212;/gi, "-")
-    .replace(/&rsquo;|&#8217;|&#39;/gi, "'")
-    .replace(/&quot;|&#34;/gi, '"')
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function numeric(value, label) {
-  const normalized = String(value).trim().replace(/,/g, "").replace(/\u2212/g, "-");
-  if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized)) {
-    throw new Error(`Unable to parse ${label}`);
-  }
-  const parsed = Number(normalized);
-  if (!Number.isFinite(parsed)) {
-    throw new Error(`Unable to parse ${label}`);
-  }
-  return parsed;
-}
 
 function matchRequired(text, expression, label) {
   const match = text.match(expression);
@@ -67,23 +15,6 @@ function matchRequired(text, expression, label) {
     throw new Error(`ONS real wages bulletin did not expose ${label}`);
   }
   return match;
-}
-
-function isoDate(value, label) {
-  const match = String(value).trim().match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
-  const month = match ? MONTHS[match[2].toLowerCase()] : undefined;
-  if (!match || month === undefined) {
-    throw new Error(`Unable to parse ${label} '${value}'`);
-  }
-  const parsed = new Date(Date.UTC(Number(match[3]), month, Number(match[1])));
-  if (
-    parsed.getUTCFullYear() !== Number(match[3]) ||
-    parsed.getUTCMonth() !== month ||
-    parsed.getUTCDate() !== Number(match[1])
-  ) {
-    throw new Error(`Unable to parse ${label} '${value}'`);
-  }
-  return parsed.toISOString().slice(0, 10);
 }
 
 function rollingPeriodEnd(period) {
@@ -107,29 +38,18 @@ function normalizeRollingPeriod(period) {
   const shorten = (name) => {
     const month = MONTHS[name.toLowerCase()];
     if (month === undefined) return name;
-    return [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    ][month];
+    return SHORT_MONTHS[month];
   };
   return `${shorten(match[1])} to ${shorten(match[2])} ${match[3]}`;
 }
 
 async function fetchOfficialPage(url, fetchImpl = fetch) {
-  const response = await fetchOfficialResponse(url, {
+  const { text, finalUrl } = await fetchOfficialText(url, {
     accept: "text/html,text/plain;q=0.9,*/*;q=0.8",
+    label: "ONS real wages bulletin",
     fetchImpl,
-    sourceName: "ONS",
   });
-  return {
-    html: await readResponseText(response, { label: "ONS real wages bulletin" }),
-    finalUrl: response.url || url,
-  };
-}
-
-function editionFromUrl(url) {
-  const match = new URL(url).pathname.match(/\/([a-z0-9]+)\/?$/i);
-  return match ? match[1].toLowerCase() : null;
+  return { html: text, finalUrl };
 }
 
 function discoverLatestEdition(html) {
@@ -194,31 +114,6 @@ function discoverRealWagesHistoryUrl(html, bulletinUrl) {
     throw new Error("ONS real wages bulletin CSV link left the bulletin's HTTPS origin");
   }
   return resolved.toString();
-}
-
-function parseCsvColumns(line) {
-  const columns = [];
-  let current = "";
-  let quoted = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const character = line[index];
-    if (character === '"') {
-      if (quoted && line[index + 1] === '"') {
-        current += '"';
-        index += 1;
-      } else {
-        quoted = !quoted;
-      }
-    } else if (character === "," && !quoted) {
-      columns.push(current.trim());
-      current = "";
-    } else {
-      current += character;
-    }
-  }
-  columns.push(current.trim());
-  return columns;
 }
 
 function parseRealWagesHistoryCsv(text) {
@@ -325,13 +220,10 @@ async function buildRealWagesStats(fetchImpl = fetch) {
   const bulletin = await fetchLatestRealWagesBulletin(fetchImpl);
   const parsed = parseRealWagesBulletin(bulletin.html, bulletin.edition);
   const historyUrl = discoverRealWagesHistoryUrl(bulletin.html, bulletin.finalUrl);
-  const historyResponse = await fetchOfficialResponse(historyUrl, {
+  const { text: historyText } = await fetchOfficialText(historyUrl, {
     accept: "text/csv,text/plain;q=0.9,*/*;q=0.8",
-    fetchImpl,
-    sourceName: "ONS",
-  });
-  const historyText = await readResponseText(historyResponse, {
     label: "ONS real wages history CSV",
+    fetchImpl,
   });
   const history = parseRealWagesHistoryCsv(historyText);
   const latest = history.at(-1);
@@ -353,10 +245,37 @@ async function buildRealWagesStats(fetchImpl = fetch) {
   };
 }
 
+/**
+ * Feed interface (target design 2.3). Wraps the existing collector without
+ * changing what it fetches or returns: `data` is exactly the section payload
+ * buildRealWagesStats has always produced. Throws on any shape, identity or
+ * reconciliation failure.
+ *
+ * @param {{fetch: typeof fetch, now: Date}} ctx
+ */
+async function collect(ctx) {
+  const data = await buildRealWagesStats(ctx.fetch);
+  const { headline, source } = data;
+  return {
+    data,
+    observation: {
+      period: headline.period,
+      observedAt: new Date(headline.observedAt).toISOString(),
+      publishedAt: headline.releaseDate,
+    },
+    source: {
+      url: source.bulletinUrl,
+      fetchedAt: ctx.now.toISOString(),
+      edition: source.edition,
+    },
+  };
+}
+
 export {
   BULLETIN_BASE_URL,
   BULLETIN_LATEST_URL,
   buildRealWagesStats,
+  collect,
   discoverLatestEdition,
   discoverRealWagesHistoryUrl,
   fetchLatestRealWagesBulletin,

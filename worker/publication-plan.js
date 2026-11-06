@@ -1,5 +1,9 @@
 import { publicationPublished } from "../contracts/evidence-policy.js";
 import { REQUIRED_PUBLISHED_SECTION_IDS } from "./feed-registry.js";
+import { collectionPlan } from "../feeds/registry.js";
+
+// Feeds declared under feeds/ project their own plan entry; the rest are still listed here.
+const DECLARED_PLAN = collectionPlan();
 
 const SECTION_COLLECTION_PLAN = Object.freeze({
   gdpTracker: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
@@ -9,7 +13,7 @@ const SECTION_COLLECTION_PLAN = Object.freeze({
   nationalDebt: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
   migrationStats: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
   housePriceIndex: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
-  realWages: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
+  realWages: Object.freeze({ ...DECLARED_PLAN.realWages }),
   crimeStatistics: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
   electionPolling: Object.freeze({ jobType: "refresh-external-section", collector: "external" }),
   nhsStats: Object.freeze({ jobType: "refresh-external-section", collector: "external" }),

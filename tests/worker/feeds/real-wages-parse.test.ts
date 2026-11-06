@@ -9,7 +9,7 @@ import {
   discoverRealWagesHistoryUrl,
   parseRealWagesBulletin,
   parseRealWagesHistoryCsv,
-} from "@/worker/real-wages";
+} from "@/feeds/real-wages/parse.js";
 
 const bulletinHtml = `
 <html><head>

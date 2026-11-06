@@ -3,6 +3,7 @@ import {
   observationExpiryMs,
   observationOutsideContract,
 } from "../contracts/evidence-policy.js";
+import { observationContracts } from "../feeds/registry.js";
 
 const monthMap = {
   jan: 0,
@@ -122,6 +123,17 @@ function nhsPublishedObservation(data, now) {
     : null;
 }
 
+// Contracts declared by a feed definition (feeds/*/feed.js) name their
+// extractor; this binds the name to the function.
+const EXTRACTORS = { publishedObservation };
+
+function declaredContract(section) {
+  const { maxAgeDays, extractor } = observationContracts()[section];
+  const extract = EXTRACTORS[extractor];
+  if (!extract) throw new Error(`Feed '${section}' names unknown observation extractor '${extractor}'`);
+  return { maxAgeDays, extract };
+}
+
 const contracts = {
   electionPolling: {
     maxAgeDays: 45,
@@ -162,10 +174,7 @@ const contracts = {
     maxAgeDays: 45,
     extract: publishedObservation,
   },
-  realWages: {
-    maxAgeDays: 40,
-    extract: publishedObservation,
-  },
+  realWages: declaredContract("realWages"),
   nhsStats: {
     maxAgeDays: 45,
     extract: nhsPublishedObservation,

@@ -42,7 +42,7 @@ import {
 } from "./national-debt.js";
 import { buildMigrationStats } from "./migration.js";
 import { buildHousePriceIndex } from "./house-price-index.js";
-import { buildRealWagesStats } from "./real-wages.js";
+import { buildRealWagesStats } from "../feeds/real-wages/parse.js";
 import {
   buildCrimeStatistics,
   isCurrentCrimeStatisticsPayload,

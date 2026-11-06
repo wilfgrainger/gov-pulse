@@ -2,19 +2,15 @@
 // APIs. Availability decisions come from evidence-policy.routeAccess; this
 // module only decides which RouteEntry applies to a path.
 //
-// Entries come from three places:
-//   - contracts/routes.json: routes that do not depend on a feed;
-//   - the feed catalogue: /section/<slug>/ (from each publication's sections)
-//     and /data/sections/<id>.{json,csv} (from each collected feed);
-//   - catalogue-keyed pages: /measure/<id>/ and /sources/<id>/.
+// The manifest itself is built in feeds/registry.js (routes.json for non-feed
+// routes; FEEDS for section and download routes; the catalogue for the rest) and
+// re-exported here so existing importers are unchanged.
 //
 // "Current" for a page gate means the publication decision is "published".
 // Clock currentness (validity windows) is still applied to the data itself by
 // the snapshot filters, exactly as before; the gate never relaxes it.
 import PRODUCT_CAPABILITIES from "../config/product-capabilities.json" with { type: "json" };
-import ROUTES from "./routes.json" with { type: "json" };
-import definitions from "./measure-definitions.json" with { type: "json" };
-import { FEED_CATALOG } from "./source-catalog.js";
+import { routeManifest } from "../feeds/registry.js";
 import { PUBLICATION_CONFIG, publicationPublished, routeAccess } from "./evidence-policy.js";
 
 /**
@@ -25,54 +21,11 @@ import { PUBLICATION_CONFIG, publicationPublished, routeAccess } from "./evidenc
  */
 
 const PARAM_SEGMENT = /^\[[^/]+\]$/;
-const manifestCache = new WeakMap();
 
 /** Query and fragment removed, one leading slash, no trailing slash (root stays "/"). */
 function normalizePath(path) {
   const clean = String(path ?? "").split(/[?#]/)[0].replace(/\/+$/, "");
   return clean.startsWith("/") ? clean || "/" : `/${clean}`;
-}
-
-/** @param {PublicationConfig} config @returns {RouteEntry[]} */
-function derivedEntries(config) {
-  /** @type {RouteEntry[]} */
-  const entries = [];
-  const publications = config?.publications ?? {};
-
-  for (const [id, decision] of Object.entries(publications)) {
-    for (const slug of decision.sections ?? []) {
-      entries.push({ path: `/section/${slug}/`, kind: "evidence", feeds: [id], gate: "any-published" });
-    }
-  }
-
-  for (const [id, feed] of Object.entries(FEED_CATALOG)) {
-    if (feed?.registry !== "feed") continue;
-    for (const ext of ["json", "csv"]) {
-      entries.push({ path: `/data/sections/${id}.${ext}`, kind: "api", feeds: [id], gate: "any-published" });
-    }
-  }
-
-  for (const measure of definitions.measures) {
-    entries.push({ path: `/measure/${measure.id}/`, kind: "evidence", feeds: [measure.section], gate: "any-published" });
-  }
-  // A measure id that is not defined is reported unavailable, as before, not 404.
-  entries.push({ path: "/measure/[id]/", kind: "evidence", feeds: [], gate: "all-of" });
-
-  const sourceIds = new Set([...Object.keys(publications), ...Object.keys(FEED_CATALOG)]);
-  for (const id of sourceIds) {
-    entries.push({ path: `/sources/${id}/`, kind: "evidence", feeds: [id], gate: "any-published", capability: "sources" });
-  }
-  entries.push({ path: "/sources/[id]/", kind: "evidence", feeds: [], gate: "all-of", capability: "sources" });
-
-  return entries;
-}
-
-/** @param {PublicationConfig} [config] @returns {RouteEntry[]} */
-function routeManifest(config = PUBLICATION_CONFIG) {
-  if (manifestCache.has(config)) return manifestCache.get(config);
-  const manifest = Object.freeze([...ROUTES.routes, ...derivedEntries(config)].map((entry) => Object.freeze(entry)));
-  manifestCache.set(config, manifest);
-  return manifest;
 }
 
 function indexFor(config) {
