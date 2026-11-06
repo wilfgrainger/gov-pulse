@@ -69,16 +69,18 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing CLOUDFLARE_API_TOKEN"; exit 1; }
           test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Missing CLOUDFLARE_ACCOUNT_ID"; exit 1; }
 
+      - name: Prepare generated data and assets
+        run: npm run build:prepare
+        env:
+          NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
+
+      # build:prepare runs first: the untracked generated evidence module must
+      # exist before the manual lint and test validation imports it.
       # Main updates arrive through PRs whose required `quality` result has
       # already validated this code. Manual deployments keep the local guard.
       - name: Validate manually dispatched release source
         if: github.event_name == 'workflow_dispatch'
         run: npm run lint && npm run test
-
-      - name: Prepare generated data and assets
-        run: npm run build:prepare
-        env:
-          NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
 
       - name: Stage OpenNext adapter config
         run: cp worker/open-next.config.template open-next.config.ts

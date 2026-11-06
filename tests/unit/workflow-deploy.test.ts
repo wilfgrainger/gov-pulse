@@ -40,7 +40,33 @@ function ungatedLintOrTestSteps(text: string) {
   );
 }
 
+// Index of the build:prepare step must precede every lint/test step.
+function prepareBeforeLintOrTest(text: string) {
+  const all = steps(text);
+  const prepare = all.findIndex((step) => /\bnpm run build:prepare\b/.test(step));
+  const checks = all.flatMap((step, index) => (LINT_OR_TEST_COMMAND.test(step) ? [index] : []));
+  return prepare >= 0 && checks.every((index) => prepare < index);
+}
+
 describe("deploy workflow", () => {
+  it("prepares generated data before any lint or test step", () => {
+    const production = jobs().find((job) => job.name === "deploy-production");
+    expect(production).toBeDefined();
+    expect(prepareBeforeLintOrTest(production!.text)).toBe(true);
+
+    // The previous ordering (validation before build:prepare) must be rejected.
+    const previous = [
+      "      - name: Validate manually dispatched release source",
+      "        if: github.event_name == 'workflow_dispatch'",
+      "        run: npm run lint && npm run test",
+      "",
+      "      - name: Prepare generated data and assets",
+      "        run: npm run build:prepare",
+      "",
+    ].join("\n");
+    expect(prepareBeforeLintOrTest(previous)).toBe(false);
+  });
+
   it("installs dependencies once", () => {
     const installing = jobs().filter((job) => job.text.includes("npm ci"));
     expect(installing.map((job) => job.name)).toEqual(["deploy-production"]);

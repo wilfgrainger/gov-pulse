@@ -9,12 +9,14 @@
     "npm": "11.13.0"
   },
   "scripts": {
+    "predev": "node scripts/generate-build-snapshot-module.mjs --ensure",
     "dev": "next dev",
     "build": "next build --webpack",
     "build:check": "node scripts/generate-build-snapshot-module.mjs --input public/data/metrics-snapshot.json && node scripts/check-build-output.mjs",
     "start": "next start",
     "lint": "eslint",
     "toolchain:check": "node scripts/check-toolchain.mjs",
+    "pretest": "node scripts/generate-build-snapshot-module.mjs --ensure",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",

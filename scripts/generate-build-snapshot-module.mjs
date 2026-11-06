@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { filterCurrentSnapshot } from "../worker/publication-currentness.js";
@@ -10,10 +10,11 @@ const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const PRODUCTION_SNAPSHOT_URL = "https://public-data.org/data/metrics-snapshot.json";
 const FETCH_TIMEOUT_MS = 10_000;
+const MAX_ARTIFACT_BYTES = 2 * 1024 * 1024;
 const DEFAULT_OUTPUT = "app/generated/metricsSnapshot.ts";
 
 function parseArgs(argv) {
-  const options = { input: undefined, output: DEFAULT_OUTPUT };
+  const options = { input: undefined, output: DEFAULT_OUTPUT, ensure: false };
 
   for (let index = 0; index < argv.length; index += 1) {
     if (argv[index] === "--input") options.input = argv[++index];
@@ -21,6 +22,7 @@ function parseArgs(argv) {
     // Retained so existing callers keep working: a missing artifact is always
     // tolerated now, because the fallback is an explicit null export.
     else if (argv[index] === "--optional-missing") continue;
+    else if (argv[index] === "--ensure") options.ensure = true;
     else throw new Error(`Unknown build snapshot option '${argv[index]}'`);
   }
 
@@ -76,7 +78,34 @@ async function fetchArtifact(fetchImpl) {
       headers: { accept: "application/json" },
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return await response.json();
+    const declared = Number(response.headers?.get?.("content-length"));
+    if (Number.isFinite(declared) && declared > MAX_ARTIFACT_BYTES) {
+      throw new Error(`response of ${declared} bytes exceeds the ${MAX_ARTIFACT_BYTES} byte limit`);
+    }
+    // Enforce the cap while streaming so memory stays bounded whatever the
+    // declared length says.
+    const chunks = [];
+    let total = 0;
+    if (response.body?.getReader) {
+      const reader = response.body.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > MAX_ARTIFACT_BYTES) {
+          await reader.cancel().catch(() => {});
+          throw new Error(`response exceeds the ${MAX_ARTIFACT_BYTES} byte limit`);
+        }
+        chunks.push(value);
+      }
+    } else {
+      const bytes = new TextEncoder().encode(await response.text());
+      if (bytes.byteLength > MAX_ARTIFACT_BYTES) {
+        throw new Error(`response exceeds the ${MAX_ARTIFACT_BYTES} byte limit`);
+      }
+      chunks.push(bytes);
+    }
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
   } catch (error) {
     console.warn(`Published snapshot unavailable: ${error instanceof Error ? error.message : String(error)}`);
     return undefined;
@@ -94,6 +123,13 @@ function usable(candidate, now, origin) {
     return null;
   }
 }
+
+const NULL_MODULE = [
+  "// No currently valid publication snapshot was available at build time.",
+  "// Generated and untracked: do not hand-edit or commit metric values to this file.",
+  "export const BUILD_METRICS_SNAPSHOT: unknown = null;",
+  "",
+].join("\n");
 
 /**
  * Writes the build-time evidence module. Order: the `input` file, else the
@@ -127,8 +163,34 @@ export async function generate({
   return { wrote: snapshot ? "artifact" : "null" };
 }
 
+/**
+ * Network-free guard for fresh clones: creates the null export only when the
+ * module is missing. An existing file is never overwritten or read.
+ */
+export async function ensure({ output = DEFAULT_OUTPUT } = {}) {
+  const outputPath = resolve(projectRoot, output);
+  try {
+    await access(outputPath);
+    return { wrote: "existing" };
+  } catch {
+    // Missing: fall through to the null export.
+  }
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, NULL_MODULE, { encoding: "utf8", flag: "wx" });
+  return { wrote: "null" };
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
+  if (options.ensure) {
+    const result = await ensure(options);
+    process.stdout.write(
+      result.wrote === "null"
+        ? `Created null build snapshot module ${options.output} (run npm run build:prepare for current evidence)\n`
+        : `Build snapshot module ${options.output} already present\n`
+    );
+    return;
+  }
   const result = await generate(options);
   process.stdout.write(
     result.wrote === "artifact"
