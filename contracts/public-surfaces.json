@@ -1,6 +1,7 @@
 {
   "version": 1,
   "workerZone": "public-data.org",
+  "workerRouteManagement": "cloudflare-dashboard",
   "workerRoutes": [
     { "pattern": "public-data.org/data/health.json", "zone_name": "public-data.org", "required": true },
     { "pattern": "public-data.org/data/international-comparison.json", "zone_name": "public-data.org", "required": true },

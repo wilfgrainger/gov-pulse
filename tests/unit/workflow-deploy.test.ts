@@ -12,7 +12,7 @@ function jobs() {
   const jobsStart = workflow.indexOf("\njobs:\n");
   if (jobsStart < 0) throw new Error("Missing jobs section");
   const body = workflow.slice(jobsStart + "\njobs:\n".length);
-  const parts = body.split(/^  ([a-z][a-z0-9-]*):\n/m);
+  const parts = body.split(/^  ([a-z][a-z0-9_-]*):\n/m);
   const result: Array<{ name: string; text: string }> = [];
   for (let i = 1; i < parts.length; i += 2) {
     result.push({ name: parts[i], text: parts[i + 1] });
@@ -50,9 +50,16 @@ function prepareBeforeLintOrTest(text: string) {
 
 describe("deploy workflow", () => {
   it("prepares generated data before any lint or test step", () => {
-    const production = jobs().find((job) => job.name === "deploy-production");
-    expect(production).toBeDefined();
-    expect(prepareBeforeLintOrTest(production!.text)).toBe(true);
+    // Each Worker deploys from its own runner with its own credential, so
+    // every job that can run the manual source checks prepares data first.
+    const validating = jobs().filter((job) => LINT_OR_TEST_COMMAND.test(job.text));
+    expect(validating.map((job) => job.name)).toEqual([
+      "deploy_web_worker",
+      "deploy_data_worker",
+    ]);
+    for (const job of validating) {
+      expect(prepareBeforeLintOrTest(job.text), job.name).toBe(true);
+    }
 
     // The previous ordering (validation before build:prepare) must be rejected.
     const previous = [
@@ -67,16 +74,23 @@ describe("deploy workflow", () => {
     expect(prepareBeforeLintOrTest(previous)).toBe(false);
   });
 
-  it("installs dependencies once", () => {
+  it("installs dependencies once per isolated Worker deploy runner", () => {
+    // The web and data Workers deploy on separate runners so each scoped
+    // credential stays on its own machine. Each runner installs the single
+    // root lockfile exactly once; no other job installs dependencies.
     const installing = jobs().filter((job) => job.text.includes("npm ci"));
-    expect(installing.map((job) => job.name)).toEqual(["deploy-production"]);
+    expect(installing.map((job) => job.name)).toEqual([
+      "deploy_web_worker",
+      "deploy_data_worker",
+    ]);
 
     for (const job of jobs()) {
       const count = job.text.split("npm ci").length - 1;
       expect(count, `${job.name} npm ci occurrences`).toBeLessThanOrEqual(1);
     }
+    expect(workflow).not.toMatch(/npm ci --prefix/);
     const total = workflow.split("npm ci").length - 1;
-    expect(total).toBe(1);
+    expect(total).toBe(installing.length);
   });
 
   it("lint and tests remain dispatch-only", () => {

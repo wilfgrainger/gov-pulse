@@ -80,7 +80,7 @@ describe("Cloudflare deployment bootstrap", () => {
       new URL("../../.github/workflows/deploy.yml", import.meta.url),
       "utf8",
     );
-    const recoveryJobStart = workflow.indexOf("\n  recover-evidence:");
+    const recoveryJobStart = workflow.indexOf("\n  recover_evidence:");
     expect(recoveryJobStart).toBeGreaterThanOrEqual(0);
     const recoveryJob = workflow.slice(recoveryJobStart);
     const timeoutMinutes = Number(
@@ -254,7 +254,7 @@ describe("Cloudflare deployment bootstrap", () => {
 
     const result = await bootstrapCloudflarePublication({
       accountId: "account",
-      apiToken: "token",
+      queueToken: "queue-token", kvReadToken: "kv-token",
       deploymentId: SHA,
       fetchImpl,
     });
@@ -268,7 +268,6 @@ describe("Cloudflare deployment bootstrap", () => {
     let now = 0;
     const fetchImpl = vi.fn()
       .mockResolvedValueOnce(jsonResponse({ status: "ready", ready: true }))
-      .mockResolvedValueOnce(jsonResponse({ success: true, result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }] }))
       .mockResolvedValueOnce(jsonResponse({ success: true }))
       .mockResolvedValueOnce(jsonResponse({ status: "running", finalisedAt: null }))
       .mockResolvedValueOnce(jsonResponse({ status: "published", finalisedAt: "2026-09-28T09:00:00.000Z" }))
@@ -279,15 +278,16 @@ describe("Cloudflare deployment bootstrap", () => {
       }));
 
     const result = await bootstrapCloudflarePublication({
-      accountId: "account", apiToken: "token", deploymentId: SHA,
+      accountId: "account", queueToken: "queue-token", kvReadToken: "kv-token", deploymentId: SHA,
       forceRefresh: true, fetchImpl, timeoutMs: 60_000,
       pollIntervalMs: 10_000, nowImpl: () => now,
       sleepImpl: async (milliseconds) => { now += milliseconds; },
     });
 
     expect(result).toMatchObject({ triggered: true, attempts: 1, health: { ready: true } });
-    expect(fetchImpl.mock.calls[2][0]).toContain("/queues/queue-id/messages");
-    expect(fetchImpl.mock.calls[3][0]).toContain(`v13%3Apublication%3Arun%3Abootstrap-${SHA}`);
+    expect(fetchImpl.mock.calls[1][0]).toContain("/queues/bc58398b56234314bcd5f9485292ddbd/messages");
+    expect(fetchImpl.mock.calls.some(([url]) => String(url).includes("/queues?"))).toBe(false);
+    expect(fetchImpl.mock.calls[2][0]).toContain(`v13%3Apublication%3Arun%3Abootstrap-${SHA}`);
   });
 
   it("waits for a forced comparison refresh after national publication succeeds", async () => {
@@ -299,13 +299,7 @@ describe("Cloudflare deployment bootstrap", () => {
       if (url.pathname === "/data/health.json") {
         return jsonResponse({ status: "ready", ready: true });
       }
-      if (url.pathname.endsWith("/queues")) {
-        return jsonResponse({
-          success: true,
-          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
-        });
-      }
-      if (url.pathname.endsWith("/queues/queue-id/messages")) {
+      if (url.pathname.endsWith("/queues/bc58398b56234314bcd5f9485292ddbd/messages")) {
         return jsonResponse({ success: true });
       }
       if (url.pathname.endsWith("/data/metrics-snapshot.json")) {
@@ -331,7 +325,7 @@ describe("Cloudflare deployment bootstrap", () => {
 
     const result = await bootstrapCloudflarePublication({
       accountId: "account",
-      apiToken: "token",
+      queueToken: "queue-token", kvReadToken: "kv-token",
       deploymentId: SHA,
       forceRefresh: true,
       forceComparison: true,
@@ -358,13 +352,7 @@ describe("Cloudflare deployment bootstrap", () => {
       if (url.pathname === "/data/health.json") {
         return jsonResponse({ status: "ready", ready: true });
       }
-      if (url.pathname.endsWith("/queues")) {
-        return jsonResponse({
-          success: true,
-          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
-        });
-      }
-      if (url.pathname.endsWith("/queues/queue-id/messages")) {
+      if (url.pathname.endsWith("/queues/bc58398b56234314bcd5f9485292ddbd/messages")) {
         return jsonResponse({ success: true });
       }
       if (url.pathname.endsWith("/data/metrics-snapshot.json")) {
@@ -395,7 +383,7 @@ describe("Cloudflare deployment bootstrap", () => {
 
     const result = await bootstrapCloudflarePublication({
       accountId: "account",
-      apiToken: "token",
+      queueToken: "queue-token", kvReadToken: "kv-token",
       deploymentId: SHA,
       forceRefresh: true,
       forceComparison: true,
@@ -422,13 +410,7 @@ describe("Cloudflare deployment bootstrap", () => {
       if (url.pathname === "/data/health.json") {
         return jsonResponse({ status: "ready", ready: true });
       }
-      if (url.pathname.endsWith("/queues")) {
-        return jsonResponse({
-          success: true,
-          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
-        });
-      }
-      if (url.pathname.endsWith("/queues/queue-id/messages")) {
+      if (url.pathname.endsWith("/queues/bc58398b56234314bcd5f9485292ddbd/messages")) {
         return jsonResponse({ success: true });
       }
       if (url.pathname.endsWith("/data/metrics-snapshot.json")) {
@@ -456,7 +438,7 @@ describe("Cloudflare deployment bootstrap", () => {
 
     const result = await bootstrapCloudflarePublication({
       accountId: "account",
-      apiToken: "token",
+      queueToken: "queue-token", kvReadToken: "kv-token",
       deploymentId: SHA,
       forceRefresh: true,
       forceComparison: true,
@@ -484,13 +466,7 @@ describe("Cloudflare deployment bootstrap", () => {
       if (url.pathname === "/data/health.json") {
         return jsonResponse({ status: "ready", ready: true });
       }
-      if (url.pathname.endsWith("/queues")) {
-        return jsonResponse({
-          success: true,
-          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
-        });
-      }
-      if (url.pathname.endsWith("/queues/queue-id/messages")) {
+      if (url.pathname.endsWith("/queues/bc58398b56234314bcd5f9485292ddbd/messages")) {
         return jsonResponse({ success: true });
       }
       if (url.pathname.endsWith("/data/metrics-snapshot.json")) {
@@ -511,7 +487,7 @@ describe("Cloudflare deployment bootstrap", () => {
 
     const result = await bootstrapCloudflarePublication({
       accountId: "account",
-      apiToken: "token",
+      queueToken: "queue-token", kvReadToken: "kv-token",
       deploymentId: SHA,
       forceRefresh: true,
       forceComparison: true,
@@ -539,13 +515,7 @@ describe("Cloudflare deployment bootstrap", () => {
           ? jsonResponse({ status: "ready", ready: true })
           : jsonResponse({ status: "degraded", ready: false, degraded: true, missingRequiredSections: ["nhsStats"] });
       }
-      if (url.includes("/queues?per_page=")) {
-        return jsonResponse({
-          success: true,
-          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
-        });
-      }
-      if (url.includes("/queues/queue-id/messages")) {
+      if (url.includes("/queues/bc58398b56234314bcd5f9485292ddbd/messages")) {
         pushes += 1;
         return jsonResponse({ success: true });
       }
@@ -567,7 +537,7 @@ describe("Cloudflare deployment bootstrap", () => {
 
     const result = await bootstrapCloudflarePublication({
       accountId: "account",
-      apiToken: "token",
+      queueToken: "queue-token", kvReadToken: "kv-token",
       deploymentId: SHA,
       forceRefresh: true,
       fetchImpl,
@@ -612,10 +582,7 @@ describe("Cloudflare deployment bootstrap", () => {
           ? jsonResponse({ status: "ready", ready: true })
           : jsonResponse({ status: "degraded", ready: false, degraded: true, missingRequiredSections: ["nhsStats"] });
       }
-      if (url.pathname.endsWith("/queues")) {
-        return jsonResponse({ success: true, result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }] });
-      }
-      if (url.pathname.endsWith("/queues/queue-id/messages")) return jsonResponse({ success: true });
+      if (url.pathname.endsWith("/queues/bc58398b56234314bcd5f9485292ddbd/messages")) return jsonResponse({ success: true });
       if (url.pathname.endsWith("/data/metrics-snapshot.json")) {
         return new Response(JSON.stringify(degradedPreparedSnapshot()), {
           status: 200,
@@ -631,7 +598,7 @@ describe("Cloudflare deployment bootstrap", () => {
 
     const result = await bootstrapCloudflarePublication({
       accountId: "account",
-      apiToken: "token",
+      queueToken: "queue-token", kvReadToken: "kv-token",
       deploymentId: SHA,
       executionId,
       forceRefresh: true,
@@ -683,18 +650,12 @@ describe("Cloudflare deployment bootstrap", () => {
           }
         )
       )
-      .mockResolvedValueOnce(
-        jsonResponse({
-          success: true,
-          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
-        })
-      )
       .mockResolvedValueOnce(jsonResponse({ success: true }))
       .mockResolvedValueOnce(jsonResponse({ status: "ready", ready: true }));
 
     const result = await bootstrapCloudflarePublication({
       accountId: "account",
-      apiToken: "token",
+      queueToken: "queue-token", kvReadToken: "kv-token",
       deploymentId: SHA,
       forceComparison: true,
       fetchImpl,
@@ -707,7 +668,7 @@ describe("Cloudflare deployment bootstrap", () => {
     });
 
     expect(result).toMatchObject({ triggered: true, attempts: 1 });
-    expect(fetchImpl).toHaveBeenCalledTimes(5);
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
   });
 
   it("pushes one bootstrap message and waits for readiness", async () => {
@@ -715,19 +676,13 @@ describe("Cloudflare deployment bootstrap", () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse({ status: "bootstrapping", ready: false }))
-      .mockResolvedValueOnce(
-        jsonResponse({
-          success: true,
-          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
-        })
-      )
       .mockResolvedValueOnce(jsonResponse({ success: true }))
       .mockResolvedValueOnce(jsonResponse({ status: "bootstrapping", ready: false }))
       .mockResolvedValueOnce(jsonResponse({ status: "ready", ready: true }));
 
     const result = await bootstrapCloudflarePublication({
       accountId: "account",
-      apiToken: "token",
+      queueToken: "queue-token", kvReadToken: "kv-token",
       deploymentId: SHA,
       forceComparison: true,
       fetchImpl,
@@ -741,8 +696,12 @@ describe("Cloudflare deployment bootstrap", () => {
 
     expect(result.triggered).toBe(true);
     expect(result.attempts).toBe(1);
-    const pushCall = fetchImpl.mock.calls[2];
-    expect(pushCall[0]).toContain("/queues/queue-id/messages");
+    const pushCall = fetchImpl.mock.calls.find(([url]) =>
+      String(url).includes("/queues/bc58398b56234314bcd5f9485292ddbd/messages"),
+    );
+    expect(pushCall).toBeDefined();
+    expect(pushCall[0]).toContain("/queues/bc58398b56234314bcd5f9485292ddbd/messages");
+    expect(fetchImpl.mock.calls.some(([url]) => String(url).includes("/queues?"))).toBe(false);
     expect(JSON.parse(pushCall[1].body)).toEqual({
       body: { type: "bootstrap-publication", deploymentId: SHA, forceComparison: true },
     });
@@ -763,13 +722,7 @@ describe("Cloudflare deployment bootstrap", () => {
       if (url.endsWith("/data/health.json")) {
         return jsonResponse({ status: "ready", ready: true });
       }
-      if (url.endsWith("/queues?per_page=100")) {
-        return jsonResponse({
-          success: true,
-          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
-        });
-      }
-      if (url.endsWith("/queues/queue-id/messages")) {
+      if (url.endsWith("/queues/bc58398b56234314bcd5f9485292ddbd/messages")) {
         queuedMessage = JSON.parse(init.body).body;
         return jsonResponse({ success: true });
       }
@@ -793,7 +746,7 @@ describe("Cloudflare deployment bootstrap", () => {
 
     const result = await bootstrapCloudflarePublication({
       accountId: "account",
-      apiToken: "token",
+      queueToken: "queue-token", kvReadToken: "kv-token",
       deploymentId: SHA,
       includeContracts: true,
       fetchImpl,
@@ -835,13 +788,7 @@ describe("Cloudflare deployment bootstrap", () => {
       if (url.endsWith("/data/health.json")) {
         return jsonResponse({ status: "ready", ready: true });
       }
-      if (url.endsWith("/queues?per_page=100")) {
-        return jsonResponse({
-          success: true,
-          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
-        });
-      }
-      if (url.endsWith("/queues/queue-id/messages")) return jsonResponse({ success: true });
+      if (url.endsWith("/queues/bc58398b56234314bcd5f9485292ddbd/messages")) return jsonResponse({ success: true });
       if (url.endsWith("/data/metrics-snapshot.json")) {
         return new Response(JSON.stringify(snapshot), {
           status: 200,
@@ -862,7 +809,7 @@ describe("Cloudflare deployment bootstrap", () => {
 
     await expect(bootstrapCloudflarePublication({
       accountId: "account",
-      apiToken: "token",
+      queueToken: "queue-token", kvReadToken: "kv-token",
       deploymentId: SHA,
       includeContracts: true,
       fetchImpl,
@@ -891,13 +838,7 @@ describe("Cloudflare deployment bootstrap", () => {
       if (url.pathname === "/data/health.json") {
         return jsonResponse({ status: "ready", ready: true });
       }
-      if (url.pathname.endsWith("/queues")) {
-        return jsonResponse({
-          success: true,
-          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
-        });
-      }
-      if (url.pathname.endsWith("/queues/queue-id/messages")) {
+      if (url.pathname.endsWith("/queues/bc58398b56234314bcd5f9485292ddbd/messages")) {
         queuedDeploymentId = JSON.parse(init.body).body.deploymentId;
         return jsonResponse({ success: true });
       }
@@ -930,7 +871,7 @@ describe("Cloudflare deployment bootstrap", () => {
 
     const result = await bootstrapCloudflarePublication({
       accountId: "account",
-      apiToken: "token",
+      queueToken: "queue-token", kvReadToken: "kv-token",
       deploymentId: SHA,
       executionId: "37190244352.1",
       forceRefresh: true,
@@ -957,12 +898,6 @@ describe("Cloudflare deployment bootstrap", () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse({ status: "bootstrapping", ready: false }))
-      .mockResolvedValueOnce(
-        jsonResponse({
-          success: true,
-          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
-        })
-      )
       .mockResolvedValueOnce(jsonResponse({ success: true }))
       .mockResolvedValueOnce(jsonResponse({ status: "bootstrapping", ready: false }))
       .mockResolvedValueOnce(jsonResponse({ status: "bootstrapping", ready: false }))
@@ -971,7 +906,7 @@ describe("Cloudflare deployment bootstrap", () => {
 
     const result = await bootstrapCloudflarePublication({
       accountId: "account",
-      apiToken: "token",
+      queueToken: "queue-token", kvReadToken: "kv-token",
       deploymentId: SHA,
       fetchImpl,
       timeoutMs: 50_000,
@@ -983,8 +918,11 @@ describe("Cloudflare deployment bootstrap", () => {
       },
     });
 
-    const firstPush = JSON.parse(fetchImpl.mock.calls[2][1].body);
-    const recoveryPush = JSON.parse(fetchImpl.mock.calls[5][1].body);
+    const queueCalls = fetchImpl.mock.calls.filter(([url]) =>
+      String(url).includes("/queues/bc58398b56234314bcd5f9485292ddbd/messages"),
+    );
+    const firstPush = JSON.parse(queueCalls[0][1].body);
+    const recoveryPush = JSON.parse(queueCalls[1][1].body);
     expect(firstPush.body.deploymentId).toBe(SHA);
     expect(recoveryPush.body.deploymentId).toMatch(/^[0-9a-f]{40}$/);
     expect(recoveryPush.body.deploymentId).not.toBe(SHA);
@@ -999,13 +937,7 @@ describe("Cloudflare deployment bootstrap", () => {
       if (url.endsWith("/data/health.json")) {
         return jsonResponse({ status: "ready", ready: true });
       }
-      if (url.includes("/queues?per_page=")) {
-        return jsonResponse({
-          success: true,
-          result: [{ queue_name: "public-data-jobs", queue_id: "queue-id" }],
-        });
-      }
-      if (url.includes("/queues/queue-id/messages")) {
+      if (url.includes("/queues/bc58398b56234314bcd5f9485292ddbd/messages")) {
         pushes += 1;
         return jsonResponse({ success: true });
       }
@@ -1030,7 +962,7 @@ describe("Cloudflare deployment bootstrap", () => {
 
     const result = await bootstrapCloudflarePublication({
       accountId: "account",
-      apiToken: "token",
+      queueToken: "queue-token", kvReadToken: "kv-token",
       deploymentId: SHA,
       forceRefresh: true,
       fetchImpl,
@@ -1056,20 +988,25 @@ describe("Cloudflare deployment bootstrap", () => {
     expect(bootstrapAttemptId(SHA, 1)).toBe(bootstrapAttemptId(SHA, 1));
   });
 
-  it("fails closed when the reconciled Queue cannot be found", async () => {
+  it("fails closed when the fixed Queue rejects the bootstrap message", async () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse({ status: "bootstrapping", ready: false }))
-      .mockResolvedValueOnce(jsonResponse({ success: true, result: [] }));
+      .mockResolvedValueOnce(
+        jsonResponse({ success: false, errors: [{ message: "Queue not found" }] }, 404),
+      );
 
     await expect(
       bootstrapCloudflarePublication({
         accountId: "account",
-        apiToken: "token",
+        queueToken: "queue-token", kvReadToken: "kv-token",
         deploymentId: SHA,
         fetchImpl,
       })
-    ).rejects.toThrow("was not found after reconciliation");
+    ).rejects.toThrow("Cloudflare publication bootstrap failed: Queue not found");
+    expect(fetchImpl.mock.calls[1][0]).toContain(
+      "/queues/bc58398b56234314bcd5f9485292ddbd/messages",
+    );
   });
 
   it("rejects invalid timing configuration before calling Cloudflare", async () => {
@@ -1084,7 +1021,7 @@ describe("Cloudflare deployment bootstrap", () => {
     await expect(
       bootstrapCloudflarePublication({
         accountId: "account",
-        apiToken: "token",
+        queueToken: "queue-token", kvReadToken: "kv-token",
         deploymentId: SHA,
         timeoutMs: -1,
         fetchImpl,

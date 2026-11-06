@@ -27,6 +27,22 @@ describe("approved public evidence surfaces", () => {
     expect(unsupportedWorkerIngress(wrangler!)).toEqual([]);
   });
 
+  it("keeps public routes dashboard-managed without granting deployment route access", () => {
+    const surfaces = JSON.parse(readFileSync("contracts/public-surfaces.json", "utf8"));
+    expect(surfaces.workerRouteManagement).toBe("cloudflare-dashboard");
+    expect(unsupportedWorkerIngress(wrangler!, surfaces)).toEqual([]);
+
+    const routeConfig = [
+      wrangler,
+      "[[routes]]",
+      'pattern = "public-data.org/data/health.json"',
+      'zone_name = "public-data.org"',
+    ].join("\n");
+    expect(unsupportedWorkerIngress(routeConfig, surfaces)).toContain(
+      "Worker routes must remain dashboard-managed and omitted from Wrangler config",
+    );
+  });
+
   it("does not turn an approved data route into public collector access", () => {
     const collectorRoute = [
       "[[routes]]",

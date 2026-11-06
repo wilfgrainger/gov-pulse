@@ -140,12 +140,14 @@ describe("government contracts publication", () => {
     expect(presentation).toContain('href: "/section/government-contracts"');
     expect(edition).toContain("DIRECT_EVIDENCE_LINKS");
     expect(edition).toContain('if (!routeServes("/money/")) return null;');
-    expect(workflow).toContain("Deploy Cloudflare data Worker");
-    expect(workflow).toContain("public-data-jobs");
+    expect(workflow).toContain("deploy_data_worker:");
+    expect(workflow).toContain("CLOUDFLARE_RECOVERY_QUEUES_TOKEN");
+    expect(workflow).not.toContain("public-data-jobs");
+    expect(source("worker/wrangler.toml")).toContain('queue = "public-data-jobs"');
     expect(workflow).not.toContain("--message-retention-period-secs");
-    expect(workflow).toContain("fetch-cloudflare-publication-candidate.mjs");
-    expect(workflow).toContain(
-      "CLOUDFLARE_PUBLICATION_OUTPUT: public/data/metrics-snapshot.json"
+    expect(source("package.json")).toContain('"pages:build": "node scripts/build-pages-seed.mjs"');
+    expect(source("scripts/build-pages-seed.mjs")).toContain(
+      'output: resolve(root, "public/data/metrics-snapshot.json")'
     );
     expect(workflow).not.toContain("prepare-government-contracts-ingest.mjs");
     expect(workflow).not.toContain("merge-government-contracts-snapshot.mjs");

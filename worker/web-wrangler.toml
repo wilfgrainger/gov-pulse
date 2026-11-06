@@ -5,6 +5,9 @@ compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
 workers_dev = false
 preview_urls = false
 
+# The public-data.org route is managed in the Cloudflare dashboard. Keeping it
+# out of this file lets the deployment token stay scoped to this Worker only.
+
 [assets]
 directory = "../.open-next/assets"
 binding = "ASSETS"
@@ -12,7 +15,3 @@ binding = "ASSETS"
 [[services]]
 binding = "WORKER_SELF_REFERENCE"
 service = "public-data-web"
-
-[[routes]]
-pattern = "public-data.org/*"
-zone_name = "public-data.org"

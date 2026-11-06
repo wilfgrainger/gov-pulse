@@ -67,7 +67,10 @@ describe("edge evidence hardening", () => {
       expect(workflow).toMatch(/cp worker\/open-next\.config\.template open-next\.config\.ts/);
     }
     expect(deploy).toMatch(/npx opennextjs-cloudflare deploy/);
-    expect(deploy).toMatch(/Pages seed/i);
+    const pagesFallback = deploy.slice(deploy.indexOf("\n  publish_pages:\n"));
+    expect(pagesFallback).toContain("Trigger the main-only Pages deploy hook");
+    expect(pagesFallback).toContain("CLOUDFLARE_PAGES_DEPLOY_HOOK_URL");
+    expect(pagesFallback).not.toContain("CLOUDFLARE_API_TOKEN");
     expect(openNext).toMatch(/static-assets-incremental-cache/);
     expect(openNext).not.toMatch(/r2-incremental-cache/);
     expect(webWrangler).toMatch(/name\s*=\s*"public-data-web"/);
@@ -75,7 +78,10 @@ describe("edge evidence hardening", () => {
     expect(webWrangler).toMatch(/directory\s*=\s*"\.\.\/\.open-next\/assets"/);
     expect(webWrangler).toMatch(/nodejs_compat/);
     expect(webWrangler).toMatch(/global_fetch_strictly_public/);
-    expect(webWrangler).toMatch(/public-data\.org\/\*/);
+    expect(webWrangler).toMatch(/workers_dev\s*=\s*false/);
+    expect(webWrangler).toMatch(/preview_urls\s*=\s*false/);
+    expect(webWrangler).toMatch(/route is managed in the Cloudflare dashboard/i);
+    expect(webWrangler).not.toMatch(/^\s*\[\[routes\]\]/m);
   });
 
   it("prevents Cloudflare analytics injection on SSR HTML without weakening the tracking-free CSP", () => {

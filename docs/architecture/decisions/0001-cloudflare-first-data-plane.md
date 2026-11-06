@@ -49,8 +49,9 @@ Adopt a Cloudflare-first split architecture:
 2. Cloudflare Cron, Queues, Workers and KV own recurring collection, validation, finalisation and aggregate runtime publication.
 3. The public Worker is limited to two exact routes: the aggregate snapshot and a minimal health response.
 4. The finaliser precomputes and stores a sanitised public JSON artifact plus its validity deadline. Public requests return that prepared value rather than rebuilding it.
-5. One GitHub production workflow runs automatically after relevant changes reach `main`. It validates once, reconciles the Queue, deploys Worker code, then deploys the tested Pages artifact.
-6. Manual workflow dispatch is retained only for recovery.
+5. GitHub Actions deploys each existing Worker with a separate individual-Worker token. The Queue is provisioned outside routine CI; Worker routes remain dashboard-managed and are not part of deployment credentials.
+6. Pages fallback updates use a deploy-hook URL bound to the Git-integrated project and `main` branch. The existing Direct Upload project remains available for rollback; CI needs no Cloudflare Pages API token or account-wide Pages permission.
+7. Manual workflow dispatch is retained for evidence recovery and an explicit Pages seed refresh.
 
 ## Alternatives considered
 

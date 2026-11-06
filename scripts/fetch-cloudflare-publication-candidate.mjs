@@ -1,18 +1,18 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { PUBLIC_SNAPSHOT_KEY } from "../worker/public-snapshot.js";
 import { acceptedRecoveryArtifact } from "../worker/publication-recovery.js";
+import {
+  assertSameHttpsHost,
+  MAX_RESPONSE_BYTES,
+  readResponseJson,
+} from "../worker/response-limits.js";
 
-const DEFAULT_NAMESPACE_ID = "f950b17f36a447dca7bb339cba8818de";
-const DEFAULT_KEY = PUBLIC_SNAPSHOT_KEY;
 const DEFAULT_OUTPUT = "public/data/metrics-snapshot.json";
-
-function required(name, value) {
-  const normalized = String(value ?? "").trim();
-  if (!normalized) throw new Error(`${name} is required`);
-  return normalized;
-}
+// The data Worker serves the prepared public KV artifact at this public route,
+// so the Pages seed build needs no Cloudflare API credential to read it.
+const DEFAULT_PUBLICATION_URL =
+  "https://public-data.org/data/metrics-snapshot.json";
 
 export function validateAcceptedArtifact(value, now = new Date()) {
   const accepted = acceptedRecoveryArtifact(value, now);
@@ -25,28 +25,16 @@ export function validateAcceptedArtifact(value, now = new Date()) {
 }
 
 export async function fetchCandidate({
-  accountId,
-  apiToken,
-  namespaceId = DEFAULT_NAMESPACE_ID,
-  key = DEFAULT_KEY,
   output = DEFAULT_OUTPUT,
   fetchImpl = fetch,
   now = new Date(),
-}) {
-  const account = required("CLOUDFLARE_ACCOUNT_ID", accountId);
-  const token = required("CLOUDFLARE_API_TOKEN", apiToken);
-  const namespace = required("CLOUDFLARE_KV_NAMESPACE_ID", namespaceId);
-  const keyName = required("CLOUDFLARE_PUBLICATION_KEY", key);
+} = {}) {
+  const candidateUrl = DEFAULT_PUBLICATION_URL;
   const outputPath = resolve(output);
-  const url =
-    `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}` +
-    `/storage/kv/namespaces/${encodeURIComponent(namespace)}` +
-    `/values/${encodeURIComponent(keyName)}`;
-
-  const response = await fetchImpl(url, {
+  const response = await fetchImpl(candidateUrl, {
     headers: {
       Accept: "application/json",
-      Authorization: `Bearer ${token}`,
+      "Cache-Control": "no-cache",
     },
     signal: AbortSignal.timeout(20_000),
   });
@@ -59,27 +47,33 @@ export async function fetchCandidate({
     throw new Error(`Cloudflare accepted artifact returned ${response.status}`);
   }
 
-  const candidate = validateAcceptedArtifact(await response.json(), now);
+  assertSameHttpsHost(response, candidateUrl, "Cloudflare accepted artifact");
+  if (response.headers.get("X-Publication-Delivery") !== "cloudflare-kv") {
+    throw new Error("Cloudflare accepted artifact was not served from the prepared KV edition");
+  }
+  const candidate = validateAcceptedArtifact(
+    await readResponseJson(response, {
+      limit: MAX_RESPONSE_BYTES.json,
+      label: "Cloudflare accepted artifact",
+    }),
+    now,
+  );
   await mkdir(dirname(outputPath), { recursive: true });
   await writeFile(outputPath, `${JSON.stringify(candidate, null, 2)}\n`, "utf8");
   return {
     outputPath,
     generatedAt: candidate.meta.generatedAt ?? null,
     sections: Object.keys(candidate.meta.sources).sort(),
-    sourceKey: keyName,
+    sourceUrl: candidateUrl,
   };
 }
 
 async function main() {
   const result = await fetchCandidate({
-    accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
-    apiToken: process.env.CLOUDFLARE_API_TOKEN,
-    namespaceId: process.env.CLOUDFLARE_KV_NAMESPACE_ID,
-    key: process.env.CLOUDFLARE_PUBLICATION_KEY,
     output: process.env.CLOUDFLARE_PUBLICATION_OUTPUT,
   });
   process.stdout.write(
-    `Copied accepted Cloudflare artifact ${result.generatedAt ?? "without edition clock"} with ${result.sections.length} current sections from ${result.sourceKey}\n`
+    `Copied accepted Cloudflare artifact ${result.generatedAt ?? "without edition clock"} with ${result.sections.length} current sections from ${result.sourceUrl}\n`
   );
 }
 
