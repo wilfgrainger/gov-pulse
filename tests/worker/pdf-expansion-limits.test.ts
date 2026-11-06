@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it } from "vitest";
-import { extractPdfText, MAX_PDF_STREAM_EXPANSION_BYTES, MAX_PDF_TOTAL_EXPANSION_BYTES } from "@/worker/live-polling-collector";
+import { extractPdfText, MAX_PDF_STREAM_EXPANSION_BYTES, MAX_PDF_TOTAL_EXPANSION_BYTES } from "@/feeds/_kit/pdf.js";
 
 async function deflate(bytes: Uint8Array) {
   const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream("deflate"));

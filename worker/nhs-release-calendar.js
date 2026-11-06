@@ -1,4 +1,4 @@
-import { extractPdfText } from "./live-polling-collector.js";
+import { extractPdfText } from "../feeds/_kit/pdf.js";
 import {
   decodeHtml,
   fetchResponse,

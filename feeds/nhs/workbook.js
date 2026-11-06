@@ -1,5 +1,5 @@
 import { normalizeNhsRttPayload } from "./rtt.js";
-import { extractPdfText } from "../../worker/live-polling-collector.js";
+import { extractPdfText } from "../_kit/pdf.js";
 import { parseNhsRttPressNotice } from "./press-notice.js";
 import {
   absoluteUrl,
