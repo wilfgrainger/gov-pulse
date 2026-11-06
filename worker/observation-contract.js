@@ -170,10 +170,7 @@ const contracts = {
   housePriceIndex: declaredContract("housePriceIndex"),
   realWages: declaredContract("realWages"),
   nhsStats: declaredContract("nhsStats"),
-  crimeStatistics: {
-    maxAgeDays: 450,
-    extract: publishedObservation,
-  },
+  crimeStatistics: declaredContract("crimeStatistics"),
 };
 
 export function applyObservationContracts(descriptors, nowProvider = () => new Date()) {

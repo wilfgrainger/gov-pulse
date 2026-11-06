@@ -43,10 +43,8 @@ import {
 import { buildMigrationStats } from "../feeds/migration/parse.js";
 import { buildHousePriceIndex } from "../feeds/house-price-index/parse.js";
 import { buildRealWagesStats } from "../feeds/real-wages/parse.js";
-import {
-  buildCrimeStatistics,
-  isCurrentCrimeStatisticsPayload,
-} from "./crime-statistics.js";
+import { buildCrimeStatistics } from "../feeds/crime-stats/parse.js";
+import { isCurrentCrimeStatisticsPayload } from "../contracts/crime-statistics.js";
 import {
   FEED_REGISTRY,
   applyFeedRegistry,

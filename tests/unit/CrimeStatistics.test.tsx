@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CrimeStatistics from "@/app/components/CrimeStatistics";
 import { buildCurrentCrimeStatisticsPayload } from "@/contracts/crime-statistics";
-import { parseOnsCrimeBulletin } from "@/worker/live-crime-collector";
+import { parseOnsCrimeBulletin } from "@/feeds/crime-stats/parse.js";
 import {
   CRIME_BULLETIN_HTML,
   CRIME_EDITION_URL,

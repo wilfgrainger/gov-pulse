@@ -1,6 +1,7 @@
 import { SOURCE_CATALOG, SOURCE_CATALOG_VERSION, deepFreeze } from "./source-definitions.js";
 import { definition as migrationStatsDefinition } from "../feeds/migration/feed.js";
 import { definition as nhsStatsDefinition } from "../feeds/nhs/feed.js";
+import { definition as crimeStatisticsDefinition } from "../feeds/crime-stats/feed.js";
 import { catalogEntryOf } from "../feeds/define-feed.js";
 import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
 import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
@@ -176,20 +177,8 @@ export const FEED_CATALOG = deepFreeze({
       caveat: "public-data.org shows each named market separately, calculates 100 divided by decimal odds and does not normalize prices to 100%. The results are neither official statistics nor official forecasts. Liquidity, provider coverage, bookmaker margins and market rules affect them; stale, embedded or incomplete prices are unavailable.",
     },
   }),
-  crimeStatistics: defineFeed({
-    id: "crimeStatistics", registry: "feed", title: "UK Crime Statistics", displayName: "Crime Statistics",
-    evidenceClass: "official-statistics", geography: { code: "EAW", label: "England and Wales" },
-    sourceIds: ["ons-crime-csew", "home-office-police-recorded-crime", "moj-criminal-courts"],
-    automation: "automated", collectionLayer: "worker", frequency: "periodic",
-    retrieval: "scheduled-publication-check", refreshCadence: "daily", publicationCadence: "periodic",
-    retrievalMaxAgeMs: 36 * HOUR_MS, publicationRequirement: "optional",
-    editorial: {
-      publicationPeriod: "Latest verified ONS Crime in England and Wales edition and current MoJ quarterly court publication, shown separately",
-      unit: "Estimated incidents, recorded offences or median days, as labelled",
-      revisionStatus: "Official source publications may be revised; each module retains its own release and observation period",
-      caveat: "Crime Survey estimates, police-recorded offences and court timeliness measure different phenomena and are never added into one total. Regional rankings remain unavailable until one versioned geography and population method is reproducible. Geography is England and Wales.",
-    },
-  }),
+  // Projected from feeds/crime-stats/feed.js (the single declaration).
+  crimeStatistics: defineFeed(catalogEntryOf(crimeStatisticsDefinition)),
   governmentContracts: defineFeed({
     id: "governmentContracts", registry: "publication", title: "Government contracts", displayName: "Government Contracts",
     evidenceClass: "administrative-data", geography: { code: "UK", label: "United Kingdom — Find a Tender publication coverage" },

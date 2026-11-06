@@ -8,11 +8,12 @@ import {
   isCurrentCrimeStatisticsPayload,
   normalizeCrimeStatisticsPayload,
 } from "@/contracts/crime-statistics";
-import { buildCrimeStatistics } from "@/worker/crime-statistics";
 import {
+  buildCrimeStatistics,
+  collect,
   collectCrimeStatistics,
   parseOnsCrimeBulletin,
-} from "@/worker/live-crime-collector";
+} from "@/feeds/crime-stats/parse.js";
 import { sectionCurrentness } from "@/contracts/evidence-policy";
 import {
   CRIME_BULLETIN_HTML,
@@ -43,6 +44,11 @@ function fetcher() {
 }
 
 describe("modular crime evidence contract", () => {
+  it("feed collect wraps the unchanged builder output", async () => {
+    const result = await collect({ fetch: fetcher(), now });
+    expect(result.data).toEqual(await buildCrimeStatistics(now, fetcher()));
+  });
+
   it("collects current ONS and police modules while withholding unvalidated MoJ data", async () => {
     const fetchImpl = fetcher();
     const payload = await buildCrimeStatistics(now, fetchImpl);

@@ -9,6 +9,8 @@ import { definition as migrationStatsDefinition } from "./migration/feed.js";
 import * as migrationStatsParser from "./migration/parse.js";
 import { definition as nhsStatsDefinition } from "./nhs/feed.js";
 import * as nhsStatsParser from "./nhs/parse.js";
+import { definition as crimeStatisticsDefinition } from "./crime-stats/feed.js";
+import * as crimeStatisticsParser from "./crime-stats/parse.js";
 
 /**
  * @typedef {{definition: Readonly<Record<string, any>>, collect: (ctx: any) => Promise<any>,
@@ -18,6 +20,7 @@ import * as nhsStatsParser from "./nhs/parse.js";
 
 /** @type {readonly FeedModule[]} */
 export const FEEDS = Object.freeze([
+  { definition: crimeStatisticsDefinition, collect: crimeStatisticsParser.collect },
   { definition: nhsStatsDefinition, collect: nhsStatsParser.collect },
   { definition: migrationStatsDefinition, collect: migrationStatsParser.collect },
   { definition: housePriceIndexDefinition, collect: housePriceIndexParser.collect },

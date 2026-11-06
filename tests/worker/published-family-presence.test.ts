@@ -20,7 +20,7 @@ import { PUBLICATION_CURRENT_KEY, PUBLICATION_STATUS_KEY } from "@/worker/public
 import { FEED_REGISTRY_VERSION, REQUIRED_PUBLISHED_SECTION_IDS } from "@/worker/feed-registry";
 import { PUBLIC_SNAPSHOT_KEY, buildPublicSnapshotArtifact } from "@/worker/public-snapshot";
 import { unavailableReasonFor } from "@/worker/publication-availability";
-import { parseOnsCrimeBulletin } from "@/worker/live-crime-collector";
+import { parseOnsCrimeBulletin } from "@/feeds/crime-stats/parse.js";
 import {
   CRIME_BULLETIN_HTML,
   CRIME_EDITION_URL as LEGACY_CRIME_EDITION_URL,

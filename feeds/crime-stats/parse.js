@@ -4,9 +4,9 @@ import {
   buildCurrentCrimeStatisticsPayload,
   periodEnd,
   validatePublicationIdentity,
-} from "../contracts/crime-statistics.js";
-import { fetchLatestOnsBulletin } from "./economy-evidence.js";
-import { decodeHtml } from "./live-feed-common.js";
+} from "../../contracts/crime-statistics.js";
+import { fetchLatestOnsBulletin } from "../../worker/economy-evidence.js";
+import { decodeHtml } from "../../worker/live-feed-common.js";
 
 const MONTHS = Object.freeze({
   january: 0,
@@ -433,8 +433,24 @@ async function collectCrimeStatistics(fetchImpl = fetch, now = new Date()) {
   );
 }
 
+async function buildCrimeStatistics(now = new Date(), fetchImpl = fetch) {
+  return collectCrimeStatistics(fetchImpl, now);
+}
+
+/**
+ * Feed interface (target design 2.3). Wraps the existing collector without
+ * changing what it fetches or returns.
+ *
+ * @param {{fetch: typeof fetch, now: Date}} ctx
+ */
+async function collect(ctx) {
+  return { data: await buildCrimeStatistics(ctx.now, ctx.fetch) };
+}
+
 export {
+  buildCrimeStatistics,
   canonicalPeriod,
+  collect,
   collectCrimeStatistics,
   display,
   parseOnsCrimeBulletin,

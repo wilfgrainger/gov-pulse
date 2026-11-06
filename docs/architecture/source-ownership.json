@@ -103,7 +103,7 @@
     },
     {
       "section": "crimeStatistics",
-      "collector": "worker/crime-statistics.js",
+      "collector": "feeds/crime-stats/parse.js",
       "normalizer": "contracts/crime-statistics.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Queue validation of the versioned named-source publication",
