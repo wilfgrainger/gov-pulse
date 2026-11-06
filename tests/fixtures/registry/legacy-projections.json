@@ -1,0 +1,2904 @@
+{
+  "note": "Captured from the hand-written registries before feed migration (Task 6). Do not edit by hand.",
+  "feedCatalog": {
+    "sentimentPulse": {
+      "id": "sentimentPulse",
+      "sourceIds": [
+        "ons-cpi-d7g7",
+        "boe-bank-rate-iudbedr",
+        "ons-unemployment-mgsx"
+      ],
+      "registry": "feed",
+      "title": "Series-level economic indicators",
+      "displayName": "Key Economic Indicators",
+      "evidenceClass": "official-statistics",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "automation": "automated",
+      "collectionLayer": "worker",
+      "frequency": "series-specific",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "series-specific: monthly and event-driven",
+      "retrievalMaxAgeMs": 129600000,
+      "publicationRequirement": "required",
+      "freshnessWindow": "Checked within 36 hours",
+      "freshnessRationale": "CPI, Bank Rate and unemployment keep separate observation periods, publication dates and revision status.",
+      "editorial": {
+        "publicationPeriod": "Separate latest periods for CPI, Bank Rate and unemployment",
+        "unit": "Percentage for each named series",
+        "revisionStatus": "CPI and Labour Force Survey estimates may be revised; Bank Rate is event-dated",
+        "caveat": "CPI is monthly, unemployment is a rolling three-month estimate and Bank Rate changes after Monetary Policy Committee decisions. Their observation periods, publication dates, check dates and revision status stay separate."
+      }
+    },
+    "gdpTracker": {
+      "id": "gdpTracker",
+      "sourceIds": [
+        "ons-gdp-monthly"
+      ],
+      "registry": "feed",
+      "title": "Monthly gross domestic product",
+      "displayName": "GDP",
+      "evidenceClass": "official-statistics",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "automation": "automated",
+      "collectionLayer": "worker",
+      "frequency": "monthly",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "monthly",
+      "retrievalMaxAgeMs": 129600000,
+      "publicationRequirement": "required",
+      "freshnessWindow": "Checked within 36 hours",
+      "freshnessRationale": "The rolling ONS bulletin is checked regularly. The observation period is assessed separately from the date of that check.",
+      "editorial": {
+        "publicationPeriod": "Latest ONS monthly GDP bulletin edition",
+        "unit": "Percentage change in real, seasonally adjusted GDP",
+        "revisionStatus": "Early monthly estimate; revised as fuller source data become available",
+        "caveat": "The latest monthly movement, three-month comparison and annual movement remain separate; forecasts, nominal totals and international estimates are not mixed into the headline."
+      }
+    },
+    "employmentStats": {
+      "id": "employmentStats",
+      "sourceIds": [
+        "ons-uk-labour-market"
+      ],
+      "registry": "feed",
+      "title": "UK labour market",
+      "displayName": "Employment",
+      "evidenceClass": "official-statistics",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "automation": "automated",
+      "collectionLayer": "worker",
+      "frequency": "monthly",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "monthly",
+      "retrievalMaxAgeMs": 129600000,
+      "publicationRequirement": "required",
+      "freshnessWindow": "Checked within 36 hours",
+      "freshnessRationale": "The latest labour-market bulletin is checked regularly, with each observation period shown separately.",
+      "editorial": {
+        "publicationPeriod": "Latest ONS UK labour-market bulletin edition",
+        "unit": "Rates (%) and vacancies (people), as labelled",
+        "revisionStatus": "Labour Force Survey and vacancy estimates may be revised",
+        "caveat": "Employment, unemployment and inactivity use rolling three-month periods. Vacancies come from a separate employer survey and retain their own period."
+      }
+    },
+    "nationalDebt": {
+      "id": "nationalDebt",
+      "sourceIds": [
+        "ons-psnd-hf6w",
+        "ons-psnd-hf6x"
+      ],
+      "registry": "feed",
+      "title": "Public sector net debt excluding public sector banks",
+      "displayName": "National Debt",
+      "evidenceClass": "official-statistics",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "automation": "automated",
+      "collectionLayer": "worker",
+      "frequency": "monthly",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "monthly",
+      "retrievalMaxAgeMs": 3456000000,
+      "publicationRequirement": "required",
+      "freshnessWindow": "Checked within 40 days",
+      "freshnessRationale": "Public sector finance data is normally monthly; the window allows for weekends, bank holidays and release-calendar variation.",
+      "uiSourceLabels": [
+        "ONS Public Sector Finances"
+      ],
+      "editorial": {
+        "publicationPeriod": "Latest monthly public-sector-finance period available",
+        "unit": "£ billions and percentage of GDP",
+        "revisionStatus": "Subject to routine ONS public-sector-finance revisions",
+        "caveat": "Public sector net debt excluding public sector banks (HF6W) and the matching percentage-of-GDP series (HF6X) are shown together. Other debt measures are not interchangeable."
+      }
+    },
+    "taxRevenue": {
+      "id": "taxRevenue",
+      "sourceIds": [
+        "ons-public-sector-finances"
+      ],
+      "registry": "feed",
+      "title": "Central government receipts",
+      "displayName": "Government Receipts",
+      "evidenceClass": "official-statistics",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "automation": "automated",
+      "collectionLayer": "worker",
+      "frequency": "monthly",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "monthly",
+      "retrievalMaxAgeMs": 129600000,
+      "publicationRequirement": "required",
+      "freshnessWindow": "Checked within 36 hours",
+      "freshnessRationale": "The rolling public-sector-finance bulletin is checked regularly, while its publication period is assessed separately.",
+      "uiSourceLabels": [
+        "ONS Public Sector Finances"
+      ],
+      "editorial": {
+        "publicationPeriod": "Latest ONS public-sector-finance bulletin edition",
+        "unit": "£ billions of central government receipts",
+        "revisionStatus": "Subject to routine public-finance revisions",
+        "caveat": "The monthly receipts measure is not a tax-burden ratio, category breakdown, forecast or average-per-person estimate."
+      }
+    },
+    "migrationStats": {
+      "id": "migrationStats",
+      "sourceIds": [
+        "ons-long-term-migration-bulletin",
+        "ons-long-term-migration-dataset"
+      ],
+      "registry": "feed",
+      "title": "Long-term international migration",
+      "displayName": "Migration",
+      "evidenceClass": "official-statistics",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "automation": "automated",
+      "collectionLayer": "worker",
+      "frequency": "periodic",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "periodic",
+      "retrievalMaxAgeMs": 129600000,
+      "publicationRequirement": "required",
+      "freshnessWindow": "Checked within 36 hours",
+      "freshnessRationale": "The latest ONS edition is checked regularly, while its publication period is assessed separately.",
+      "uiSourceLabels": [
+        "ONS Long-term international migration"
+      ],
+      "editorial": {
+        "publicationPeriod": "Latest ONS long-term international migration bulletin edition",
+        "unit": "People",
+        "revisionStatus": "Official statistics in development; the newest estimates are provisional for one year and earlier periods may be revised",
+        "caveat": "Long-term migration estimates cover people moving for 12 months or more. Visa grants and nationality tables are different administrative measures and are not mixed into this headline."
+      }
+    },
+    "housePriceIndex": {
+      "id": "housePriceIndex",
+      "sourceIds": [
+        "ons-private-rent-house-prices"
+      ],
+      "registry": "feed",
+      "title": "UK House Price Index",
+      "displayName": "House Price Index",
+      "evidenceClass": "official-statistics",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "automation": "automated",
+      "collectionLayer": "worker",
+      "frequency": "monthly",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "monthly",
+      "retrievalMaxAgeMs": 3888000000,
+      "publicationRequirement": "required",
+      "freshnessWindow": "Checked within 45 days",
+      "freshnessRationale": "The latest ONS edition is discovered from the rolling bulletin; the house-price percentage-change series can lag the bulletin's publication.",
+      "editorial": {
+        "publicationPeriod": "Latest ONS Private rent and house prices, UK bulletin edition",
+        "unit": "Average price (£, headline-only) and annual %-change (with monthly history)",
+        "revisionStatus": "UK HPI first estimates are provisional and subject to revision as later transaction data is incorporated",
+        "caveat": "The average price level is headline-only and is not presented as a fabricated historical series. The annual percentage-change figure can lag the bulletin's publication by one to two months."
+      }
+    },
+    "realWages": {
+      "id": "realWages",
+      "sourceIds": [
+        "ons-average-weekly-earnings"
+      ],
+      "registry": "feed",
+      "title": "Real-terms growth in average weekly earnings",
+      "displayName": "Real Wages",
+      "evidenceClass": "official-statistics",
+      "geography": {
+        "code": "GB",
+        "label": "Great Britain"
+      },
+      "automation": "automated",
+      "collectionLayer": "worker",
+      "frequency": "monthly",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "monthly",
+      "retrievalMaxAgeMs": 129600000,
+      "publicationRequirement": "required",
+      "freshnessWindow": "Checked within 36 hours",
+      "freshnessRationale": "The latest ONS average weekly earnings bulletin is checked regularly, while its publication period is assessed separately.",
+      "editorial": {
+        "publicationPeriod": "Latest ONS average weekly earnings bulletin edition",
+        "unit": "Percentage, real terms (CPIH-adjusted)",
+        "revisionStatus": "Average weekly earnings are provisional and subject to revision",
+        "caveat": "This uses ONS's own CPIH-adjusted real-terms earnings growth figure, not a calculation from separate nominal-pay and inflation series."
+      }
+    },
+    "electionPolling": {
+      "id": "electionPolling",
+      "sourceIds": [
+        "yougov-voting-intention",
+        "more-in-common-voting-intention",
+        "british-polling-council-rules"
+      ],
+      "registry": "feed",
+      "title": "Primary voting-intention poll publications",
+      "displayName": "Election Polling",
+      "evidenceClass": "polling",
+      "geography": {
+        "code": "GB",
+        "label": "Great Britain"
+      },
+      "automation": "automated",
+      "collectionLayer": "worker",
+      "frequency": "as published",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "as published",
+      "retrievalMaxAgeMs": 1209600000,
+      "publicationRequirement": "required",
+      "freshnessWindow": "Within 14 days of primary publication",
+      "freshnessRationale": "Each accepted poll retains its original publication date and is withdrawn after 14 days.",
+      "uiSourceLabels": [
+        "Verified primary pollster publications",
+        "British Polling Council disclosure rules"
+      ],
+      "editorial": {
+        "publicationPeriod": "Latest verified primary pollster publication inside a 14-day evidence window",
+        "unit": "Published party share (%)",
+        "revisionStatus": "Individual poll publications are normally final; the site does not revise or average them",
+        "caveat": "Each poll is shown separately with fieldwork, sample, question or headline method, commissioner, uncertainty and a direct primary source. One poll is not evidence of a durable trend."
+      }
+    },
+    "nhsStats": {
+      "id": "nhsStats",
+      "sourceIds": [
+        "nhs-england-rtt"
+      ],
+      "registry": "feed",
+      "title": "Referral-to-treatment waiting times",
+      "displayName": "NHS Referral to Treatment",
+      "evidenceClass": "administrative-data",
+      "geography": {
+        "code": "ENG",
+        "label": "England"
+      },
+      "automation": "automated",
+      "collectionLayer": "worker",
+      "frequency": "monthly",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "monthly",
+      "retrievalMaxAgeMs": 3888000000,
+      "publicationRequirement": "required",
+      "freshnessWindow": "Within 45 days of primary publication",
+      "freshnessRationale": "Each accepted RTT publication retains its NHS England publication date and is withdrawn after 45 days.",
+      "editorial": {
+        "publicationPeriod": "Latest verified NHS England referral-to-treatment month",
+        "unit": "Incomplete pathways, weeks or percentage, as labelled",
+        "revisionStatus": "NHS England may revise provider submissions, usually through periodic revision releases",
+        "caveat": "The headline counts consultant-led pathways rather than unique people. National figures include estimates for non-reporting acute trusts, while treatment-function rows exclude those estimates."
+      }
+    },
+    "bettingOdds": {
+      "id": "bettingOdds",
+      "sourceIds": [
+        "oddschecker-next-pm",
+        "oddschecker-most-seats",
+        "oddschecker-election-year"
+      ],
+      "registry": "feed",
+      "title": "Strict political betting market snapshots",
+      "displayName": "Political Betting Markets",
+      "evidenceClass": "market-signal",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "automation": "automated",
+      "collectionLayer": "worker",
+      "frequency": "every 3 hours",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "every 3 hours",
+      "publicationCadence": "continuous market repricing",
+      "retrievalMaxAgeMs": 14400000,
+      "publicationRequirement": "optional",
+      "freshnessWindow": "Within 4 hours of market observation",
+      "freshnessRationale": "Each observation retains its original time and is withdrawn after four hours. Older prices are never presented as current.",
+      "uiSourceLabels": [
+        "Oddschecker public politics markets"
+      ],
+      "editorial": {
+        "publicationPeriod": "Latest complete Oddschecker snapshot inside a four-hour observation window",
+        "unit": "Decimal odds and raw reciprocal percentage",
+        "revisionStatus": "Continuously repriced rather than statistically revised",
+        "caveat": "public-data.org shows each named market separately, calculates 100 divided by decimal odds and does not normalize prices to 100%. The results are neither official statistics nor official forecasts. Liquidity, provider coverage, bookmaker margins and market rules affect them; stale, embedded or incomplete prices are unavailable."
+      }
+    },
+    "crimeStatistics": {
+      "id": "crimeStatistics",
+      "sourceIds": [
+        "ons-crime-csew",
+        "home-office-police-recorded-crime",
+        "moj-criminal-courts"
+      ],
+      "registry": "feed",
+      "title": "UK Crime Statistics",
+      "displayName": "Crime Statistics",
+      "evidenceClass": "official-statistics",
+      "geography": {
+        "code": "EAW",
+        "label": "England and Wales"
+      },
+      "automation": "automated",
+      "collectionLayer": "worker",
+      "frequency": "periodic",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "periodic",
+      "retrievalMaxAgeMs": 129600000,
+      "publicationRequirement": "optional",
+      "editorial": {
+        "publicationPeriod": "Latest verified ONS Crime in England and Wales edition and current MoJ quarterly court publication, shown separately",
+        "unit": "Estimated incidents, recorded offences or median days, as labelled",
+        "revisionStatus": "Official source publications may be revised; each module retains its own release and observation period",
+        "caveat": "Crime Survey estimates, police-recorded offences and court timeliness measure different phenomena and are never added into one total. Regional rankings remain unavailable until one versioned geography and population method is reproducible. Geography is England and Wales."
+      }
+    },
+    "governmentContracts": {
+      "id": "governmentContracts",
+      "sourceIds": [
+        "cabinet-office-find-a-tender"
+      ],
+      "registry": "publication",
+      "title": "Government contracts",
+      "displayName": "Government Contracts",
+      "evidenceClass": "administrative-data",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom — Find a Tender publication coverage"
+      },
+      "automation": "automated",
+      "collectionLayer": "publication",
+      "frequency": "daily Cloudflare Queue collection",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "continuous notice publication",
+      "retrievalMaxAgeMs": 259200000,
+      "publicationRequirement": "optional",
+      "freshnessWindow": "Within 72 hours of the verified collection",
+      "freshnessRationale": "The ranking uses seven complete UTC day shards and can reuse only a still-current accepted publication.",
+      "uiSourceLabels": [
+        "Cabinet Office Find a Tender OCDS award releases"
+      ],
+      "editorial": {
+        "publicationPeriod": "Latest complete seven-day Find a Tender update window, collected in six-hour slices",
+        "unit": "Disclosed award value in GBP, excluding VAT where supplied",
+        "revisionStatus": "Contracting authorities can publish corrections, updates and later notices; the newest release for each award identity is retained",
+        "caveat": "Award values are not invoices or confirmed lifetime expenditure. Framework ceilings, lots and multi-supplier awards may not be fully spent; missing, redacted and non-GBP values are excluded."
+      }
+    },
+    "releaseCalendar": {
+      "id": "releaseCalendar",
+      "sourceIds": [
+        "ons-release-calendar"
+      ],
+      "registry": "publication",
+      "title": "Official release calendar",
+      "displayName": "Release Calendar",
+      "evidenceClass": "administrative-data",
+      "legacyEvidenceClass": "official-publication-schedule",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "automation": "automated",
+      "collectionLayer": "publication",
+      "frequency": "daily",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "publisher-announced dates",
+      "retrievalMaxAgeMs": 129600000,
+      "publicationRequirement": "optional"
+    },
+    "nhsReleaseCalendar": {
+      "id": "nhsReleaseCalendar",
+      "sourceIds": [
+        "nhs-release-calendar"
+      ],
+      "registry": "publication",
+      "title": "NHS England RTT release schedule",
+      "displayName": "NHS Release Calendar",
+      "evidenceClass": "administrative-data",
+      "legacyEvidenceClass": "official-publication-schedule",
+      "geography": {
+        "code": "ENG",
+        "label": "England"
+      },
+      "automation": "automated",
+      "collectionLayer": "publication",
+      "frequency": "daily",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "daily",
+      "publicationCadence": "publisher-announced dates",
+      "retrievalMaxAgeMs": 129600000,
+      "publicationRequirement": "optional"
+    },
+    "internationalComparison": {
+      "id": "internationalComparison",
+      "sourceIds": [
+        "imf-data",
+        "world-bank-wdi",
+        "oecd-data-explorer",
+        "sipri-milex",
+        "who-world-bank-health"
+      ],
+      "registry": "publication",
+      "runtimeSourceIds": [
+        "imf-gdp-2026",
+        "world-bank-population-2025",
+        "imf-debt-2026",
+        "imf-interest-2024",
+        "oecd-oda-2025",
+        "sipri-2025",
+        "oecd-socx-2023",
+        "world-bank-health-2024",
+        "oecd-tax-2024",
+        "world-bank-gdp-per-capita-2023",
+        "world-bank-gdp-per-capita-2024"
+      ],
+      "title": "International country comparisons",
+      "displayName": "International Comparison",
+      "evidenceClass": "official-statistics",
+      "legacyEvidenceClass": "international-comparative-statistics",
+      "geography": {
+        "code": "INT",
+        "label": "United Kingdom and twelve named peer countries, with measure-specific coverage"
+      },
+      "automation": "automated",
+      "collectionLayer": "publication",
+      "frequency": "weekly and on-demand by measure",
+      "retrieval": "scheduled-publication-check",
+      "refreshCadence": "weekly and on-demand by measure",
+      "publicationCadence": "publisher-specific annual releases",
+      "retrievalMaxAgeMs": 2592000000,
+      "publicationRequirement": "independent"
+    },
+    "earlyYears": {
+      "id": "earlyYears",
+      "sourceIds": [
+        "ukhsa-cover",
+        "dfe-eyfs"
+      ],
+      "registry": null,
+      "title": "Early years evidence",
+      "displayName": "Early Years Spotlight",
+      "evidenceClass": "official-statistics",
+      "geography": {
+        "code": "ENG",
+        "label": "England"
+      },
+      "automation": "static",
+      "collectionLayer": "worker",
+      "frequency": "periodic",
+      "uiSourceLabels": [
+        "UKHSA COVER childhood vaccination statistics",
+        "DfE School Readiness"
+      ],
+      "editorial": {
+        "publicationPeriod": "UKHSA COVER 2024/25 and DfE EYFS profile 2024/25",
+        "unit": "Rates (%) as labelled",
+        "revisionStatus": "UKHSA immunisation data can be corrected; DfE profiles may receive publication updates",
+        "caveat": "EYFSP profiles were cancelled during the COVID-19 pandemic (2019/20 and 2020/21). A new EYFS profile baseline was introduced in 2021/22, so earlier and later rates are not directly comparable."
+      }
+    }
+  },
+  "collectionPlan": {
+    "gdpTracker": {
+      "jobType": "refresh-section",
+      "collector": "section-builder"
+    },
+    "sentimentPulse": {
+      "jobType": "refresh-section",
+      "collector": "section-builder"
+    },
+    "employmentStats": {
+      "jobType": "refresh-section",
+      "collector": "section-builder"
+    },
+    "taxRevenue": {
+      "jobType": "refresh-section",
+      "collector": "tax-revenue-live"
+    },
+    "nationalDebt": {
+      "jobType": "refresh-section",
+      "collector": "section-builder"
+    },
+    "migrationStats": {
+      "jobType": "refresh-section",
+      "collector": "section-builder"
+    },
+    "housePriceIndex": {
+      "jobType": "refresh-section",
+      "collector": "section-builder"
+    },
+    "realWages": {
+      "jobType": "refresh-section",
+      "collector": "section-builder"
+    },
+    "crimeStatistics": {
+      "jobType": "refresh-section",
+      "collector": "section-builder"
+    },
+    "electionPolling": {
+      "jobType": "refresh-external-section",
+      "collector": "external"
+    },
+    "nhsStats": {
+      "jobType": "refresh-external-section",
+      "collector": "external"
+    },
+    "bettingOdds": {
+      "jobType": "refresh-external-section",
+      "collector": "external"
+    },
+    "releaseCalendar": {
+      "jobType": "refresh-external-section",
+      "collector": "external"
+    },
+    "nhsReleaseCalendar": {
+      "jobType": "refresh-external-section",
+      "collector": "external"
+    }
+  },
+  "observationContracts": {
+    "electionPolling": {
+      "maxAgeDays": 45,
+      "extractor": "extract"
+    },
+    "sentimentPulse": {
+      "maxAgeDays": 75,
+      "extractor": "extract"
+    },
+    "gdpTracker": {
+      "maxAgeDays": 70,
+      "extractor": "publishedObservation"
+    },
+    "employmentStats": {
+      "maxAgeDays": 70,
+      "extractor": "publishedObservation"
+    },
+    "nationalDebt": {
+      "maxAgeDays": 70,
+      "extractor": "extract"
+    },
+    "taxRevenue": {
+      "maxAgeDays": 70,
+      "extractor": "publishedObservation"
+    },
+    "migrationStats": {
+      "maxAgeDays": 220,
+      "extractor": "publishedObservation"
+    },
+    "housePriceIndex": {
+      "maxAgeDays": 45,
+      "extractor": "publishedObservation"
+    },
+    "realWages": {
+      "maxAgeDays": 40,
+      "extractor": "publishedObservation"
+    },
+    "nhsStats": {
+      "maxAgeDays": 45,
+      "extractor": "nhsPublishedObservation"
+    },
+    "crimeStatistics": {
+      "maxAgeDays": 450,
+      "extractor": "publishedObservation"
+    }
+  },
+  "sectionDiscovery": {
+    "election-polls": {
+      "title": "UK election polling",
+      "description": "Latest verified Great Britain voting-intention polls, shown individually with fieldwork, sample and primary-source links.",
+      "category": "Politics",
+      "kind": "dataset",
+      "sourceKey": "electionPolling",
+      "sameAs": [
+        "https://www.britishpollingcouncil.org/objects-and-rules/",
+        "https://yougov.com/en-gb/topics/topic/British_Politics"
+      ]
+    },
+    "betting-odds": {
+      "title": "UK political betting markets",
+      "description": "Timestamped UK political market prices with raw reciprocal percentages and clear commercial-market caveats.",
+      "category": "Politics",
+      "kind": "dataset",
+      "sourceKey": "bettingOdds",
+      "sameAs": [
+        "https://www.oddschecker.com/politics"
+      ]
+    },
+    "national-debt": {
+      "title": "UK national debt",
+      "description": "Latest UK public sector net debt observation, percentage of GDP, publication period and direct ONS source.",
+      "category": "Economy",
+      "kind": "dataset",
+      "sourceKey": "nationalDebt",
+      "sameAs": [
+        "https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance"
+      ]
+    },
+    "gdp": {
+      "title": "UK GDP growth",
+      "description": "Latest ONS monthly GDP estimate with the monthly, three-month and annual movements kept separate.",
+      "category": "Economy",
+      "kind": "dataset",
+      "sourceKey": "gdpTracker",
+      "sameAs": [
+        "https://www.ons.gov.uk/economy/grossdomesticproductgdp"
+      ]
+    },
+    "economy": {
+      "title": "UK inflation, Bank Rate and unemployment",
+      "description": "Latest CPI inflation, Bank Rate and unemployment evidence, each retaining its own period and publication date.",
+      "category": "Economy",
+      "kind": "dataset",
+      "sourceKey": "sentimentPulse",
+      "sameAs": [
+        "https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7g7/mm23",
+        "https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp",
+        "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/unemployment/timeseries/mgsx/lms"
+      ]
+    },
+    "tax": {
+      "title": "UK government receipts",
+      "description": "Latest central government receipts observation from the ONS public sector finances release.",
+      "category": "Economy",
+      "kind": "dataset",
+      "sourceKey": "taxRevenue",
+      "sameAs": [
+        "https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance"
+      ]
+    },
+    "government-contracts": {
+      "title": "UK government contracts",
+      "description": "Inspect comparable disclosed procurement awards when this publication is enabled and its source records pass verification.",
+      "category": "Public money",
+      "kind": "dataset",
+      "sourceKey": "governmentContracts",
+      "sameAs": [
+        "https://www.find-tender.service.gov.uk/"
+      ]
+    },
+    "employment": {
+      "title": "UK employment and unemployment",
+      "description": "Latest official employment, unemployment, economic inactivity and vacancies evidence with separate periods.",
+      "category": "Economy",
+      "kind": "dataset",
+      "sourceKey": "employmentStats",
+      "sameAs": [
+        "https://www.ons.gov.uk/employmentandlabourmarket"
+      ]
+    },
+    "crime-stats": {
+      "title": "Crime in England and Wales",
+      "description": "Crime Survey estimates, police-recorded offences and court timeliness shown as separate official evidence systems.",
+      "category": "Society",
+      "kind": "dataset",
+      "sourceKey": "crimeStatistics",
+      "sameAs": [
+        "https://www.ons.gov.uk/peoplepopulationandcommunity/crimeandjustice",
+        "https://www.gov.uk/government/collections/crime-outcomes-in-england-and-wales-statistics",
+        "https://www.gov.uk/government/collections/criminal-court-statistics"
+      ]
+    },
+    "nhs": {
+      "title": "NHS waiting times in England",
+      "description": "Latest NHS England referral-to-treatment waiting-list evidence, including the publication period and direct source.",
+      "category": "Society",
+      "kind": "dataset",
+      "sourceKey": "nhsStats",
+      "sameAs": [
+        "https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/"
+      ]
+    },
+    "migration": {
+      "title": "UK long-term international migration",
+      "description": "Latest ONS long-term immigration, emigration and net migration estimates with the observation period shown.",
+      "category": "Society",
+      "kind": "dataset",
+      "sourceKey": "migrationStats",
+      "sameAs": [
+        "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration"
+      ]
+    },
+    "house-price-index": {
+      "title": "UK House Price Index",
+      "description": "Average UK house price and annual house price inflation from the latest ONS Private rent and house prices bulletin.",
+      "category": "Economy",
+      "kind": "dataset",
+      "sourceKey": "housePriceIndex",
+      "sameAs": [
+        "https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/privaterentandhousepricesuk/latest"
+      ]
+    },
+    "real-wages": {
+      "title": "UK real wages (CPIH-adjusted)",
+      "description": "ONS's own real-terms regular and total pay growth, adjusted for inflation using CPIH, from the average weekly earnings bulletin.",
+      "category": "Economy",
+      "kind": "dataset",
+      "sourceKey": "realWages",
+      "sameAs": [
+        "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/averageweeklyearningsingreatbritain/latest"
+      ]
+    },
+    "early-years": {
+      "title": "Early years evidence in England",
+      "description": "Child vaccination and school-readiness indicators in England with dated official sources and historical context.",
+      "category": "Society",
+      "kind": "dataset",
+      "sourceKey": "earlyYears",
+      "sameAs": [
+        "https://www.gov.uk/government/statistics/cover-of-vaccination-evaluated-rapidly-cover-programme-annual-reports/vaccination-coverage-statistics-for-children-aged-up-to-5-years-england-cover-programme-report-april-2024-to-march-2025",
+        "https://explore-education-statistics.service.gov.uk/find-statistics/early-years-foundation-stage-profile-results/2024-25"
+      ]
+    }
+  },
+  "measureDefinitions": [
+    {
+      "id": "gdp-monthlyGrowth",
+      "label": "GDP: monthly growth",
+      "topic": "Economy",
+      "section": "gdpTracker",
+      "route": "/section/gdp/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "%",
+      "valuePath": "headline.monthlyGrowth",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "historyPath": "history",
+      "historyValue": "monthlyGrowth",
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "monthly",
+      "comparisonKey": "uk-real-gdp-monthly-growth",
+      "valueStatus": "estimate",
+      "basis": "Monthly change in real gross domestic product at market prices",
+      "note": "Monthly real GDP growth is volatile and subject to revision.",
+      "caveats": [
+        "Early estimate; subject to revision."
+      ]
+    },
+    {
+      "id": "gdp-threeMonthGrowth",
+      "label": "GDP: three-month growth",
+      "topic": "Economy",
+      "section": "gdpTracker",
+      "route": "/section/gdp/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "%",
+      "valuePath": "headline.threeMonthGrowth",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "historyPath": "history",
+      "historyValue": "threeMonthGrowth",
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "monthly",
+      "comparisonKey": "uk-real-gdp-three-month-growth",
+      "valueStatus": "estimate",
+      "basis": "Real GDP growth across the latest three months",
+      "note": "A rolling three-month estimate that can be revised.",
+      "caveats": [
+        "Early estimate; subject to revision."
+      ]
+    },
+    {
+      "id": "gdp-annualGrowth",
+      "label": "GDP: annual growth",
+      "topic": "Economy",
+      "section": "gdpTracker",
+      "route": "/section/gdp/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "%",
+      "valuePath": "headline.annualGrowth",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "historyPath": "history",
+      "historyValue": "annualGrowth",
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "monthly",
+      "comparisonKey": "uk-real-gdp-annual-growth",
+      "valueStatus": "estimate",
+      "basis": "Change in real GDP compared with the same month one year earlier",
+      "note": "Annual GDP growth is an estimate and can be revised.",
+      "caveats": [
+        "Early estimate; subject to revision."
+      ]
+    },
+    {
+      "id": "inflation",
+      "label": "CPI inflation",
+      "topic": "Economy",
+      "section": "sentimentPulse",
+      "route": "/section/economy/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "%",
+      "valuePath": "series.inflation.value",
+      "periodPath": "series.inflation.period",
+      "publishedPath": "series.inflation.publishedAt",
+      "historyPath": "series.inflation.history",
+      "historyValue": "value",
+      "sourceUrlPath": "series.inflation.sourceUrl",
+      "validityPath": "__measureValidity.inflation.validUntil",
+      "cadence": "monthly",
+      "comparisonKey": "uk-cpi-annual-inflation",
+      "valueStatus": "observed",
+      "basis": "Annual change in the Consumer Prices Index",
+      "note": "Lower inflation means prices rise more slowly, not that they have fallen.",
+      "caveats": [
+        "CPI does not describe every household's personal inflation rate."
+      ]
+    },
+    {
+      "id": "bankRate",
+      "label": "Official Bank Rate",
+      "topic": "Economy",
+      "section": "sentimentPulse",
+      "route": "/section/economy/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "%",
+      "valuePath": "series.bankRate.value",
+      "periodPath": "series.bankRate.period",
+      "publishedPath": "series.bankRate.publishedAt",
+      "historyPath": "series.bankRate.history",
+      "historyValue": "value",
+      "sourceUrlPath": "series.bankRate.sourceUrl",
+      "validityPath": "__measureValidity.bankRate.validUntil",
+      "cadence": "MPC decision",
+      "comparisonKey": "uk-bank-of-england-official-bank-rate",
+      "valueStatus": "observed",
+      "evidenceClass": "official-policy",
+      "publisher": "Bank of England",
+      "basis": "The Bank of England's official Bank Rate set by the Monetary Policy Committee",
+      "note": "Event-dated policy rate; it remains in force until a later decision changes it.",
+      "caveats": [
+        "This is a policy rate, not a household or market borrowing rate."
+      ]
+    },
+    {
+      "id": "unemployment",
+      "label": "Unemployment rate",
+      "topic": "Jobs",
+      "section": "employmentStats",
+      "route": "/section/employment/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "%",
+      "valuePath": "headline.unemploymentRate",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "historyPath": "history.labourForce",
+      "historyValue": "unemploymentRate",
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "monthly-three-month-average",
+      "comparisonKey": "uk-labour-force-survey-unemployment-rate",
+      "valueStatus": "estimate",
+      "basis": "ILO unemployed people as a share of the economically active population",
+      "note": "A rolling three-month Labour Force Survey estimate; subject to sampling uncertainty and revision.",
+      "caveats": [
+        "Survey estimate; subject to sampling uncertainty and revision."
+      ]
+    },
+    {
+      "id": "employmentRate",
+      "label": "Employment rate",
+      "topic": "Jobs",
+      "section": "employmentStats",
+      "route": "/section/employment/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "%",
+      "valuePath": "headline.employmentRate",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "historyPath": "history.labourForce",
+      "historyValue": "employmentRate",
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "monthly-three-month-average",
+      "comparisonKey": "uk-labour-force-survey-employment-rate",
+      "valueStatus": "estimate",
+      "basis": "People aged 16 to 64 in employment as a share of the population aged 16 to 64",
+      "note": "A rolling three-month Labour Force Survey estimate; subject to sampling uncertainty and revision.",
+      "caveats": [
+        "Survey estimate; subject to sampling uncertainty and revision."
+      ]
+    },
+    {
+      "id": "inactivityRate",
+      "label": "Economic inactivity rate",
+      "topic": "Jobs",
+      "section": "employmentStats",
+      "route": "/section/employment/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "%",
+      "valuePath": "headline.inactivityRate",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "historyPath": "history.labourForce",
+      "historyValue": "inactivityRate",
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "monthly-three-month-average",
+      "comparisonKey": "uk-labour-force-survey-inactivity-rate",
+      "valueStatus": "estimate",
+      "basis": "People aged 16 to 64 not in the labour force as a share of the population aged 16 to 64",
+      "note": "A rolling three-month Labour Force Survey estimate; subject to sampling uncertainty and revision.",
+      "caveats": [
+        "Survey estimate; subject to sampling uncertainty and revision."
+      ]
+    },
+    {
+      "id": "vacancies",
+      "label": "Vacancies",
+      "topic": "Jobs",
+      "section": "employmentStats",
+      "route": "/section/employment/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "vacancies",
+      "valuePath": "headline.vacancies",
+      "periodPath": "headline.vacanciesPeriod",
+      "publishedPath": "headline.releaseDate",
+      "historyPath": "history.vacancies",
+      "historyValue": "vacancies",
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "monthly-three-month-average",
+      "comparisonKey": "uk-ons-vacancy-estimate",
+      "valueStatus": "estimate",
+      "basis": "Estimated number of vacant employee jobs",
+      "note": "Vacancies are an estimate of unfilled employee jobs, not a count of unemployed people.",
+      "caveats": [
+        "Survey estimate; subject to sampling uncertainty and revision."
+      ]
+    },
+    {
+      "id": "waitingPathwaysEstimate",
+      "label": "NHS waiting list",
+      "topic": "Health",
+      "section": "nhsStats",
+      "route": "/section/nhs/",
+      "geography": {
+        "code": "ENG",
+        "label": "England"
+      },
+      "unit": "pathways",
+      "valuePath": "headline.waitingPathwaysEstimate",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.publicationDate",
+      "historyPath": "history",
+      "historyValue": "waitingPathwaysEstimate",
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "monthly",
+      "comparisonKey": "england-nhs-rtt-waiting-pathways",
+      "valueStatus": "estimate",
+      "basis": "Referral-to-treatment waiting pathways, not unique people",
+      "note": "NHS England referral-to-treatment pathways; a person can wait on more than one pathway.",
+      "caveats": [
+        "A person can wait on more than one pathway."
+      ]
+    },
+    {
+      "id": "debt-ratio",
+      "label": "Debt as a share of GDP",
+      "topic": "Public finances",
+      "section": "nationalDebt",
+      "route": "/section/national-debt/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "%",
+      "valuePath": "debtToGdp",
+      "periodPath": "observationPeriod",
+      "publishedPath": "publicationDate",
+      "historyPath": "history",
+      "historyValue": "debtToGdp",
+      "sourceUrlPath": "source.debtToGdpUrl",
+      "cadence": "monthly",
+      "comparisonKey": "uk-psnd-gdp-ratio",
+      "valueStatus": "observed",
+      "basis": "Public sector net debt excluding public sector banks divided by GDP",
+      "note": "A fiscal stock-to-GDP ratio, not an annual borrowing flow.",
+      "caveats": [
+        "A fiscal stock-to-GDP ratio, not an annual borrowing flow."
+      ]
+    },
+    {
+      "id": "debt-stock",
+      "label": "Public sector net debt",
+      "topic": "Public finances",
+      "section": "nationalDebt",
+      "route": "/section/national-debt/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "£bn",
+      "valuePath": null,
+      "valueFromLatestHistory": true,
+      "periodPath": "observationPeriod",
+      "publishedPath": "publicationDate",
+      "historyPath": "history",
+      "historyValue": "debtBillion",
+      "sourceUrlPath": "source.debtUrl",
+      "cadence": "monthly",
+      "comparisonKey": "uk-psnd-cash-value",
+      "valueStatus": "observed",
+      "basis": "Public sector net debt excluding public sector banks, in current prices",
+      "note": "A debt stock in cash terms; it is not the amount borrowed during the month.",
+      "caveats": [
+        "This is a fiscal stock, not an annual borrowing flow."
+      ]
+    },
+    {
+      "id": "receipts",
+      "label": "Central government receipts",
+      "topic": "Public finances",
+      "section": "taxRevenue",
+      "route": "/section/tax/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "£bn",
+      "valuePath": "headline.receiptsBillion",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "historyPath": "history",
+      "historyValue": "receiptsBillion",
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "monthly",
+      "comparisonKey": "uk-central-government-monthly-receipts-nominal",
+      "valueStatus": "observed",
+      "basis": "Nominal central-government receipts on the ONS accounting basis",
+      "note": "Monthly nominal receipts; not all receipts are taxes. Compare the same month across years to account for seasonality.",
+      "caveats": [
+        "Nominal monthly flow; not all receipts are taxes."
+      ]
+    },
+    {
+      "id": "netMigration",
+      "label": "Net migration",
+      "topic": "Population",
+      "section": "migrationStats",
+      "route": "/section/migration/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "people",
+      "valuePath": "headline.netMigration",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "historyPath": "history",
+      "historyValue": "netMigration",
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "annual",
+      "comparisonKey": "uk-ons-long-term-net-migration",
+      "valueStatus": "estimate",
+      "basis": "Long-term immigration minus long-term emigration",
+      "note": "ONS long-term migration estimates; not a count of small-boat arrivals.",
+      "caveats": [
+        "Provisional official statistics in development; subject to revision."
+      ]
+    },
+    {
+      "id": "immigration",
+      "label": "Long-term immigration",
+      "topic": "Population",
+      "section": "migrationStats",
+      "route": "/section/migration/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "people",
+      "valuePath": "headline.immigration",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "historyPath": "history",
+      "historyValue": "immigration",
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "annual",
+      "comparisonKey": "uk-ons-long-term-immigration",
+      "valueStatus": "estimate",
+      "basis": "People immigrating to the UK for at least 12 months under the ONS long-term migration definition",
+      "note": "ONS long-term immigration estimates; not a count of all border crossings.",
+      "caveats": [
+        "Provisional official statistics in development; subject to revision."
+      ]
+    },
+    {
+      "id": "emigration",
+      "label": "Long-term emigration",
+      "topic": "Population",
+      "section": "migrationStats",
+      "route": "/section/migration/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "people",
+      "valuePath": "headline.emigration",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "historyPath": "history",
+      "historyValue": "emigration",
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "annual",
+      "comparisonKey": "uk-ons-long-term-emigration",
+      "valueStatus": "estimate",
+      "basis": "People emigrating from the UK for at least 12 months under the ONS long-term migration definition",
+      "note": "ONS long-term emigration estimates; not a count of all border crossings.",
+      "caveats": [
+        "Provisional official statistics in development; subject to revision."
+      ]
+    },
+    {
+      "id": "regularPayRealGrowth",
+      "label": "Real wages: regular pay growth",
+      "topic": "Economy",
+      "section": "realWages",
+      "route": "/section/real-wages/",
+      "geography": {
+        "code": "GB",
+        "label": "Great Britain"
+      },
+      "unit": "%",
+      "valuePath": "headline.regularPayRealGrowthPercent",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "historyPath": "history",
+      "historyValue": "regularPayRealGrowthPercent",
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "monthly-three-month-average",
+      "comparisonKey": "gb-ons-regular-pay-real-growth-cpih",
+      "valueStatus": "estimate",
+      "basis": "ONS regular pay growth in real terms, CPIH-adjusted",
+      "note": "ONS's directly published real-terms regular-pay growth figure; provisional and subject to revision.",
+      "caveats": [
+        "Published directly by ONS and subject to revision."
+      ]
+    },
+    {
+      "id": "totalPayRealGrowth",
+      "label": "Real wages: total pay growth",
+      "topic": "Economy",
+      "section": "realWages",
+      "route": "/section/real-wages/",
+      "geography": {
+        "code": "GB",
+        "label": "Great Britain"
+      },
+      "unit": "%",
+      "valuePath": "headline.totalPayRealGrowthPercent",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "historyPath": "history",
+      "historyValue": "totalPayRealGrowthPercent",
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "monthly-three-month-average",
+      "comparisonKey": "gb-ons-total-pay-real-growth-cpih",
+      "valueStatus": "estimate",
+      "basis": "ONS total pay growth in real terms, including bonuses, CPIH-adjusted",
+      "note": "ONS's directly published real-terms total-pay growth figure; provisional and subject to revision.",
+      "caveats": [
+        "Published directly by ONS and subject to revision."
+      ]
+    },
+    {
+      "id": "housePriceChange",
+      "label": "House prices: annual change",
+      "topic": "Housing",
+      "section": "housePriceIndex",
+      "route": "/section/house-price-index/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "%",
+      "valuePath": "headline.changePercent",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "historyPath": "history",
+      "historyValue": "hpiChangePercent",
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "monthly",
+      "comparisonKey": "uk-house-price-index-annual-change",
+      "valueStatus": "estimate",
+      "basis": "Annual percentage change in the UK House Price Index",
+      "note": "The HPI change series can lag the bulletin's release month; average price is a separate headline-only value.",
+      "caveats": [
+        "Provisional house-price estimates are subject to revision; the observation period can lag the bulletin date."
+      ]
+    },
+    {
+      "id": "housePriceAverage",
+      "label": "Average UK house price",
+      "topic": "Housing · Buying",
+      "section": "housePriceIndex",
+      "route": "/cost-of-living/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "GBP",
+      "valuePath": "headline.avgPriceGbp",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "observationPath": "headline.observedAt",
+      "historyPath": null,
+      "historyValue": null,
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "monthly",
+      "comparisonKey": "uk-house-price-index-average-price",
+      "valueStatus": "estimate",
+      "basis": "ONS average UK house price for the observation month stated in the UK House Price Index bulletin",
+      "note": "A national average price level, not an estimate of a particular property's value or a household's affordability.",
+      "caveats": [
+        "The latest UK HPI price estimate is provisional and subject to revision; the observation period may lag the bulletin publication date."
+      ]
+    },
+    {
+      "id": "privateRentAnnualChange",
+      "label": "Private rent: annual change",
+      "topic": "Housing",
+      "section": "housePriceIndex",
+      "route": "/cost-of-living/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "%",
+      "valuePath": "headline.privateRentAnnualChangePercent",
+      "periodPath": "headline.privateRentPeriod",
+      "publishedPath": "headline.releaseDate",
+      "historyPath": "history",
+      "historyValue": "privateRentAnnualChangePercent",
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "monthly",
+      "comparisonKey": "uk-ons-price-index-of-private-rents-annual-change",
+      "valueStatus": "estimate",
+      "basis": "Annual change in the ONS Price Index of Private Rents (PIPR)",
+      "note": "PIPR measures changes in rents paid by private tenants; it is not an estimate of an individual household's rent.",
+      "caveats": [
+        "The latest estimates are provisional and subject to revision; Northern Ireland estimates and country-level collection have stated comparability limits."
+      ]
+    },
+    {
+      "id": "privateRentAverage",
+      "label": "Average monthly private rent",
+      "topic": "Housing",
+      "section": "housePriceIndex",
+      "route": "/cost-of-living/",
+      "geography": {
+        "code": "UK",
+        "label": "United Kingdom"
+      },
+      "unit": "GBP/month",
+      "valuePath": "headline.avgMonthlyPrivateRentGbp",
+      "periodPath": "headline.privateRentPeriod",
+      "publishedPath": "headline.releaseDate",
+      "observationPath": "headline.privateRentObservedAt",
+      "historyPath": null,
+      "historyValue": null,
+      "sourceUrlPath": "source.bulletinUrl",
+      "cadence": "monthly",
+      "comparisonKey": "uk-ons-average-monthly-private-rent",
+      "valueStatus": "estimate",
+      "basis": "ONS headline average monthly rent for UK privately rented properties",
+      "note": "An aggregate rental level, not a household-specific rent or affordability measure.",
+      "caveats": [
+        "The latest estimates are provisional and subject to revision; Northern Ireland estimates and country-level collection have stated comparability limits."
+      ]
+    },
+    {
+      "id": "crime-csew-headline",
+      "label": "CSEW headline crime",
+      "topic": "Crime · Crime Survey",
+      "section": "crimeStatistics",
+      "route": "/section/crime-stats/",
+      "geography": {
+        "code": "EW",
+        "label": "England and Wales"
+      },
+      "unit": "estimated incidents",
+      "valuePath": null,
+      "valueMeasurePath": "crimeSurvey.measures",
+      "valueMeasureId": "headlineCrime",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "observationPath": "headline.observedAt",
+      "sourceUrlPath": "headline.publicationUrl",
+      "contextPath": "crimeSurvey.caveat",
+      "cadence": "annual",
+      "comparisonKey": "england-wales-csew-headline-crime-incidents",
+      "valueStatus": "estimate",
+      "basis": "Estimated headline crime incidents experienced by households and people aged 16 and over in England and Wales, measured by the Crime Survey for England and Wales",
+      "note": "One value from the latest verified publication; the current public feed does not carry a comparable history.",
+      "caveats": [
+        "Survey estimate; subject to sampling uncertainty. No synthetic crime total is calculated."
+      ]
+    },
+    {
+      "id": "crime-csew-theft",
+      "label": "CSEW theft incidents",
+      "topic": "Crime · Crime Survey",
+      "section": "crimeStatistics",
+      "route": "/section/crime-stats/",
+      "geography": {
+        "code": "EW",
+        "label": "England and Wales"
+      },
+      "unit": "estimated incidents",
+      "valuePath": null,
+      "valueMeasurePath": "crimeSurvey.measures",
+      "valueMeasureId": "theft",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "observationPath": "headline.observedAt",
+      "sourceUrlPath": "headline.publicationUrl",
+      "contextPath": "crimeSurvey.caveat",
+      "cadence": "annual",
+      "comparisonKey": "england-wales-csew-theft-incidents",
+      "valueStatus": "estimate",
+      "basis": "Estimated theft incidents experienced by households and people aged 16 and over in England and Wales, measured by the Crime Survey for England and Wales",
+      "note": "One value from the latest verified publication; the current public feed does not carry a comparable history.",
+      "caveats": [
+        "Survey estimate; subject to sampling uncertainty."
+      ]
+    },
+    {
+      "id": "crime-csew-other-household-theft",
+      "label": "CSEW other household theft",
+      "topic": "Crime · Crime Survey",
+      "section": "crimeStatistics",
+      "route": "/section/crime-stats/",
+      "geography": {
+        "code": "EW",
+        "label": "England and Wales"
+      },
+      "unit": "estimated incidents",
+      "valuePath": null,
+      "valueMeasurePath": "crimeSurvey.measures",
+      "valueMeasureId": "otherHouseholdTheft",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "observationPath": "headline.observedAt",
+      "sourceUrlPath": "headline.publicationUrl",
+      "contextPath": "crimeSurvey.caveat",
+      "cadence": "annual",
+      "comparisonKey": "england-wales-csew-other-household-theft-incidents",
+      "valueStatus": "estimate",
+      "basis": "Estimated other household theft incidents experienced in England and Wales, measured by the Crime Survey for England and Wales",
+      "note": "One value from the latest verified publication; the current public feed does not carry a comparable history.",
+      "caveats": [
+        "Survey estimate; subject to sampling uncertainty."
+      ]
+    },
+    {
+      "id": "crime-csew-fraud",
+      "label": "CSEW fraud incidents",
+      "topic": "Crime · Crime Survey",
+      "section": "crimeStatistics",
+      "route": "/section/crime-stats/",
+      "geography": {
+        "code": "EW",
+        "label": "England and Wales"
+      },
+      "unit": "estimated incidents",
+      "valuePath": null,
+      "valueMeasurePath": "crimeSurvey.measures",
+      "valueMeasureId": "fraud",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "observationPath": "headline.observedAt",
+      "sourceUrlPath": "headline.publicationUrl",
+      "contextPath": "crimeSurvey.caveat",
+      "cadence": "annual",
+      "comparisonKey": "england-wales-csew-fraud-incidents",
+      "valueStatus": "estimate",
+      "basis": "Estimated fraud incidents experienced by households and people aged 16 and over in England and Wales, measured by the Crime Survey for England and Wales",
+      "note": "One value from the latest verified publication; the current public feed does not carry a comparable history.",
+      "caveats": [
+        "Survey estimate; subject to sampling uncertainty."
+      ]
+    },
+    {
+      "id": "crime-csew-computer-misuse",
+      "label": "CSEW computer misuse incidents",
+      "topic": "Crime · Crime Survey",
+      "section": "crimeStatistics",
+      "route": "/section/crime-stats/",
+      "geography": {
+        "code": "EW",
+        "label": "England and Wales"
+      },
+      "unit": "estimated incidents",
+      "valuePath": null,
+      "valueMeasurePath": "crimeSurvey.measures",
+      "valueMeasureId": "computerMisuse",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "observationPath": "headline.observedAt",
+      "sourceUrlPath": "headline.publicationUrl",
+      "contextPath": "crimeSurvey.caveat",
+      "cadence": "annual",
+      "comparisonKey": "england-wales-csew-computer-misuse-incidents",
+      "valueStatus": "estimate",
+      "basis": "Estimated computer misuse incidents experienced by households and people aged 16 and over in England and Wales, measured by the Crime Survey for England and Wales",
+      "note": "One value from the latest verified publication; the current public feed does not carry a comparable history.",
+      "caveats": [
+        "Survey estimate; subject to sampling uncertainty."
+      ]
+    },
+    {
+      "id": "crime-csew-violence",
+      "label": "CSEW violence incidents",
+      "topic": "Crime · Crime Survey",
+      "section": "crimeStatistics",
+      "route": "/section/crime-stats/",
+      "geography": {
+        "code": "EW",
+        "label": "England and Wales"
+      },
+      "unit": "estimated incidents",
+      "valuePath": null,
+      "valueMeasurePath": "crimeSurvey.measures",
+      "valueMeasureId": "violence",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "observationPath": "headline.observedAt",
+      "sourceUrlPath": "headline.publicationUrl",
+      "contextPath": "crimeSurvey.caveat",
+      "cadence": "annual",
+      "comparisonKey": "england-wales-csew-violence-incidents",
+      "valueStatus": "estimate",
+      "basis": "Estimated violence with or without injury incidents experienced by people aged 16 and over in England and Wales, measured by the Crime Survey for England and Wales",
+      "note": "One value from the latest verified publication; the current public feed does not carry a comparable history.",
+      "caveats": [
+        "Survey estimate; subject to sampling uncertainty."
+      ]
+    },
+    {
+      "id": "crime-csew-criminal-damage",
+      "label": "CSEW criminal damage incidents",
+      "topic": "Crime · Crime Survey",
+      "section": "crimeStatistics",
+      "route": "/section/crime-stats/",
+      "geography": {
+        "code": "EW",
+        "label": "England and Wales"
+      },
+      "unit": "estimated incidents",
+      "valuePath": null,
+      "valueMeasurePath": "crimeSurvey.measures",
+      "valueMeasureId": "criminalDamage",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "observationPath": "headline.observedAt",
+      "sourceUrlPath": "headline.publicationUrl",
+      "contextPath": "crimeSurvey.caveat",
+      "cadence": "annual",
+      "comparisonKey": "england-wales-csew-criminal-damage-incidents",
+      "valueStatus": "estimate",
+      "basis": "Estimated criminal damage incidents experienced in England and Wales, measured by the Crime Survey for England and Wales",
+      "note": "One value from the latest verified publication; the current public feed does not carry a comparable history.",
+      "caveats": [
+        "Survey estimate; subject to sampling uncertainty."
+      ]
+    },
+    {
+      "id": "crime-police-recorded",
+      "label": "Police-recorded crime excluding fraud and computer misuse",
+      "topic": "Crime · Police records",
+      "section": "crimeStatistics",
+      "route": "/section/crime-stats/",
+      "geography": {
+        "code": "EW",
+        "label": "England and Wales"
+      },
+      "unit": "recorded offences",
+      "valuePath": null,
+      "valueMeasurePath": "policeRecorded.measures",
+      "valueMeasureId": "recordedCrime",
+      "evidenceClass": "administrative-data",
+      "publisher": "Office for National Statistics · Home Office source data",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "observationPath": "headline.observedAt",
+      "sourceUrlPath": "headline.publicationUrl",
+      "contextPath": "policeRecorded.caveat",
+      "cadence": "annual",
+      "comparisonKey": "england-wales-police-recorded-crime-excl-fraud-computer-misuse",
+      "valueStatus": "observed",
+      "basis": "Offences recorded by police in England and Wales, excluding fraud and computer misuse",
+      "note": "Police-recorded offences are a separate administrative measure; changes can reflect reporting and recording practices.",
+      "caveats": [
+        "Police-recorded crime is not a measure of all crime experienced."
+      ]
+    },
+    {
+      "id": "crime-police-homicide",
+      "label": "Police-recorded homicide offences",
+      "topic": "Crime · Police records",
+      "section": "crimeStatistics",
+      "route": "/section/crime-stats/",
+      "geography": {
+        "code": "EW",
+        "label": "England and Wales"
+      },
+      "unit": "recorded offences",
+      "valuePath": null,
+      "valueMeasurePath": "policeRecorded.measures",
+      "valueMeasureId": "homicide",
+      "evidenceClass": "administrative-data",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "observationPath": "headline.observedAt",
+      "sourceUrlPath": "headline.publicationUrl",
+      "contextPath": "policeRecorded.caveat",
+      "cadence": "annual",
+      "comparisonKey": "england-wales-police-recorded-homicide",
+      "valueStatus": "observed",
+      "basis": "Homicide offences recorded by police in England and Wales",
+      "note": "Police-recorded offences are a separate administrative measure; changes can reflect reporting and recording practices.",
+      "caveats": [
+        "Police-recorded crime is not a measure of all crime experienced."
+      ]
+    },
+    {
+      "id": "crime-police-knife",
+      "label": "Police-recorded knife or sharp-instrument offences",
+      "topic": "Crime · Police records",
+      "section": "crimeStatistics",
+      "route": "/section/crime-stats/",
+      "geography": {
+        "code": "EW",
+        "label": "England and Wales"
+      },
+      "unit": "recorded offences",
+      "valuePath": null,
+      "valueMeasurePath": "policeRecorded.measures",
+      "valueMeasureId": "knife",
+      "evidenceClass": "administrative-data",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "observationPath": "headline.observedAt",
+      "sourceUrlPath": "headline.publicationUrl",
+      "contextPath": "policeRecorded.caveat",
+      "cadence": "annual",
+      "comparisonKey": "england-wales-police-recorded-knife-offences",
+      "valueStatus": "observed",
+      "basis": "Knife or sharp-instrument offences recorded by police in England and Wales",
+      "note": "Police-recorded offences are a separate administrative measure; changes can reflect reporting and recording practices.",
+      "caveats": [
+        "Police-recorded crime is not a measure of all crime experienced."
+      ]
+    },
+    {
+      "id": "crime-police-firearms",
+      "label": "Police-recorded firearms offences",
+      "topic": "Crime · Police records",
+      "section": "crimeStatistics",
+      "route": "/section/crime-stats/",
+      "geography": {
+        "code": "EW",
+        "label": "England and Wales"
+      },
+      "unit": "recorded offences",
+      "valuePath": null,
+      "valueMeasurePath": "policeRecorded.measures",
+      "valueMeasureId": "firearms",
+      "evidenceClass": "administrative-data",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "observationPath": "headline.observedAt",
+      "sourceUrlPath": "headline.publicationUrl",
+      "contextPath": "policeRecorded.caveat",
+      "cadence": "annual",
+      "comparisonKey": "england-wales-police-recorded-firearms-offences",
+      "valueStatus": "observed",
+      "basis": "Firearms offences recorded by police in England and Wales",
+      "note": "Police-recorded offences are a separate administrative measure; changes can reflect reporting and recording practices.",
+      "caveats": [
+        "Police-recorded crime is not a measure of all crime experienced."
+      ]
+    },
+    {
+      "id": "crime-police-personal-robbery",
+      "label": "Police-recorded personal robbery offences",
+      "topic": "Crime · Police records",
+      "section": "crimeStatistics",
+      "route": "/section/crime-stats/",
+      "geography": {
+        "code": "EW",
+        "label": "England and Wales"
+      },
+      "unit": "recorded offences",
+      "valuePath": null,
+      "valueMeasurePath": "policeRecorded.measures",
+      "valueMeasureId": "personalRobbery",
+      "evidenceClass": "administrative-data",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "observationPath": "headline.observedAt",
+      "sourceUrlPath": "headline.publicationUrl",
+      "contextPath": "policeRecorded.caveat",
+      "cadence": "annual",
+      "comparisonKey": "england-wales-police-recorded-personal-robbery",
+      "valueStatus": "observed",
+      "basis": "Robbery of personal property recorded by police in England and Wales",
+      "note": "Police-recorded offences are a separate administrative measure; changes can reflect reporting and recording practices.",
+      "caveats": [
+        "Police-recorded crime is not a measure of all crime experienced."
+      ]
+    },
+    {
+      "id": "crime-police-shoplifting",
+      "label": "Police-recorded shoplifting offences",
+      "topic": "Crime · Police records",
+      "section": "crimeStatistics",
+      "route": "/section/crime-stats/",
+      "geography": {
+        "code": "EW",
+        "label": "England and Wales"
+      },
+      "unit": "recorded offences",
+      "valuePath": null,
+      "valueMeasurePath": "policeRecorded.measures",
+      "valueMeasureId": "shoplifting",
+      "evidenceClass": "administrative-data",
+      "periodPath": "headline.period",
+      "publishedPath": "headline.releaseDate",
+      "observationPath": "headline.observedAt",
+      "sourceUrlPath": "headline.publicationUrl",
+      "contextPath": "policeRecorded.caveat",
+      "cadence": "annual",
+      "comparisonKey": "england-wales-police-recorded-shoplifting",
+      "valueStatus": "observed",
+      "basis": "Shoplifting offences recorded by police in England and Wales",
+      "note": "Police-recorded offences are a separate administrative measure; changes can reflect reporting and recording practices.",
+      "caveats": [
+        "Police-recorded crime is not a measure of all crime experienced."
+      ]
+    },
+    {
+      "id": "crime-justice-magistrates-charge-to-completion",
+      "label": "Magistrates’ courts: median charge-to-completion time",
+      "topic": "Crime · Court timeliness",
+      "section": "crimeStatistics",
+      "route": "/section/crime-stats/",
+      "geography": {
+        "code": "EW",
+        "label": "England and Wales"
+      },
+      "unit": "median days",
+      "valuePath": null,
+      "valueMeasurePath": "justice.measures",
+      "valueMeasureId": "magistratesChargeToCompletion",
+      "evidenceClass": "administrative-data",
+      "publisher": "Ministry of Justice",
+      "periodPath": "justice.period",
+      "publishedPath": "justice.releaseDate",
+      "observationPath": "justice.releaseDate",
+      "sourceUrlPath": "justice.sourceUrl",
+      "contextPath": "justice.caveat",
+      "cadence": "quarterly",
+      "comparisonKey": "england-wales-magistrates-charge-to-completion-median-days",
+      "valueStatus": "observed",
+      "basis": "Median days from charge to completion for completed magistrates’ court cases in England and Wales",
+      "note": "Court timeliness is a separate, backward-looking justice measure, not a crime rate.",
+      "caveats": [
+        "Completed cases only; do not combine with victimisation or recorded-offence measures."
+      ]
+    },
+    {
+      "id": "crime-justice-crown-charge-to-completion",
+      "label": "Crown Court: median charge-to-completion time",
+      "topic": "Crime · Court timeliness",
+      "section": "crimeStatistics",
+      "route": "/section/crime-stats/",
+      "geography": {
+        "code": "EW",
+        "label": "England and Wales"
+      },
+      "unit": "median days",
+      "valuePath": null,
+      "valueMeasurePath": "justice.measures",
+      "valueMeasureId": "crownChargeToCompletion",
+      "evidenceClass": "administrative-data",
+      "publisher": "Ministry of Justice",
+      "periodPath": "justice.period",
+      "publishedPath": "justice.releaseDate",
+      "observationPath": "justice.releaseDate",
+      "sourceUrlPath": "justice.sourceUrl",
+      "contextPath": "justice.caveat",
+      "cadence": "quarterly",
+      "comparisonKey": "england-wales-crown-charge-to-completion-median-days",
+      "valueStatus": "observed",
+      "basis": "Median days from charge to completion for completed Crown Court cases in England and Wales",
+      "note": "Court timeliness is a separate, backward-looking justice measure, not a crime rate.",
+      "caveats": [
+        "Completed cases only; do not combine with victimisation or recorded-offence measures."
+      ]
+    },
+    {
+      "id": "crime-justice-crown-offence-to-completion",
+      "label": "Crown Court: median offence-to-completion time",
+      "topic": "Crime · Court timeliness",
+      "section": "crimeStatistics",
+      "route": "/section/crime-stats/",
+      "geography": {
+        "code": "EW",
+        "label": "England and Wales"
+      },
+      "unit": "median days",
+      "valuePath": null,
+      "valueMeasurePath": "justice.measures",
+      "valueMeasureId": "crownOffenceToCompletion",
+      "evidenceClass": "administrative-data",
+      "publisher": "Ministry of Justice",
+      "periodPath": "justice.period",
+      "publishedPath": "justice.releaseDate",
+      "observationPath": "justice.releaseDate",
+      "sourceUrlPath": "justice.sourceUrl",
+      "contextPath": "justice.caveat",
+      "cadence": "quarterly",
+      "comparisonKey": "england-wales-crown-offence-to-completion-median-days",
+      "valueStatus": "observed",
+      "basis": "Median days from offence to completion for completed Crown Court cases in England and Wales",
+      "note": "Court timeliness is a separate, backward-looking justice measure, not a crime rate.",
+      "caveats": [
+        "Completed cases only; do not combine with victimisation or recorded-offence measures."
+      ]
+    }
+  ],
+  "downloadIds": [
+    "electionPolling",
+    "nationalDebt",
+    "gdpTracker",
+    "sentimentPulse",
+    "taxRevenue",
+    "employmentStats",
+    "crimeStatistics",
+    "nhsStats",
+    "migrationStats",
+    "housePriceIndex",
+    "realWages"
+  ],
+  "releaseFamilies": [
+    {
+      "familyIds": [
+        "gdpTracker"
+      ],
+      "pattern": "^GDP monthly estimate, UK:",
+      "flags": "i",
+      "exclude": "time series",
+      "excludeFlags": "i"
+    },
+    {
+      "familyIds": [
+        "inflation"
+      ],
+      "pattern": "^Consumer price inflation, UK:",
+      "flags": "i",
+      "exclude": "time series",
+      "excludeFlags": "i"
+    },
+    {
+      "familyIds": [
+        "employmentStats",
+        "realWages"
+      ],
+      "pattern": "^UK Labour Market:",
+      "flags": "i"
+    },
+    {
+      "familyIds": [
+        "realWages"
+      ],
+      "pattern": "^Average weekly earnings in Great Britain:",
+      "flags": "i",
+      "exclude": "time series",
+      "excludeFlags": "i"
+    },
+    {
+      "familyIds": [
+        "nationalDebt",
+        "taxRevenue"
+      ],
+      "pattern": "^Public sector finances, UK:",
+      "flags": "i",
+      "exclude": "time series",
+      "excludeFlags": "i"
+    },
+    {
+      "familyIds": [
+        "housePriceIndex"
+      ],
+      "pattern": "^Private rent and house prices, UK:",
+      "flags": "i",
+      "exclude": "time series",
+      "excludeFlags": "i"
+    },
+    {
+      "familyIds": [
+        "migrationStats"
+      ],
+      "pattern": "^Long-term international migration",
+      "flags": "i",
+      "exclude": "time series",
+      "excludeFlags": "i"
+    },
+    {
+      "familyIds": [
+        "crimeStatistics"
+      ],
+      "pattern": "^Crime in England and Wales:",
+      "flags": "i",
+      "exclude": "time series",
+      "excludeFlags": "i"
+    }
+  ],
+  "routeManifest": [
+    {
+      "path": "/",
+      "kind": "static",
+      "feeds": [],
+      "gate": "product",
+      "capability": "home"
+    },
+    {
+      "path": "/explore/",
+      "kind": "static",
+      "feeds": [],
+      "gate": "product",
+      "capability": "explore"
+    },
+    {
+      "path": "/measure/",
+      "kind": "static",
+      "feeds": [],
+      "gate": "product",
+      "capability": "measureLibrary"
+    },
+    {
+      "path": "/compare/",
+      "kind": "static",
+      "feeds": [],
+      "gate": "product",
+      "capability": "compare"
+    },
+    {
+      "path": "/briefing/",
+      "kind": "static",
+      "feeds": [],
+      "gate": "product",
+      "capability": "briefing"
+    },
+    {
+      "path": "/cost-of-living/",
+      "kind": "static",
+      "feeds": [],
+      "gate": "product",
+      "capability": "costOfLiving"
+    },
+    {
+      "path": "/sources/",
+      "kind": "static",
+      "feeds": [],
+      "gate": "product",
+      "capability": "sources"
+    },
+    {
+      "path": "/calendar/",
+      "kind": "evidence",
+      "feeds": [
+        "releaseCalendar",
+        "nhsReleaseCalendar"
+      ],
+      "gate": "any-published",
+      "capability": "calendar"
+    },
+    {
+      "path": "/money/",
+      "kind": "evidence",
+      "feeds": [
+        "governmentContracts"
+      ],
+      "gate": "any-published",
+      "capability": "publicMoney"
+    },
+    {
+      "path": "/money/buyer/[id]/",
+      "kind": "evidence",
+      "feeds": [
+        "governmentContracts"
+      ],
+      "gate": "any-published",
+      "capability": "publicMoney"
+    },
+    {
+      "path": "/money/supplier/[id]/",
+      "kind": "evidence",
+      "feeds": [
+        "governmentContracts"
+      ],
+      "gate": "any-published",
+      "capability": "publicMoney"
+    },
+    {
+      "path": "/editions/",
+      "kind": "evidence",
+      "feeds": [
+        "editionArchive"
+      ],
+      "gate": "any-published",
+      "capability": "editionArchive"
+    },
+    {
+      "path": "/editions/[id]/",
+      "kind": "evidence",
+      "feeds": [
+        "editionArchive"
+      ],
+      "gate": "any-published",
+      "capability": "editionArchive"
+    },
+    {
+      "path": "/stories/household-budgets/",
+      "kind": "evidence",
+      "feeds": [
+        "storyHouseholdBudgets"
+      ],
+      "gate": "any-published",
+      "capability": "storyHouseholdBudgets"
+    },
+    {
+      "path": "/stories/public-finances/",
+      "kind": "evidence",
+      "feeds": [
+        "storyPublicFinances"
+      ],
+      "gate": "any-published",
+      "capability": "storyPublicFinances"
+    },
+    {
+      "path": "/stories/[slug]/",
+      "kind": "evidence",
+      "feeds": [],
+      "gate": "all-of"
+    },
+    {
+      "path": "/feed.xml",
+      "kind": "api",
+      "feeds": [],
+      "gate": "none"
+    },
+    {
+      "path": "/sitemap.xml",
+      "kind": "api",
+      "feeds": [],
+      "gate": "none"
+    },
+    {
+      "path": "/robots.txt",
+      "kind": "api",
+      "feeds": [],
+      "gate": "none"
+    },
+    {
+      "path": "/about/",
+      "kind": "static",
+      "feeds": [],
+      "gate": "none"
+    },
+    {
+      "path": "/editorial-policy/",
+      "kind": "static",
+      "feeds": [],
+      "gate": "none"
+    },
+    {
+      "path": "/independence/",
+      "kind": "static",
+      "feeds": [],
+      "gate": "none"
+    },
+    {
+      "path": "/contact/",
+      "kind": "static",
+      "feeds": [],
+      "gate": "none"
+    },
+    {
+      "path": "/corrections/",
+      "kind": "static",
+      "feeds": [],
+      "gate": "none"
+    },
+    {
+      "path": "/section/election-polls/",
+      "kind": "evidence",
+      "feeds": [
+        "electionPolling"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/section/betting-odds/",
+      "kind": "evidence",
+      "feeds": [
+        "bettingOdds"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/section/national-debt/",
+      "kind": "evidence",
+      "feeds": [
+        "nationalDebt"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/section/gdp/",
+      "kind": "evidence",
+      "feeds": [
+        "gdpTracker"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/section/economy/",
+      "kind": "evidence",
+      "feeds": [
+        "sentimentPulse"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/section/tax/",
+      "kind": "evidence",
+      "feeds": [
+        "taxRevenue"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/section/government-contracts/",
+      "kind": "evidence",
+      "feeds": [
+        "governmentContracts"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/section/employment/",
+      "kind": "evidence",
+      "feeds": [
+        "employmentStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/section/crime-stats/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/section/nhs/",
+      "kind": "evidence",
+      "feeds": [
+        "nhsStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/section/migration/",
+      "kind": "evidence",
+      "feeds": [
+        "migrationStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/section/house-price-index/",
+      "kind": "evidence",
+      "feeds": [
+        "housePriceIndex"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/section/real-wages/",
+      "kind": "evidence",
+      "feeds": [
+        "realWages"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/section/early-years/",
+      "kind": "evidence",
+      "feeds": [
+        "earlyYears"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/section/uk-in-context/",
+      "kind": "evidence",
+      "feeds": [
+        "internationalComparison"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/sentimentPulse.json",
+      "kind": "api",
+      "feeds": [
+        "sentimentPulse"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/sentimentPulse.csv",
+      "kind": "api",
+      "feeds": [
+        "sentimentPulse"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/gdpTracker.json",
+      "kind": "api",
+      "feeds": [
+        "gdpTracker"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/gdpTracker.csv",
+      "kind": "api",
+      "feeds": [
+        "gdpTracker"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/employmentStats.json",
+      "kind": "api",
+      "feeds": [
+        "employmentStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/employmentStats.csv",
+      "kind": "api",
+      "feeds": [
+        "employmentStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/nationalDebt.json",
+      "kind": "api",
+      "feeds": [
+        "nationalDebt"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/nationalDebt.csv",
+      "kind": "api",
+      "feeds": [
+        "nationalDebt"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/taxRevenue.json",
+      "kind": "api",
+      "feeds": [
+        "taxRevenue"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/taxRevenue.csv",
+      "kind": "api",
+      "feeds": [
+        "taxRevenue"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/migrationStats.json",
+      "kind": "api",
+      "feeds": [
+        "migrationStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/migrationStats.csv",
+      "kind": "api",
+      "feeds": [
+        "migrationStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/housePriceIndex.json",
+      "kind": "api",
+      "feeds": [
+        "housePriceIndex"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/housePriceIndex.csv",
+      "kind": "api",
+      "feeds": [
+        "housePriceIndex"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/realWages.json",
+      "kind": "api",
+      "feeds": [
+        "realWages"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/realWages.csv",
+      "kind": "api",
+      "feeds": [
+        "realWages"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/electionPolling.json",
+      "kind": "api",
+      "feeds": [
+        "electionPolling"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/electionPolling.csv",
+      "kind": "api",
+      "feeds": [
+        "electionPolling"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/nhsStats.json",
+      "kind": "api",
+      "feeds": [
+        "nhsStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/nhsStats.csv",
+      "kind": "api",
+      "feeds": [
+        "nhsStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/bettingOdds.json",
+      "kind": "api",
+      "feeds": [
+        "bettingOdds"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/bettingOdds.csv",
+      "kind": "api",
+      "feeds": [
+        "bettingOdds"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/crimeStatistics.json",
+      "kind": "api",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/data/sections/crimeStatistics.csv",
+      "kind": "api",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/gdp-monthlyGrowth/",
+      "kind": "evidence",
+      "feeds": [
+        "gdpTracker"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/gdp-threeMonthGrowth/",
+      "kind": "evidence",
+      "feeds": [
+        "gdpTracker"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/gdp-annualGrowth/",
+      "kind": "evidence",
+      "feeds": [
+        "gdpTracker"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/inflation/",
+      "kind": "evidence",
+      "feeds": [
+        "sentimentPulse"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/bankRate/",
+      "kind": "evidence",
+      "feeds": [
+        "sentimentPulse"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/unemployment/",
+      "kind": "evidence",
+      "feeds": [
+        "employmentStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/employmentRate/",
+      "kind": "evidence",
+      "feeds": [
+        "employmentStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/inactivityRate/",
+      "kind": "evidence",
+      "feeds": [
+        "employmentStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/vacancies/",
+      "kind": "evidence",
+      "feeds": [
+        "employmentStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/waitingPathwaysEstimate/",
+      "kind": "evidence",
+      "feeds": [
+        "nhsStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/debt-ratio/",
+      "kind": "evidence",
+      "feeds": [
+        "nationalDebt"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/debt-stock/",
+      "kind": "evidence",
+      "feeds": [
+        "nationalDebt"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/receipts/",
+      "kind": "evidence",
+      "feeds": [
+        "taxRevenue"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/netMigration/",
+      "kind": "evidence",
+      "feeds": [
+        "migrationStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/immigration/",
+      "kind": "evidence",
+      "feeds": [
+        "migrationStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/emigration/",
+      "kind": "evidence",
+      "feeds": [
+        "migrationStats"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/regularPayRealGrowth/",
+      "kind": "evidence",
+      "feeds": [
+        "realWages"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/totalPayRealGrowth/",
+      "kind": "evidence",
+      "feeds": [
+        "realWages"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/housePriceChange/",
+      "kind": "evidence",
+      "feeds": [
+        "housePriceIndex"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/housePriceAverage/",
+      "kind": "evidence",
+      "feeds": [
+        "housePriceIndex"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/privateRentAnnualChange/",
+      "kind": "evidence",
+      "feeds": [
+        "housePriceIndex"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/privateRentAverage/",
+      "kind": "evidence",
+      "feeds": [
+        "housePriceIndex"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/crime-csew-headline/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/crime-csew-theft/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/crime-csew-other-household-theft/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/crime-csew-fraud/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/crime-csew-computer-misuse/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/crime-csew-violence/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/crime-csew-criminal-damage/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/crime-police-recorded/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/crime-police-homicide/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/crime-police-knife/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/crime-police-firearms/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/crime-police-personal-robbery/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/crime-police-shoplifting/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/crime-justice-magistrates-charge-to-completion/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/crime-justice-crown-charge-to-completion/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/crime-justice-crown-offence-to-completion/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published"
+    },
+    {
+      "path": "/measure/[id]/",
+      "kind": "evidence",
+      "feeds": [],
+      "gate": "all-of"
+    },
+    {
+      "path": "/sources/electionPolling/",
+      "kind": "evidence",
+      "feeds": [
+        "electionPolling"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/bettingOdds/",
+      "kind": "evidence",
+      "feeds": [
+        "bettingOdds"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/nationalDebt/",
+      "kind": "evidence",
+      "feeds": [
+        "nationalDebt"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/gdpTracker/",
+      "kind": "evidence",
+      "feeds": [
+        "gdpTracker"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/sentimentPulse/",
+      "kind": "evidence",
+      "feeds": [
+        "sentimentPulse"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/taxRevenue/",
+      "kind": "evidence",
+      "feeds": [
+        "taxRevenue"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/governmentContracts/",
+      "kind": "evidence",
+      "feeds": [
+        "governmentContracts"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/employmentStats/",
+      "kind": "evidence",
+      "feeds": [
+        "employmentStats"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/crimeStatistics/",
+      "kind": "evidence",
+      "feeds": [
+        "crimeStatistics"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/nhsStats/",
+      "kind": "evidence",
+      "feeds": [
+        "nhsStats"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/migrationStats/",
+      "kind": "evidence",
+      "feeds": [
+        "migrationStats"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/housePriceIndex/",
+      "kind": "evidence",
+      "feeds": [
+        "housePriceIndex"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/realWages/",
+      "kind": "evidence",
+      "feeds": [
+        "realWages"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/earlyYears/",
+      "kind": "evidence",
+      "feeds": [
+        "earlyYears"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/releaseCalendar/",
+      "kind": "evidence",
+      "feeds": [
+        "releaseCalendar"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/nhsReleaseCalendar/",
+      "kind": "evidence",
+      "feeds": [
+        "nhsReleaseCalendar"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/internationalComparison/",
+      "kind": "evidence",
+      "feeds": [
+        "internationalComparison"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/editionArchive/",
+      "kind": "evidence",
+      "feeds": [
+        "editionArchive"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/storyHouseholdBudgets/",
+      "kind": "evidence",
+      "feeds": [
+        "storyHouseholdBudgets"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/storyPublicFinances/",
+      "kind": "evidence",
+      "feeds": [
+        "storyPublicFinances"
+      ],
+      "gate": "any-published",
+      "capability": "sources"
+    },
+    {
+      "path": "/sources/[id]/",
+      "kind": "evidence",
+      "feeds": [],
+      "gate": "all-of",
+      "capability": "sources"
+    }
+  ]
+}
