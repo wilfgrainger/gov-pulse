@@ -1,26 +1,23 @@
 import { publicationPublished } from "../contracts/evidence-policy.js";
-import { REQUIRED_PUBLISHED_SECTION_IDS } from "../feeds/registry.js";
-import { collectionPlan } from "../feeds/registry.js";
+import { REQUIRED_PUBLISHED_SECTION_IDS, collectionPlan } from "../feeds/registry.js";
 
-// Feeds declared under feeds/ project their own plan entry; the rest are still listed here.
 const DECLARED_PLAN = collectionPlan();
 
-const SECTION_COLLECTION_PLAN = Object.freeze({
-  gdpTracker: Object.freeze({ ...DECLARED_PLAN.gdpTracker }),
-  sentimentPulse: Object.freeze({ ...DECLARED_PLAN.sentimentPulse }),
-  employmentStats: Object.freeze({ ...DECLARED_PLAN.employmentStats }),
-  taxRevenue: Object.freeze({ ...DECLARED_PLAN.taxRevenue }),
-  nationalDebt: Object.freeze({ ...DECLARED_PLAN.nationalDebt }),
-  migrationStats: Object.freeze({ ...DECLARED_PLAN.migrationStats }),
-  housePriceIndex: Object.freeze({ ...DECLARED_PLAN.housePriceIndex }),
-  realWages: Object.freeze({ ...DECLARED_PLAN.realWages }),
-  crimeStatistics: Object.freeze({ ...DECLARED_PLAN.crimeStatistics }),
-  electionPolling: Object.freeze({ ...DECLARED_PLAN.electionPolling }),
-  nhsStats: Object.freeze({ ...DECLARED_PLAN.nhsStats }),
-  bettingOdds: Object.freeze({ ...DECLARED_PLAN.bettingOdds }),
-  releaseCalendar: Object.freeze({ ...DECLARED_PLAN.releaseCalendar }),
-  nhsReleaseCalendar: Object.freeze({ ...DECLARED_PLAN.nhsReleaseCalendar }),
-});
+// Membership is every feed that declares a collection (feeds/*/feed.js). The
+// order below is the published job order of the existing feeds; feeds added
+// later follow in definition order.
+const PLAN_ORDER = [
+  "gdpTracker", "sentimentPulse", "employmentStats", "taxRevenue", "nationalDebt", "migrationStats",
+  "housePriceIndex", "realWages", "crimeStatistics", "electionPolling", "nhsStats", "bettingOdds",
+  "releaseCalendar", "nhsReleaseCalendar",
+];
+const declaredIds = Object.keys(DECLARED_PLAN);
+const SECTION_COLLECTION_PLAN = Object.freeze(Object.fromEntries(
+  [
+    ...PLAN_ORDER.filter((id) => declaredIds.includes(id)),
+    ...declaredIds.filter((id) => !PLAN_ORDER.includes(id)),
+  ].map((id) => [id, Object.freeze({ ...DECLARED_PLAN[id] })]),
+));
 
 const GENERIC_SECTIONS = Object.freeze(
   Object.entries(SECTION_COLLECTION_PLAN)

@@ -4,16 +4,10 @@ import { releaseFamilyGroups } from "../registry.js";
 const ONS_RELEASE_CALENDAR_URL = "https://www.ons.gov.uk/releasecalendar";
 const MAX_CALENDAR_BYTES = 512 * 1024;
 // The title families come from the feeds' own releaseTitles (feeds/*/feed.js).
-// They are read on first use: feeds/registry.js imports feeds/index.js, which
-// imports this module, so an eager read would see the registry half-initialised.
-let releaseFamilies;
-function familyList() {
-  releaseFamilies ??= Object.freeze(releaseFamilyGroups().map((family) => Object.freeze(family)));
-  return releaseFamilies;
-}
+const RELEASE_FAMILIES = Object.freeze(releaseFamilyGroups().map((family) => Object.freeze(family)));
 
 function familiesForTitle(title) {
-  return familyList().find(({ pattern, exclude }) => pattern.test(title) && !exclude?.test(title))?.familyIds ?? [];
+  return RELEASE_FAMILIES.find(({ pattern, exclude }) => pattern.test(title) && !exclude?.test(title))?.familyIds ?? [];
 }
 
 function isoDate(raw) {

@@ -1,22 +1,6 @@
 import { SOURCE_CATALOG, SOURCE_CATALOG_VERSION, deepFreeze } from "./source-definitions.js";
-import { definition as migrationStatsDefinition } from "../feeds/migration/feed.js";
-import { definition as nhsStatsDefinition } from "../feeds/nhs/feed.js";
-import { definition as crimeStatisticsDefinition } from "../feeds/crime-stats/feed.js";
-import { definition as gdpTrackerDefinition } from "../feeds/gdp/feed.js";
-import { definition as employmentStatsDefinition } from "../feeds/employment/feed.js";
-import { definition as taxRevenueDefinition } from "../feeds/tax/feed.js";
-import { definition as nationalDebtDefinition } from "../feeds/national-debt/feed.js";
-import { definition as sentimentPulseDefinition } from "../feeds/economy/feed.js";
-import { definition as electionPollingDefinition } from "../feeds/election-polls/feed.js";
-import { definition as bettingOddsDefinition } from "../feeds/betting-odds/feed.js";
-import { definition as releaseCalendarDefinition } from "../feeds/release-calendar/feed.js";
-import { definition as nhsReleaseCalendarDefinition } from "../feeds/nhs-release-calendar/feed.js";
-import { definition as earlyYearsDefinition } from "../feeds/early-years/feed.js";
-import { definition as governmentContractsDefinition } from "../feeds/government-contracts/feed.js";
-import { definition as internationalComparisonDefinition } from "../feeds/international-comparison/feed.js";
 import { catalogEntryOf } from "../feeds/define-feed.js";
-import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
-import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
+import { DEFINITIONS } from "../feeds/definitions.generated.js";
 
 export { SOURCE_CATALOG, SOURCE_CATALOG_VERSION };
 
@@ -57,25 +41,17 @@ const UI_CLASS = Object.freeze({
 });
 
 // Every entry is projected from its feed definition (feeds/<slug>/feed.js), the
-// single declaration. The list below is the published catalogue order.
+// single declaration. Membership is every definition; the order below is the
+// published catalogue order of the existing feeds, and feeds added later follow
+// in definition order.
+const CATALOG_ORDER = [
+  "sentimentPulse", "gdpTracker", "employmentStats", "nationalDebt", "taxRevenue", "migrationStats",
+  "housePriceIndex", "realWages", "electionPolling", "nhsStats", "bettingOdds", "crimeStatistics",
+  "governmentContracts", "releaseCalendar", "nhsReleaseCalendar", "internationalComparison", "earlyYears",
+];
 const CATALOG_DEFINITIONS = [
-  sentimentPulseDefinition,
-  gdpTrackerDefinition,
-  employmentStatsDefinition,
-  nationalDebtDefinition,
-  taxRevenueDefinition,
-  migrationStatsDefinition,
-  housePriceIndexDefinition,
-  realWagesDefinition,
-  electionPollingDefinition,
-  nhsStatsDefinition,
-  bettingOddsDefinition,
-  crimeStatisticsDefinition,
-  governmentContractsDefinition,
-  releaseCalendarDefinition,
-  nhsReleaseCalendarDefinition,
-  internationalComparisonDefinition,
-  earlyYearsDefinition,
+  ...CATALOG_ORDER.flatMap((id) => DEFINITIONS.filter((definition) => definition.id === id)),
+  ...DEFINITIONS.filter((definition) => !CATALOG_ORDER.includes(definition.id)),
 ];
 
 export const FEED_CATALOG = deepFreeze(

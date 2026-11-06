@@ -136,32 +136,41 @@ function declaredContract(section, local = {}) {
   return { maxAgeDays, extract };
 }
 
-const contracts = {
-  electionPolling: declaredContract("electionPolling", {
+// Extractors that belong to one feed only, keyed by feed id then by the extractor
+// name its definition declares. Shared extractors live in EXTRACTORS above.
+const FEED_EXTRACTORS = {
+  electionPolling: {
     extract(data, now) {
       return latestBy(data?.recentPolls, (entry) => entry?.date, now);
     },
-  }),
-  sentimentPulse: declaredContract("sentimentPulse", {
+  },
+  sentimentPulse: {
     extract(data, now) {
       return latestBy(data?.economicData, (entry) => entry?.date, now);
     },
-  }),
-  gdpTracker: declaredContract("gdpTracker"),
-  employmentStats: declaredContract("employmentStats"),
-  nationalDebt: declaredContract("nationalDebt", {
+  },
+  nationalDebt: {
     extract(data, now) {
       const date = parsePeriod(data?.baseDate, now);
       return date ? { raw: date.toISOString().slice(0, 10), date } : null;
     },
-  }),
-  taxRevenue: declaredContract("taxRevenue"),
-  migrationStats: declaredContract("migrationStats"),
-  housePriceIndex: declaredContract("housePriceIndex"),
-  realWages: declaredContract("realWages"),
-  nhsStats: declaredContract("nhsStats"),
-  crimeStatistics: declaredContract("crimeStatistics"),
+  },
 };
+
+// Membership is every feed whose definition declares an observation window
+// (feeds/*/feed.js); the order below is the published order of the existing
+// feeds, and feeds added later follow in definition order.
+const OBSERVATION_ORDER = [
+  "electionPolling", "sentimentPulse", "gdpTracker", "employmentStats", "nationalDebt",
+  "taxRevenue", "migrationStats", "housePriceIndex", "realWages", "nhsStats", "crimeStatistics",
+];
+const declaredIds = Object.keys(observationContracts());
+const contracts = Object.fromEntries(
+  [
+    ...OBSERVATION_ORDER.filter((id) => declaredIds.includes(id)),
+    ...declaredIds.filter((id) => !OBSERVATION_ORDER.includes(id)),
+  ].map((id) => [id, declaredContract(id, FEED_EXTRACTORS[id])]),
+);
 
 export function applyObservationContracts(descriptors, nowProvider = () => new Date()) {
   for (const [section, contract] of Object.entries(contracts)) {

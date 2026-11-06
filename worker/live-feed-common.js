@@ -1,5 +1,5 @@
 import { APPROVED_SOURCE_HOSTS } from "./approved-source-hosts.js";
-import { provenanceFor } from "../feeds/registry-views.js";
+import { provenanceFor } from "../feeds/registry.js";
 import {
   MAX_RESPONSE_BYTES,
   cancelResponseBody,

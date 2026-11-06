@@ -1,5 +1,12 @@
-// Pure projections from FEEDS onto the shapes the hand-written registries used
-// to declare. Nothing here fetches, reads storage or decides publication.
+// Pure projections from the feed definitions onto the shapes the hand-written
+// registries used to declare. Nothing here fetches, reads storage or decides
+// publication.
+//
+// The definitions come from feeds/definitions.generated.js, which
+// scripts/generate-feed-projections.mjs --write derives from FEEDS in
+// feeds/index.js. Reading the generated list instead of FEEDS keeps every
+// collector out of the import graph of anything that only needs feed metadata
+// (the web Worker, the data Worker's public routes, scripts).
 //
 // Migration contract: every projection for a migrated feed is deep-equal to the
 // legacy object, proven against tests/fixtures/registry/legacy-projections.json
@@ -7,12 +14,12 @@
 // `node scripts/generate-feed-projections.mjs --check`.
 import PRODUCT_ROUTES from "../contracts/routes.json" with { type: "json" };
 import definitions from "../contracts/measure-definitions.json" with { type: "json" };
-import { FEED_CATALOG } from "../contracts/source-catalog.js";
+import { FEED_CATALOG, legacyRegistryEntry } from "../contracts/source-catalog.js";
 import { PUBLICATION_CONFIG } from "../contracts/evidence-policy.js";
 import { catalogEntryOf } from "./define-feed.js";
-import { FEEDS } from "./index.js";
+import { DEFINITIONS } from "./definitions.generated.js";
 
-const definitionsOf = () => FEEDS.map((feed) => feed.definition);
+const definitionsOf = () => DEFINITIONS;
 const byId = () => new Map(definitionsOf().map((def) => [def.id, def]));
 
 function mapById(project, include = () => true) {
@@ -170,7 +177,7 @@ function derivedEntries(config) {
   return entries;
 }
 
-/** The full route manifest: hand-written non-feed routes plus routes derived from FEEDS and the catalogue. */
+/** The full route manifest: hand-written non-feed routes plus routes derived from the feed definitions and the catalogue. */
 export function routeManifest(config = PUBLICATION_CONFIG) {
   if (manifestCache.has(config)) return manifestCache.get(config);
   const manifest = Object.freeze(
@@ -180,18 +187,90 @@ export function routeManifest(config = PUBLICATION_CONFIG) {
   return manifest;
 }
 
-// Runtime registry views (FEED_REGISTRY and friends). They live in
-// registry-views.js, which never imports FEEDS, so modules the collectors
-// themselves import (worker/live-feed-common.js) can read provenance without
-// creating an import cycle through every collector.
-export {
-  FEED_REGISTRY,
-  FEED_REGISTRY_VERSION,
-  OPTIONAL_PUBLISHED_SECTION_IDS,
-  PUBLICATION_SOURCE_REGISTRY,
-  REQUIRED_PUBLISHED_SECTION_IDS,
-  applyFeedRegistry,
-  provenanceFor,
-  registrySnapshot,
-  retrievalMaxAgeMsForSection,
-} from "./registry-views.js";
+// ---------------------------------------------------------------------------
+// Runtime registry views (moved from worker/feed-registry.js, shapes unchanged).
+// Source identity, publisher URLs, cadence, geography and caveats are owned by
+// contracts/source-catalog.js (projected from feeds/*/feed.js) and must not be
+// re-declared here.
+// ---------------------------------------------------------------------------
+
+export const FEED_REGISTRY_VERSION = "2026-08-02.1";
+
+function registry(kind) {
+  return Object.freeze(Object.fromEntries(
+    Object.values(FEED_CATALOG)
+      .filter((feed) => feed.registry === kind)
+      .map((feed) => [feed.id, Object.freeze(legacyRegistryEntry(feed.id))])
+  ));
+}
+
+// Source identity, publisher URLs, cadence, geography and caveats are owned by
+// contracts/source-catalog.js and must not be re-declared here.
+export const FEED_REGISTRY = registry("feed");
+export const PUBLICATION_SOURCE_REGISTRY = registry("publication");
+
+export function retrievalMaxAgeMsForSection(section) {
+  return (
+    FEED_REGISTRY[section]?.retrievalMaxAgeMs ??
+    PUBLICATION_SOURCE_REGISTRY[section]?.retrievalMaxAgeMs ??
+    null
+  );
+}
+
+export function registrySnapshot() {
+  return {
+    version: FEED_REGISTRY_VERSION,
+    feeds: FEED_REGISTRY,
+  };
+}
+
+export const REQUIRED_PUBLISHED_SECTION_IDS = Object.freeze(
+  Object.values(FEED_REGISTRY)
+    .filter((feed) => feed.publicationRequirement !== "optional")
+    .map((feed) => feed.section)
+);
+
+export const OPTIONAL_PUBLISHED_SECTION_IDS = Object.freeze(
+  [
+    ...Object.values(FEED_REGISTRY),
+    ...Object.values(PUBLICATION_SOURCE_REGISTRY),
+  ]
+    .filter((feed) => feed.publicationRequirement === "optional")
+    .map((feed) => feed.section)
+);
+
+export function provenanceFor(section) {
+  const feed = FEED_REGISTRY[section] ?? PUBLICATION_SOURCE_REGISTRY[section];
+  if (!feed) return null;
+  return {
+    registryVersion: FEED_REGISTRY_VERSION,
+    section: feed.section,
+    title: feed.title,
+    evidenceClass: feed.evidenceClass,
+    geography: feed.geography,
+    retrieval: feed.retrieval,
+    refreshCadence: feed.refreshCadence,
+    publicationCadence: feed.publicationCadence,
+    operationalStatus: feed.operationalStatus,
+    publicationRequirement: feed.publicationRequirement ?? "required",
+    upstreams: feed.upstreams,
+  };
+}
+
+export function applyFeedRegistry(descriptors) {
+  const descriptorKeys = Object.keys(descriptors).sort();
+  const registryKeys = Object.keys(FEED_REGISTRY).sort();
+  if (JSON.stringify(descriptorKeys) !== JSON.stringify(registryKeys)) {
+    throw new Error(
+      `Feed registry mismatch: descriptors=${descriptorKeys.join(",")} registry=${registryKeys.join(",")}`
+    );
+  }
+
+  for (const [section, descriptor] of Object.entries(descriptors)) {
+    const feed = FEED_REGISTRY[section];
+    descriptor.source = feed.upstreams.map((upstream) => upstream.label).join(" + ");
+    descriptor.registry = provenanceFor(section);
+  }
+
+  return descriptors;
+}
