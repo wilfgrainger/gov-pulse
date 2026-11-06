@@ -250,14 +250,13 @@ function filterCurrentSnapshotWith(snapshot, now, limitFor) {
         delete filtered.meta.sources[section];
         continue;
       }
-      const independentData = structuredClone(data);
-      const independentState = sentimentMeasureState(independentData, now.getTime(), true);
+      // `filtered` is already a deep copy, so expired measures are redacted
+      // in place rather than cloning the section a second time.
+      const independentState = sentimentMeasureState(filtered[section], now.getTime(), true);
       if (!independentState?.valid || independentState.current.length === 0) {
         delete filtered[section];
         delete filtered.meta.sources[section];
-        continue;
       }
-      filtered[section] = independentData;
       continue;
     }
     const result = sectionCurrentnessWith(section, data, source, now, limitFor);
@@ -376,6 +375,73 @@ function filterPublicationSnapshot(input, config = PUBLICATION_CONFIG) {
   return snapshot;
 }
 
+const FILTERED_SNAPSHOT_META_FIELDS = new Set([
+  "registryVersion",
+  "generatedAt",
+  "sources",
+  "verifiedSections",
+  "measureCatalog",
+  "publicProjection",
+  "editionSummary",
+]);
+const FILTERED_SUMMARY_FIELDS = new Set([
+  "id",
+  "publishedAt",
+  "asOf",
+  "previousEditionId",
+  "summaryCorrection",
+  "sourceEditionIds",
+  "changes",
+]);
+
+/**
+ * True when `snapshot` already is a filterPublicationSnapshot output under
+ * `config`, so filtering it again would withhold nothing. It inspects keys
+ * and identifiers only (no copies), letting the public read path accept a
+ * publisher-normalised artifact cheaply. Keep it in step with
+ * filterPublicationSnapshot: any field that filter drops or narrows must make
+ * this return false when present. False only means "filter a copy".
+ *
+ * @param {any} snapshot @param {PublicationConfig} config
+ */
+function isPublicationFilteredSnapshot(snapshot, config = PUBLICATION_CONFIG) {
+  const meta = snapshot?.meta;
+  if (!meta?.sources || typeof meta.sources !== "object") return false;
+  for (const key of Object.keys(meta)) {
+    if (!FILTERED_SNAPSHOT_META_FIELDS.has(key)) return false;
+  }
+  for (const key of Object.keys(snapshot)) {
+    if (key !== "meta" && !Object.hasOwn(meta.sources, key)) return false;
+  }
+  const sourceIds = Object.keys(meta.sources);
+  if (sourceIds.length === 0 || sourceIds.some((id) => !publicationPublished(id, config))) return false;
+  if (!Array.isArray(meta.verifiedSections) || meta.verifiedSections.some((id) => !Object.hasOwn(meta.sources, id))) {
+    return false;
+  }
+  const catalog = meta.measureCatalog;
+  if (catalog !== null) {
+    if (!catalog?.measures || typeof catalog.measures !== "object") return false;
+    if (Object.values(catalog.measures).some((measure) => !publicationPublished(measure?.sourceId, config))) {
+      return false;
+    }
+  }
+  if (Object.hasOwn(meta, "editionSummary")) {
+    const summary = meta.editionSummary;
+    if (!publicationPublished("editionArchive", config) || !summary || !Array.isArray(summary.changes)) return false;
+    if (Object.keys(summary).some((key) => !FILTERED_SUMMARY_FIELDS.has(key))) return false;
+    const changesPublished = summary.changes.every((change) =>
+      publicationPublished(
+        catalog?.measures?.[change?.measureId]?.sourceId ??
+          definitions.measures.find((measure) => measure.id === change?.measureId)?.section ??
+          "",
+        config,
+      )
+    );
+    if (!changesPublished) return false;
+  }
+  return true;
+}
+
 /* ------------------------------ public API ------------------------------- */
 
 const SHAPE_REASONS = new Set([
@@ -442,6 +508,75 @@ function snapshotValidityDeadline(snapshot, now = new Date()) {
 
 function filterCurrentSnapshot(snapshot, now = new Date()) {
   return filterCurrentSnapshotWith(snapshot, now, retrievalMaxAgeMsForSection);
+}
+
+// The instant after which filterCurrentSnapshot drops the section, or null
+// when it is not current now. It equals sectionValidityDeadline except for
+// sentimentPulse, which stays (with expired measures redacted) while any of
+// its independently dated measures is current.
+function sectionPresenceDeadline(section, data, source, now = new Date()) {
+  if (!sectionCurrentness(section, data, source, now).current) return null;
+  if (section === "sentimentPulse") {
+    const state = sentimentMeasureState(data, now.getTime());
+    if (state) {
+      if (!state.valid || state.current.length === 0) return null;
+      const latest = Math.max(
+        ...state.current.map((id) => parsedTime(data.__measureValidity[id].validUntil))
+      );
+      const explicitExpiry = parsedTime(data.expiresAt);
+      return explicitExpiry === null ? latest : Math.min(explicitExpiry, latest);
+    }
+  }
+  return sectionValidityDeadline(section, data, source, now);
+}
+
+// True when filterCurrentSnapshot(snapshot, now) would return the snapshot
+// unchanged: no undeclared sections, every declared section current, verified
+// sections all declared and no sentiment measure awaiting redaction. Lets the
+// public read path serve an already-normalised artifact without a deep copy;
+// it never relaxes currentness, because any doubt returns false and the caller
+// then filters a copy.
+function snapshotIsCurrentAsIs(snapshot, now = new Date()) {
+  if (!isRecord(snapshot) || !isRecord(snapshot.meta) || !isRecord(snapshot.meta.sources)) {
+    return false;
+  }
+  const sources = snapshot.meta.sources;
+  const sectionIds = Object.keys(sources);
+  if (sectionIds.length === 0) return false;
+  for (const key of Object.keys(snapshot)) {
+    if (key !== "meta" && !Object.prototype.hasOwnProperty.call(sources, key)) return false;
+  }
+  if (
+    snapshot.meta.verifiedSections !== undefined &&
+    (!Array.isArray(snapshot.meta.verifiedSections) ||
+      snapshot.meta.verifiedSections.some(
+        (section) => typeof section !== "string" || !Object.prototype.hasOwnProperty.call(sources, section)
+      ))
+  ) {
+    return false;
+  }
+  const nowMs = now.getTime();
+  for (const section of sectionIds) {
+    const data = snapshot[section];
+    if (!sectionCurrentness(section, data, sources[section], now).current) return false;
+    if (section !== "sentimentPulse") continue;
+    const state = sentimentMeasureState(data, nowMs);
+    if (!state) continue;
+    if (!state.valid || state.current.length === 0) return false;
+    for (const [id, series] of Object.entries(data.series)) {
+      if (state.current.includes(id) || !SENTIMENT_MEASURE_IDS.includes(id)) continue;
+      // An unusable measure must already carry its redacted form.
+      if (
+        series.status !== "expired" ||
+        series.value !== null ||
+        !Object.prototype.hasOwnProperty.call(series, "annualDelta") ||
+        series.annualDelta !== null
+      ) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 function currentSectionRecord(record, now = new Date()) {
@@ -529,6 +664,7 @@ export {
   filterPublicationCatalog,
   filterPublicationSnapshot,
   filterPublicationSummary,
+  isPublicationFilteredSnapshot,
   isRecord,
   observationExpiryMs,
   observationMaxAge,
@@ -544,8 +680,10 @@ export {
   routeAccess,
   sectionCurrentness,
   sectionCurrentnessWith,
+  sectionPresenceDeadline,
   sectionValidityDeadline,
   sectionValidityDeadlineWith,
+  snapshotIsCurrentAsIs,
   snapshotValidityDeadline,
   snapshotValidityDeadlineWith,
   sourceHasUsableStatus,

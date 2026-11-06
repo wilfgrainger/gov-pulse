@@ -3,7 +3,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import queuedWorker, {
-  PUBLICATION_COMMIT_KEY,
   RUN_PREFIX,
   createRun,
   finaliseRun,
@@ -30,6 +29,8 @@ import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 import { archiveEdition, EDITION_INDEX_KEY, readEdition } from "@/worker/edition-archive";
 import { PUBLIC_SNAPSHOT_KEY } from "@/worker/public-snapshot";
 import { catalogRevisionIdentity } from "@/worker/measure-catalog";
+
+const RETIRED_COMMIT_MANIFEST_KEY = "v12:publication:commit";
 
 const REQUIRED = [
   "sentimentPulse",
@@ -298,10 +299,10 @@ describe("Cloudflare data publication", () => {
 
     expect(store.get(PUBLICATION_CURRENT_KEY)).toEqual(current);
     expect(store.has(PUBLIC_SNAPSHOT_KEY)).toBe(false);
-    expect(store.has(PUBLICATION_COMMIT_KEY)).toBe(false);
+    expect(store.has(RETIRED_COMMIT_MANIFEST_KEY)).toBe(false);
   });
 
-  it("writes atomic commit manifest linking public and internal editions on successful publication", async () => {
+  it("writes no unread commit manifest on successful publication", async () => {
     const current = snapshot();
     const fragment = {
       section: "gdpTracker",
@@ -323,18 +324,12 @@ describe("Cloudflare data publication", () => {
       now: new Date("2026-07-18T03:30:00.000Z"),
     });
 
-    expect(result.commitManifest).toMatchObject({
-      schemaVersion: 1,
-      editionId: result.publication.meta.measureCatalog?.editionId,
-      status: result.status.status,
-      delivery: "published-snapshot",
-    });
-    expect(store.get(PUBLICATION_COMMIT_KEY)).toEqual(result.commitManifest);
-    expect(store.get(PUBLICATION_CURRENT_KEY)).toMatchObject({
-      meta: {
-        commitManifest: result.commitManifest,
-      },
-    });
+    // Nothing read the manifest, so it cost a KV write per publication. The
+    // public artifact, current record and status record are the commit.
+    expect(result).not.toHaveProperty("commitManifest");
+    expect(store.has(RETIRED_COMMIT_MANIFEST_KEY)).toBe(false);
+    expect((store.get(PUBLICATION_CURRENT_KEY) as { meta: object }).meta).not.toHaveProperty("commitManifest");
+    expect(store.has(PUBLIC_SNAPSHOT_KEY)).toBe(true);
   });
 
   it("overlays current fragments while retaining current last-known-good evidence", async () => {

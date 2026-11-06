@@ -11,7 +11,7 @@ import {
   FEED_REGISTRY_VERSION,
   REQUIRED_PUBLISHED_SECTION_IDS,
 } from "@/worker/feed-registry";
-import { PUBLICATION_CURRENT_KEY } from "@/worker/publication-entry";
+import { PUBLICATION_CURRENT_KEY, PUBLICATION_STATUS_KEY } from "@/worker/publication-entry";
 import {
   PUBLIC_SNAPSHOT_KEY,
   buildPublicSnapshotArtifact,
@@ -86,6 +86,12 @@ function snapshot(now = new Date()) {
 
 function environment(current: unknown = snapshot(), now = new Date()) {
   const values = new Map<string, unknown>([[PUBLICATION_CURRENT_KEY, current]]);
+  if (current) {
+    // The publisher writes this small status record with every publication;
+    // health reads it instead of the full internal publication.
+    const included = Object.keys((current as { meta: { sources: Record<string, unknown> } }).meta.sources).sort();
+    values.set(PUBLICATION_STATUS_KEY, { status: "published", includedSections: included });
+  }
   const artifact = current ? buildPublicSnapshotArtifact(current, now) : null;
   return {
     METRICS_CACHE: {

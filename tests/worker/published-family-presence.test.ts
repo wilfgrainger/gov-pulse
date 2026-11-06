@@ -263,6 +263,7 @@ describe("published families with no section", () => {
     store.set(PUBLICATION_STATUS_KEY, {
       status: "published",
       generatedAt: snapshot.meta.generatedAt,
+      includedSections: Object.keys(snapshot.meta.sources).sort(),
       unavailableSections: [
         { id: "crimeStatistics", reason: "collector-failed", error: "stack trace at worker.js:1" },
         { id: "housePriceIndex", reason: "collector-failed" },

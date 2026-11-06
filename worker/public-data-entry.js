@@ -3,7 +3,7 @@ import queuedWorker, {
   enqueueInternationalComparisonRefresh,
 } from "./queued-publication-entry.js";
 import { anyEvidencePublished } from "../contracts/publication-policy.js";
-import { PUBLICATION_CONFIG, publicationPublished, filterPublicationSnapshot, filterPublicationCatalog, filterPublicationSummary, cacheLifetime, filterCurrentSnapshot, snapshotValidityDeadline } from "../contracts/evidence-policy.js";
+import { PUBLICATION_CONFIG, publicationPublished, filterPublicationCatalog, filterPublicationSummary, isPublicationFilteredSnapshot, cacheLifetime, filterCurrentSnapshot, snapshotIsCurrentAsIs, snapshotValidityDeadline } from "../contracts/evidence-policy.js";
 import { isPublicArtifact } from "../contracts/public-artifact.js";
 import { PUBLICATION_STATUS_KEY, isSnapshot, readCurrentPublication } from "./publication-entry.js";
 import { publicUnavailableSections } from "./publication-availability.js";
@@ -14,6 +14,7 @@ import {
 import {
   PUBLIC_SNAPSHOT_KEY,
   buildPublicProjection,
+  isSanitizedPublishedValue,
 } from "./public-snapshot.js";
 import { readInternationalComparison } from "../feeds/international-comparison/parse.js";
 import { assertSameHttpsHost, MAX_RESPONSE_BYTES, readResponseJson } from "./response-limits.js";
@@ -175,6 +176,50 @@ function preparedMetadataIsCurrent(metadata, now = new Date()) {
   );
 }
 
+/**
+ * @typedef {object} PublicArtifact
+ * @property {string} body the exact JSON served by /data/metrics-snapshot.json
+ * @property {any} snapshot `body` as a validated public projection
+ * @property {string|null} validUntil
+ * @property {string} generatedAt
+ * @property {string} delivery
+ */
+
+/**
+ * Read-time preparation of the publisher's stored artifact.
+ *
+ * The publisher stores an already-normalised artifact: policy-filtered,
+ * sanitised and currentness-filtered at publish time. A cache miss therefore
+ * only checks that it still is (identifiers and keys, no copies) and serves it
+ * unchanged. Currentness is still enforced on every read: a section that has
+ * aged out since publication is filtered from a single copy. An artifact not
+ * in the normalised form (an earlier publisher or publication policy) goes
+ * through full normalisation and is never served as stored.
+ *
+ * @returns {{ snapshot: any, unchanged: boolean } | null}
+ */
+function preparePublicArtifactSnapshot(stored, now = new Date()) {
+  if (
+    isPublicProjectionSnapshot(stored) &&
+    isPublicationFilteredSnapshot(stored) &&
+    isSanitizedPublishedValue(stored)
+  ) {
+    if (snapshotIsCurrentAsIs(stored, now)) return { snapshot: stored, unchanged: true };
+    const current = filterCurrentSnapshot(stored, now);
+    if (!current?.meta?.sources) return null;
+    current.meta.publicProjection = {
+      state: "published",
+      publishedSections: Object.keys(current.meta.sources).sort(),
+    };
+    return isPublicProjectionSnapshot(current) ? { snapshot: current, unchanged: false } : null;
+  }
+  const normalized = normalizePublicProjectionSnapshot(stored, now);
+  return normalized && publicProjectionIsCurrent(normalized, now)
+    ? { snapshot: normalized, unchanged: false }
+    : null;
+}
+
+/** @returns {Promise<PublicArtifact | null>} */
 async function readPreparedPublicArtifact(env, now = new Date()) {
   if (!env?.METRICS_CACHE?.getWithMetadata) return null;
   const record = await env.METRICS_CACHE.getWithMetadata(
@@ -196,11 +241,12 @@ async function readPreparedPublicArtifact(env, now = new Date()) {
     return null;
   }
 
-  const normalized = normalizePublicProjectionSnapshot(preparedSnapshot, now);
-  if (!normalized || !publicProjectionIsCurrent(normalized, now)) return null;
+  const prepared = preparePublicArtifactSnapshot(preparedSnapshot, now);
+  if (!prepared) return null;
 
   return {
-    body: JSON.stringify(normalized),
+    body: prepared.unchanged ? record.value : JSON.stringify(prepared.snapshot),
+    snapshot: prepared.snapshot,
     validUntil: earliestDeadline(
       record.metadata.validUntil,
       snapshotValidityDeadline(preparedSnapshot, now),
@@ -231,6 +277,7 @@ async function currentPublicArtifact(env, options = {}) {
       if (snapshot && publicProjectionIsCurrent(snapshot, now)) {
         return {
           body: JSON.stringify(snapshot),
+          snapshot,
           validUntil: snapshotValidityDeadline(snapshot, now) === null
             ? null
             : new Date(snapshotValidityDeadline(snapshot, now)).toISOString(),
@@ -247,6 +294,7 @@ async function currentPublicArtifact(env, options = {}) {
   if (seed) {
     return {
       body: JSON.stringify(seed),
+      snapshot: seed,
       validUntil: snapshotValidityDeadline(seed, now) === null
         ? null
         : new Date(snapshotValidityDeadline(seed, now)).toISOString(),
@@ -260,14 +308,10 @@ async function currentPublicArtifact(env, options = {}) {
 async function currentPublicSnapshot(env, options = {}) {
   const artifact = await currentPublicArtifact(env, options);
   if (!artifact) return null;
-  try {
-    return {
-      snapshot: JSON.parse(artifact.body),
-      delivery: artifact.delivery,
-    };
-  } catch {
-    return null;
-  }
+  return {
+    snapshot: artifact.snapshot,
+    delivery: artifact.delivery,
+  };
 }
 
 async function snapshotResponse(request, env) {
@@ -278,13 +322,9 @@ async function snapshotResponse(request, env) {
       { status: 503 }
     );
   }
-  let snapshot;
-  try {
-    snapshot = JSON.parse(result.body);
-  } catch {
-    return json({ error: "Verified public data is temporarily unavailable" }, { status: 503, head: request.method === "HEAD" });
-  }
-  if (!isPublicProjectionSnapshot(snapshot)) {
+  // Every producer hands over its validated snapshot with the body, so the
+  // response checks it without parsing the body a second time.
+  if (!isPublicProjectionSnapshot(result.snapshot)) {
     return json({ error: "Data publication is offline for verification", code: "publication_disabled" }, { status: 503, head: request.method === "HEAD" });
   }
 
@@ -426,6 +466,49 @@ async function readPublicationStatus(env) {
   }
 }
 
+function isPublisherStatus(status) {
+  return (
+    Boolean(status) &&
+    typeof status === "object" &&
+    !Array.isArray(status) &&
+    typeof status.status === "string" &&
+    Array.isArray(status.includedSections) &&
+    status.includedSections.every((section) => typeof section === "string")
+  );
+}
+
+// Sections the committed publication currently holds, without reading it.
+// Published sections are judged live from the prepared public artifact,
+// which the read path has just currentness-filtered. Sections the public
+// artifact never carries (held evidence) come from the publisher's small
+// status record: present until their recorded presence deadline. A status
+// record written before per-section deadlines existed keeps its sections as
+// included at publish time.
+function currentPublicationSections(publicSnapshot, status, now = new Date()) {
+  const sections = new Set(
+    Object.keys(publicSnapshot.meta.sources).filter((section) =>
+      Object.prototype.hasOwnProperty.call(publicSnapshot, section)
+    )
+  );
+  const deadlines =
+    status.sectionValidUntil && typeof status.sectionValidUntil === "object"
+      ? status.sectionValidUntil
+      : null;
+  for (const section of status.includedSections) {
+    if (publicationPublished(section)) continue;
+    if (!deadlines) {
+      sections.add(section);
+      continue;
+    }
+    const deadline = Date.parse(String(deadlines[section] ?? ""));
+    if (Number.isFinite(deadline) && deadline > now.getTime()) sections.add(section);
+  }
+  return sections;
+}
+
+// Health reads two small-to-bounded records: the prepared public artifact
+// (validated without copies on the common path) and the publisher status
+// record. It never reads or copies the full internal publication.
 async function healthResponse(request, env) {
   if (!env?.METRICS_CACHE?.get || !env?.METRICS_CACHE?.getWithMetadata) {
     return json(
@@ -436,30 +519,28 @@ async function healthResponse(request, env) {
 
   const now = new Date();
   const prepared = await readPreparedPublicArtifact(env, now);
-  const internal = withPublicationState(
-    filterCurrentSnapshot(await readCurrentPublication(env), now)
-  );
-  if (!prepared || !internal || !isCompleteSnapshot(internal)) {
+  const status = prepared ? await readPublicationStatus(env) : null;
+  if (!prepared || !isPublisherStatus(status)) {
     return json(
       { status: "bootstrapping", ready: false },
       { head: request.method === "HEAD" }
     );
   }
 
-  const unavailableSections = publicUnavailableSections(
-    internal,
-    await readPublicationStatus(env),
+  const currentSections = currentPublicationSections(prepared.snapshot, status, now);
+  const missingRequiredSections = REQUIRED_PUBLISHED_SECTION_IDS.filter(
+    (section) => !currentSections.has(section)
   );
+  const unavailableSections = publicUnavailableSections(prepared.snapshot, status);
   const unavailable = unavailableSections.length > 0 ? { unavailableSections } : {};
 
-  if (internal.meta.publicationState === "degraded") {
+  if (missingRequiredSections.length > 0) {
     return json(
       {
         status: "degraded",
         ready: false,
         degraded: true,
-        missingRequiredSections:
-          internal.meta.missingRequiredSections ?? [],
+        missingRequiredSections,
         ...unavailable,
       },
       { head: request.method === "HEAD" }
