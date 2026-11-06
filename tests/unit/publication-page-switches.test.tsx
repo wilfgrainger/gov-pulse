@@ -8,7 +8,7 @@ import { generateMetadata as storyMetadata } from "@/app/stories/[slug]/page";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
 import { GET } from "@/app/data/sections/[file]/route";
 import { renderRssFeed } from "@/app/lib/rssFeed";
-import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
+import fixture from "@/tests/fixtures/publication/current-snapshot.json";
 import { PUBLICATION_CONFIG } from "@/contracts/publication-policy";
 import StoryEvidence from "@/app/components/StoryEvidence";
 
@@ -98,7 +98,7 @@ describe("source-specific publication switches", () => {
     }
   });
   it("publishes only enabled evidence entries in RSS", () => {
-    const feed = renderRssFeed(BUILD_METRICS_SNAPSHOT);
+    const feed = renderRssFeed(structuredClone(fixture), new Date("2026-11-05T12:00:00.000Z"));
     const items = feed.split("<item>").slice(1).map((item) => item.split("</item>")[0]);
     expect(items.length).toBeGreaterThan(0);
     expect(feed).toContain("/section/national-debt/");

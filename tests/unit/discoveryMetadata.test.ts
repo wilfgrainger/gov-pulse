@@ -94,6 +94,7 @@ describe("section discovery contract", () => {
         sources: {
           gdpTracker: {
             status: "ok",
+            cacheState: "fresh",
             fetchedAt: "2026-10-02T17:00:00.000Z",
           },
         },
@@ -112,12 +113,13 @@ describe("section discovery contract", () => {
           period: "August 2026",
           observedAt: "2026-08-31T00:00:00.000Z",
           status: "current",
+          maxAgeDays: 90,
         },
       },
     };
     const sourceEdition = snapshot.meta.sources.gdpTracker;
     const sourceMeasures = Object.values(snapshot.meta.measureCatalog.measures).filter((measure) => measure.sourceId === "gdpTracker");
-    const publication = getBuildPublication(SECTION_DISCOVERY.gdp, snapshot);
+    const publication = getBuildPublication(SECTION_DISCOVERY.gdp, snapshot, new Date("2026-10-03T00:00:00.000Z"));
 
     expect(sourceMeasures.length).toBeGreaterThan(0);
     expect(publication?.dateModified).toBe(sourceMeasures.sort((left, right) => right.publishedAt.localeCompare(left.publishedAt))[0].publishedAt);
@@ -137,9 +139,10 @@ describe("section discovery contract", () => {
           governmentContracts: { status: "ok", fetchedAt: "2026-10-05T11:00:00.000Z" },
         },
       },
-      electionPolling: { latestPublicationDate: "2026-09-29" },
-      nationalDebt: { publicationDate: "2026-09-22" },
+      electionPolling: { latestPublicationDate: "2026-09-29", expiresAt: "2026-12-31T00:00:00.000Z" },
+      nationalDebt: { publicationDate: "2026-09-22", expiresAt: "2026-12-31T00:00:00.000Z" },
       governmentContracts: {
+        expiresAt: "2026-12-31T00:00:00.000Z",
         awards: [
           { publishedAt: "2026-09-25T10:00:00.000Z" },
           { publishedAt: "2026-09-30T15:58:23.000Z" },
@@ -147,12 +150,16 @@ describe("section discovery contract", () => {
       },
     };
 
-    expect(getBuildPublication(SECTION_DISCOVERY["election-polls"], snapshot)?.dateModified)
+    const now = new Date("2026-10-05T12:00:00.000Z");
+    expect(getBuildPublication(SECTION_DISCOVERY["election-polls"], snapshot, now)?.dateModified)
       .toBe("2026-09-29T00:00:00.000Z");
-    expect(getBuildPublication(SECTION_DISCOVERY["national-debt"], snapshot)?.dateModified)
+    expect(getBuildPublication(SECTION_DISCOVERY["national-debt"], snapshot, now)?.dateModified)
       .toBe("2026-09-22T00:00:00.000Z");
-    expect(getBuildPublication(SECTION_DISCOVERY["government-contracts"], snapshot)?.dateModified)
+    expect(getBuildPublication(SECTION_DISCOVERY["government-contracts"], snapshot, now)?.dateModified)
       .toBe("2026-09-30T15:58:23.000Z");
+    // Once the validity window closes the same record yields no publication.
+    expect(getBuildPublication(SECTION_DISCOVERY["national-debt"], snapshot, new Date("2027-01-01T00:00:00.000Z")))
+      .toBeNull();
   });
 
   it("does not promote stale fallback data as a latest verified publication", () => {
@@ -166,6 +173,7 @@ describe("section discovery contract", () => {
     const sectionPage = source("app/section/[id]/page.tsx");
     const layout = source("app/layout.tsx");
     const sitemap = source("app/sitemap.ts");
+    const sitemapEntries = source("app/lib/sitemapEntries.ts");
     const robots = source("app/robots.ts");
     const feed = source("app/feed.xml/route.ts");
 
@@ -178,7 +186,7 @@ describe("section discovery contract", () => {
     expect(layout).toContain('"@type": "Organization"');
     expect(layout).toContain('"@type": "WebSite"');
     expect(layout).toContain("serializeJsonLd");
-    expect(sitemap).toContain('absoluteUrl("/feed.xml")');
+    expect(sitemapEntries).toContain('absoluteUrl("/feed.xml")');
     expect(sitemap).toContain('export const dynamic = "force-static"');
     expect(robots).toContain('absoluteUrl("/sitemap.xml")');
     expect(robots).toContain('export const dynamic = "force-static"');

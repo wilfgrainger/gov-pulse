@@ -53,3 +53,6 @@ worker/.wrangler/
 worker/node_modules/
 public/social/
 build-output.log
+
+# generated at build time from current evidence; never committed
+/app/generated/

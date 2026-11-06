@@ -3,6 +3,7 @@ import { BUILD_METRICS_SNAPSHOT } from "@/app/generated/metricsSnapshot";
 import { DATA_SOURCES } from "@/app/lib/config";
 import { isCompatibleMetricsSnapshot, type MetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import { publicSnapshot } from "@/worker/public-snapshot";
+import { sectionCurrentness } from "@/worker/publication-currentness";
 import { publicationPublished, filterPublicationSnapshot } from "@/contracts/publication-policy";
 
 export type DiscoveryKind = "dataset" | "tool";
@@ -56,7 +57,15 @@ export function serializeJsonLd(value: unknown) {
   return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
-export function getBuildPublication(section: SectionDiscovery, rawSnapshot: unknown = BUILD_METRICS_SNAPSHOT) {
+/**
+ * Build-time publication facts for a section. The evidence must be current at
+ * `now`; expired, held, unavailable or null evidence yields no publication.
+ */
+export function getBuildPublication(
+  section: SectionDiscovery,
+  rawSnapshot: unknown = BUILD_METRICS_SNAPSHOT,
+  now: Date = new Date()
+) {
   if (!publicationPublished(section.sourceKey)) return null;
   const snapshot = filterPublicationSnapshot(publicSnapshot(rawSnapshot));
   if (!isCompatibleMetricsSnapshot(snapshot)) {
@@ -67,6 +76,9 @@ export function getBuildPublication(section: SectionDiscovery, rawSnapshot: unkn
   const source = typedSnapshot.meta.sources[section.sourceKey];
   const data = typedSnapshot[section.sourceKey];
   if (!source || source.status !== "ok" || !data) {
+    return null;
+  }
+  if (!sectionCurrentness(section.sourceKey, data, source, now).current) {
     return null;
   }
 
@@ -173,14 +185,14 @@ export function structuredDataForSection(id: string) {
   };
 }
 
-export function publicationEntries(rawSnapshot: unknown = BUILD_METRICS_SNAPSHOT) {
+export function publicationEntries(rawSnapshot: unknown = BUILD_METRICS_SNAPSHOT, now: Date = new Date()) {
   return Object.entries(SECTION_DISCOVERY)
     .filter(([, section]) => section.kind === "dataset")
     .map(([id, section]) => ({
       id,
       ...section,
       path: sectionPath(id),
-      publication: getBuildPublication(section, rawSnapshot),
+      publication: getBuildPublication(section, rawSnapshot, now),
     }))
     .filter((entry) => entry.publication);
 }

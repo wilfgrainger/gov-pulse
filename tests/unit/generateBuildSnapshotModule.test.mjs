@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
 import { publicSnapshot } from "../../worker/public-snapshot.js";
 import {
-  generateBuildSnapshotModule,
+  generate,
   validateBuildSnapshot,
 } from "../../scripts/generate-build-snapshot-module.mjs";
 import {
@@ -67,15 +67,15 @@ describe("build snapshot module generator", () => {
     };
     await writeFile(snapshotPath, `${JSON.stringify(snapshot)}\n`, "utf8");
 
-    const result = await generateBuildSnapshotModule({
-      snapshot: snapshotPath,
+    const result = await generate({
+      input: snapshotPath,
       output: outputPath,
-      optionalMissing: false,
+      now: new Date(now),
+      fetchImpl: () => Promise.reject(new Error("input must be preferred")),
     });
     const generated = await readFile(outputPath, "utf8");
 
-    expect(result.skipped).toBe(false);
-    expect(result.sectionCount).toBe(1);
+    expect(result).toEqual({ wrote: "artifact" });
     expect(generated).toContain("export const BUILD_METRICS_SNAPSHOT: unknown");
     expect(generated).toContain('"period": "Current test period"');
     expect(generated).toContain('"monthlyGrowth": 0.1');
@@ -159,20 +159,18 @@ describe("build snapshot module generator", () => {
     );
   });
 
-  it("retains the committed placeholder when a local build has no snapshot", async () => {
+  it("overwrites a previous output with null when no current evidence is available", async () => {
     const directory = await temporaryDirectory();
     const outputPath = join(directory, "metricsSnapshot.ts");
-    await writeFile(outputPath, "export const BUILD_METRICS_SNAPSHOT = null;\n", "utf8");
+    await writeFile(outputPath, "export const BUILD_METRICS_SNAPSHOT = { previous: true };\n", "utf8");
 
-    const result = await generateBuildSnapshotModule({
-      snapshot: join(directory, "missing.json"),
+    const result = await generate({
+      input: join(directory, "missing.json"),
       output: outputPath,
-      optionalMissing: true,
+      fetchImpl: () => Promise.reject(new Error("offline")),
     });
 
-    expect(result.skipped).toBe(true);
-    expect(await readFile(outputPath, "utf8")).toBe(
-      "export const BUILD_METRICS_SNAPSHOT = null;\n"
-    );
+    expect(result).toEqual({ wrote: "null" });
+    expect(await readFile(outputPath, "utf8")).toContain("BUILD_METRICS_SNAPSHOT: unknown = null;");
   });
 });
