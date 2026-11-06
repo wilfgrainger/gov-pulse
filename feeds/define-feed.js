@@ -14,7 +14,6 @@ import { SOURCE_CATALOG, deepFreeze } from "../contracts/source-definitions.js";
 
 const ID = /^[a-z][A-Za-z0-9]*$/;
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const COLLECT_CADENCES = new Set(["daily", "3h", "weekly"]);
 const REQUIREMENTS = new Set(["required", "optional", "independent"]);
 const AUTOMATION = new Set(["automated", "static", "interactive", "withdrawn"]);
 const JOB_TYPES = new Set(["refresh-section", "refresh-external-section"]);
@@ -23,7 +22,9 @@ const KNOWN_KEYS = new Set([
   "id", "slug", "title", "displayName", "description", "category", "evidenceClass", "geography", "editorial",
   "sources", "automation", "collectionLayer", "retrieval", "cadence", "collection", "validity", "requirement",
   "measures", "downloads", "releaseTitles", "discovery", "view",
+  "registry", "uiSourceLabels", "legacyEvidenceClass", "runtimeSourceIds",
 ]);
+const REGISTRIES = new Set(["feed", "publication", null]);
 
 function fail(id, message) {
   throw new Error(`Feed '${id}': ${message}`);
@@ -56,14 +57,21 @@ export function defineFeed(def) {
     if (!KNOWN_KEYS.has(key)) fail(id, `unknown field '${key}'`);
   }
   if (typeof def.slug !== "string" || !SLUG.test(def.slug)) fail(id, `slug '${String(def.slug)}' must be kebab-case`);
-  for (const key of ["title", "displayName", "description", "category", "evidenceClass", "retrieval"]) text(id, def, key);
+  const isStatic = def.automation === "static";
+  for (const key of ["title", "displayName", "evidenceClass"]) text(id, def, key);
+  if (!isStatic) text(id, def, "retrieval");
   if (!def.geography || typeof def.geography.code !== "string" || typeof def.geography.label !== "string") {
     fail(id, "geography {code, label} is required");
   }
-  const editorial = def.editorial;
-  for (const key of ["publicationPeriod", "unit", "revisionStatus", "caveat"]) {
-    if (typeof editorial?.[key] !== "string" || !editorial[key].trim()) fail(id, `editorial.${key} is required`);
+  // Internal publication feeds (release calendars, international comparison)
+  // carry no editorial block of their own; every other feed must.
+  if (def.editorial !== undefined || def.registry !== "publication") {
+    const editorial = def.editorial;
+    for (const key of ["publicationPeriod", "unit", "revisionStatus", "caveat"]) {
+      if (typeof editorial?.[key] !== "string" || !editorial[key].trim()) fail(id, `editorial.${key} is required`);
+    }
   }
+  if (def.registry !== undefined && !REGISTRIES.has(def.registry)) fail(id, "registry must be feed, publication or null");
 
   if (!Array.isArray(def.sources) || def.sources.length === 0 || new Set(def.sources).size !== def.sources.length) {
     fail(id, "sources must be a non-empty unique array of source ids");
@@ -76,26 +84,40 @@ export function defineFeed(def) {
   if (def.collectionLayer !== "worker" && def.collectionLayer !== "publication") fail(id, "collectionLayer is invalid");
 
   const cadence = def.cadence;
-  if (!cadence || !COLLECT_CADENCES.has(cadence.collect)) fail(id, "cadence.collect must be daily, 3h or weekly");
-  for (const key of ["publication", "frequency"]) {
-    if (typeof cadence[key] !== "string" || !cadence[key].trim()) fail(id, `cadence.${key} is required`);
+  if (!cadence || typeof cadence !== "object") fail(id, "cadence is required");
+  if (typeof cadence.frequency !== "string" || !cadence.frequency.trim()) fail(id, "cadence.frequency is required");
+  if (!isStatic) {
+    for (const key of ["collect", "publication"]) {
+      if (typeof cadence[key] !== "string" || !cadence[key].trim()) fail(id, `cadence.${key} is required`);
+    }
   }
 
-  if (!JOB_TYPES.has(def.collection?.jobType) || typeof def.collection?.collector !== "string") {
-    fail(id, "collection {jobType, collector} is required");
+  // collection is the job routing; feeds collected outside the section job
+  // queue (contracts, international comparison) and static feeds omit it.
+  if (def.collection !== undefined && (!JOB_TYPES.has(def.collection.jobType) || typeof def.collection.collector !== "string")) {
+    fail(id, "collection {jobType, collector} is invalid");
   }
 
   const validity = def.validity;
-  if (!validity || typeof validity !== "object") fail(id, "validity is required");
-  if (!Number.isFinite(validity.retrievalMaxAgeMs) || validity.retrievalMaxAgeMs <= 0) {
-    fail(id, "validity.retrievalMaxAgeMs must be a positive number");
+  if (!isStatic) {
+    if (!validity || typeof validity !== "object") fail(id, "validity is required");
+    if (!Number.isFinite(validity.retrievalMaxAgeMs) || validity.retrievalMaxAgeMs <= 0) {
+      fail(id, "validity.retrievalMaxAgeMs must be a positive number");
+    }
+    // Exactly one window: an observation-date contract, or an explicit statement
+    // that currentness is the retrieval window alone (retrievalOnly).
+    const windows = ["observationMaxAgeDays", "maxAgeHours", "explicitExpiry", "retrievalOnly"].filter((key) => validity[key] !== undefined);
+    if (windows.length !== 1) fail(id, "validity needs exactly one of observationMaxAgeDays, maxAgeHours, explicitExpiry or retrievalOnly");
+    if (["observationMaxAgeDays", "maxAgeHours"].includes(windows[0]) && !(validity[windows[0]] > 0)) {
+      fail(id, `validity.${windows[0]} must be positive`);
+    }
+    if (windows[0] === "retrievalOnly" && validity.retrievalOnly !== true) fail(id, "validity.retrievalOnly must be true");
+    if (windows[0] === "observationMaxAgeDays" && (typeof validity.extractor !== "string" || !validity.extractor)) {
+      fail(id, "validity.extractor is required");
+    }
+    if (def.requirement !== undefined && !REQUIREMENTS.has(def.requirement)) fail(id, "requirement must be required, optional or independent");
+    if (def.requirement === undefined) fail(id, "requirement is required");
   }
-  const windows = ["observationMaxAgeDays", "maxAgeHours", "explicitExpiry"].filter((key) => validity[key] !== undefined);
-  if (windows.length !== 1) fail(id, "validity needs exactly one of observationMaxAgeDays, maxAgeHours or explicitExpiry");
-  if (windows[0] !== "explicitExpiry" && !(validity[windows[0]] > 0)) fail(id, `validity.${windows[0]} must be positive`);
-  if (typeof validity.extractor !== "string" || !validity.extractor) fail(id, "validity.extractor is required");
-
-  if (!REQUIREMENTS.has(def.requirement)) fail(id, "requirement must be required, optional or independent");
 
   if (!Array.isArray(def.measures)) fail(id, "measures must be an array");
   for (const measure of def.measures) {
@@ -115,11 +137,17 @@ export function defineFeed(def) {
     if (title.exclude !== undefined) regexSource(id, title.exclude, "releaseTitles exclude");
   }
 
-  const discovery = def.discovery;
-  if (typeof discovery?.title !== "string" || discovery.kind !== "dataset" || !Array.isArray(discovery.sameAs)) {
-    fail(id, "discovery {title, kind, sameAs} is required");
+  // A public section page needs discovery metadata and a view; feeds with no
+  // section route (release calendars, international comparison) omit all of it.
+  if (def.discovery !== undefined) {
+    const discovery = def.discovery;
+    if (typeof discovery?.title !== "string" || discovery.kind !== "dataset" || !Array.isArray(discovery.sameAs)) {
+      fail(id, "discovery {title, kind, sameAs} is required");
+    }
+    text(id, def, "description");
+    text(id, def, "category");
+    text(id, def, "view");
   }
-  text(id, def, "view");
 
   return deepFreeze(structuredClone(def));
 }
@@ -130,24 +158,29 @@ export function defineFeed(def) {
  * feeds/registry.js so the two can never disagree.
  */
 export function catalogEntryOf(def) {
+  const validity = def.validity ?? {};
   return {
     id: def.id,
-    registry: "feed",
+    // Key order mirrors the legacy hand-written entries; absent optionals are omitted.
+    ...(def.sources ? { sourceIds: [...def.sources] } : {}),
+    registry: def.registry === undefined ? "feed" : def.registry,
+    ...(def.runtimeSourceIds ? { runtimeSourceIds: [...def.runtimeSourceIds] } : {}),
     title: def.title,
     displayName: def.displayName,
     evidenceClass: def.evidenceClass,
+    ...(def.legacyEvidenceClass ? { legacyEvidenceClass: def.legacyEvidenceClass } : {}),
     geography: { ...def.geography },
-    sourceIds: [...def.sources],
     automation: def.automation,
     collectionLayer: def.collectionLayer,
     frequency: def.cadence.frequency,
-    retrieval: def.retrieval,
-    refreshCadence: def.cadence.collect,
-    publicationCadence: def.cadence.publication,
-    retrievalMaxAgeMs: def.validity.retrievalMaxAgeMs,
-    publicationRequirement: def.requirement,
-    ...(def.validity.freshnessWindow ? { freshnessWindow: def.validity.freshnessWindow } : {}),
-    ...(def.validity.freshnessRationale ? { freshnessRationale: def.validity.freshnessRationale } : {}),
-    editorial: { ...def.editorial },
+    ...(def.retrieval ? { retrieval: def.retrieval } : {}),
+    ...(def.cadence.collect ? { refreshCadence: def.cadence.collect } : {}),
+    ...(def.cadence.publication ? { publicationCadence: def.cadence.publication } : {}),
+    ...(validity.retrievalMaxAgeMs ? { retrievalMaxAgeMs: validity.retrievalMaxAgeMs } : {}),
+    ...(def.requirement ? { publicationRequirement: def.requirement } : {}),
+    ...(validity.freshnessWindow ? { freshnessWindow: validity.freshnessWindow } : {}),
+    ...(validity.freshnessRationale ? { freshnessRationale: validity.freshnessRationale } : {}),
+    ...(def.uiSourceLabels ? { uiSourceLabels: [...def.uiSourceLabels] } : {}),
+    ...(def.editorial ? { editorial: { ...def.editorial } } : {}),
   };
 }

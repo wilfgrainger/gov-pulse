@@ -82,63 +82,85 @@ describe("defineFeed", () => {
   });
 });
 
-describe("projection parity with the legacy hand-written registries (realWages)", () => {
-  it("catalog entry equals legacy FEED_CATALOG.realWages", () => {
-    expect(plain(feedCatalog().realWages)).toEqual(legacy.feedCatalog.realWages);
-    expect(plain(FEED_CATALOG.realWages)).toEqual(legacy.feedCatalog.realWages);
+type LegacyFamily = { familyIds: string[]; pattern: string; flags: string; exclude?: string; excludeFlags?: string };
+const legacyDiscovery = legacy.sectionDiscovery as Record<string, { sourceKey: string }>;
+const migrated = FEEDS.map((feed) => feed.definition);
+
+describe("projection parity with the legacy hand-written registries", () => {
+  it("projects at least the first migrated feed", () => {
+    expect(migrated.map((def) => def.id)).toContain("realWages");
   });
 
-  it("the whole live FEED_CATALOG is unchanged", () => {
+  it.each(migrated.map((def) => [def.id, def]))("%s catalog entry equals legacy FEED_CATALOG", (id) => {
+    const expected = (legacy.feedCatalog as Record<string, unknown>)[id as string];
+    expect(plain(feedCatalog()[id as string])).toEqual(expected);
+    expect(plain((FEED_CATALOG as Record<string, unknown>)[id as string])).toEqual(expected);
+  });
+
+  it("the whole live FEED_CATALOG is unchanged, in order", () => {
     expect(plain(FEED_CATALOG)).toEqual(legacy.feedCatalog);
+    expect(Object.keys(FEED_CATALOG)).toEqual(Object.keys(legacy.feedCatalog));
   });
 
-  it("collection plan equals legacy", () => {
-    expect(plain(collectionPlan().realWages)).toEqual(legacy.collectionPlan.realWages);
+  it.each(migrated.map((def) => [def.id]))("%s collection plan equals legacy", (id) => {
+    const expected = (legacy.collectionPlan as Record<string, unknown>)[id];
+    expect(collectionPlan()[id] as unknown).toEqual(expected);
+    expect(plain((SECTION_COLLECTION_PLAN as Record<string, unknown>)[id])).toEqual(expected);
+  });
+
+  it("the whole live collection plan is unchanged, in order", () => {
     expect(plain(SECTION_COLLECTION_PLAN)).toEqual(legacy.collectionPlan);
     expect(Object.keys(SECTION_COLLECTION_PLAN)).toEqual(Object.keys(legacy.collectionPlan));
   });
 
-  it("observation contract keeps maxAgeDays and extractor name", () => {
-    expect(observationContracts().realWages).toEqual(legacy.observationContracts.realWages);
-    const live = OBSERVATION_CONTRACTS.realWages;
-    expect({ maxAgeDays: live.maxAgeDays, extractor: live.extract.name }).toEqual(legacy.observationContracts.realWages);
+  it.each(migrated.map((def) => [def.id]))("%s observation contract keeps maxAgeDays and extractor name", (id) => {
+    const expected = (legacy.observationContracts as Record<string, unknown>)[id];
+    expect(observationContracts()[id]).toEqual(expected);
+    const live = (OBSERVATION_CONTRACTS as Record<string, { maxAgeDays: number; extract: { name: string } }>)[id];
+    expect({ maxAgeDays: live.maxAgeDays, extractor: live.extract.name }).toEqual(expected);
+  });
+
+  it("the live observation contracts keep the legacy ids and order", () => {
     expect(Object.keys(OBSERVATION_CONTRACTS)).toEqual(Object.keys(legacy.observationContracts));
   });
 
-  it("section discovery equals legacy", () => {
-    expect(plain(sectionDiscovery()["real-wages"])).toEqual((legacy.sectionDiscovery as Record<string, unknown>)["real-wages"]);
-    expect(plain((discovery.sections as Record<string, unknown>)["real-wages"])).toEqual(
-      plain(sectionDiscovery()["real-wages"]),
-    );
+  it.each(migrated.filter((def) => def.discovery).map((def) => [def.id, def.slug]))("%s section discovery equals legacy", (id, slug) => {
+    const expected = (legacy.sectionDiscovery as Record<string, unknown>)[slug as string];
+    expect((legacyDiscovery[slug as string] as { sourceKey: string }).sourceKey).toBe(id);
+    expect(plain(sectionDiscovery()[slug as string])).toEqual(expected);
+    expect(plain((discovery.sections as Record<string, unknown>)[slug as string])).toEqual(expected);
   });
 
-  it("measure definitions equal legacy", () => {
-    const expected = legacy.measureDefinitions.filter((m: { section: string }) => m.section === "realWages");
-    expect(expected).toHaveLength(2);
-    expect(plain(measureDefinitions())).toEqual(expected);
-    expect(plain(measureFile.measures.filter((m) => m.section === "realWages"))).toEqual(expected);
+  it.each(migrated.map((def) => [def.id]))("%s measure definitions equal legacy", (id) => {
+    const expected = legacy.measureDefinitions.filter((m: { section: string }) => m.section === id);
+    expect(plain(measureDefinitions().filter((m: { section: string }) => m.section === id))).toEqual(expected);
+    expect(plain(measureFile.measures.filter((m) => m.section === id))).toEqual(expected);
   });
 
   it("download ids keep the legacy list and order", () => {
-    expect(downloadIds()).toEqual(["realWages"]);
     expect([...SECTION_DOWNLOAD_IDS]).toEqual(legacy.downloadIds);
+    const declared = downloadIds();
+    expect([...SECTION_DOWNLOAD_IDS].filter((id) => declared.includes(id))).toEqual(declared);
   });
 
-  it("release families equal the legacy realWages families", () => {
-    const expected = legacy.releaseFamilies
-      .filter((family: { familyIds: string[] }) => family.familyIds.includes("realWages"))
-      .map((family: { pattern: string; flags: string; exclude?: string; excludeFlags?: string }) => ({
+  it.each(migrated.map((def) => [def.id]))("%s release titles equal the legacy families that name it", (id) => {
+    const expected = (legacy.releaseFamilies as LegacyFamily[])
+      .filter((family) => family.familyIds.includes(id))
+      .map((family) => ({
         pattern: family.pattern,
         flags: family.flags,
         ...(family.exclude ? { exclude: family.exclude, excludeFlags: family.excludeFlags } : {}),
-      }));
-    const actual = releaseFamilies().map((family) => ({
-      pattern: family.pattern.source,
-      flags: family.pattern.flags,
-      ...(family.exclude ? { exclude: family.exclude.source, excludeFlags: family.exclude.flags } : {}),
-    }));
+      }))
+      .sort((x, y) => x.pattern.localeCompare(y.pattern));
+    const actual = releaseFamilies()
+      .filter((family) => family.feedId === id)
+      .map((family) => ({
+        pattern: family.pattern.source,
+        flags: family.pattern.flags,
+        ...(family.exclude ? { exclude: family.exclude.source, excludeFlags: family.exclude.flags } : {}),
+      }))
+      .sort((x, y) => x.pattern.localeCompare(y.pattern));
     expect(actual).toEqual(expected);
-    expect(releaseFamilies().every((family) => family.feedId === "realWages")).toBe(true);
   });
 
   it("route manifest equals the manifest captured before the migration", () => {
