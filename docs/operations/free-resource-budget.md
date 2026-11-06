@@ -179,3 +179,19 @@ npx wrangler tail pulse-data-worker --format json > tail.json
 Record `cpuTime` and wall time per queue message type and section, including
 `finalise-run`, and the p95 job durations Task 10 needs. Until that is done
 there is no measured Workers CPU figure in this repository.
+
+### Per-feed records: dual-write window (Task 9)
+
+Each successful section collection now also writes `v20:feed:<id>` (one get and
+one put per feed, after the legacy run-scoped and global fragment writes); a
+terminal bootstrap failure writes one more put recording `lastAttempt`. The
+publisher reads `v20:feed:*` first, falls back to the legacy fragments, and logs
+`Feed record diverged from legacy fragment` when current copies differ.
+
+Expected cost in the dual window, **from code and unit tests, not yet measured in
+production**: about +9 KV puts per daily run (9 section feeds through the
+collection runner; contracts and comparison batches are unchanged), so roughly
+39 + 9 = 48, below the 50-write test bound and the 1,000/day account limit. The
+target of about 16 writes per run applies only after the legacy keys are retired
+(Task 17a). Required before retirement, not done: at least 7 production days of
+dual-write with the daily divergence-log count recorded here.

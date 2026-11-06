@@ -496,6 +496,30 @@ describe("Cloudflare publication bootstrap", () => {
     });
   });
 
+  it("records a terminal bootstrap source failure on the per-feed record without inventing evidence", async () => {
+    const { env, store } = environment();
+    const runId = bootstrapRunId(SHA);
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("upstream down"); }));
+    const message = {
+      body: { type: "refresh-section", section: "gdpTracker", runId, jobId: "section:gdpTracker" },
+      ack: vi.fn(),
+      retry: vi.fn(),
+    };
+
+    try {
+      await queuedWorker.queue({ messages: [message] }, env, {});
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(message.ack).toHaveBeenCalledOnce();
+    expect(store.get("v20:feed:gdpTracker")).toMatchObject({
+      feedId: "gdpTracker",
+      record: null,
+      lastAttempt: { runId, status: "failure" },
+    });
+  });
+
   it("keeps non-bootstrap source failures retryable", async () => {
     const { env } = environment();
     const message = {

@@ -332,6 +332,54 @@ describe("Cloudflare data publication", () => {
     expect(store.has(PUBLIC_SNAPSHOT_KEY)).toBe(true);
   });
 
+  it("publisher > dual read prefers v20 and matches legacy output", async () => {
+    const now = new Date("2026-07-18T03:30:00.000Z");
+    const fragment = {
+      section: "gdpTracker",
+      data: { headline: { monthlyGrowth: 0.1, period: "May 2026" } },
+      source: { status: "ok", cacheState: "fresh", fetchedAt: "2026-07-18T03:20:00.000Z", source: "ONS GDP monthly estimate" },
+      fetchedAt: "2026-07-18T03:20:00.000Z",
+    };
+    const wrap = (record: unknown) => ({
+      feedId: "gdpTracker",
+      record,
+      lastAttempt: { runId: "r", at: "2026-07-18T03:20:00.000Z", status: "success", reason: null },
+    });
+    const legacy = kvEnv({ [PUBLICATION_CURRENT_KEY]: snapshot(), "v12:publication:section:gdpTracker": fragment });
+    const v20Only = kvEnv({ [PUBLICATION_CURRENT_KEY]: snapshot(), "v20:feed:gdpTracker": wrap(fragment) });
+    const a = await publishFromCaches(legacy.env, { now });
+    const b = await publishFromCaches(v20Only.env, { now });
+    expect(b.publication.gdpTracker).toEqual(a.publication.gdpTracker);
+    expect(b.publication.meta.sources.gdpTracker).toEqual(a.publication.meta.sources.gdpTracker);
+  });
+
+  it("publisher > logs divergence between the v20 record and the legacy fragment", async () => {
+    const now = new Date("2026-07-18T03:30:00.000Z");
+    const make = (growth: number) => ({
+      section: "gdpTracker",
+      data: { headline: { monthlyGrowth: growth, period: "May 2026" } },
+      source: { status: "ok", cacheState: "fresh", fetchedAt: "2026-07-18T03:20:00.000Z", source: "ONS GDP monthly estimate" },
+      fetchedAt: "2026-07-18T03:20:00.000Z",
+    });
+    const { env } = kvEnv({
+      [PUBLICATION_CURRENT_KEY]: snapshot(),
+      "v12:publication:section:gdpTracker": make(0.1),
+      "v20:feed:gdpTracker": {
+        feedId: "gdpTracker",
+        record: make(0.3),
+        lastAttempt: { runId: "r", at: "2026-07-18T03:20:00.000Z", status: "success", reason: null },
+      },
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const result = await publishFromCaches(env, { now });
+    expect(result.publication.gdpTracker).toEqual(make(0.3).data);
+    expect(warn).toHaveBeenCalledWith(
+      "Feed record diverged from legacy fragment",
+      expect.objectContaining({ section: "gdpTracker" }),
+    );
+    warn.mockRestore();
+  });
+
   it("overlays current fragments while retaining current last-known-good evidence", async () => {
     const current = snapshot();
     const fragment = {

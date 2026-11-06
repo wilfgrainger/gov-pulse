@@ -81,4 +81,65 @@ describe("publication collection runner", () => {
       "v12:publication:section:nationalDebt"
     );
   });
+
+  describe("dual write to per-feed records", () => {
+    function kvStore() {
+      const store = new Map<string, string>();
+      const put = vi.fn(async (key: string, value: string) => { store.set(key, value); });
+      const get = vi.fn(async (key: string) => {
+        const raw = store.get(key);
+        return raw === undefined ? null : JSON.parse(raw);
+      });
+      return { env: { METRICS_CACHE: { get, put } }, store, put };
+    }
+    const gdp = (fetchedAt: string) => ({
+      section: "gdpTracker",
+      data: { headline: { monthlyGrowth: 0.1, period: "May 2026" } },
+      source: { status: "ok", cacheState: "fresh", fetchedAt, source: "ONS" },
+      fetchedAt,
+    });
+
+    it("writes the v20 feed record alongside the legacy fragment", async () => {
+      const { env, store } = kvStore();
+      const record = gdp(new Date().toISOString());
+      mocks.refreshSectionPayload.mockResolvedValue(record);
+
+      await storeSectionFragment("gdpTracker", env, {}, "run-1");
+
+      expect(JSON.parse(store.get("v20:feed:gdpTracker")!).record).toEqual(record);
+      expect(JSON.parse(store.get(sectionFragmentKey("gdpTracker"))!)).toEqual(record);
+    });
+
+    it("keeps the legacy result when the feed record write fails", async () => {
+      const { env, store, put } = kvStore();
+      const record = gdp(new Date().toISOString());
+      mocks.refreshSectionPayload.mockResolvedValue(record);
+      put.mockImplementation(async (key: string, value: string) => {
+        if (key.startsWith("v20:feed:")) throw new Error("feed write failed");
+        store.set(key, value);
+      });
+
+      await expect(storeSectionFragment("gdpTracker", env, {}, "run-1")).resolves.toEqual(record);
+      expect(store.has(sectionFragmentKey("gdpTracker"))).toBe(true);
+    });
+
+    it("kv budget > dual-write healthy run writes at most 50", async () => {
+      const { env, put } = kvStore();
+      const generic = ["gdpTracker", "sentimentPulse", "employmentStats", "taxRevenue",
+        "nationalDebt", "migrationStats", "housePriceIndex", "realWages"];
+      for (const section of generic) {
+        mocks.refreshSectionPayload.mockResolvedValueOnce({
+          ...gdp(new Date().toISOString()), section,
+        });
+        await storeSectionFragment(section, env, {}, "run-1");
+      }
+      mocks.collectExternalSection.mockResolvedValueOnce({
+        ...gdp(new Date().toISOString()), section: "electionPolling",
+      });
+      await storeExternalSection("electionPolling", env, { runId: "run-1" });
+      // run fragment + legacy global + v20 feed record per feed
+      expect(put.mock.calls.length).toBe(9 * 3);
+      expect(put.mock.calls.length).toBeLessThanOrEqual(50);
+    });
+  });
 });
