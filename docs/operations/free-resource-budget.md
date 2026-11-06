@@ -248,3 +248,28 @@ collection runner; contracts and comparison batches are unchanged), so roughly
 target of about 16 writes per run applies only after the legacy keys are retired
 (Task 17a). Required before retirement, not done: at least 7 production days of
 dual-write with the daily divergence-log count recorded here.
+
+### Pipeline handlers and write budget (Task 10c, not wired)
+
+`worker/pipeline.js` now has `collect`, `finalise` and `bootstrap` handlers,
+built with `createPipeline(deps)`. Their collectors and publisher are injected,
+and the Worker does not import the module, so the live path is unchanged.
+
+Counts below come from a counting fake KV and queue in
+`tests/worker/kv-write-budget.test.ts`. **They are test counts, not production
+measurements.**
+
+| Scenario | KV puts | Notes |
+| --- | --- | --- |
+| Healthy daily run, 11 published feeds | 16 | lease, dispatched, finalised (3); 10 feed records; contracts as one shard plus one combined record (2); one publish |
+| 50 synthetic published feeds | 54 | 3 run writes, 50 feed records, one publish |
+| Held feeds on the betting cron | 0 puts, 0 KV reads, 0 queue sends | |
+
+The fake's publish performs one put. The real publisher still rebuilds from the
+legacy `v12:publication:current` and `status` keys and also writes the archive,
+so the production count is not yet known. It becomes known only after the
+publisher is rewritten and the legacy writes stop (G4).
+
+Queue consumer, read with `npx wrangler queues consumer worker list
+public-data-jobs` on 6 November 2026: `dead_letter_queue` is
+`public-data-jobs-dlq`, `max_retries` 3, `retry_delay` 300 seconds.
