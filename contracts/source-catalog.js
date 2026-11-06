@@ -3,6 +3,7 @@ import { definition as migrationStatsDefinition } from "../feeds/migration/feed.
 import { definition as nhsStatsDefinition } from "../feeds/nhs/feed.js";
 import { definition as crimeStatisticsDefinition } from "../feeds/crime-stats/feed.js";
 import { definition as gdpTrackerDefinition } from "../feeds/gdp/feed.js";
+import { definition as employmentStatsDefinition } from "../feeds/employment/feed.js";
 import { catalogEntryOf } from "../feeds/define-feed.js";
 import { definition as housePriceIndexDefinition } from "../feeds/house-price-index/feed.js";
 import { definition as realWagesDefinition } from "../feeds/real-wages/feed.js";
@@ -76,21 +77,8 @@ export const FEED_CATALOG = deepFreeze({
   }),
   // Projected from feeds/gdp/feed.js (the single declaration).
   gdpTracker: defineFeed(catalogEntryOf(gdpTrackerDefinition)),
-  employmentStats: defineFeed({
-    id: "employmentStats", registry: "feed", title: "UK labour market", displayName: "Employment",
-    evidenceClass: "official-statistics", geography: { code: "UK", label: "United Kingdom" },
-    sourceIds: ["ons-uk-labour-market"], automation: "automated", collectionLayer: "worker", frequency: "monthly",
-    retrieval: "scheduled-publication-check", refreshCadence: "daily", publicationCadence: "monthly",
-    retrievalMaxAgeMs: 36 * HOUR_MS, publicationRequirement: "required",
-    freshnessWindow: "Checked within 36 hours",
-    freshnessRationale: "The latest labour-market bulletin is checked regularly, with each observation period shown separately.",
-    editorial: {
-      publicationPeriod: "Latest ONS UK labour-market bulletin edition",
-      unit: "Rates (%) and vacancies (people), as labelled",
-      revisionStatus: "Labour Force Survey and vacancy estimates may be revised",
-      caveat: "Employment, unemployment and inactivity use rolling three-month periods. Vacancies come from a separate employer survey and retain their own period.",
-    },
-  }),
+  // Projected from feeds/employment/feed.js (the single declaration).
+  employmentStats: defineFeed(catalogEntryOf(employmentStatsDefinition)),
   nationalDebt: defineFeed({
     id: "nationalDebt", registry: "feed", title: "Public sector net debt excluding public sector banks", displayName: "National Debt",
     evidenceClass: "official-statistics", geography: { code: "UK", label: "United Kingdom" },

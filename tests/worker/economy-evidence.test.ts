@@ -3,13 +3,16 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   FINANCES_BULLETIN_URL,
-  LABOUR_BULLETIN_URL,
-  buildEmploymentStats,
   buildTaxRevenue,
   discoverLatestBulletinUrl,
   parseFinancesBulletin,
-  parseLabourBulletin,
 } from "@/worker/economy-evidence";
+import {
+  LABOUR_BULLETIN_URL,
+  buildEmploymentStats,
+  collect as collectEmployment,
+  parseLabourBulletin,
+} from "@/feeds/employment/parse.js";
 import { GDP_BULLETIN_URL, buildGdpTracker, collect as collectGdp, parseGdpBulletin } from "@/feeds/gdp/parse.js";
 
 const gdpEditionUrl = `${GDP_BULLETIN_URL.replace(/\/latest$/, "")}/may2026`;
@@ -209,6 +212,20 @@ describe("official ONS economy bulletin connectors", () => {
     });
     expect(result).not.toHaveProperty("publicVsPrivate");
     expect(result).not.toHaveProperty("employmentTrend");
+  });
+
+  it("employment collect wraps the unchanged builder output with observation and source", async () => {
+    const fetchImpl = fetchFor(LABOUR_BULLETIN_URL, labourEditionUrl, labourHtml, {
+      lf24: rollingThreeMonthCsv(2026, 4, 75.1, 74.8),
+      mgsx: rollingThreeMonthCsv(2026, 4, 5.2, 4.8),
+      lf2s: rollingThreeMonthCsv(2026, 4, 21, 21.4),
+      ap2y: rollingThreeMonthCsv(2026, 5, 721, 760),
+    });
+    const now = new Date("2026-07-16T08:00:00Z");
+    const result = await collectEmployment({ fetch: fetchImpl, now });
+    expect(result.data).toEqual(await buildEmploymentStats(fetchImpl));
+    expect(result.observation.publishedAt).toBe(result.data.headline.releaseDate);
+    expect(result.source).toMatchObject({ url: labourEditionUrl, fetchedAt: now.toISOString() });
   });
 
   it("builds the current ONS rolling three-month labour series", async () => {

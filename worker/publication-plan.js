@@ -8,7 +8,7 @@ const DECLARED_PLAN = collectionPlan();
 const SECTION_COLLECTION_PLAN = Object.freeze({
   gdpTracker: Object.freeze({ ...DECLARED_PLAN.gdpTracker }),
   sentimentPulse: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
-  employmentStats: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
+  employmentStats: Object.freeze({ ...DECLARED_PLAN.employmentStats }),
   taxRevenue: Object.freeze({ jobType: "refresh-section", collector: "tax-revenue-live" }),
   nationalDebt: Object.freeze({ jobType: "refresh-section", collector: "section-builder" }),
   migrationStats: Object.freeze({ ...DECLARED_PLAN.migrationStats }),

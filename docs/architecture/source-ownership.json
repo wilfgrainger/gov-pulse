@@ -22,8 +22,8 @@
     },
     {
       "section": "employmentStats",
-      "collector": "worker/economy-evidence.js",
-      "normalizer": "worker/economy-evidence.js",
+      "collector": "feeds/employment/parse.js",
+      "normalizer": "feeds/employment/parse.js",
       "entrypoint": "worker/queued-publication-entry.js",
       "schedule": "daily Cloudflare Cron run through public-data-jobs Queue",
       "storage": "KV section fragment, canonical current publication and prepared public artifact",

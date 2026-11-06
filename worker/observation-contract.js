@@ -148,10 +148,7 @@ const contracts = {
     },
   },
   gdpTracker: declaredContract("gdpTracker"),
-  employmentStats: {
-    maxAgeDays: 70,
-    extract: publishedObservation,
-  },
+  employmentStats: declaredContract("employmentStats"),
   nationalDebt: {
     maxAgeDays: 70,
     extract(data, now) {
