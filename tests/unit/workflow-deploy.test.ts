@@ -21,12 +21,24 @@ function jobs() {
 }
 
 // Steps are list items starting with `- name:` at six-space indentation.
-function steps(jobText: string) {
-  const parts = jobText.split(/^(?=      - name: )/m);
+function steps(text: string) {
+  const parts = text.split(/^(?=      - name: )/m);
   return parts.filter((part) => part.startsWith("      - name: "));
 }
 
-const LINT_OR_TEST = /npm run (lint && )?test(\s|$)/;
+// Commands that run lint or the unit suite. `npm run test:release` is the
+// release smoke test, which runs on every release, so it is excluded.
+const LINT_OR_TEST_COMMAND =
+  /\bnpm (?:run )?(?:lint|test)(?::(?!release\b)[\w-]+)?(?=\s|$|&)|\bnpx vitest\b|\bvitest run\b/;
+
+const DISPATCH_GATE = /^\s+if: github\.event_name == 'workflow_dispatch'$/m;
+
+// Returns the steps that run lint or the unit suite without the dispatch gate.
+function ungatedLintOrTestSteps(text: string) {
+  return steps(text).filter(
+    (step) => LINT_OR_TEST_COMMAND.test(step) && !DISPATCH_GATE.test(step),
+  );
+}
 
 describe("deploy workflow", () => {
   it("installs dependencies once", () => {
@@ -42,18 +54,64 @@ describe("deploy workflow", () => {
   });
 
   it("lint and tests remain dispatch-only", () => {
-    const testSteps = jobs().flatMap((job) =>
-      steps(job.text)
-        .filter((step) => LINT_OR_TEST.test(step))
-        .map((step) => ({ job: job.name, step })),
+    const testSteps = steps(workflow).filter((step) =>
+      LINT_OR_TEST_COMMAND.test(step),
     );
 
     expect(testSteps.length).toBeGreaterThan(0);
-    for (const { job, step } of testSteps) {
-      expect(
-        step,
-        `${job} lint/test step must be gated to workflow_dispatch`,
-      ).toMatch(/^\s+if: github\.event_name == 'workflow_dispatch'$/m);
-    }
+    expect(ungatedLintOrTestSteps(workflow)).toEqual([]);
+  });
+
+  describe("dispatch-only matcher", () => {
+    const ungatedNpmTest = `
+      - name: Unit tests
+        run: npm test
+`;
+    const ungatedNpmLint = `
+      - name: Lint
+        run: npm run lint
+`;
+    const ungatedVitest = `
+      - name: Vitest
+        run: npx vitest run
+`;
+    const ungatedUnitSuite = `
+      - name: Unit suite
+        run: npm run test:unit
+`;
+    const releaseSmoke = `
+      - name: Release smoke
+        run: npm run test:release -- "https://public-data.org/" "\${{ github.sha }}"
+`;
+    const gatedLintAndTest = `
+      - name: Validate manually dispatched release source
+        if: github.event_name == 'workflow_dispatch'
+        run: npm run lint && npm run test
+`;
+
+    it("flags an ungated npm test step", () => {
+      expect(ungatedLintOrTestSteps(ungatedNpmTest)).toHaveLength(1);
+    });
+
+    it("flags an ungated npm run lint step", () => {
+      expect(ungatedLintOrTestSteps(ungatedNpmLint)).toHaveLength(1);
+    });
+
+    it("flags an ungated npx vitest step", () => {
+      expect(ungatedLintOrTestSteps(ungatedVitest)).toHaveLength(1);
+    });
+
+    it("flags an ungated npm run test:unit step", () => {
+      expect(ungatedLintOrTestSteps(ungatedUnitSuite)).toHaveLength(1);
+    });
+
+    it("does not flag the release smoke test npm run test:release", () => {
+      expect(ungatedLintOrTestSteps(releaseSmoke)).toEqual([]);
+    });
+
+    it("accepts a dispatch-gated lint and test step", () => {
+      expect(ungatedLintOrTestSteps(gatedLintAndTest)).toEqual([]);
+      expect(steps(gatedLintAndTest)).toHaveLength(1);
+    });
   });
 });
