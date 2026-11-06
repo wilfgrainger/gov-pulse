@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 import { cache } from "react";
-import { publicationPublished } from "@/contracts/publication-policy";
+import { publicationPublished } from "@/contracts/evidence-policy";
 import {
   isInternationalComparisonPublication,
   type InternationalComparisonPublication,

@@ -18,7 +18,7 @@ import { readServerMetricsSnapshot } from "../../lib/serverMetricsSnapshot";
 import { MetricsSnapshotProvider } from "../../lib/MetricsSnapshotProvider";
 import { createClientMetricsSnapshot } from "../../lib/metricsSnapshot";
 import { sectionDistribution } from "../../lib/sectionDownloads";
-import { filterCurrentSnapshot } from "@/worker/publication-currentness";
+import { filterCurrentSnapshot } from "@/contracts/evidence-policy";
 import type { MetricsSnapshot } from "../../lib/metricsSnapshot";
 import EvidenceHoldNotice from "@/app/components/EvidenceHoldNotice";
 import { publicationEnabled, sectionPublication, productRouteAvailable } from "@/contracts/publication-policy";

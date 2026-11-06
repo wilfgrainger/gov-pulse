@@ -1,4 +1,4 @@
-import { publicationPublished } from "../contracts/publication-policy.js";
+import { publicationPublished } from "../contracts/evidence-policy.js";
 import { REQUIRED_PUBLISHED_SECTION_IDS } from "./feed-registry.js";
 
 const SECTION_COLLECTION_PLAN = Object.freeze({

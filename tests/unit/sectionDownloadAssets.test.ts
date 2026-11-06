@@ -8,7 +8,7 @@ import {
   DEFAULT_SECTION_DOWNLOAD_OUTPUT,
   generateSectionDownloads,
 } from "../../scripts/generate-section-downloads.mjs";
-import { PUBLICATION_CONFIG } from "@/contracts/publication-policy";
+import { PUBLICATION_CONFIG } from "@/contracts/evidence-policy";
 
 const temporaryDirectories: string[] = [];
 

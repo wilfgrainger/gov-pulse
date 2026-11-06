@@ -165,7 +165,7 @@ describe("section discovery contract", () => {
   it("does not promote stale fallback data as a latest verified publication", () => {
     const discoverySource = source("app/lib/discovery.ts");
 
-    expect(discoverySource).toContain('source.status !== "ok"');
+    expect(discoverySource).toContain("!sourceStatusOk(source)");
     expect(discoverySource).not.toContain('source.status !== "ok" && source.status !== "stale"');
   });
 

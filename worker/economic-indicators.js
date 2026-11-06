@@ -1,4 +1,5 @@
 import { fetchOfficialText as fetchSourceText } from "./official-source-fetch.js";
+import { SENTIMENT_MEASURE_IDS } from "../contracts/evidence-policy.js";
 
 const ONS_ORIGIN = "https://www.ons.gov.uk";
 const ONS_GENERATOR = `${ONS_ORIGIN}/generator?format=csv&uri=`;
@@ -412,7 +413,7 @@ async function buildEconomicIndicators(fetchImpl = fetch, nowProvider = () => ne
 
   return {
     available: true,
-    order: ["inflation", "bankRate", "unemployment"],
+    order: [...SENTIMENT_MEASURE_IDS],
     series,
     methodology: {
       alignment:

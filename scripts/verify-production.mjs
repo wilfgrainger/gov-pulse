@@ -1,4 +1,4 @@
-import { filterCurrentSnapshot } from "../worker/publication-currentness.js";
+import { filterCurrentSnapshot } from "../contracts/evidence-policy.js";
 import { validatePublicProjection } from "./lib/publication-validation.mjs";
 
 const DEFAULT_ATTEMPTS = 12;

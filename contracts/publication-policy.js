@@ -1,18 +1,7 @@
 import PRODUCT_CAPABILITIES from "../config/product-capabilities.json" with { type: "json" };
 import definitions from "./measure-definitions.json" with { type: "json" };
 import { FEED_CATALOG } from "./source-catalog.js";
-import {
-  PUBLICATION_CONFIG,
-  PUBLICATION_STATES,
-  filterPublicationCatalog,
-  filterPublicationSnapshot,
-  filterPublicationSummary,
-  publicationDecision,
-  publicationHeld,
-  publicationPublished,
-  publicationRetired,
-  publicationState,
-} from "./evidence-policy.js";
+import { PUBLICATION_CONFIG, publicationPublished } from "./evidence-policy.js";
 
 const NON_SOURCE_PUBLICATION_IDS = new Set([
   "editionArchive",
@@ -26,7 +15,7 @@ const NON_SOURCE_PUBLICATION_IDS = new Set([
  */
 
 // Publication decisions and snapshot projection live in evidence-policy.js;
-// this module keeps route availability and the compatibility exports.
+// this module owns route availability only.
 /** @param {string} id @param {ProductCapabilityConfig} config */
 function productCapabilityAvailable(id, config = PRODUCT_CAPABILITIES) {
   return config?.capabilities?.[id]?.available === true;
@@ -45,6 +34,14 @@ function publicationEnabled(id, config = PUBLICATION_CONFIG) {
 /** @param {PublicationConfig} config */
 function anyPublicationEnabled(config = PUBLICATION_CONFIG) {
   return Object.keys(config.publications ?? {}).some((id) => publicationPublished(id, config));
+}
+
+// The sections the cost-of-living lens reads: prices, house prices and earnings.
+const COST_OF_LIVING_SECTIONS = Object.freeze(["sentimentPulse", "housePriceIndex", "realWages"]);
+
+/** @param {PublicationConfig} config */
+function costOfLivingEvidencePublished(config = PUBLICATION_CONFIG) {
+  return COST_OF_LIVING_SECTIONS.some((id) => publicationPublished(id, config));
 }
 
 /** @param {PublicationConfig} config */
@@ -208,23 +205,14 @@ function publicRouteAvailable(
 
 export {
   PRODUCT_CAPABILITIES,
-  PUBLICATION_CONFIG,
-  PUBLICATION_STATES,
   anyEvidencePublished,
   anyEvidenceSourceEnabled,
   anyPublicationEnabled,
-  filterPublicationCatalog,
-  filterPublicationSnapshot,
-  filterPublicationSummary,
+  costOfLivingEvidencePublished,
   productCapabilityAvailable,
   productRouteAvailable,
   publicRouteAvailable,
-  publicationDecision,
   publicationEnabled,
-  publicationHeld,
-  publicationPublished,
-  publicationRetired,
   publicationRouteEnabled,
-  publicationState,
   sectionPublication,
 };

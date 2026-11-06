@@ -2,7 +2,8 @@ import queuedWorker, {
   DAILY_CRON,
   enqueueInternationalComparisonRefresh,
 } from "./queued-publication-entry.js";
-import { PUBLICATION_CONFIG, publicationPublished, anyEvidencePublished, filterPublicationSnapshot, filterPublicationCatalog, filterPublicationSummary } from "../contracts/publication-policy.js";
+import { anyEvidencePublished } from "../contracts/publication-policy.js";
+import { PUBLICATION_CONFIG, publicationPublished, filterPublicationSnapshot, filterPublicationCatalog, filterPublicationSummary, cacheLifetime, filterCurrentSnapshot, snapshotValidityDeadline } from "../contracts/evidence-policy.js";
 import { isPublicArtifact } from "../contracts/public-artifact.js";
 import { PUBLICATION_STATUS_KEY, isSnapshot, readCurrentPublication } from "./publication-entry.js";
 import { publicUnavailableSections } from "./publication-availability.js";
@@ -10,11 +11,6 @@ import {
   FEED_REGISTRY_VERSION,
   REQUIRED_PUBLISHED_SECTION_IDS,
 } from "./feed-registry.js";
-import {
-  cacheLifetime,
-  filterCurrentSnapshot,
-  snapshotValidityDeadline,
-} from "./publication-currentness.js";
 import {
   PUBLIC_SNAPSHOT_KEY,
   buildPublicProjection,

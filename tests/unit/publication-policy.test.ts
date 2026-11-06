@@ -1,19 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  PRODUCT_CAPABILITIES,
-  PUBLICATION_CONFIG,
-  anyEvidencePublished,
-  filterPublicationSnapshot,
-  filterPublicationSummary,
-  publicationDecision,
-  publicationHeld,
-  publicationPublished,
-  productCapabilityAvailable,
-  publicRouteAvailable,
-  publicationRetired,
-  publicationState,
-  sectionPublication,
-} from "@/contracts/publication-policy";
+import { PRODUCT_CAPABILITIES, anyEvidencePublished, productCapabilityAvailable, publicRouteAvailable, sectionPublication } from "@/contracts/publication-policy";
+import { PUBLICATION_CONFIG, filterPublicationSnapshot, filterPublicationSummary, publicationDecision, publicationHeld, publicationPublished, publicationRetired, publicationState } from "@/contracts/evidence-policy";
 import { FEED_REGISTRY, PUBLICATION_SOURCE_REGISTRY } from "@/worker/feed-registry";
 
 const config = {

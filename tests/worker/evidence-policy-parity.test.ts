@@ -3,14 +3,8 @@
 
 import { describe, expect, it } from "vitest";
 import fixture from "@/tests/fixtures/publication/current-snapshot.json";
-import { PUBLICATION_CONFIG, filterPublicationSnapshot } from "@/contracts/publication-policy";
+import { PUBLICATION_CONFIG, filterPublicationSnapshot, evaluate, projectPublic, retrievalMaxAgeMsForSection, currentSectionRecord, filterCurrentSnapshot, sectionValidityDeadline } from "@/contracts/evidence-policy";
 import { FEED_CATALOG } from "@/contracts/source-catalog";
-import { evaluate, projectPublic, retrievalMaxAgeMsForSection } from "@/contracts/evidence-policy";
-import {
-  currentSectionRecord,
-  filterCurrentSnapshot,
-  sectionValidityDeadline,
-} from "@/worker/publication-currentness";
 import { retrievalMaxAgeMsForSection as registryRetrievalMaxAge } from "@/worker/feed-registry";
 
 const HOUR = 60 * 60 * 1000;

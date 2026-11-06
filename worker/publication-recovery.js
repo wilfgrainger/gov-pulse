@@ -1,9 +1,8 @@
 import { isSnapshot } from "./publication-entry.js";
 import { isPublicArtifact } from "../contracts/public-artifact.js";
 import { FEED_REGISTRY_VERSION } from "./feed-registry.js";
-import { filterCurrentSnapshot } from "./publication-currentness.js";
+import { filterCurrentSnapshot, filterPublicationSnapshot } from "../contracts/evidence-policy.js";
 import { publicSnapshot } from "./public-snapshot.js";
-import { filterPublicationSnapshot } from "../contracts/publication-policy.js";
 import { frozenHostSet } from "./approved-source-hosts.js";
 import {
   cancelResponseBody,

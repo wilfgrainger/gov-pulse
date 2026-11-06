@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { PUBLICATION_CONFIG } from "@/contracts/publication-policy";
+import { PUBLICATION_CONFIG } from "@/contracts/evidence-policy";
 import queuedWorker, {
   BETTING_CRON,
   DAILY_CRON,

@@ -52,7 +52,6 @@ import {
   applyFeedRegistry,
   provenanceFor,
 } from "./feed-registry.js";
-import { applyFreshnessPolicy } from "./freshness-policy.js";
 import { applyObservationContracts } from "./observation-contract.js";
 
 const ONS_MAX_PUBLICATION_AGE_MS = 75 * 24 * 60 * 60 * 1000;
@@ -309,7 +308,6 @@ observationDescriptors.bettingOdds.build = async () => {
 };
 
 applyFeedRegistry(observationDescriptors);
-applyFreshnessPolicy(observationDescriptors);
 applyObservationContracts(observationDescriptors);
 
 // ---------------------------------------------------------------------------

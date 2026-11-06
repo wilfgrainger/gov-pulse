@@ -1,8 +1,7 @@
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
 import { SECTION_DOWNLOAD_IDS, sectionCsv, sectionDistribution } from "@/app/lib/sectionDownloads";
-import { filterCurrentSnapshot } from "@/worker/publication-currentness";
+import { filterCurrentSnapshot, publicationPublished } from "@/contracts/evidence-policy";
 import type { MetricsSnapshot } from "@/app/lib/metricsSnapshot";
-import { publicationPublished } from "@/contracts/publication-policy";
 
 export function generateStaticParams() {
   return SECTION_DOWNLOAD_IDS.flatMap((section) => [

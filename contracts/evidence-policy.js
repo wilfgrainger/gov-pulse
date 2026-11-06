@@ -2,9 +2,9 @@
 // availability. Isomorphic: no Node or DOM APIs. Missing, stale or
 // unreconciled evidence is unavailable, never zero or interpolated.
 //
-// Legacy modules (worker/publication-currentness.js, worker/observation-contract.js,
-// contracts/publication-policy.js) re-export from here so call sites are
-// unchanged; tests/worker/evidence-policy-parity.test.ts proves equivalence.
+// Call sites import from here directly (tests/unit/policy-single-owner.test.ts
+// enforces it); tests/worker/evidence-policy-parity.test.ts proves equivalence
+// with the legacy behaviour.
 import PUBLICATION_CONFIG from "../config/publications.json" with { type: "json" };
 import definitions from "./measure-definitions.json" with { type: "json" };
 import { FEED_CATALOG } from "./source-catalog.js";
@@ -427,6 +427,57 @@ function evaluate(feed, record, decision, now) {
  * Current, published projection of an internal edition. snapshot is null when
  * no feed is current; callers render unavailable and never fall back to older data.
  */
+// Registry-bound entry points: the retrieval limit comes from the source catalog.
+function sectionCurrentness(section, data, source, now = new Date()) {
+  return sectionCurrentnessWith(section, data, source, now, retrievalMaxAgeMsForSection);
+}
+
+function sectionValidityDeadline(section, data, source, now = new Date()) {
+  return sectionValidityDeadlineWith(section, data, source, now, retrievalMaxAgeMsForSection);
+}
+
+function snapshotValidityDeadline(snapshot, now = new Date()) {
+  return snapshotValidityDeadlineWith(snapshot, now, retrievalMaxAgeMsForSection);
+}
+
+function filterCurrentSnapshot(snapshot, now = new Date()) {
+  return filterCurrentSnapshotWith(snapshot, now, retrievalMaxAgeMsForSection);
+}
+
+function currentSectionRecord(record, now = new Date()) {
+  if (!isRecord(record) || typeof record.section !== "string") return false;
+  return sectionCurrentness(record.section, record.data, record.source, now).current;
+}
+
+// Source-status predicates, so no caller spells out the status vocabulary.
+/**
+ * status is "ok" or "stale": the source carries a usable snapshot section.
+ * @template {{status?: unknown}} T
+ * @param {T|null|undefined} source
+ * @returns {source is T}
+ */
+function sourceHasUsableStatus(source) {
+  return Boolean(source) && (source.status === "ok" || source.status === "stale");
+}
+
+/**
+ * status is exactly "ok".
+ * @template {{status?: unknown}} T
+ * @param {T|null|undefined} source
+ * @returns {source is T}
+ */
+function sourceStatusOk(source) {
+  return Boolean(source) && source.status === "ok";
+}
+
+/**
+ * A present source whose status is not "ok" or whose cache is not "fresh".
+ * @param {{status?: unknown, cacheState?: unknown}} source
+ */
+function sourceUpdateDue(source) {
+  return source.status !== "ok" || source.cacheState !== "fresh";
+}
+
 function projectPublic(edition, now, config = PUBLICATION_CONFIG) {
   const current = filterCurrentSnapshotWith(edition, now, retrievalMaxAgeMsForSection);
   const snapshot = filterPublicationSnapshot(current, config);
@@ -470,8 +521,10 @@ export {
   SENTIMENT_MEASURE_IDS,
   assessSection,
   cacheLifetime,
+  currentSectionRecord,
   decisionFor,
   evaluate,
+  filterCurrentSnapshot,
   filterCurrentSnapshotWith,
   filterPublicationCatalog,
   filterPublicationSnapshot,
@@ -489,7 +542,13 @@ export {
   publicationState,
   retrievalMaxAgeMsForSection,
   routeAccess,
+  sectionCurrentness,
   sectionCurrentnessWith,
+  sectionValidityDeadline,
   sectionValidityDeadlineWith,
+  snapshotValidityDeadline,
   snapshotValidityDeadlineWith,
+  sourceHasUsableStatus,
+  sourceStatusOk,
+  sourceUpdateDue,
 };

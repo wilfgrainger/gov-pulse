@@ -5,8 +5,8 @@ import {
 } from "@/app/lib/discovery";
 import type { MetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import { publicSnapshot } from "@/worker/public-snapshot";
-import { filterCurrentSnapshot } from "@/worker/publication-currentness";
-import { filterPublicationSnapshot, publicationRouteEnabled } from "@/contracts/publication-policy";
+import { filterCurrentSnapshot, filterPublicationSnapshot } from "@/contracts/evidence-policy";
+import { publicationRouteEnabled } from "@/contracts/publication-policy";
 import householdStory from "@/app/content/stories/household-budgets";
 import publicFinanceStory from "@/app/content/stories/public-finances";
 

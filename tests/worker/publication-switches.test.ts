@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import worker from "@/worker/public-data-entry";
 import offlineSeed from "@/worker/offline-pages-entry";
-import { PUBLICATION_CONFIG } from "@/contracts/publication-policy";
+import { PUBLICATION_CONFIG } from "@/contracts/evidence-policy";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 
 const originalStates = Object.fromEntries(

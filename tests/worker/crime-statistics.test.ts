@@ -13,7 +13,7 @@ import {
   collectCrimeStatistics,
   parseOnsCrimeBulletin,
 } from "@/worker/live-crime-collector";
-import { sectionCurrentness } from "@/worker/publication-currentness";
+import { sectionCurrentness } from "@/contracts/evidence-policy";
 import {
   CRIME_BULLETIN_HTML,
   CRIME_EDITION_URL,

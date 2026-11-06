@@ -1,8 +1,7 @@
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
-import { filterCurrentSnapshot } from "../worker/publication-currentness.js";
-import { filterPublicationSnapshot } from "../contracts/publication-policy.js";
+import { filterCurrentSnapshot, filterPublicationSnapshot } from "../contracts/evidence-policy.js";
 import { publicSnapshot } from "../worker/public-snapshot.js";
 import {
   SECTION_DOWNLOAD_IDS,

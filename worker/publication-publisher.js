@@ -9,10 +9,9 @@ import {
 } from "./publication-entry.js";
 import { CURRENT_RECORD_KEY as CONTRACT_CURRENT_RECORD_KEY } from "./government-contracts-cloudflare.js";
 import { FEED_REGISTRY, FEED_REGISTRY_VERSION, REQUIRED_PUBLISHED_SECTION_IDS } from "./feed-registry.js";
-import { currentSectionRecord, filterCurrentSnapshot } from "./publication-currentness.js";
+import { currentSectionRecord, filterCurrentSnapshot, filterPublicationSnapshot } from "../contracts/evidence-policy.js";
 import { PUBLIC_SNAPSHOT_KEY, buildPublicSnapshotArtifact } from "./public-snapshot.js";
 import { samePublicationEvidence } from "../contracts/publication-evidence.js";
-import { filterPublicationSnapshot } from "../contracts/publication-policy.js";
 import { buildPublicationDiagnostics } from "../contracts/publication-diagnostics.js";
 import { archiveEdition, reconcileRetainedEditionSummaries } from "./edition-archive.js";
 import {
