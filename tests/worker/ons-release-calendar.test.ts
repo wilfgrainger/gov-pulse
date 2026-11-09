@@ -75,6 +75,35 @@ describe("ONS release calendar collector", () => {
     ]);
   });
 
+  it("reads every upcoming page, so releases past the first hundred stay on the calendar", async () => {
+    const position = (page: number, of: number) => `<p class="ons-pagination__position">Page ${page} of ${of}</p>`;
+    const upcoming = new Map([
+      ["1", calendarPage(position(1, 3) + release("GDP monthly estimate, UK: September 2026", "/releases/gdpmonthlyestimateukseptember2026", "20261112", "12 November 2026 7:00am", "Confirmed"))],
+      ["2", calendarPage(position(2, 3))],
+      ["3", calendarPage(position(3, 3) + release("Consumer price inflation, UK: November 2026", "/releases/consumerpriceinflationuknovember2026", "20261216", "16 December 2026 7:00am", "Confirmed"))],
+    ]);
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      const html = url.searchParams.get("release-type") === "type-upcoming" ? upcoming.get(url.searchParams.get("page") ?? "") : calendarPage("");
+      return new Response(html ?? "", { status: 200, headers: { "content-type": "text/html; charset=utf-8" } });
+    });
+
+    const record = await collectOnsReleaseCalendar(fetchImpl, now);
+
+    expect(record.data.events.map((event) => event.date)).toEqual(["2026-11-12", "2026-12-16"]);
+    const requested = fetchImpl.mock.calls.map(([input]) => new URL(String(input)).searchParams);
+    expect(requested.filter((params) => params.get("release-type") === "type-upcoming").map((params) => params.get("page")).sort()).toEqual(["1", "2", "3"]);
+    expect(requested.filter((params) => params.get("release-type") === "type-cancelled").map((params) => params.get("page"))).toEqual(["1"]);
+  });
+
+  it("fails closed when the upcoming list has more pages than the bounded check reads", async () => {
+    const fetchImpl = vi.fn(async () => new Response(
+      calendarPage(`<p class="ons-pagination__position">Page 1 of 11</p>${release("GDP monthly estimate, UK: September 2026", "/releases/gdpmonthlyestimateukseptember2026", "20261112", "12 November 2026 7:00am", "Confirmed")}`),
+      { status: 200, headers: { "content-type": "text/html; charset=utf-8" } },
+    ));
+    await expect(collectOnsReleaseCalendar(fetchImpl, now)).rejects.toThrow(/11 upcoming pages/);
+  });
+
   it("fails closed when the official calendar exposes no releases", async () => {
     const fetchImpl = vi.fn(async () => new Response(calendarPage(""), { status: 200, headers: { "content-type": "text/html; charset=utf-8" } }));
     await expect(collectOnsReleaseCalendar(fetchImpl, now)).rejects.toThrow(/no releases/i);

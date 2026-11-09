@@ -103,7 +103,7 @@ export const STATIC_FETCHES = {
   migrationStats: { count: 3, note: "dataset page, bulletin, history CSV" },
   bettingOdds: { count: Object.keys(MARKET_DEFINITIONS).length, note: "one page per MARKET_DEFINITIONS entry" },
   governmentContracts: { count: 40, note: "ceiling only: MAX_PAGES_PER_REFRESH=40 page fetches per refresh-contracts job (actual use is usually lower; stays under 50)" },
-  releaseCalendar: { count: 2, note: "upcoming + cancelled calendar pages" },
+  releaseCalendar: { count: 11, note: "ceiling: up to 10 upcoming calendar pages (MAX_UPCOMING_PAGES) + 1 cancelled page; 6 in November 2026" },
   nhsReleaseCalendar: { count: 2, note: "calendar API + plan PDF" },
 };
 

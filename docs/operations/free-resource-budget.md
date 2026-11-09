@@ -150,7 +150,7 @@ counted as 2 fetches), and listed in `STATIC_FETCHES` in the script.
 | governmentContracts | no-fixture (sharded: collectShard/combine) | n/a | ceiling 40 (MAX_PAGES_PER_REFRESH), usual use unmeasured | **ceiling below 50** |
 | nhsStats (held) | no-fixture | n/a | 4 (code-read) | within |
 | bettingOdds (held) | no-fixture | n/a | 3 (code-read) | within |
-| releaseCalendar, nhsReleaseCalendar (held) | no-fixture | n/a | 2 and 2 (code-read) | within |
+| releaseCalendar, nhsReleaseCalendar (held) | no-fixture | n/a | ceiling 11 (10 upcoming pages + 1 cancelled; 6 in November 2026) and 2 (code-read) | within |
 | internationalComparison (held) | no-fixture (sharded batches) | n/a | not derived | unknown |
 | earlyYears | static feed, no collector | n/a | 0 | n/a |
 

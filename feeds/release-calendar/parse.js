@@ -80,10 +80,18 @@ function parseOnsReleaseCalendarPage(html, releaseType, checkedAt) {
   return [...new Map(events.map((event) => [event.id, event])).values()];
 }
 
-async function fetchCalendarPage(releaseType, fetchImpl) {
+// ONS lists 100 notices a page; in November 2026 the upcoming list was 5 pages.
+const MAX_UPCOMING_PAGES = 10;
+
+function listedPageCount(html) {
+  const match = html.match(/\bPage\s+\d{1,3}\s+of\s+(\d{1,3})\b/i);
+  return match ? Number(match[1]) : 1;
+}
+
+async function fetchCalendarPage(releaseType, fetchImpl, page = 1) {
   const url = new URL(ONS_RELEASE_CALENDAR_URL);
   url.searchParams.set("limit", "100");
-  url.searchParams.set("page", "1");
+  url.searchParams.set("page", String(page));
   url.searchParams.set("release-type", `type-${releaseType}`);
   url.searchParams.set("sort", "date-newest");
   const response = await fetchResponse(url.toString(), fetchImpl);
@@ -98,13 +106,24 @@ async function fetchCalendarPage(releaseType, fetchImpl) {
 
 async function collectOnsReleaseCalendar(fetchImpl = fetch, now = new Date()) {
   if (!(now instanceof Date) || !Number.isFinite(now.getTime())) throw new Error("ONS release-calendar check time is invalid");
-  const [upcomingHtml, cancelledHtml] = await Promise.all([
+  // Cancelled notices sort newest release date first, so page 1 holds every
+  // cancellation that can still affect an upcoming release.
+  const [firstUpcomingHtml, cancelledHtml] = await Promise.all([
     fetchCalendarPage("upcoming", fetchImpl),
     fetchCalendarPage("cancelled", fetchImpl),
   ]);
+  // Upcoming notices run nearest first, so stopping at page 1 would silently end
+  // the calendar about five weeks out. Read every page, or fail closed.
+  const upcomingPages = listedPageCount(firstUpcomingHtml);
+  if (upcomingPages > MAX_UPCOMING_PAGES) {
+    throw new Error(`ONS release calendar listed ${upcomingPages} upcoming pages, more than the ${MAX_UPCOMING_PAGES} this check reads`);
+  }
+  const laterUpcomingHtml = await Promise.all(
+    Array.from({ length: upcomingPages - 1 }, (_, index) => fetchCalendarPage("upcoming", fetchImpl, index + 2)),
+  );
   const checkedAt = now.toISOString();
   const byId = new Map([
-    ...parseOnsReleaseCalendarPage(upcomingHtml, "upcoming", checkedAt),
+    ...[firstUpcomingHtml, ...laterUpcomingHtml].flatMap((html) => parseOnsReleaseCalendarPage(html, "upcoming", checkedAt)),
     ...parseOnsReleaseCalendarPage(cancelledHtml, "cancelled", checkedAt),
   ].map((event) => [event.id, event]));
   if (byId.size === 0) throw new Error("ONS release calendar exposed no releases");
