@@ -241,10 +241,13 @@ async function enqueueCompletedBootstrapFinaliser(runId, env) {
   if (typeof runId !== "string" || !runId.startsWith("bootstrap-")) return false;
   const run = await kvGet(env, runKey(runId));
   if (run?.scope !== "bootstrap" || run.finalisedAt) return false;
-  const terminals = await readTerminals(env, run);
-  if (!run.expectedJobIds.every((jobId) =>
-    terminals.some((terminal) => terminal.jobId === jobId && terminal.status === "success")
-  )) return false;
+  // Jobs are enqueued in order and normally finish in that order, so the last one
+  // is still unfinished on early completions and this stops after a single read.
+  // shortcut: out-of-order finishes re-read the finished tail on each completion (N reads, N about 11); upgrade to a completed-job list in the run record past ~50 jobs.
+  for (const jobId of [...run.expectedJobIds].reverse()) {
+    const terminal = await kvGet(env, terminalKey(runId, jobId));
+    if (terminal?.status !== "success") return false;
+  }
   await env.DATA_JOBS.send({
     type: "finalise-run",
     runId,
