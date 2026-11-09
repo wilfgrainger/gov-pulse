@@ -404,6 +404,7 @@ function buildInternationalComparisonPublication(bundle, now = new Date()) {
         observationYear: latest.observationYear,
         observations: latest.countries,
         countryHistory,
+        sourceReferences: MEASURE_SOURCE_REFERENCES.defenceSpending,
       });
     }
   }
