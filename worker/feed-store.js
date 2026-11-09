@@ -1,12 +1,9 @@
 import { currentSectionRecord } from "../contracts/evidence-policy.js";
 import { kvGet, kvPut } from "./publication-run-store.js";
+import { isRecord } from "../contracts/records.js";
 
 const FEED_KEY_PREFIX = "v20:feed:";
 const REASON_MAX_LENGTH = 200;
-
-function isRecord(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 function feedKey(feedId) {
   return `${FEED_KEY_PREFIX}${String(feedId)}`;

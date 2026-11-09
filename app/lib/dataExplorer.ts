@@ -192,10 +192,12 @@ export function comparePoints(points: Measure["history"], unit: string) {
 }
 export function measuresCsv(measures: Measure[]): string {
   // Quote every cell and neutralise spreadsheet formula prefixes.
-  const cell = (v: unknown) =>
-    `"${String(v ?? "")
-      .replace(/^[=+@\t\r]/, "'$&")
-      .replaceAll('"', '""')}"`;
+  const cell = (v: unknown) => {
+    const text = String(v ?? "");
+    // A leading minus is a formula only when the cell is not a plain number.
+    const formula = /^[=+@\t\r]/.test(text) || (text.startsWith("-") && !/^-\d+(\.\d+)?(e[+-]?\d+)?$/i.test(text));
+    return `"${(formula ? `'${text}` : text).replaceAll('"', '""')}"`;
+  };
   const rows = [
     [
       "Measure",

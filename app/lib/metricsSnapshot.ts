@@ -2,6 +2,7 @@ import { METRICS_SNAPSHOT_PATH, REFRESH_INTERVAL_MS } from "./config";
 import { FEED_REGISTRY_VERSION } from "@/feeds/registry.js";
 import { filterCurrentSnapshot } from "@/contracts/evidence-policy";
 import type { MeasureCatalog } from "./measureCatalog";
+import { isRecord } from "@/contracts/records.js";
 
 export interface SnapshotSourceStatus {
   status?: string;
@@ -69,10 +70,6 @@ let cachedSnapshot:
   | { loaded: LoadedMetricsSnapshot; cachedAt: number }
   | null = null;
 let pendingSnapshot: Promise<LoadedMetricsSnapshot> | null = null;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 export function isCompatibleMetricsSnapshot(
   value: unknown

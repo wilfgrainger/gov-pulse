@@ -44,16 +44,18 @@ function isoDate(year, month, day) {
 
 function parseArticleDateRange(title) {
   const match = String(title).match(
-    /Voting intention,\s*(\d{1,2})(?:\s*-\s*(\d{1,2}))?\s+([A-Za-z]+)\s+(\d{4})/i
+    /Voting intention,\s*(\d{1,2})(?:\s+([A-Za-z]+))?(?:\s*[-–]\s*(\d{1,2})\s+)?\s*([A-Za-z]+)\s+(\d{4})/i
   );
   if (!match) {
     throw new Error("YouGov article title did not expose fieldwork dates");
   }
-  const month = MONTH_NUMBER[match[3].toLowerCase()];
-  if (!month) throw new Error("YouGov article used an unknown fieldwork month");
+  const endMonth = MONTH_NUMBER[match[4].toLowerCase()];
+  const startMonth = match[2] ? MONTH_NUMBER[match[2].toLowerCase()] : endMonth;
+  if (!endMonth || !startMonth) throw new Error("YouGov article used an unknown fieldwork month");
+  const year = Number(match[5]);
   return {
-    start: isoDate(Number(match[4]), month, Number(match[1])),
-    end: isoDate(Number(match[4]), month, Number(match[2] ?? match[1])),
+    start: isoDate(startMonth > endMonth ? year - 1 : year, startMonth, Number(match[1])),
+    end: isoDate(year, endMonth, Number(match[3] ?? match[1])),
   };
 }
 
@@ -269,6 +271,7 @@ async function collectElectionPolling(fetchImpl = fetch, now = new Date()) {
     polls.push(youGovResult.value);
     sources.push({ pollster: "YouGov", status: "current", recordCount: 1 });
   } else {
+    console.error("Election poll source unavailable", { pollster: "YouGov", error: String(youGovResult.reason?.message ?? youGovResult.reason) });
     sources.push({ pollster: "YouGov", status: "unavailable", recordCount: 0 });
   }
 
@@ -284,6 +287,7 @@ async function collectElectionPolling(fetchImpl = fetch, now = new Date()) {
       archiveFilesUnavailable: archive.unavailable,
     });
   } else {
+    console.error("Election poll source unavailable", { pollster: "More in Common", error: String(moreInCommonResult.reason?.message ?? moreInCommonResult.reason) });
     sources.push({ pollster: "More in Common", status: "unavailable", recordCount: 0 });
   }
 
@@ -308,6 +312,7 @@ export {
   collectYouGovPoll,
   findPdfUrl,
   collectElectionPolling,
+  parseArticleDateRange,
   pdfStrings,
   extractPdfText,
   latestYouGovArticleUrl,

@@ -1,6 +1,7 @@
 import { validateMeasureRecord } from "../contracts/measure-record.js";
 import { catalogRevisionIdentity } from "./measure-catalog.js";
 import { buildEditionSummary } from "./edition-summary.js";
+import { stableStringify } from "../contracts/records.js";
 
 const EDITION_SUMMARY_PREFIX = "v1:edition:summary:";
 const EDITION_SUMMARY_CORRECTION_PREFIX = "v1:edition:summary-correction:";
@@ -11,14 +12,6 @@ const MAX_EDITION_BYTES = 2 * 1024 * 1024;
 const MAX_INDEX_BYTES = 512 * 1024;
 const MAX_EDITION_CHANGES = 5_000;
 const EDITION_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/;
-
-function stableStringify(value) {
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
-  if (value && typeof value === "object") {
-    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
-  }
-  return JSON.stringify(value);
-}
 
 function validInstant(value) {
   return typeof value === "string" && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;

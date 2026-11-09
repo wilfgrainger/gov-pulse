@@ -8,6 +8,7 @@
 import PUBLICATION_CONFIG from "../config/publications.json" with { type: "json" };
 import definitions from "./measure-definitions.json" with { type: "json" };
 import { FEED_CATALOG } from "./source-catalog.js";
+import { isRecord } from "./records.js";
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -24,10 +25,6 @@ const PUBLICATION_STATES = Object.freeze(["published", "held", "retired"]);
  * @typedef {{state:"published"|"held"|"retired", reasonCode:string, reason:string, sections?:string[]}} PublicationDecision
  * @typedef {{version:number, publications: Record<string, PublicationDecision>}} PublicationConfig
  */
-
-function isRecord(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 function parsedTime(value) {
   const match = typeof value === "string" ? value.match(ISO_UTC_INSTANT) : null;

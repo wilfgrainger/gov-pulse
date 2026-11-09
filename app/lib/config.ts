@@ -69,7 +69,3 @@ export const DATA_SOURCES = Object.freeze(Object.fromEntries(
     legacyDataSourceDefinition(id) as unknown as DataSourceDefinition,
   ])
 )) as Readonly<Record<string, DataSourceDefinition>>;
-
-export const INTERACTIVE_ONLY_SECTIONS = Object.freeze(
-  applicationFeedIds.filter((id) => FEED_CATALOG[id]?.automation === "interactive")
-);

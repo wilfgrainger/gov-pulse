@@ -8,14 +8,11 @@ import {
 } from "./publication-run-store.js";
 import { refreshJobs } from "./publication-plan.js";
 import { publishFromCaches } from "./publication-publisher.js";
+import { isRecord } from "../contracts/records.js";
 
 const FINALISE_DELAY_SECONDS = 20 * 60;
 const FINALISE_RETRY_SECONDS = 5 * 60;
 const BOOTSTRAP_FINALISE_RETRY_SECONDS = 60;
-
-function isRecord(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 async function recordTerminal(env, job, status, result = null) {
   if (typeof job?.runId !== "string" || typeof job?.jobId !== "string") return;
@@ -100,6 +97,7 @@ async function createRun(env, now, scope = "daily", options = {}, dispatch = {})
   return { run, jobs, existing: false };
 }
 
+// shortcut: no KV compare-and-swap, so this is safe only while the queue consumer runs one message at a time (max_concurrency = 1, tested in tests/unit/publicationProgramme.test.ts); upgrade before raising it.
 // Dispatch is resumable under partial failure without KV compare-and-swap:
 //  1. `jobsEnqueuedAt` is written BEFORE sendBatch (write-ahead lease). A
 //     redelivered bootstrap that finds it never sends the job batch again.
@@ -217,11 +215,9 @@ async function finaliseRun(runId, env, options = {}) {
 
   const finalStatus = !complete
     ? "incomplete"
-    : publicationResult?.incomplete
-      ? "incomplete"
-      : publicationResult?.changed
-        ? "published"
-        : "no-change";
+    : publicationResult?.changed
+      ? "published"
+      : "no-change";
   const finalised = {
     ...run,
     status: finalStatus,

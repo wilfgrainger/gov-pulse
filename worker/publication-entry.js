@@ -2,6 +2,7 @@ import { SECTION_BUILDERS } from "./section-builders.js";
 import { FEED_REGISTRY_VERSION } from "../feeds/registry.js";
 import { buildMeasureCatalog } from "./measure-catalog.js";
 import { buildEditionSummary } from "./edition-summary.js";
+import { isRecord } from "../contracts/records.js";
 
 // Publication primitives used by the live queue path (queued-publication-entry.js)
 // and the public data worker (public-data-entry.js).
@@ -16,10 +17,6 @@ import { buildEditionSummary } from "./edition-summary.js";
 
 const PUBLICATION_CURRENT_KEY = "v12:publication:current";
 const PUBLICATION_STATUS_KEY = "v12:publication:status";
-
-function isRecord(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 function isSnapshot(value) {
   return (

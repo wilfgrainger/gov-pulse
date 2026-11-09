@@ -124,6 +124,15 @@ describe("public per-OCID Find a Tender history route", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("lets the edge keep an unknown record's not-found answer for the same window as a found one", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 404 })));
+    const unknown = await publicDataWorker.fetch(
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
+    );
+    expect(unknown.status).toBe(404);
+    expect(unknown.headers.get("Cache-Control")).toContain("s-maxage=300");
+  });
+
   it("keeps unknown records unavailable and upstream failures generic", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 404 })));
     const unknown = await publicDataWorker.fetch(

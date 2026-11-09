@@ -25,6 +25,7 @@ import {
   FIND_A_TENDER_USER_AGENT,
   normalizeContractReleaseHistory,
 } from "../contracts/government-contracts.js";
+import { stableStringify } from "../contracts/records.js";
 
 const SNAPSHOT_PATH = "/data/metrics-snapshot.json";
 const HEALTH_PATH = "/data/health.json";
@@ -286,10 +287,19 @@ async function fetchSeedSnapshot(env, fetchImpl = fetch, now = new Date()) {
   return fetchPublicationSeedSnapshot(env, fetchImpl, now);
 }
 
+// A lapsed artifact is rebuilt from the stored current publication. Reuse that
+// rebuild for a minute per binding, or until it expires, so lapsed traffic does
+// not re-read and re-validate the whole publication on every request.
+const REBUILD_REUSE_MS = 60 * 1000;
+const rebuildMemo = new WeakMap();
+
 async function currentPublicArtifact(env, options = {}) {
   const now = options.now ?? new Date();
   const prepared = await readPreparedPublicArtifact(env, now);
   if (prepared) return prepared;
+
+  const memo = env?.METRICS_CACHE ? rebuildMemo.get(env.METRICS_CACHE) : undefined;
+  if (memo && now.getTime() < memo.until) return memo.artifact;
 
   try {
     const current = withPublicationState(
@@ -298,7 +308,7 @@ async function currentPublicArtifact(env, options = {}) {
     if (isCompleteSnapshot(current)) {
       const snapshot = normalizePublicProjectionSnapshot(current, now);
       if (snapshot && publicProjectionIsCurrent(snapshot, now)) {
-        return {
+        const artifact = {
           body: JSON.stringify(snapshot),
           snapshot,
           validUntil: snapshotValidityDeadline(snapshot, now) === null
@@ -307,6 +317,14 @@ async function currentPublicArtifact(env, options = {}) {
           generatedAt: snapshot.meta.generatedAt ?? "current",
           delivery: "cloudflare-kv-migration",
         };
+        if (env?.METRICS_CACHE) {
+          const expiresMs = Date.parse(artifact.validUntil ?? "");
+          rebuildMemo.set(env.METRICS_CACHE, {
+            artifact,
+            until: Math.min(now.getTime() + REBUILD_REUSE_MS, Number.isFinite(expiresMs) ? expiresMs : Infinity),
+          });
+        }
+        return artifact;
       }
     }
   } catch {
@@ -326,15 +344,6 @@ async function currentPublicArtifact(env, options = {}) {
     };
   }
   return null;
-}
-
-async function currentPublicSnapshot(env, options = {}) {
-  const artifact = await currentPublicArtifact(env, options);
-  if (!artifact) return null;
-  return {
-    snapshot: artifact.snapshot,
-    delivery: artifact.delivery,
-  };
 }
 
 async function snapshotResponse(request, env) {
@@ -400,14 +409,6 @@ async function comparisonResponse(request, env) {
   });
 }
 
-function stableStringify(value) {
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
-  if (value && typeof value === "object") {
-    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
-  }
-  return JSON.stringify(value);
-}
-
 const configHashes = new WeakMap();
 /** FNV-64 of the stable-stringified publication config; a hold or release changes it, and with it every edition ETag. */
 function publicationConfigHash(config) {
@@ -451,6 +452,7 @@ async function editionResponse(request, env, url, config = PUBLICATION_CONFIG) {
   return json({ edition: result.summary.id, asOf: result.asOf, availability: "historical", measureCatalog: filterPublicationCatalog(result.catalog, config), summary: filterPublicationSummary(result.summary, config, result.catalog) }, { head, cacheControl: EDITION_CACHE_CONTROL, headers: { ETag: etag } });
 }
 
+// shortcut: each distinct OCID costs one or two live Find a Tender calls; restrict requests to published records before raising traffic.
 async function contractHistoryResponse(request, url) {
   const values = url.searchParams.getAll("ocid");
   if (values.length !== 1 || url.searchParams.size !== 1 || !/^ocds-h6vhtk-[0-9a-f]+$/i.test(values[0])) {
@@ -480,7 +482,7 @@ async function contractHistoryResponse(request, url) {
     }
     upstreamStatus = response.status;
     if (response.status === 404) {
-      return json({ error: "No public release history is available for this procurement record" }, { status: 404, head: request.method === "HEAD" });
+      return json({ error: "No public release history is available for this procurement record" }, { status: 404, head: request.method === "HEAD", cacheControl: `public, max-age=${CONTRACT_HISTORY_CACHE_SECONDS}, s-maxage=${CONTRACT_HISTORY_CACHE_SECONDS}` });
     }
     stage = "upstream_response";
     const packageLabel = upstreamUrl.startsWith(FIND_A_TENDER_RELEASE_PACKAGE_BASE)
@@ -662,7 +664,6 @@ export {
   editionResponse,
   editionsResponse,
   currentPublicArtifact,
-  currentPublicSnapshot,
   fetchSeedSnapshot,
   isCompleteSnapshot,
   preparedMetadataIsCurrent,

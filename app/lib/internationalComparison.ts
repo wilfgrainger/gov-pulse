@@ -1,3 +1,4 @@
+import { isRecord } from "@/contracts/records.js";
 export const COMPARISON_COUNTRY_NAMES = {
   GBR: "United Kingdom",
   USA: "United States",
@@ -103,10 +104,6 @@ export interface InternationalComparisonPublication {
 
 const COUNTRY_IDS = Object.keys(COMPARISON_COUNTRY_NAMES) as ComparisonCountryId[];
 const VALUE_TYPES = new Set<ComparisonValueType>(["historical", "estimate", "projection"]);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 function hasValidSourceUpdate(value: Record<string, unknown>): boolean {
   const hasDate = value.sourceUpdatedAt !== undefined;

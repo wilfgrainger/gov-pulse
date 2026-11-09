@@ -3,6 +3,7 @@
 import { deflateRawSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { sharedStrings, workbookSheetCells, worksheetCells, zipEntries } from "@/feeds/_kit/xlsx.js";
+import { parseNhsWorkbook } from "@/feeds/nhs/workbook.js";
 
 type ZipFixtureEntry = {
   name: string;
@@ -137,6 +138,11 @@ describe("bounded spreadsheet decompression", () => {
     const data = Buffer.alloc(8 * 1024 * 1024 + 1, 0x61);
     const archive = zipFixture([{ name: "xl/sharedStrings.xml", data, method: 0 }]);
     await expect(zipEntries(archive)).rejects.toThrow(/entry.*limit/i);
+  });
+
+  it("rejects an NHS RTT workbook whose sheet inflates past the entry cap", async () => {
+    const bomb = zipFixture([{ name: "xl/workbook.xml", data: Buffer.alloc(9 * 1024 * 1024) }]);
+    await expect(parseNhsWorkbook(bomb)).rejects.toThrow(/limit/);
   });
 
   it("ignores forged uncompressed size fields and counts actual deflate output", async () => {

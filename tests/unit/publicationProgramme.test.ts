@@ -14,6 +14,10 @@ const wranglerPath = "worker/wrangler.toml";
 const wrangler = existsSync(wranglerPath) ? readFileSync(wranglerPath, "utf8") : null;
 
 describe("approved public evidence surfaces", () => {
+  it("keeps the publication queue consumer at one message at a time", () => {
+    expect(wrangler ?? "").toMatch(/max_concurrency\s*=\s*1\b/);
+  });
+
   it("authorizes the exact edition archive routes and leaves retired endpoints closed", () => {
     expect(publicRouteAllowed("/data/editions.json")).toBe(true);
     expect(publicRouteAllowed("/data/edition.json?edition=catalog-1.2-a")).toBe(true);

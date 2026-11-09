@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { afterEach, describe, expect, it, vi } from "vitest";
-import publicWorker from "@/worker/public-data-entry";
+import publicWorker, { currentPublicArtifact } from "@/worker/public-data-entry";
 import { publishFromCaches } from "@/worker/queued-publication-entry";
 import { PUBLICATION_CURRENT_KEY, PUBLICATION_STATUS_KEY } from "@/worker/publication-entry";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
@@ -99,6 +99,30 @@ async function health(env: unknown, at = READ_AT) {
 afterEach(() => vi.useRealTimers());
 
 describe("health", () => {
+  it("rebuilds a lapsed artifact once while that rebuild is fresh", async () => {
+    const kv = await publishedEnv();
+    const later = new Date("2026-07-20T03:40:00.000Z");
+    const fresh = internalSnapshot();
+    const fetchedAt = new Date(later.getTime() - 60 * 60 * 1000).toISOString();
+    for (const source of Object.values(fresh.meta.sources)) source.fetchedAt = fetchedAt;
+    fresh.meta.fetchedAt = fetchedAt;
+    fresh.meta.generatedAt = fetchedAt;
+    kv.store.set(PUBLICATION_CURRENT_KEY, JSON.stringify(fresh));
+    const fetchImpl = vi.fn(async () => new Response("", { status: 404 }));
+    const reads = () => [
+      ...kv.env.METRICS_CACHE.get.mock.calls,
+      ...kv.env.METRICS_CACHE.getWithMetadata.mock.calls,
+    ].filter(([key]) => key === PUBLICATION_CURRENT_KEY).length;
+
+    const before = reads();
+    const first = await currentPublicArtifact(kv.env, { now: later, fetchImpl });
+    const second = await currentPublicArtifact(kv.env, { now: new Date(later.getTime() + 1000), fetchImpl });
+
+    expect(first?.delivery).toBe("cloudflare-kv-migration");
+    expect(reads() - before).toBe(1);
+    expect(second).toBe(first);
+  });
+
   it("answers a repeat check without parsing the stored artifact again", async () => {
     const kv = await publishedEnv();
     expect(await health(kv.env)).toMatchObject({ status: "ready", ready: true });

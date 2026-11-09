@@ -75,6 +75,11 @@ describe("ONS release calendar collector", () => {
     ]);
   });
 
+  it("fails closed when the official calendar exposes no releases", async () => {
+    const fetchImpl = vi.fn(async () => new Response(calendarPage(""), { status: 200, headers: { "content-type": "text/html; charset=utf-8" } }));
+    await expect(collectOnsReleaseCalendar(fetchImpl, now)).rejects.toThrow(/no releases/i);
+  });
+
   it("fails closed on off-host links and impossible calendar dates", () => {
     const html = [
       release("GDP monthly estimate, UK: August 2026", "https://attacker.example/releases/fake", "20261015", "15 October 2026", "Confirmed"),

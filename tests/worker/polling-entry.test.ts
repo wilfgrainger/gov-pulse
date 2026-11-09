@@ -11,6 +11,7 @@ import {
   parsePublishedDate,
   parsePartyShares,
   pdfStrings,
+  parseArticleDateRange,
   sampleSizeFromPdfText,
 } from "@/feeds/election-polls/parse.js";
 import { parseNhsRttPressNotice } from "@/feeds/nhs/press-notice.js";
@@ -47,6 +48,11 @@ describe("live publisher parsers", () => {
       { name: "Candidate A", decimalOdds: 2.5 },
       { name: "Candidate B", decimalOdds: 4 },
     ]);
+  });
+
+  it("reads en-dash and cross-month fieldwork ranges from YouGov article titles", () => {
+    expect(parseArticleDateRange("Voting intention, 1–3 November 2026")).toEqual({ start: "2026-11-01", end: "2026-11-03" });
+    expect(parseArticleDateRange("Voting intention, 28 October – 3 November 2026")).toEqual({ start: "2026-10-28", end: "2026-11-03" });
   });
 
   it("selects the newest YouGov voting-intention article and sample", () => {

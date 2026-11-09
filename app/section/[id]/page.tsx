@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ownEntry } from "@/app/lib/ownEntry";
 import Link from "next/link";
 import PageHeader from "../../components/PageHeader";
 import Reveal from "../../components/Reveal";
@@ -76,7 +77,7 @@ export default async function SectionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const section = SECTION_CONTENT[id as keyof typeof SECTION_CONTENT];
+  const section = ownEntry(SECTION_CONTENT, id);
 
   if (!section) notFound();
   if (gateRoute(`/section/${id}/`).access === "not-found") notFound();

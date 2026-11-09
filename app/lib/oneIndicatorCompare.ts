@@ -60,10 +60,6 @@ function rankCurrent(left: MeasureRecord, right: MeasureRecord): number {
   );
 }
 
-export function summariseOneIndicator(record: MeasureRecord): OneIndicatorSummary {
-  return summarise(record);
-}
-
 export function overlayPeersFor(primary: MeasureRecord, catalog: MeasureCatalog, now = new Date()): MeasureRecord[] {
   return availableMeasures(catalog, now)
     .filter((measure) => measure.id !== primary.id && compareEligibility(primary, measure) === "overlay")

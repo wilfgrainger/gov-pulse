@@ -107,6 +107,7 @@ async function collectOnsReleaseCalendar(fetchImpl = fetch, now = new Date()) {
     ...parseOnsReleaseCalendarPage(upcomingHtml, "upcoming", checkedAt),
     ...parseOnsReleaseCalendarPage(cancelledHtml, "cancelled", checkedAt),
   ].map((event) => [event.id, event]));
+  if (byId.size === 0) throw new Error("ONS release calendar exposed no releases");
   const data = {
     events: [...byId.values()].sort((left, right) => (left.date ?? "9999-12-31").localeCompare(right.date ?? "9999-12-31") || left.id.localeCompare(right.id)),
     calendarUrl: ONS_RELEASE_CALENDAR_URL,

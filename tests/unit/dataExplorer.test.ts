@@ -143,6 +143,13 @@ describe("data explorer", () => {
     expect(csv).toContain('"GDP: three-month growth","","%"');
     expect(csv).toContain("https://www.ons.gov.uk/");
   });
+  it("escapes a leading minus only when the cell is not a plain number", () => {
+    const [measure] = exploreMeasures(payload, now);
+    const csv = measuresCsv([{ ...measure, label: "-1+1", value: -3.2 }]);
+    expect(csv).toContain(`"'-1+1"`);
+    expect(csv).toContain(`"-3.2"`);
+  });
+
   it("marks an older debt release for update when current receipts cite a later finances bulletin", () => {
     const candidate = structuredClone(payload) as typeof payload & { nationalDebt: Record<string, unknown> };
     const checkDate = new Date("2026-09-28T12:00:00Z");
