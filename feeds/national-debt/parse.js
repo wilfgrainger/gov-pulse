@@ -98,8 +98,10 @@ function readDebtRatio(text, debtMatch) {
   const legacy = text.match(/Debt at the end of\s+([A-Za-z]+\s+\d{4})\s+was equivalent to\s+([\d.]+)%\s+of GDP/i);
   if (legacy) found.push({ period: legacy[1], value: legacy[2] });
   // October 2026 wording: the ratio closes the same sentence as the net debt stock.
-  const sentence = text.slice(debtMatch.index + debtMatch[0].length);
-  const sameSentence = sentence.match(/^(?:(?!\.\s)[\s\S]){0,200}?\bequivalent to\s+([\d.]+)%\s+of GDP/i);
+  const rest = text.slice(debtMatch.index + debtMatch[0].length);
+  const sentenceEnd = rest.search(/\.\s/);
+  const sentence = sentenceEnd === -1 ? rest : rest.slice(0, sentenceEnd);
+  const sameSentence = sentence.match(/\bequivalent to\s+([\d.]+)%\s+of GDP/i);
   if (sameSentence) found.push({ period: debtMatch[2], value: sameSentence[1] });
   const ratioSentence = text.match(/Public sector net debt-to-GDP ratio at the end of\s+([A-Za-z]+\s+\d{4})\s+was provisionally estimated at\s+([\d.]+)%/i);
   if (ratioSentence) found.push({ period: ratioSentence[1], value: ratioSentence[2] });
