@@ -104,6 +104,32 @@ describe("latest ONS house price index connector", () => {
     });
   });
 
+  it("reads a falling house-price and rent headline as negative changes", () => {
+    const falling = bulletinHtml
+      .replace("Average UK monthly private rent increased by 3.8%", "Average UK monthly private rent decreased by 3.8%")
+      .replace("Average UK house prices increased by 1.4%", "Average UK house prices decreased by 1.4%");
+
+    expect(parseHpiBulletin(falling, "september2026").headline).toMatchObject({
+      privateRentAnnualChangePercent: -3.8,
+      changePercent: -1.4,
+      previousChangePercent: 1.5,
+    });
+  });
+
+  it("reads an unchanged comparison after a fall as the same negative rate", () => {
+    const falling = bulletinHtml
+      .replace("Average UK house prices increased by 1.4%", "Average UK house prices decreased by 1.4%")
+      .replace(
+        "this annual growth rate is down from 1.5% in the 12 months to June 2026",
+        "this annual growth rate is unchanged from the 12 months to June 2026",
+      );
+
+    expect(parseHpiBulletin(falling, "september2026").headline).toMatchObject({
+      changePercent: -1.4,
+      previousChangePercent: -1.4,
+    });
+  });
+
   it("fails closed when the house-price headline sentence is missing", () => {
     const withoutHeadline = bulletinHtml.replace(
       /Average UK house prices increased by 1\.4%, to £273,000, in the 12 months to July 2026 \(provisional estimate\); this annual growth rate is down from 1\.5% in the 12 months to June 2026\./,

@@ -99,6 +99,17 @@ async function health(env: unknown, at = READ_AT) {
 afterEach(() => vi.useRealTimers());
 
 describe("health", () => {
+  it("answers a repeat check without parsing the stored artifact again", async () => {
+    const kv = await publishedEnv();
+    expect(await health(kv.env)).toMatchObject({ status: "ready", ready: true });
+
+    const parse = vi.spyOn(JSON, "parse");
+    expect(await health(kv.env, new Date("2026-07-18T03:41:00.000Z"))).toMatchObject({ ready: true });
+
+    expect(parse.mock.calls.filter(([text]) => String(text).length > 1_000)).toHaveLength(0);
+    parse.mockRestore();
+  });
+
   it("held required feed is reported in held and does not degrade", async () => {
     expect(publicationPublished("nhsStats")).toBe(false);
     const { env, store } = await publishedEnv();

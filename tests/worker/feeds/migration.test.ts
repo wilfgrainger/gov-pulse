@@ -149,6 +149,49 @@ YE Dec 20,93000,662000,569000,,,`
     expect(result.source).toMatchObject({ edition: "yearendingdecember2025", fetchedAt: now.toISOString() });
   });
 
+  it("reconciles a year-to-June headline against the June history series only", () => {
+    const juneBulletin = bulletinHtml.replaceAll("December", "June");
+    const juneHistory = `date,Net migration,Immigration,Emigration,Net_estimate,Immigration_estimate,Emigration_estimate
+YE Dec 24,,,,331000,950000,619000
+YE Jun 24,,,,290000,930000,640000
+YE Jun 25,,,,171000,813000,642000`;
+
+    const headline = parseMigrationBulletin(juneBulletin, "yearendingjune2025");
+    const history = parseMigrationHistoryCsv(juneHistory, "June");
+
+    expect(headline.headline.period).toBe("YE June 2025");
+    expect(history).toEqual([
+      expect.objectContaining({ period: "YE June 2024", netMigration: 290_000 }),
+      expect.objectContaining({ period: "YE June 2025", netMigration: 171_000 }),
+    ]);
+  });
+
+  it("builds a year-to-June payload from the June edition's bulletin and history", async () => {
+    const juneBulletin = bulletinHtml.replaceAll("December", "June");
+    const juneHistory = `date,Net migration,Immigration,Emigration,Net_estimate,Immigration_estimate,Emigration_estimate
+YE Dec 24,,,,331000,950000,619000
+YE Jun 24,,,,290000,930000,640000
+YE Jun 25,,,,171000,813000,642000`;
+    const juneDataset = `<a href="/file?uri=%2Fpeoplepopulationandcommunity%2Fpopulationandmigration%2Finternationalmigration%2Fdatasets%2Flongterminternationalimmigrationemigrationandnetmigrationflowsprovisional%2Fyearendingjune2025%2Fnovember2025publicationspreadsheet.xlsx">Year ending June 2025</a>`;
+    const fetchImpl = vi.fn(async (url: string) => ({
+      ok: true,
+      status: 200,
+      text: async () =>
+        url === DATASET_URL
+          ? juneDataset
+          : url.endsWith("data.csv")
+            ? juneHistory
+            : juneBulletin,
+    })) as unknown as typeof fetch;
+
+    const result = await buildMigrationStats(fetchImpl);
+
+    expect(result.source.edition).toBe("yearendingjune2025");
+    expect(result.headline.period).toBe("YE June 2025");
+    expect(result.history.at(-1)).toMatchObject({ period: "YE June 2025", netMigration: 171_000 });
+    expect(result.annualDelta.netMigration).toBe(171_000 - 290_000);
+  });
+
   it("fails closed when the ONS headline arithmetic does not reconcile", () => {
     const inconsistent = bulletinHtml.replace("642,000", "600,000");
     expect(() => parseMigrationBulletin(inconsistent, "yearendingdecember2025")).toThrow(
