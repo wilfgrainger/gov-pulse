@@ -120,7 +120,28 @@ async function writeIndex(env, entries) {
   await env.METRICS_CACHE.put(EDITION_INDEX_KEY, encoded, { metadata: { editionCount: entries.length } });
 }
 
-async function retainIndex(env, entries) {
+// The index is read whole on every list request, so it is held to a byte budget.
+// Newest editions keep their places and the oldest are trimmed when the budget
+// is full, rather than failing the publish that archives a new edition.
+function indexWithinBudget(ordered, archivedId) {
+  const encoder = new TextEncoder();
+  let bytes = 2; // the surrounding brackets
+  let kept = 0;
+  for (const entry of ordered) {
+    const separator = kept > 0 ? 1 : 0;
+    const entryBytes = encoder.encode(stableStringify(entry)).byteLength + separator;
+    if (bytes + entryBytes > MAX_INDEX_BYTES) break;
+    bytes += entryBytes;
+    kept += 1;
+  }
+  const retained = ordered.slice(0, kept);
+  if (!retained.some((entry) => entry.id === archivedId)) {
+    throw new Error("Edition index cannot hold the archived edition within its byte limit");
+  }
+  return retained;
+}
+
+async function retainIndex(env, entries, archivedId) {
   const datedEntries = await Promise.all(entries.map(async (entry) => {
     if (validInstant(entry.asOf)) return entry;
     const archived = await readEditionRaw(env, entry.id, entries);
@@ -131,10 +152,10 @@ async function retainIndex(env, entries) {
     right.summary.publishedAt.localeCompare(left.summary.publishedAt) ||
     right.id.localeCompare(left.id)
   );
-  const retained = ordered.slice(0, EDITION_SUMMARY_RETENTION);
+  const retained = indexWithinBudget(ordered.slice(0, EDITION_SUMMARY_RETENTION), archivedId);
   const retainedHashes = new Set(retained.map((entry) => entry.contentHash));
   await writeIndex(env, retained);
-  for (const expired of ordered.slice(EDITION_SUMMARY_RETENTION)) {
+  for (const expired of ordered.slice(retained.length)) {
     await env.METRICS_CACHE.delete(`${EDITION_SUMMARY_PREFIX}${expired.id}`);
     await env.METRICS_CACHE.delete(`${EDITION_SUMMARY_CORRECTION_PREFIX}${expired.id}`);
     if (!retainedHashes.has(expired.contentHash)) await env.METRICS_CACHE.delete(`${EDITION_CONTENT_PREFIX}${expired.contentHash}`);
@@ -168,7 +189,7 @@ async function archiveEdition(env, catalogInput, summaryInput) {
     if (legacy.metadata?.fingerprint === fingerprint) {
       const archivedHash = legacy.metadata.contentHash;
       const archivedSummary = validateSummary(legacy.value.summary, id);
-      const fixed = await retainIndex(env, [...index, { id, contentHash: archivedHash, fingerprint, summary: archivedSummary }]);
+      const fixed = await retainIndex(env, [...index, { id, contentHash: archivedHash, fingerprint, summary: archivedSummary }], id);
       return { archived: false, duplicate: true, id, contentHash: archivedHash, retained: fixed.length };
     }
     throw new Error("An archived edition id cannot be rewritten");
@@ -180,7 +201,7 @@ async function archiveEdition(env, catalogInput, summaryInput) {
     const stored = await env.METRICS_CACHE.get(contentKey, "text");
     if (stored !== content || await sha256(stored) !== contentHash) throw new Error("Archived edition content hash mismatch; the edition was not indexed");
   }
-  const retained = await retainIndex(env, [...index, { id, contentHash, fingerprint, summary, asOf: catalog.generatedAt }]);
+  const retained = await retainIndex(env, [...index, { id, contentHash, fingerprint, summary, asOf: catalog.generatedAt }], id);
   return { archived: true, duplicate: false, id, contentHash, retained: retained.length };
 }
 

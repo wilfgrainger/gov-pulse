@@ -25,6 +25,12 @@ function numeric(value, label) {
   return parsed;
 }
 
+// ONS words a fall as "decreased by X%", so the sign comes from that wording.
+function signedChange(match, label) {
+  const magnitude = numeric(match[1], label);
+  return /decreased by/i.test(match[0]) ? -magnitude : magnitude;
+}
+
 function monthlyPeriodEnd(period) {
   const match = String(period).trim().match(/^([A-Za-z]+)\s+(\d{4})$/);
   const month = match ? MONTHS[match[1].toLowerCase()] : undefined;
@@ -191,7 +197,7 @@ function previousAnnualGrowth(text, headlineMatch, label) {
   return {
     period: normalizeMonthlyPeriod(match[3]),
     changePercent: match[2]
-      ? numeric(headlineMatch[1], label)
+      ? signedChange(headlineMatch, label)
       : numeric(match[1], label),
   };
 }
@@ -206,7 +212,7 @@ function parseHpiBulletin(html, edition) {
   )[1];
   const rentHeadlineMatch = matchRequired(
     text,
-    /Average UK monthly private rent increased by\s+([\d.]+)%,\s+to\s+£([\d,]+),\s+in the 12 months to\s+([A-Za-z]+\s+\d{4})/i,
+    /Average UK monthly private rent (?:increased|decreased) by\s+([\d.]+)%,\s+to\s+£([\d,]+),\s+in the 12 months to\s+([A-Za-z]+\s+\d{4})/i,
     "private rent headline"
   );
   const previousRent = previousAnnualGrowth(
@@ -216,7 +222,7 @@ function parseHpiBulletin(html, edition) {
   );
   const headlineMatch = matchRequired(
     text,
-    /Average UK house prices increased by\s+([\d.]+)%,\s+to\s+£([\d,]+),\s+in the 12 months to\s+([A-Za-z]+\s+\d{4})/i,
+    /Average UK house prices (?:increased|decreased) by\s+([\d.]+)%,\s+to\s+£([\d,]+),\s+in the 12 months to\s+([A-Za-z]+\s+\d{4})/i,
     "house price headline"
   );
   // Anchor the "previous period" sentence to the text AFTER the house-price
@@ -231,7 +237,7 @@ function parseHpiBulletin(html, edition) {
   );
 
   const period = normalizeMonthlyPeriod(headlineMatch[3]);
-  const changePercent = numeric(headlineMatch[1], "house price annual change");
+  const changePercent = signedChange(headlineMatch, "house price annual change");
   const avgPriceGbp = Number.parseInt(headlineMatch[2].replace(/,/g, ""), 10);
   if (!Number.isFinite(avgPriceGbp)) {
     throw new Error("Unable to parse house price index average price");
@@ -249,7 +255,7 @@ function parseHpiBulletin(html, edition) {
       privateRentPeriod,
       privateRentObservedAt: monthlyPeriodEnd(privateRentPeriod),
       avgMonthlyPrivateRentGbp,
-      privateRentAnnualChangePercent: numeric(rentHeadlineMatch[1], "private rent annual change"),
+      privateRentAnnualChangePercent: signedChange(rentHeadlineMatch, "private rent annual change"),
       previousPrivateRentPeriod: previousRent.period,
       previousPrivateRentAnnualChangePercent: previousRent.changePercent,
       period,

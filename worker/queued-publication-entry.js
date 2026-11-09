@@ -8,6 +8,22 @@ import {
   dispatchPublicationMessage,
 } from "./publication-queue-dispatcher.js";
 
+const ENQUEUE_RETRY_DELAYS_MS = [1_000, 4_000];
+
+// enqueuePublicationRun resumes from its write-ahead lease, so a retry re-sends
+// only what did not go out. Three attempts ride out a short Queue outage; a
+// longer one leaves the day unpublished, and the error is logged.
+async function enqueueWithRetries(env, now, scope) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await enqueuePublicationRun(env, now, scope, { publishedOnly: true });
+    } catch (error) {
+      if (attempt === ENQUEUE_RETRY_DELAYS_MS.length) throw error;
+      await new Promise((resolve) => setTimeout(resolve, ENQUEUE_RETRY_DELAYS_MS[attempt]));
+    }
+  }
+}
+
 const queuedPublicationWorker = {
   async fetch(request) {
     // The deployed entrypoint is public-data-entry.js. This Worker only owns
@@ -25,7 +41,7 @@ const queuedPublicationWorker = {
         const now = new Date(controller.scheduledTime ?? Date.now());
         const scope = controller.cron === BETTING_CRON ? "betting" : "daily";
         if (refreshJobs("scheduled", scope, { publishedOnly: true }).length === 0) return;
-        await enqueuePublicationRun(env, now, scope, { publishedOnly: true });
+        await enqueueWithRetries(env, now, scope);
       })().catch((error) => {
         console.error("Cloudflare publication scheduling failed", {
           cron: controller.cron,

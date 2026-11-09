@@ -220,6 +220,11 @@ function preparePublicArtifactSnapshot(stored, now = new Date()) {
     : null;
 }
 
+// One parsed artifact per isolate. The stored text and metadata identify it, and
+// it is reused only until the validity deadline the read already enforces, so a
+// lapsed section still drops out on time without parsing on every health check.
+let preparedArtifactMemo = null;
+
 /** @returns {Promise<PublicArtifact | null>} */
 async function readPreparedPublicArtifact(env, now = new Date()) {
   if (!env?.METRICS_CACHE?.getWithMetadata) return null;
@@ -235,6 +240,16 @@ async function readPreparedPublicArtifact(env, now = new Date()) {
     return null;
   }
 
+  const metadataKey = JSON.stringify(record.metadata ?? null);
+  const memo = preparedArtifactMemo;
+  if (
+    memo?.text === record.value &&
+    memo.metadataKey === metadataKey &&
+    now.getTime() < memo.validUntilMs
+  ) {
+    return memo.artifact;
+  }
+
   let preparedSnapshot;
   try {
     preparedSnapshot = JSON.parse(record.value);
@@ -245,7 +260,7 @@ async function readPreparedPublicArtifact(env, now = new Date()) {
   const prepared = preparePublicArtifactSnapshot(preparedSnapshot, now);
   if (!prepared) return null;
 
-  return {
+  const artifact = {
     body: prepared.unchanged ? record.value : JSON.stringify(prepared.snapshot),
     snapshot: prepared.snapshot,
     validUntil: earliestDeadline(
@@ -258,6 +273,13 @@ async function readPreparedPublicArtifact(env, now = new Date()) {
         : "current",
     delivery: "cloudflare-kv",
   };
+  preparedArtifactMemo = {
+    text: record.value,
+    metadataKey,
+    validUntilMs: Date.parse(artifact.validUntil),
+    artifact,
+  };
+  return artifact;
 }
 
 async function fetchSeedSnapshot(env, fetchImpl = fetch, now = new Date()) {

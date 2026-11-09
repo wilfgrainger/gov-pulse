@@ -84,7 +84,12 @@ function optionalInteger(value) {
   return trimmed ? integer(trimmed, "migration history value") : null;
 }
 
-function parseMigrationHistoryCsv(text) {
+const HISTORY_SERIES = {
+  dec: { name: "December", monthIndex: 11 },
+  jun: { name: "June", monthIndex: 5 },
+};
+
+function parseMigrationHistoryCsv(text, referenceMonth = "December") {
   const rows = String(text).trim().split(/\r?\n/);
   const headings = rows.shift()?.split(",").map((heading) => heading.trim()) ?? [];
   const index = Object.fromEntries(headings.map((heading, position) => [heading, position]));
@@ -105,7 +110,10 @@ function parseMigrationHistoryCsv(text) {
   for (const row of rows) {
     const columns = row.split(",");
     const period = columns[index.date]?.trim();
-    if (!/^YE Dec \d{2}$/i.test(period ?? "")) continue;
+    const match = /^YE (Dec|Jun) (\d{2})$/i.exec(period ?? "");
+    if (!match) continue;
+    const series = HISTORY_SERIES[match[1].toLowerCase()];
+    if (series.name !== referenceMonth) continue;
     const netMigration =
       optionalInteger(columns[index.Net_estimate]) ??
       optionalInteger(columns[index["Net migration"]]);
@@ -119,10 +127,10 @@ function parseMigrationHistoryCsv(text) {
     if (Math.abs(immigration - emigration - netMigration) > 1_000) {
       throw new Error(`ONS migration history exceeds the published rounding tolerance for ${period}`);
     }
-    const year = 2000 + Number(period.slice(-2));
+    const year = 2000 + Number(match[2]);
     history.push({
-      period: `YE December ${year}`,
-      observedAt: Date.UTC(year + 1, 0, 0),
+      period: `YE ${series.name} ${year}`,
+      observedAt: Date.UTC(year, series.monthIndex + 1, 0),
       immigration,
       emigration,
       netMigration,
@@ -254,7 +262,7 @@ async function buildMigrationStats(fetchImpl = fetch) {
   const parsed = parseMigrationBulletin(bulletinHtml, edition);
   const historyUrl = discoverMigrationHistoryUrl(bulletinHtml, bulletinUrl);
   const historyText = await fetchOfficialText(historyUrl, fetchImpl);
-  const history = parseMigrationHistoryCsv(historyText);
+  const history = parseMigrationHistoryCsv(historyText, parsed.headline.period.split(" ")[1]);
   const latest = history.at(-1);
   if (
     latest.period !== parsed.headline.period ||

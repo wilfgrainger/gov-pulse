@@ -386,6 +386,32 @@ describe("content-addressed edition archive", () => {
     expect([...kv.values.keys()].filter((key) => key.startsWith(EDITION_SUMMARY_PREFIX))).toHaveLength(0);
   });
 
+  it("trims the oldest summaries to the index byte budget instead of failing the publish", async () => {
+    const kv = new MemoryKv();
+    const largeEdition = (index: number) => {
+      const item = edition(index);
+      item.summary.changes = Array.from({ length: 20 }, (_, position) => ({
+        measureId: "measure",
+        kind: "revision",
+        observedAt: "2024-01-31",
+        period: "January 2024",
+        previous: position,
+        next: position + 1,
+        nextSourceEditionId: `edition-${index}`,
+        nextUnit: "x".repeat(400),
+      }));
+      return item;
+    };
+    const editions = Array.from({ length: 61 }, (_, index) => largeEdition(index));
+    for (const item of editions) await archiveEdition({ METRICS_CACHE: kv }, item.catalog, item.summary);
+
+    const stored = kv.values.get(EDITION_INDEX_KEY)!.value;
+    expect(new TextEncoder().encode(stored).byteLength).toBeLessThanOrEqual(512 * 1024);
+    expect(JSON.parse(stored).length).toBeLessThan(60);
+    const summaries = await listEditionSummaries({ METRICS_CACHE: kv });
+    expect(summaries[0].id).toBe(editions[60].catalog.editionId);
+  });
+
   it("exposes archived editions as historical records and rejects arbitrary query values", async () => {
     const kv = new MemoryKv();
     const item = edition(5);
