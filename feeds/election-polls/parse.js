@@ -43,20 +43,23 @@ function isoDate(year, month, day) {
 }
 
 function parseArticleDateRange(title) {
+  // Start day, optional start month and year, optional end day, end month, end year.
+  // The end month must follow whitespace, so a single-day title cannot split a month name.
   const match = String(title).match(
-    /Voting intention,\s*(\d{1,2})(?:\s+([A-Za-z]+))?(?:\s*[-–]\s*(\d{1,2})\s+)?\s*([A-Za-z]+)\s+(\d{4})/i
+    /Voting intention,\s*(\d{1,2})(?:\s+([A-Za-z]+)(?:\s+(\d{4}))?)?(?:\s*[-–]\s*(\d{1,2}))?\s+([A-Za-z]+)\s+(\d{4})/i
   );
   if (!match) {
     throw new Error("YouGov article title did not expose fieldwork dates");
   }
-  const endMonth = MONTH_NUMBER[match[4].toLowerCase()];
+  const endMonth = MONTH_NUMBER[match[5].toLowerCase()];
   const startMonth = match[2] ? MONTH_NUMBER[match[2].toLowerCase()] : endMonth;
   if (!endMonth || !startMonth) throw new Error("YouGov article used an unknown fieldwork month");
-  const year = Number(match[5]);
-  return {
-    start: isoDate(startMonth > endMonth ? year - 1 : year, startMonth, Number(match[1])),
-    end: isoDate(year, endMonth, Number(match[3] ?? match[1])),
-  };
+  const endYear = Number(match[6]);
+  const startYear = match[3] ? Number(match[3]) : startMonth > endMonth ? endYear - 1 : endYear;
+  const start = isoDate(startYear, startMonth, Number(match[1]));
+  const end = isoDate(endYear, endMonth, Number(match[4] ?? match[1]));
+  if (start > end) throw new Error("YouGov article fieldwork ended before it started");
+  return { start, end };
 }
 
 function parsePublishedDate(source) {

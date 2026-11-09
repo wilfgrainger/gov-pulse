@@ -55,6 +55,13 @@ describe("live publisher parsers", () => {
     expect(parseArticleDateRange("Voting intention, 28 October – 3 November 2026")).toEqual({ start: "2026-10-28", end: "2026-11-03" });
   });
 
+  it("reads single-day and year-spanning fieldwork from YouGov article titles", () => {
+    expect(parseArticleDateRange("Voting intention, 6 July 2025")).toEqual({ start: "2025-07-06", end: "2025-07-06" });
+    expect(parseArticleDateRange("Voting intention, 30 December – 2 January 2026")).toEqual({ start: "2025-12-30", end: "2026-01-02" });
+    expect(parseArticleDateRange("Voting intention, 30 December 2025 - 2 January 2026")).toEqual({ start: "2025-12-30", end: "2026-01-02" });
+    expect(() => parseArticleDateRange("Voting intention, 7-6 July 2025")).toThrow(/fieldwork/);
+  });
+
   it("selects the newest YouGov voting-intention article and sample", () => {
     const article = latestYouGovArticleUrl(`
       <a href="/en-gb/articles/55200-voting-intention-old">Old</a>
