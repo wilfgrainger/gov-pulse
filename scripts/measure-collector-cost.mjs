@@ -25,6 +25,8 @@ import { FEEDS } from "../feeds/index.js";
 import { FINANCES_BULLETIN_URL } from "../feeds/tax/finances.js";
 import { ONS_PUBLICATION_LANDING_URL } from "../contracts/crime-statistics.js";
 import { MARKET_DEFINITIONS } from "../contracts/betting-markets.js";
+import { MAX_PAGES_PER_REFRESH } from "../feeds/government-contracts/parse.js";
+import { MAX_UPCOMING_PAGES } from "../feeds/release-calendar/parse.js";
 
 export const SUBREQUEST_LIMIT = 50; // Workers Free, per invocation (verified 6 Nov 2026)
 export const INDICATIVE_NOTICE =
@@ -102,8 +104,8 @@ export const STATIC_FETCHES = {
   nhsStats: { count: 4, note: "landing, data page, timeseries workbook, press-notice PDF" },
   migrationStats: { count: 3, note: "dataset page, bulletin, history CSV" },
   bettingOdds: { count: Object.keys(MARKET_DEFINITIONS).length, note: "one page per MARKET_DEFINITIONS entry" },
-  governmentContracts: { count: 40, note: "ceiling only: MAX_PAGES_PER_REFRESH=40 page fetches per refresh-contracts job (actual use is usually lower; stays under 50)" },
-  releaseCalendar: { count: 11, note: "ceiling: up to 10 upcoming calendar pages (MAX_UPCOMING_PAGES) + 1 cancelled page; 6 in November 2026" },
+  governmentContracts: { count: MAX_PAGES_PER_REFRESH, note: `ceiling only: MAX_PAGES_PER_REFRESH=${MAX_PAGES_PER_REFRESH} page fetches per refresh-contracts job (actual use is usually lower; stays under 50)` },
+  releaseCalendar: { count: MAX_UPCOMING_PAGES + 1, note: `ceiling: up to ${MAX_UPCOMING_PAGES} upcoming calendar pages (MAX_UPCOMING_PAGES) + 1 cancelled page; 6 in November 2026` },
   nhsReleaseCalendar: { count: 2, note: "calendar API + plan PDF" },
 };
 

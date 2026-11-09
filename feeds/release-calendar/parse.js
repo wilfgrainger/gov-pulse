@@ -148,4 +148,4 @@ async function collect(ctx) {
   return { data: record.data };
 }
 
-export { ONS_RELEASE_CALENDAR_URL, collect, collectOnsReleaseCalendar, parseOnsReleaseCalendarPage };
+export { MAX_UPCOMING_PAGES, ONS_RELEASE_CALENDAR_URL, collect, collectOnsReleaseCalendar, parseOnsReleaseCalendarPage };

@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { COPIED, addProbeFeed, copyRepo, probeJson, regenerateProjections } from "./feed-probe";
+import { COPIED, addProbeFeed, checkProjections, copyRepo, probeJson, regenerateProjections } from "./feed-probe";
 
 const root = process.cwd();
 const GENERATED = new Set([
@@ -36,6 +36,7 @@ describe("feed sprawl", () => {
 
     addProbeFeed(work);
     regenerateProjections(work);
+    checkProjections(work);
 
     const probe = probeJson(
       work,

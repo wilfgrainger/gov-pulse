@@ -107,31 +107,31 @@ function listedSummary(entry) {
   return corrected.summaryCorrection?.kind === "baseline-reconciliation" && corrected.previousEditionId === corrected.summaryCorrection.baselineEditionId ? corrected : original;
 }
 
-async function writeIndex(env, entries) {
-  const encoded = stableStringify(entries);
+async function writeIndex(env, entries, encoded = stableStringify(entries)) {
   if (new TextEncoder().encode(encoded).byteLength > MAX_INDEX_BYTES) throw new Error("Edition index exceeds the configured byte limit");
   await env.METRICS_CACHE.put(EDITION_INDEX_KEY, encoded, { metadata: { editionCount: entries.length } });
 }
 
 // The index is read whole on every list request, so it is held to a byte budget.
 // Newest editions keep their places and the oldest are trimmed when the budget
-// is full, rather than failing the publish that archives a new edition.
+// is full, rather than failing the publish that archives a new edition. Each entry
+// is encoded once, and the kept parts are the exact string that gets written.
 function indexWithinBudget(ordered, archivedId) {
   const encoder = new TextEncoder();
+  const parts = [];
   let bytes = 2; // the surrounding brackets
-  let kept = 0;
   for (const entry of ordered) {
-    const separator = kept > 0 ? 1 : 0;
-    const entryBytes = encoder.encode(stableStringify(entry)).byteLength + separator;
-    if (bytes + entryBytes > MAX_INDEX_BYTES) break;
-    bytes += entryBytes;
-    kept += 1;
+    const part = stableStringify(entry);
+    const partBytes = encoder.encode(part).byteLength + (parts.length > 0 ? 1 : 0);
+    if (bytes + partBytes > MAX_INDEX_BYTES) break;
+    bytes += partBytes;
+    parts.push(part);
   }
-  const retained = ordered.slice(0, kept);
+  const retained = ordered.slice(0, parts.length);
   if (!retained.some((entry) => entry.id === archivedId)) {
     throw new Error("Edition index cannot hold the archived edition within its byte limit");
   }
-  return retained;
+  return { retained, encoded: `[${parts.join(",")}]` };
 }
 
 async function retainIndex(env, entries, archivedId) {
@@ -145,9 +145,9 @@ async function retainIndex(env, entries, archivedId) {
     right.summary.publishedAt.localeCompare(left.summary.publishedAt) ||
     right.id.localeCompare(left.id)
   );
-  const retained = indexWithinBudget(ordered.slice(0, EDITION_SUMMARY_RETENTION), archivedId);
+  const { retained, encoded } = indexWithinBudget(ordered.slice(0, EDITION_SUMMARY_RETENTION), archivedId);
   const retainedHashes = new Set(retained.map((entry) => entry.contentHash));
-  await writeIndex(env, retained);
+  await writeIndex(env, retained, encoded);
   for (const expired of ordered.slice(retained.length)) {
     await env.METRICS_CACHE.delete(`${EDITION_SUMMARY_PREFIX}${expired.id}`);
     await env.METRICS_CACHE.delete(`${EDITION_SUMMARY_CORRECTION_PREFIX}${expired.id}`);

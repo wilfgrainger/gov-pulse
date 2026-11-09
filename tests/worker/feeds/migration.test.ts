@@ -149,13 +149,14 @@ YE Dec 20,93000,662000,569000,,,`
     expect(result.source).toMatchObject({ edition: "yearendingdecember2025", fetchedAt: now.toISOString() });
   });
 
-  it("reconciles a year-to-June headline against the June history series only", () => {
-    const juneBulletin = bulletinHtml.replaceAll("December", "June");
-    const juneHistory = `date,Net migration,Immigration,Emigration,Net_estimate,Immigration_estimate,Emigration_estimate
+  // A year-to-June edition: the same bulletin worded for June, and history with both series.
+  const juneBulletin = bulletinHtml.replaceAll("December", "June");
+  const juneHistory = `date,Net migration,Immigration,Emigration,Net_estimate,Immigration_estimate,Emigration_estimate
 YE Dec 24,,,,331000,950000,619000
 YE Jun 24,,,,290000,930000,640000
 YE Jun 25,,,,171000,813000,642000`;
 
+  it("reconciles a year-to-June headline against the June history series only", () => {
     const headline = parseMigrationBulletin(juneBulletin, "yearendingjune2025");
     const history = parseMigrationHistoryCsv(juneHistory, "June");
 
@@ -167,11 +168,6 @@ YE Jun 25,,,,171000,813000,642000`;
   });
 
   it("builds a year-to-June payload from the June edition's bulletin and history", async () => {
-    const juneBulletin = bulletinHtml.replaceAll("December", "June");
-    const juneHistory = `date,Net migration,Immigration,Emigration,Net_estimate,Immigration_estimate,Emigration_estimate
-YE Dec 24,,,,331000,950000,619000
-YE Jun 24,,,,290000,930000,640000
-YE Jun 25,,,,171000,813000,642000`;
     const juneDataset = `<a href="/file?uri=%2Fpeoplepopulationandcommunity%2Fpopulationandmigration%2Finternationalmigration%2Fdatasets%2Flongterminternationalimmigrationemigrationandnetmigrationflowsprovisional%2Fyearendingjune2025%2Fnovember2025publicationspreadsheet.xlsx">Year ending June 2025</a>`;
     const fetchImpl = vi.fn(async (url: string) => ({
       ok: true,

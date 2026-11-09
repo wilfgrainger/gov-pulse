@@ -68,6 +68,10 @@ export function addProbeFeed(work: string): void {
 
 export function regenerateProjections(work: string): void {
   execFileSync("node", ["scripts/generate-feed-projections.mjs", "--write"], { cwd: work, stdio: "pipe" });
+}
+
+/** Throws when the generated projections drift from the feed definitions. */
+export function checkProjections(work: string): void {
   execFileSync("node", ["scripts/generate-feed-projections.mjs", "--check"], { cwd: work, stdio: "pipe" });
 }
 
