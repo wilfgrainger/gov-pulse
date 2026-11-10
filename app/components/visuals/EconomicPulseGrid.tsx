@@ -86,7 +86,7 @@ export default function EconomicPulseGrid({ series }: EconomicPulseGridProps) {
             Visual 3 · Macro Indicators Tracker
           </span>
           <h4 id={`${compId}-title`} className="mt-2 text-xl font-bold tracking-tight text-gray-950 md:text-2xl">
-            UK Macro Economic Pulse: 4 Key Series
+            UK Macro Economic Pulse: {series.length} Key Series
           </h4>
           <p className="mt-1 text-xs text-gray-600 md:text-sm">
             Official publication-point indicators tracked side-by-side with separate observation clocks and primary publisher provenance.
@@ -97,12 +97,10 @@ export default function EconomicPulseGrid({ series }: EconomicPulseGridProps) {
         </span>
       </div>
 
-      {/* 4-Card Grid */}
+      {/* Series cards */}
       <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {series.map((item) => {
-          const delta = item.currentValue !== null && item.previousValue !== null
-            ? item.currentValue - item.previousValue
-            : null;
+          const delta = item.annualDelta;
           const isSelected = activeSeriesId === item.id;
 
           return (
@@ -145,7 +143,7 @@ export default function EconomicPulseGrid({ series }: EconomicPulseGridProps) {
                             : "text-slate-500"
                       }`}
                     >
-                      {delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1)}% MoM
+                      {delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1)} pp on a year earlier
                     </span>
                   )}
                 </div>

@@ -25,7 +25,8 @@ describe("edition briefing and guided story contracts", () => {
     } } as MetricsSnapshot;
     const markup = renderToStaticMarkup(<BriefingEdition snapshot={snapshot}/>);
     expect(markup).toContain("Historical revision");
-    expect(markup).toContain("3.3 % → 3.2 %");
+    expect(markup).toContain("3.3% → 3.2%");
+    expect(markup).toContain("3.2%</p>");
     expect(markup).toContain("Historical edition · not a current headline");
     expect(markup).toContain("edition-2");
     expect(markup).toContain('href="/editions/edition-2"');

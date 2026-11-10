@@ -101,6 +101,7 @@ export default function GDPTracker() {
   const releaseNote = valid
     ? buildReleaseNote({
         measureLabel: "Monthly GDP growth",
+        valueIsRate: true,
         latestValueDisplay: `${data.headline.monthlyGrowth > 0 ? "+" : ""}${data.headline.monthlyGrowth.toFixed(1)}%`,
         latestPeriod: data.headline.period,
         releaseDate: data.headline.releaseDate,

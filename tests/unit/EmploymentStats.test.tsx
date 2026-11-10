@@ -93,7 +93,7 @@ describe("EmploymentStats release note", () => {
 
     const note = screen.getByTestId("release-note");
     expect(note).toHaveTextContent("Release note");
-    expect(note).toHaveTextContent(/The unemployment rate rose to 4\.5%, a change of \+4\.7% from the prior comparable period\./);
+    expect(note).toHaveTextContent(/The unemployment rate rose to 4\.5%, a change of \+0\.2 percentage points from the prior comparable period\./);
     expect(note).toHaveTextContent(/consecutive period of increase/);
   });
 

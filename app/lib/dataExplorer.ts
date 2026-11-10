@@ -32,7 +32,7 @@ const finite = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 const text = (value: unknown) =>
   typeof value === "string" && value.trim() ? value : null;
-function readablePeriod(value: string | null): string | null {
+export function readablePeriod(value: string | null): string | null {
   const match = value?.match(/^(\d{4})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$/i);
   if (!match) return value;
   const month = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"].indexOf(match[2].toUpperCase());
@@ -171,7 +171,9 @@ export function formatMeasure(value: number, unit: string): string {
   const formatted = new Intl.NumberFormat("en-GB", {
     maximumFractionDigits: digits,
   }).format(value);
-  return unit === "£bn"
+  return unit === "GBP/month"
+    ? `£${formatted} a month`
+    : unit === "£bn"
     ? `£${formatted}bn`
     : unit === "%"
       ? `${formatted}%`

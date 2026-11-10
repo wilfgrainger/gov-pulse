@@ -158,12 +158,12 @@ function selectPrivateRents(snapshot: MetricsSnapshot): SignalPresentation {
   const direction = change === 0 ? "were unchanged" : change > 0 ? "rose" : "fell";
   const previous = previousChange === null || !previousPeriod
     ? "previous-period comparison unavailable"
-    : `${formatPercent(previousChange, true)} in the 12 months to ${previousPeriod}`;
+    : `previously ${formatPercent(previousChange, true)} in the 12 months to ${previousPeriod}`;
   return applySourceState(
     {
       ...unavailable("private-rents"),
       value: formatPercent(change, true),
-      comparison: `Average £${formatPeople(average)} a month · ${previous}`,
+      comparison: `Average £${formatPeople(average)} a month in ${period} · ${previous}`,
       period: `12 months to ${period}`,
       publishedAt,
       history: historyPoints(data?.history, "privateRentAnnualChangePercent"),
