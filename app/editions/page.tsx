@@ -1,5 +1,5 @@
 import PublicationOffline from "@/app/components/PublicationOffline";
-import RevisionLedger from "@/app/components/RevisionLedger";
+import RevisionLedger, { LEDGER_LIST_CHANGE_CAP } from "@/app/components/RevisionLedger";
 import { gateRoute } from "@/app/lib/gateRoute";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -68,7 +68,7 @@ export default async function EditionsPage({ searchParams }: { searchParams: Pro
               </nav>
             ) : null}
             <div className="mt-10">
-              <RevisionLedger summaries={editions}/>
+              <RevisionLedger summaries={editions} maxChangesPerEdition={LEDGER_LIST_CHANGE_CAP}/>
             </div>
           </>
         ) : (
