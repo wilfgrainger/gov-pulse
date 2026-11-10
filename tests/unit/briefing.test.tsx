@@ -111,7 +111,26 @@ describe("edition briefing and guided story contracts", () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain(`dateTime="${publishedAt}"`);
-    expect(markup).toContain(`Published ${publishedAt.slice(0, 10)}`);
+    expect(markup).toContain(`Explainer written ${publishedAt.slice(0, 10)}`);
+    expect(markup).not.toContain(`Published ${publishedAt.slice(0, 10)}`);
+    expect(markup).toContain("Figures as published in the current edition: unavailable");
+  });
+
+  it("links each cited measure to its immutable catalog edition, shows publisher, and warns on mixed periods", () => {
+    const pay = { ...measure, id: "regularPayRealGrowth", label: "Regular pay", geography: { code: "GB", label: "Great Britain" }, observationPeriod: { start: "2025-12-01", end: "2026-02-28", label: "December 2025 to February 2026" }, publisher: "Office for National Statistics" };
+    const catalog = { schemaVersion: 2, editionId: "catalog-1", generatedAt: "2026-02-19T00:00:00.000Z", validUntil: null, measures: { inflation: measure, regularPayRealGrowth: pay } };
+    const markup = renderToStaticMarkup(<StoryEvidence measureIds={["inflation", "regularPayRealGrowth"]} catalog={catalog}/>);
+    expect(markup).toContain('href="/editions/catalog-1"');
+    expect(markup).toContain("Office for National Statistics");
+    expect(markup).toContain("not directly comparable");
+    const same = renderToStaticMarkup(<StoryEvidence measureIds={["inflation"]} catalog={catalog}/>);
+    expect(same).not.toContain("not directly comparable");
+    const noId = renderToStaticMarkup(<StoryEvidence measureIds={["inflation"]} catalog={{ ...catalog, editionId: undefined }}/>);
+    expect(noId).not.toContain("/editions/");
+  });
+
+  it("cites a measure for every topic the household story discusses", () => {
+    expect(householdStory.measureIds).toContain("bankRate");
   });
 });
 
