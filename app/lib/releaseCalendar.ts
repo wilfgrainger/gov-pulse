@@ -294,6 +294,20 @@ function foldIcsLine(line: string) {
   return folded.join("\r\n");
 }
 
+// Publisher-announced clock time (e.g. "7:00am") in the event's dateLabel, as a UTC stamp; null when none was announced.
+function announcedUtcStart(date: string, dateLabel: string | undefined): string | null {
+  const match = dateLabel?.match(/(?:^|\s)(1[0-2]|0?[1-9]):([0-5]\d)\s*([ap]m)\b/i);
+  if (!match) return null;
+  const hour = Number(match[1]) % 12 + (match[3].toLowerCase() === "pm" ? 12 : 0);
+  const [year, month, day] = date.split("-").map(Number);
+  const wall = Date.UTC(year, month - 1, day, hour, Number(match[2]));
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric" }).formatToParts(new Date(wall));
+  const part = (type: string) => Number(parts.find((item) => item.type === type)?.value);
+  // London wall-clock read back from the same instant gives the GMT/BST offset for that date.
+  const offset = Date.UTC(part("year"), part("month") - 1, part("day"), part("hour"), part("minute")) - wall;
+  return new Date(wall - offset).toISOString().replaceAll(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+}
+
 export function buildCalendar(events: ReleaseEvent[], now = new Date()): string {
   if (!Number.isFinite(now.getTime())) throw new Error("Calendar generation date is invalid");
   const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//public-data.org//Release Calendar//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH"];
@@ -304,9 +318,10 @@ export function buildCalendar(events: ReleaseEvent[], now = new Date()): string 
     const end = new Date(Date.parse(`${event.date}T00:00:00.000Z`) + 86_400_000).toISOString().slice(0, 10).replaceAll("-", "");
     const start = event.date.replaceAll("-", "");
     const uid = `${encodeURIComponent(event.eventId ?? event.measureId)}@public-data.org`;
-    const description = `${event.certainty === "estimated" ? "Estimated date" : "Publisher release date"}; source timezone: ${event.timezone}${event.confirmedAt ? `; source checked: ${event.confirmedAt}` : ""}`;
+    const timedStart = event.timezone === "Europe/London" ? announcedUtcStart(event.date, event.dateLabel) : null;
+    const description = `${event.certainty === "estimated" ? "Estimated date" : "Publisher-announced date"}; status: ${event.status ?? "unknown"}; source timezone: ${event.timezone}${event.confirmedAt ? `; source checked: ${event.confirmedAt}` : ""}`;
     const calendarStatus = event.status === "cancelled" ? "CANCELLED" : ["confirmed", "published"].includes(event.status ?? "") ? "CONFIRMED" : "TENTATIVE";
-    lines.push("BEGIN:VEVENT", `UID:${uid}`, `DTSTAMP:${now.toISOString().replaceAll(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z")}`, `DTSTART;VALUE=DATE:${start}`, `DTEND;VALUE=DATE:${end}`, `STATUS:${calendarStatus}`, `SUMMARY:${escapeIcs(event.label)}`, `DESCRIPTION:${escapeIcs(description)}`, `URL:${source.href}`, "END:VEVENT");
+    lines.push("BEGIN:VEVENT", `UID:${uid}`, `DTSTAMP:${now.toISOString().replaceAll(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z")}`, ...(timedStart ? [`DTSTART:${timedStart}`] : [`DTSTART;VALUE=DATE:${start}`, `DTEND;VALUE=DATE:${end}`]), `STATUS:${calendarStatus}`, `SUMMARY:${escapeIcs(event.label)}`, `DESCRIPTION:${escapeIcs(description)}`, `URL:${source.href}`, "END:VEVENT");
   }
   lines.push("END:VCALENDAR");
   return `${lines.map(foldIcsLine).join("\r\n")}\r\n`;
