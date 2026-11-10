@@ -156,7 +156,7 @@ describe("publisher release calendar", () => {
     expect(ics).toContain(`DTSTART;VALUE=DATE:${start}`);
     expect(ics).toContain(`DTEND;VALUE=DATE:${next}`);
     expect(ics).toContain("SUMMARY:CPI\\, revised\\; release");
-    expect(ics).toContain("source timezone: Europe/London");
+    expect(ics.replaceAll("\r\n ", "")).toContain("source timezone: Europe/London");
     expect(ics.endsWith("\r\n")).toBe(true);
   });
 
@@ -185,5 +185,27 @@ describe("publisher release calendar", () => {
       return lines;
     }, []).join("\r\n");
     expect(unfolded).toContain(`SUMMARY:${label}`);
+  });
+
+  it.each([
+    ["15 October 2026 7:00am", "2026-10-15", "DTSTART:20261015T060000Z"],
+    ["15 January 2026 9:30am", "2026-01-15", "DTSTART:20260115T093000Z"],
+    ["15 January 2026 1:15pm", "2026-01-15", "DTSTART:20260115T131500Z"],
+  ])("emits a timed UTC event when the publisher announced a time (%s)", (dateLabel, date, dtstart) => {
+    const ics = buildCalendar([{ measureId: "gdpTracker", eventId: "gdp", kind: "upcoming", topic: "Economy", label: "GDP", publisherUrl: "https://www.ons.gov.uk/releases/gdp", date, dateLabel, certainty: "published", status: "confirmed", timezone: "Europe/London" }], new Date("2026-01-01T12:00:00.000Z"));
+    expect(ics).toContain(dtstart);
+    expect(ics).not.toContain("VALUE=DATE");
+  });
+
+  it.each([
+    ["confirmed", "status: confirmed"],
+    ["provisional", "status: provisional"],
+    ["postponed", "status: postponed"],
+    ["cancelled", "status: cancelled"],
+    [undefined, "status: unknown"],
+  ] as const)("states %s status in words in the description", (status, text) => {
+    const ics = buildCalendar([{ measureId: "gdpTracker", kind: "upcoming", topic: "Economy", label: "GDP", publisherUrl: "https://www.ons.gov.uk/releases/gdp", date: "2026-10-15", certainty: "published", status, timezone: "Europe/London" }], new Date("2026-01-01T12:00:00.000Z"));
+    expect(ics).toContain(text);
+    expect(ics).not.toContain("Publisher release date");
   });
 });

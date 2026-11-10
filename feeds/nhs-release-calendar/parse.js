@@ -86,7 +86,7 @@ function parseNhsReleaseSchedule(pdfText, now = new Date()) {
     const date = validIsoDate(Number(match[3]), Number(match[2]), Number(match[1]));
     const monthNumber = MONTHS[match[4].toLowerCase()];
     const year = Number(match[5].replace(/\s/g, ""));
-    if (!date || !monthNumber || !Number.isInteger(year) || date <= today) continue;
+    if (!date || !monthNumber || !Number.isInteger(year) || date < today) continue;
     const periodEnd = new Date(Date.UTC(year, monthNumber, 0)).toISOString().slice(0, 10);
     if (date <= periodEnd) continue;
     const period = `${match[4][0].toUpperCase()}${match[4].slice(1).toLowerCase()} ${year}`;
@@ -94,7 +94,9 @@ function parseNhsReleaseSchedule(pdfText, now = new Date()) {
     const dateLabel = new Intl.DateTimeFormat("en-GB", {
       day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
     }).format(new Date(`${date}T00:00:00.000Z`));
-    events.push({ id, period, date, dateLabel });
+    // The publisher's row wording; only the period varies. PDF extraction splits "consultant-led".
+    const title = `Referral to treatment waiting times statistics for consultant-led elective care for ${period}`;
+    events.push({ id, period, title, date, dateLabel });
   }
   const unique = [...new Map(events.map((event) => [event.id, event])).values()];
   if (!unique.length) throw new Error("NHS annual statistics plan contained no reconciled future RTT release rows");
@@ -124,7 +126,7 @@ async function collectNhsReleaseCalendar(fetchImpl = fetch, now = new Date()) {
   const events = parseNhsReleaseSchedule(await extractPdfText(pdf), now).map((event) => ({
     ...event,
     familyIds: ["nhsStats"],
-    title: `Planned NHS RTT publication for ${event.period}`,
+    ...(plan.status === "provisional" ? { planNote: "Publisher's proposed plan" } : {}),
     publisherUrl: plan.publisherUrl,
     sourceCalendarUrl: plan.calendarUrl,
     status: plan.status,
