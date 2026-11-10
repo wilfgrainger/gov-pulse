@@ -68,7 +68,9 @@ export default async function EditionDetailPage({ params }: { params: Promise<{ 
   if (gate.access !== "serve") return <PublicationOffline heldFeeds={gate.heldFeeds} />;
   const staticFallback = id === STATIC_FALLBACK_ARCHIVE_ID;
   if (!staticFallback && !/^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/.test(id)) notFound();
-  if (!staticFallback) await connection();
+  // Every Worker render, the prerendered fallback included, must read the request,
+  // or Next.js classes the route static and real edition IDs fail at runtime.
+  if (process.env.STATIC_EXPORT !== "true") await connection();
   const edition = staticFallback ? null : await getEdition(id);
   return <div className="min-h-screen bg-background text-foreground">
     <a href="#historical-edition" className="sr-only focus:not-sr-only focus:block focus:bg-white focus:p-4">Skip to historical edition</a>

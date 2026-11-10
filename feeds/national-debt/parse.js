@@ -90,16 +90,39 @@ function assertClose(left, right, label) {
   }
 }
 
+// Public sector net debt (HF6X, excluding public sector banks) as a share of GDP. ONS has worded it three
+// ways; each is tied to net debt itself, never to net financial liabilities or borrowing. Every wording
+// that appears must agree, otherwise the bulletin is rejected.
+function readDebtRatio(text, debtMatch) {
+  const found = [];
+  const legacy = text.match(/Debt at the end of\s+([A-Za-z]+\s+\d{4})\s+was equivalent to\s+([\d.]+)%\s+of GDP/i);
+  if (legacy) found.push({ period: legacy[1], value: legacy[2] });
+  // October 2026 wording: the ratio closes the same sentence as the net debt stock.
+  const rest = text.slice(debtMatch.index + debtMatch[0].length);
+  const sentenceEnd = rest.search(/\.\s/);
+  const sentence = sentenceEnd === -1 ? rest : rest.slice(0, sentenceEnd);
+  const sameSentence = sentence.match(/\bequivalent to\s+([\d.]+)%\s+of GDP/i);
+  if (sameSentence) found.push({ period: debtMatch[2], value: sameSentence[1] });
+  const ratioSentence = text.match(/Public sector net debt-to-GDP ratio at the end of\s+([A-Za-z]+\s+\d{4})\s+was provisionally estimated at\s+([\d.]+)%/i);
+  if (ratioSentence) found.push({ period: ratioSentence[1], value: ratioSentence[2] });
+  if (found.length === 0) throw new Error("ONS public-finances bulletin did not expose public sector net debt as a percentage of GDP");
+  const first = found[0];
+  if (found.some((item) => item.period !== first.period || Number(item.value) !== Number(first.value))) {
+    throw new Error("ONS public-finances bulletin net debt percentage of GDP wordings disagree");
+  }
+  return first;
+}
+
 function parseDebtBulletinCheck(html, finalUrl = FINANCES_BULLETIN_URL) {
   const text = decodeHtml(html);
   const titlePeriod = requiredMatch(text, /Public sector finances, UK:\s*([A-Za-z]+\s+\d{4})/i, "bulletin period")[1];
   const debtMatch = requiredMatch(text, /Public sector net debt\b[\s\S]{0,240}?was provisionally estimated at\s+£([\d,.]+)\s+billion at the end of\s+([A-Za-z]+\s+\d{4})/i, "public sector net debt stock");
-  const ratioMatch = requiredMatch(text, /Debt at the end of\s+([A-Za-z]+\s+\d{4})\s+was equivalent to\s+([\d.]+)%\s+of GDP/i, "public sector net debt as a percentage of GDP");
-  if (debtMatch[2] !== titlePeriod || ratioMatch[1] !== titlePeriod) {
+  const ratio = readDebtRatio(text, debtMatch);
+  if (debtMatch[2] !== titlePeriod || ratio.period !== titlePeriod) {
     throw new Error("ONS public-finances debt period does not match the bulletin period");
   }
   const debtBillion = parseNumericValue(debtMatch[1]);
-  const debtToGdp = parseNumericValue(ratioMatch[2]);
+  const debtToGdp = parseNumericValue(ratio.value);
   if (debtBillion === null || debtToGdp === null) throw new Error("ONS public-finances bulletin exposed non-numeric debt figures");
   const releaseDate = parseOnsReleaseDate(html);
   const nextReleaseDate = parseOnsNextReleaseDate(text);
