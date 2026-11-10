@@ -109,7 +109,7 @@ describe("Cloudflare public data route", () => {
   it("caps both browser and shared-cache freshness at the evidence expiry", () => {
     const now = new Date("2026-08-01T11:50:00.000Z");
     expect(cacheControlFor("2026-08-01T12:00:00.000Z", now)).toBe(
-      "public, max-age=300, s-maxage=300, stale-while-revalidate=300"
+      "public, max-age=300, s-maxage=300, stale-while-revalidate=0"
     );
     expect(cacheControlFor("2026-08-01T11:50:00.000Z", now)).toBe("no-store");
   });
