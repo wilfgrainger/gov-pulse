@@ -4,6 +4,8 @@ import { barWidthPercent } from "@/app/lib/chartModel";
 import {
   buildDossier,
   frameworkValueLabel,
+  isSupplierPlaceholderName as isSupplierPlaceholder,
+  SUPPLIER_LIST_IN_NOTICE,
   valueBasisDescription,
   type AwardDossier,
   type PublicAward,
@@ -115,15 +117,17 @@ export default function PublicMoneyNoticeList(p: PublicMoneyNoticeListProps) {
                       </span>
                     </p>
                     <p className="mt-2 text-sm text-gray-700">Buyer: {award.buyer}{award.buyerId ? ` · ID ${award.buyerId}` : ""}</p>
-                    <p className="mt-1 text-sm text-gray-700">Disclosed suppliers: {award.suppliers.map((name, index) => `${name}${award.supplierIds?.[index] ? ` · ID ${award.supplierIds[index]}` : ""}`).join(", ")}</p>
+                    <p className="mt-1 text-sm text-gray-700">Disclosed suppliers: {award.suppliers.map((name, index) => isSupplierPlaceholder(name) ? SUPPLIER_LIST_IN_NOTICE : `${name}${award.supplierIds?.[index] ? ` · ID ${award.supplierIds[index]}` : ""}`).join(", ")}
+                      {award.suppliers.some(isSupplierPlaceholder) ? <> · <a className="underline" href={award.noticeUrl} target="_blank" rel="noreferrer">Source notice</a></> : null}</p>
                   </div>
                   <div>
                     <p className="font-mono text-xl font-black tabular-nums">{pounds(award.amount)}</p>
+                    {award.framework ? <p className="mt-1 text-xs font-bold text-amber-900">Ceiling, not spend; not compared with awards</p> : null}
                     <p className="mt-1 text-xs text-gray-600">{valueBasisDescription(award.valueBasis)}</p>
-                    <div className="mt-3 h-3 border border-black/25 bg-white" role="img" aria-label={`${valueBasisDescription(award.valueBasis)} ${pounds(award.amount)} on a zero-based scale`}>
+                    {award.framework ? null : <><div className="mt-3 h-3 border border-black/25 bg-white" role="img" aria-label={`${valueBasisDescription(award.valueBasis)} ${pounds(award.amount)} on a zero-based scale`}>
                       <div className="h-full bg-[#ef5124]" style={{ width: `${barWidthPercent(award.amount, maximum)}%` }} />
                     </div>
-                    <p className="mt-2 text-xs text-gray-600">Zero-based magnitude</p>
+                    <p className="mt-2 text-xs text-gray-600">Zero-based magnitude</p></>}
                   </div>
                 </div>
                 <button type="button" onClick={() => setSelected(buildDossier(visible, award.key))} className="mt-4 min-h-11 border border-foreground bg-surface-warm px-4 text-sm font-bold hover:bg-accent-soft">

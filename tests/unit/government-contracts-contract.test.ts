@@ -43,7 +43,7 @@ function canonicalAward(index: number) {
     procurementMethod: index % 10 === 0 ? "direct" : "open",
     procurementMethodDetails: index % 10 === 0 ? "Direct award" : "Open procedure",
     mainProcurementCategory: "services",
-    framework: index % 8 === 0,
+    framework: index % 8 === 5,
     noticeUrl: `https://www.find-tender.service.gov.uk/Notice/${releaseId}`,
     procurementUrl: `https://www.find-tender.service.gov.uk/procurement/${ocid}`,
   };

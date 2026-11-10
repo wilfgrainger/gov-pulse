@@ -6,6 +6,7 @@ import {
   EVIDENCE_POLICY,
   buildGovernmentContractsPayload,
   buildSummary,
+  buildSupplierConcentration,
 } from "@/contracts/government-contracts";
 
 const useMetrics = vi.fn();
@@ -178,7 +179,8 @@ describe("GovernmentContracts notice-first dossier presentation", () => {
     const payload = currentPayload({ withNations: true });
     payload.dataQuality.excludedMissingValue = 15;
     payload.awards[0].framework = true;
-    payload.summary.frameworkAwards = 1;
+    payload.summary = buildSummary(payload.awards);
+    payload.supplierConcentration = buildSupplierConcentration(payload.awards);
     useMetrics.mockReturnValue(result(payload));
 
     render(<GovernmentContracts />);
