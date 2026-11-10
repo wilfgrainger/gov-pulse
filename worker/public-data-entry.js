@@ -6,7 +6,7 @@ import { anyEvidencePublished } from "../contracts/publication-policy.js";
 import { PUBLICATION_CONFIG, publicationPublished, filterPublicationCatalog, filterPublicationSummary, isPublicationFilteredSnapshot, cacheLifetime, filterCurrentSnapshot, snapshotIsCurrentAsIs, snapshotValidityDeadline } from "../contracts/evidence-policy.js";
 import { isPublicArtifact } from "../contracts/public-artifact.js";
 import { PUBLICATION_STATUS_KEY, isSnapshot, readCurrentPublication } from "./publication-entry.js";
-import { publicUnavailableSections } from "./publication-availability.js";
+import { publicFailingSections, publicUnavailableSections } from "./publication-availability.js";
 import {
   FEED_REGISTRY_VERSION,
   REQUIRED_PUBLISHED_SECTION_IDS,
@@ -26,6 +26,7 @@ import {
   normalizeContractReleaseHistory,
 } from "../contracts/government-contracts.js";
 import { stableStringify } from "../contracts/records.js";
+import { CURRENT_RECORD_KEY as CONTRACT_CURRENT_RECORD_KEY } from "../feeds/government-contracts/parse.js";
 
 const SNAPSHOT_PATH = "/data/metrics-snapshot.json";
 const HEALTH_PATH = "/data/health.json";
@@ -454,11 +455,24 @@ async function editionResponse(request, env, url, config = PUBLICATION_CONFIG) {
   return json({ edition: result.summary.id, asOf: result.asOf, availability: "historical", measureCatalog: filterPublicationCatalog(result.catalog, config), summary: filterPublicationSummary(result.summary, config, result.catalog) }, { head, cacheControl: EDITION_CACHE_CONTROL, headers: { ETag: etag } });
 }
 
-// shortcut: each distinct OCID costs one or two live Find a Tender calls; restrict requests to published records before raising traffic.
-async function contractHistoryResponse(request, url) {
+// Identifiers of the awards in the current contracts record: the legacy key, or
+// the per-feed record the pipeline writes.
+async function publishedContractIds(env) {
+  const get = (key) => env?.METRICS_CACHE?.get?.(key, "json") ?? null;
+  const record = (await get(CONTRACT_CURRENT_RECORD_KEY)) ?? (await get("v20:feed:governmentContracts"))?.record;
+  const awards = Array.isArray(record?.data?.awards) ? record.data.awards : [];
+  return new Set(awards.map((award) => String(award?.ocid ?? "").toLowerCase()));
+}
+
+// Each lookup costs one or two live Find a Tender calls, so only identifiers
+// the site currently publishes are looked up.
+async function contractHistoryResponse(request, url, env) {
   const values = url.searchParams.getAll("ocid");
   if (values.length !== 1 || url.searchParams.size !== 1 || !/^ocds-h6vhtk-[0-9a-f]+$/i.test(values[0])) {
     return json({ error: "A single valid procurement identifier is required" }, { status: 400, head: request.method === "HEAD" });
+  }
+  if (!(await publishedContractIds(env)).has(values[0].toLowerCase())) {
+    return json({ error: "No public release history is available for this procurement record" }, { status: 404, head: request.method === "HEAD" });
   }
 
   let upstreamUrl = `${FIND_A_TENDER_RECORD_PACKAGE_BASE}${values[0]}`;
@@ -583,6 +597,9 @@ async function healthResponse(request, env) {
   const held = heldSections.length > 0 ? { held: heldSections } : {};
   const unavailableSections = publicUnavailableSections(prepared.snapshot, status);
   const unavailable = unavailableSections.length > 0 ? { unavailableSections } : {};
+  // Published families whose last collection failed while older evidence is still shown (ids only).
+  const failingSections = publicFailingSections(status);
+  const failing = failingSections.length > 0 ? { failing: failingSections } : {};
 
   if (missingRequiredSections.length > 0) {
     return json(
@@ -593,13 +610,14 @@ async function healthResponse(request, env) {
         missingRequiredSections,
         ...held,
         ...unavailable,
+        ...failing,
       },
       { head: request.method === "HEAD" }
     );
   }
 
   return json(
-    { status: "ready", ready: true, ...held, ...unavailable },
+    { status: "ready", ready: true, ...held, ...unavailable, ...failing },
     { head: request.method === "HEAD" }
   );
 }
@@ -624,7 +642,7 @@ const publicDataWorker = {
       if (url.pathname === COMPARISON_PATH) return comparisonResponse(request, env);
       if (url.pathname === EDITIONS_PATH) return editionsResponse(request, env);
       if (url.pathname === EDITION_PATH) return editionResponse(request, env, url);
-      if (url.pathname === CONTRACT_HISTORY_PATH) return contractHistoryResponse(request, url);
+      if (url.pathname === CONTRACT_HISTORY_PATH) return contractHistoryResponse(request, url, env);
       return snapshotResponse(request, env);
     } catch {
       return json(

@@ -104,8 +104,32 @@ function publicUnavailableSections(snapshot, statusRecord) {
   }));
 }
 
+/**
+ * Publisher side: published families still present in the snapshot whose
+ * collection job for this run did not succeed. Their older evidence is shown
+ * until it expires, so nothing else reports the failure.
+ */
+async function failingSectionsFor(snapshot, readTerminal = async () => null) {
+  const failing = [];
+  for (const family of SNAPSHOT_FAMILY_IDS) {
+    const jobId = collectionJobIdFor(family);
+    if (!jobId || !publicationPublished(family) || !sectionPresent(snapshot, family)) continue;
+    const terminal = await readTerminal(jobId);
+    if (terminal && typeof terminal === "object" && terminal.status !== "success") failing.push(family);
+  }
+  return failing.sort();
+}
+
+/** Health side: the stored failing list, reduced to published family ids. */
+function publicFailingSections(statusRecord) {
+  const stored = Array.isArray(statusRecord?.failingSections) ? statusRecord.failingSections : [];
+  return SNAPSHOT_FAMILY_IDS.filter((family) => publicationPublished(family) && stored.includes(family)).sort();
+}
+
 export {
   SNAPSHOT_FAMILY_IDS,
+  failingSectionsFor,
+  publicFailingSections,
   UNAVAILABLE_REASONS,
   absentPublishedFamilies,
   collectionJobIdFor,

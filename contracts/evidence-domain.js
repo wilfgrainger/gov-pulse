@@ -29,11 +29,6 @@ function text(value, label, maximum = 500) {
   return value.trim();
 }
 
-function optionalText(value, label, maximum = 500) {
-  if (value === undefined || value === null) return null;
-  return text(value, label, maximum);
-}
-
 function oneOf(value, allowed, label) {
   const normalized = text(value, label, 80);
   if (!allowed.includes(normalized)) {

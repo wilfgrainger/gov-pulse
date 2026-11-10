@@ -121,6 +121,20 @@ jobs:
             exit 1
           fi
 
+      # Reader journeys (layout, keyboard, routes) against the Worker just built.
+      # Pages read the live public snapshot, so a failure here is reported but
+      # does not fail `quality`: evidence changes must not block unrelated PRs.
+      - name: Browser journeys against the built Worker
+        continue-on-error: true
+        shell: bash
+        run: |
+          npx wrangler dev --config worker/web-wrangler.toml --port 8788 >/tmp/wrangler-dev.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            curl -sf -o /dev/null http://127.0.0.1:8788/about/ && break
+            sleep 2
+          done
+          PLAYWRIGHT_BASE_URL=http://127.0.0.1:8788 npx playwright test --trace off --reporter=line
+
   quality:
     if: always()
     needs: [classify, docs, full-quality]

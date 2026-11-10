@@ -25,7 +25,7 @@ import {
   kvPutText,
   terminalKey,
 } from "./publication-run-store.js";
-import { unavailableSectionsFor } from "./publication-availability.js";
+import { failingSectionsFor, unavailableSectionsFor } from "./publication-availability.js";
 import { PUBLISHED_SECTIONS } from "./publication-plan.js";
 import {
   runSectionFragmentKey,
@@ -237,9 +237,7 @@ async function publishFromCaches(env, options = {}) {
     : null;
 
   const runId = typeof options.runId === "string" && options.runId.trim() ? options.runId : null;
-  const unavailableSections = await unavailableSectionsFor(
-    publication,
-    async (jobId) => {
+  const readTerminal = async (jobId) => {
       if (!runId) return null;
       const terminal = await kvGet(env, terminalKey(runId, jobId));
       if (terminal) return terminal;
@@ -248,8 +246,10 @@ async function publishFromCaches(env, options = {}) {
       const feedId = jobId === "contracts" ? "governmentContracts" : jobId.split(":")[1];
       const attempt = (await readFeedRecord(env, feedId))?.lastAttempt;
       return attempt?.runId === runId ? { status: attempt.status } : null;
-    },
-  );
+    };
+  const unavailableSections = await unavailableSectionsFor(publication, readTerminal);
+  const failingSections = await failingSectionsFor(publication, readTerminal);
+
 
   const status = {
     status:
@@ -263,6 +263,7 @@ async function publishFromCaches(env, options = {}) {
     sectionValidUntil: sectionValidUntil(publication, now),
     ...(missingRequired.length > 0 ? { missingRequired } : {}),
     ...(unavailableSections.length > 0 ? { unavailableSections } : {}),
+    ...(failingSections.length > 0 ? { failingSections } : {}),
   };
 
   // Every key written below has a reader: the public artifact (snapshot and

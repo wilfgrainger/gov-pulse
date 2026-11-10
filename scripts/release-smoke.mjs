@@ -86,6 +86,8 @@ export async function releaseSmoke({
         throw new Error("Evidence health route returned an invalid held list");
       if (Array.isArray(status.held) && status.held.length > 0)
         log.info(`Evidence feeds held by publication policy: ${status.held.join(", ")}.`);
+      if (Array.isArray(status.failing) && status.failing.length > 0)
+        log.warn(`Collectors failing while older evidence is shown: ${status.failing.join(", ")}.`);
       if (!status.ready)
         log.warn(
           "Evidence is degraded or unavailable; inspect source health separately.",

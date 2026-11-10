@@ -3,6 +3,10 @@ import publicDataWorker, { CONTRACT_HISTORY_PATH } from "../../worker/public-dat
 import { MAX_RESPONSE_BYTES } from "../../worker/response-limits.js";
 
 const ocid = "ocds-h6vhtk-047306";
+// The route only looks up identifiers in the current contracts record.
+const publishedEnv = {
+  METRICS_CACHE: { get: async () => ({ section: "governmentContracts", data: { awards: [{ ocid }] } }) },
+};
 
 function packageResponse() {
   return new Response(JSON.stringify({ records: [{ ocid, releases: [
@@ -29,7 +33,7 @@ describe("public per-OCID Find a Tender history route", () => {
     vi.stubGlobal("fetch", fetchMock);
     const request = new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`);
 
-    const response = await publicDataWorker.fetch(request, {});
+    const response = await publicDataWorker.fetch(request, publishedEnv);
     const payload = await response.json();
 
     expect(response.status).toBe(200);
@@ -63,7 +67,7 @@ describe("public per-OCID Find a Tender history route", () => {
     })));
 
     const response = await publicDataWorker.fetch(
-      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), publishedEnv,
     );
     const payload = await response.json();
 
@@ -78,7 +82,7 @@ describe("public per-OCID Find a Tender history route", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await publicDataWorker.fetch(
-      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), publishedEnv,
     );
     const payload = await response.json();
 
@@ -100,7 +104,7 @@ describe("public per-OCID Find a Tender history route", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await publicDataWorker.fetch(
-      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), publishedEnv,
     );
 
     expect(response.status).toBe(503);
@@ -127,7 +131,7 @@ describe("public per-OCID Find a Tender history route", () => {
   it("lets the edge keep an unknown record's not-found answer for the same window as a found one", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 404 })));
     const unknown = await publicDataWorker.fetch(
-      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), publishedEnv,
     );
     expect(unknown.status).toBe(404);
     expect(unknown.headers.get("Cache-Control")).toContain("s-maxage=300");
@@ -136,13 +140,13 @@ describe("public per-OCID Find a Tender history route", () => {
   it("keeps unknown records unavailable and upstream failures generic", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 404 })));
     const unknown = await publicDataWorker.fetch(
-      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), publishedEnv,
     );
     expect(unknown.status).toBe(404);
 
     vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 429 })));
     const rateLimited = await publicDataWorker.fetch(
-      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), publishedEnv,
     );
     expect(rateLimited.status).toBe(503);
     expect(await rateLimited.text()).not.toMatch(/rate|limit|api|find-a-tender/i);
@@ -153,7 +157,7 @@ describe("public per-OCID Find a Tender history route", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("upstream body must stay private", { status: 403 })));
 
     const response = await publicDataWorker.fetch(
-      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), publishedEnv,
     );
 
     expect(response.status).toBe(503);
@@ -175,7 +179,7 @@ describe("public per-OCID Find a Tender history route", () => {
     }));
 
     const response = await publicDataWorker.fetch(
-      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), publishedEnv,
     );
 
     expect(response.status).toBe(503);
@@ -195,7 +199,7 @@ describe("public per-OCID Find a Tender history route", () => {
     Object.defineProperty(redirected, "url", { value: "https://attacker.example/record.json" });
     vi.stubGlobal("fetch", vi.fn(async () => redirected));
     const foreign = await publicDataWorker.fetch(
-      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), publishedEnv,
     );
     expect(foreign.status).toBe(503);
 
@@ -204,7 +208,7 @@ describe("public per-OCID Find a Tender history route", () => {
       headers: { "content-length": String(MAX_RESPONSE_BYTES.json + 1) },
     })));
     const large = await publicDataWorker.fetch(
-      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), {},
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH}?ocid=${ocid}`), publishedEnv,
     );
     expect(large.status).toBe(503);
   });
@@ -213,7 +217,7 @@ describe("public per-OCID Find a Tender history route", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     const unknown = await publicDataWorker.fetch(
-      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH.replace("history", "proxy")}?ocid=${ocid}`), {},
+      new Request(`https://public-data.org${CONTRACT_HISTORY_PATH.replace("history", "proxy")}?ocid=${ocid}`), publishedEnv,
     );
     expect(unknown.status).toBe(404);
     expect(fetchMock).not.toHaveBeenCalled();
