@@ -51,6 +51,17 @@ function parseFieldworkRange(value) {
     return { start, end };
   }
 
+  // Month-crossing range, e.g. "31 October - 1 November 2026" (same year only).
+  const crossing = text.match(
+    /^(\d{1,2})\s+([A-Za-z]+)\s*[-–]\s*(\d{1,2})\s+([A-Za-z]+)\s+(20\d{2})$/,
+  );
+  if (crossing) {
+    const start = validIsoDate(crossing[5], crossing[2], crossing[1]);
+    const end = validIsoDate(crossing[5], crossing[4], crossing[3]);
+    if (start > end) throw new Error("More in Common fieldwork range is reversed");
+    return { start, end };
+  }
+
   const single = text.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(20\d{2})$/);
   if (single) {
     const date = validIsoDate(single[3], single[2], single[1]);

@@ -1,6 +1,10 @@
+// @vitest-environment node
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  parseFieldworkRange,
   parseMoreInCommonArchiveLinks,
+  readMoreInCommonWorkbook,
   parseMoreInCommonPoll,
 } from "@/feeds/election-polls/more-in-common.js";
 
@@ -77,5 +81,26 @@ describe("More in Common primary polling tables", () => {
     });
     expect(poll.headlineMethod).toContain("GBNatRepWeight");
     expect(poll.uncertainty).toContain("9 in 10 chance");
+  });
+
+  it("parses a fieldwork range that crosses a month boundary and rejects reversed or invalid ones", () => {
+    expect(parseFieldworkRange("31 October - 1 November 2026")).toEqual({ start: "2026-10-31", end: "2026-11-01" });
+    expect(() => parseFieldworkRange("1 November - 31 October 2026")).toThrow(/reversed/);
+    expect(() => parseFieldworkRange("31 November - 1 December 2026")).toThrow(/invalid/);
+  });
+
+  // Fixture: unmodified workbook downloaded from moreincommon.org.uk on 2026-11-10
+  // (cover page fieldwork "31 October - 1 November 2026").
+  it("reads the live month-crossing workbook with disclosed fieldwork, sample and source link", async () => {
+    const bytes = readFileSync("tests/fixtures/election-polls/more-in-common-31-oct-1-nov-2026-voting-intention.xlsx");
+    const url = "https://www.moreincommon.org.uk/wp-content/uploads/2026/11/31-10-to-01-11-Voting-Intention.xlsx";
+    const poll = await readMoreInCommonWorkbook(url, async () => new Response(bytes, { status: 200 }));
+    expect(poll).toMatchObject({
+      fieldworkStart: "2026-10-31",
+      fieldworkEnd: "2026-11-01",
+      geography: "Great Britain",
+      sourceUrl: url,
+    });
+    expect(poll.sampleSize).toBeGreaterThan(500);
   });
 });

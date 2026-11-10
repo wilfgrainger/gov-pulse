@@ -147,7 +147,7 @@ export default function PollingTable({
         </p>
       ) : null}
       <p className="sr-only">
-        includesAverage={String(table.includesAverage)}; includesBettingMarkets={String(table.includesBettingMarkets)}
+        No polling average is shown. Betting markets are not included.
       </p>
     </section>
   );
