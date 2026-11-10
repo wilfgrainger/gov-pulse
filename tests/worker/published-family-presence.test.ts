@@ -20,6 +20,8 @@ import { PUBLICATION_CURRENT_KEY, PUBLICATION_STATUS_KEY } from "@/worker/public
 import { FEED_REGISTRY_VERSION, REQUIRED_PUBLISHED_SECTION_IDS } from "@/worker/feed-registry";
 import { PUBLIC_SNAPSHOT_KEY, buildPublicSnapshotArtifact } from "@/worker/public-snapshot";
 import { unavailableReasonFor } from "@/worker/publication-availability";
+import { contractsRecordFor, publishFromCaches } from "@/worker/publication-publisher";
+import { CURRENT_RECORD_KEY as CONTRACTS_KEY } from "@/feeds/government-contracts/parse.js";
 import { parseOnsCrimeBulletin } from "@/feeds/crime-stats/parse.js";
 import {
   CRIME_BULLETIN_HTML,
@@ -331,5 +333,52 @@ describe("CSEW comparison wording", () => {
       "4.5 million fraud incidents, a statistically significant 11% rise on last year's survey (4.1 million incidents); there was no statistically significant change in other fraud",
     );
     expect(() => fraudMeasure(html)).toThrow(/CSEW fraud and comparison/);
+  });
+});
+
+describe("publisher under the three-message pipeline", () => {
+  it("takes a collector failure from the feed's last attempt when the run has no terminal records", async () => {
+    const at = new Date("2026-07-18T03:43:00.000Z");
+    const runId = "2026-07-18";
+    const { env } = kvEnv({
+      [PUBLICATION_CURRENT_KEY]: snapshotWithout(["housePriceIndex"]),
+      "v20:feed:housePriceIndex": {
+        feedId: "housePriceIndex",
+        record: null,
+        lastAttempt: { runId, at: at.toISOString(), status: "failure", reason: "source unreachable" },
+      },
+      // A failure from another run says nothing about this one.
+      "v20:feed:crimeStatistics": {
+        feedId: "crimeStatistics",
+        record: null,
+        lastAttempt: { runId: "2026-07-17", at: at.toISOString(), status: "failure", reason: "old" },
+      },
+    });
+
+    const { status } = await publishFromCaches(env, { runId, now: at });
+
+    expect(status.unavailableSections).toEqual([
+      { id: "crimeStatistics", reason: "no-current-observation" },
+      { id: "governmentContracts", reason: "no-current-observation" },
+      { id: "housePriceIndex", reason: "collector-failed" },
+    ]);
+  });
+
+  it("reads the contracts record from the per-feed key, or the legacy key when that is newer", async () => {
+    const record = (fetchedAt: string) => ({ section: "governmentContracts", data: { fetchedAt }, fetchedAt });
+    const feed = (fetchedAt: string) => ({
+      feedId: "governmentContracts",
+      record: record(fetchedAt),
+      lastAttempt: { runId: "r", at: fetchedAt, status: "success", reason: null },
+    });
+    const older = "2026-07-17T03:20:00.000Z";
+    const newer = "2026-07-18T03:20:00.000Z";
+
+    expect(await contractsRecordFor(kvEnv({ "v20:feed:governmentContracts": feed(newer) }).env)).toEqual(record(newer));
+    expect(await contractsRecordFor(kvEnv({ [CONTRACTS_KEY]: record(older) }).env)).toEqual(record(older));
+    expect(
+      await contractsRecordFor(kvEnv({ "v20:feed:governmentContracts": feed(older), [CONTRACTS_KEY]: record(newer) }).env),
+    ).toEqual(record(newer));
+    expect(await contractsRecordFor(kvEnv().env)).toBeNull();
   });
 });
