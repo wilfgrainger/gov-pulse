@@ -98,11 +98,14 @@ export default async function SectionPage({
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(structuredData) }}
         />
       ) : null}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:block focus:bg-white focus:p-4">
+        Skip to page content
+      </a>
       <div className="sticky top-0 z-50 bg-white">
         <SectionNav sections={SECTIONS} />
       </div>
 
-      <main>
+      <main id="main-content">
         <PageHeader
           eyebrow={section.tag}
           title={section.title}
