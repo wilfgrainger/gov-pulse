@@ -1,11 +1,11 @@
 # V1 release readiness
 
 **Observed baseline:** 10 November 2026, 07:50–10:30 UTC, against production revision `c92585684e25ff052d8290d36c6bcc59df4aa73c`. Recheck all live state immediately before release; this record is dated evidence, not a current dashboard feed. The 12 October baseline it replaces is in git history.
-**Launch decision:** **Not ready.** Four capabilities have held evidence or page gaps, the live site intermittently returns Error 1102, and no independent sign-off or rollback exercise is recorded.
+**Launch decision:** **Not ready.** The fixes below were merged and deployed on 10 November (#258, #259, #260, #261); several only take effect after the next data collection. Three capabilities still have held evidence, the lasting Error 1102 fix is not deployed, and no independent sign-off or rollback exercise is recorded.
 
 ## Capability dashboard
 
-"Production" is the result of the 10 November independent audit of the live site (about 150 page loads) and the browser suite run against production. "Fix PR" lists open, unmerged pull requests; nothing in that column is deployed.
+"Production" is the result of the 10 November independent audit of the live site (about 150 page loads), taken before the fixes were deployed. Every PR in the "Fix PR" column was merged through #258 and deployed on 10 November; a re-audit has not been run since.
 
 | Capability | Production result | Supporting evidence state | Open gap | Fix PR |
 |---|---|---|---|---|
@@ -20,7 +20,7 @@
 | P09 International | Held | `internationalComparison` held | Source review reconciled all seven measures. `/compare/` did not link to it; table export, year disclosure and caveats missing | #250 |
 | P10 Provenance and archive | Pass with defects | Published (8 editions) | Trace from topic page to measure, source record and edition works; edition pages hit by 1102 errors | #252 |
 
-Counts: 0 of 10 have named independent sign-off. 1 passes the production audit outright, 6 pass with defects, 1 fails and 2 are held.
+Counts at audit time: 0 of 10 have named independent sign-off. 1 passed outright, 6 passed with defects, 1 failed and 2 were held. The fixes are now deployed; the counts change only after a re-audit.
 
 ## Release evidence
 
@@ -33,13 +33,14 @@ Counts: 0 of 10 have named independent sign-off. 1 passes the production audit o
 
 ## Blocking decisions and defects
 
-1. **Error 1102 on the live site (high).** `public-data-web` renders evidence pages per visitor at 35–425 ms of CPU against the 10 ms free-plan limit; failing requests are killed with `exceededCpu`. On 10 November 9 of 12 pages returned 503 in one pass and recovered within minutes. #252 is a stopgap (a 300-second page cache). The durable fix is the static-first delivery plan. **The owner approved gate G9 on 10 November 2026** and ruled out any paid plan: the service stays on the Cloudflare free plan. The approval was given on the CPU measurements in `docs/operations/free-resource-budget.md`; the seven-day traffic figures (G9 criterion 1) were not recorded, and main-plan Task 10 is not complete (criterion 3). Tasks 13–14 change nothing in production; Task 15 onward still needs gates G3, G-DNS, G2 and G8.
+1. **Error 1102 on the live site (high).** `public-data-web` renders evidence pages per visitor at 35–425 ms of CPU against the 10 ms free-plan limit. The 300-second page cache (#252) is deployed and repeat loads of `/explore/` fell from about 0.56 s to 0.17 s, but the first render after each expiry can still be killed. The lasting fix is static-first delivery. The owner approved gate G9 on 10 November 2026 and ruled out any paid plan: the service stays on the Cloudflare free plan. Tasks 13 (#259) and 14 (#261) are merged; Task 14's local build took about 17 s for 701 files. Before the gate Worker (Task 15) the owner must decide whether each page carries only its own evidence; today every page embeds the whole snapshot, so one hold or expiry would blank every evidence page. Tasks 15–16 then need gates G3, G-DNS and G2.
 2. **National debt is one release behind.** Production shows August 2026 (93.8% of GDP, published 22 September). ONS published September (94.0%) on 21 October. #244 fixed the collector, and a local run on 10 November returned the September figure; the next daily collection should publish it. The stored record's validity ends on 14 November.
-3. **Cache lifetimes above the 300-second cap.** The snapshot carried a stale-while-revalidate of about 30 hours and prerendered held notices a year-long `s-maxage` for requests without `Accept: text/html`. Fixed in #248, not deployed.
+3. **Cache lifetimes.** Fixed and deployed (#248): the snapshot, feed and held notices were verified at 300 s or less on 10 November.
 4. **Per-family activation decisions.** `releaseCalendar`, `nhsReleaseCalendar`, `internationalComparison` and the two stories each need explicit owner authorization after their fix PR merges. None is recorded.
 5. **No independent sign-off (A14) is recorded for any capability,** and the 10 November audit could not finish the broken-link crawl, the no-JavaScript check beyond the home page, or the public-money release history, because of the 1102 errors.
 6. **Rollback has not been exercised outside production.**
-7. **Feed-architecture plan:** the pipeline cutover (Task 10, after #246) and stopping legacy writes (gate G4, not before 13 November and seven recorded clean dual-write days) are open. The daily divergence-log counts have not been recorded.
+7. **Feed-architecture plan:** the cron and queue cutover is built in #262 and must not merge until seven clean dual-write days are recorded (gate G4, not before 13 November); after it deploys both copies are written from one collection, so the check proves nothing. The daily divergence-log counts have not been recorded.
+8. **Waiting on the 11 November 03:17 UTC collection:** the September debt figure (94.0%), More in Common as the second pollster (#253), and public-money totals without the framework ceiling (#256). Until that run republishes, `/money/` may read "unavailable" because the stored summary no longer validates.
 
 ## Required release checklist
 
