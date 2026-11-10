@@ -7,13 +7,23 @@ const configuredBasePath = (process.env.NEXT_PUBLIC_BASE_PATH ?? "")
 const basePath = configuredBasePath && !configuredBasePath.startsWith("/")
   ? `/${configuredBasePath}`
   : configuredBasePath;
-const staticExport = process.env.STATIC_EXPORT === "true";
+// EDITION_BUILD=1 is the per-edition static build (scripts/build-edition-site.mjs,
+// which also sets STATIC_EXPORT=true for the pages); STATIC_EXPORT alone is the Pages seed.
+const editionBuild = process.env.EDITION_BUILD === "1";
+const staticExport = process.env.STATIC_EXPORT === "true" || editionBuild;
 
 // The shared set lives in contracts/security-headers.js (also mirrored by public/_headers).
 export { securityHeaders };
 
 const deliveryMode: Partial<NextConfig> = staticExport
-  ? { output: "export" as const }
+  ? {
+      output: "export" as const,
+      // Both edition variants share one build id, so client navigation between an
+      // available page and its unavailable variant stays on one build.
+      ...(editionBuild && process.env.EDITION_BUILD_ID
+        ? { generateBuildId: async () => process.env.EDITION_BUILD_ID as string }
+        : {}),
+    }
   : {
       async headers() {
         return [

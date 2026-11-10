@@ -310,3 +310,46 @@ recovered within minutes. This is the CPU attribution the static-first plan's
 gate G9 asks for (criterion 2); the seven-day traffic figures (criterion 1) are
 still not recorded.
 
+### Edition static build time and size (10 November 2026)
+
+Static-first plan Task 14, Step 6 input for owner gate G3. **Measured on a local
+machine, not on Workers Builds**: Apple M4 Pro (`sysctl -n
+machdep.cpu.brand_string`), 14 cores, Node `v24.17.0`. Workers Builds' builder
+size and speed were not measured, so the plan's "2-vCPU machine" condition is
+not met by these figures.
+
+Command, three clean runs (`rm -rf out .next` before each):
+`EDITION_BUILD=1 node scripts/build-edition-site.mjs --input <live snapshot> --edition catalog-9916effad4ef36a5 --sha 7b5aa92 --out out`.
+The input is the public `/data/metrics-snapshot.json` fetched once on
+10 November 2026 (614,568 bytes, 11 current published feeds, none held). Each
+run is two `next build --webpack` exports (unavailable variant, then available),
+classification, the value-scan backstop and manifest writing.
+
+| Measure | Result |
+|---|---|
+| Wall clock per full edition build (3 clean runs) | 17.7 s, 16.7 s, 16.5 s; **median 16.7 s** |
+| `npm ci` (not part of the runs above) | 4.6 s, warm local npm cache, `--ignore-scripts`; a cold Workers Builds install is not represented |
+| Files in `out/` | 701 (475 available build, 226 unavailable variants) |
+| Total bytes | 43,506,457 (41.5 MiB; variants 6.7 MiB) |
+| Gated (evidence-bearing) files in `edition-manifest.json` | 246 |
+| Largest files | `compare/index.html` 817,707 B; `calendar/index.html` 810,553 B; `explore/index.html` 706,685 B; `calendar/index.txt` 701,599 B |
+
+Against the free limits the plan cites:
+
+| Limit | Value | Measured | Margin |
+|---|---|---|---|
+| Workers Builds timeout | 20 min per build | 16.7 s locally | about 72× locally; unknown on the builder |
+| Workers Builds minutes | 3,000 min/month | 4 builds/day × 30 = 120 builds | 120 builds use 3,000 min only if a build takes 25 min; at 1 / 5 / 15 billed min per build the month allows 3,000 / 600 / 200 builds |
+| G3 pass line | median < 15 min, 120 builds < 1,500 min (12.5 min each) | 16.7 s locally | passes locally; **not yet shown on Workers Builds** |
+| Static assets, files | 20,000 | 701 | 19,299 (3.5% used) |
+| Static assets, file size | 25 MiB (26,214,400 B) | 817,707 B largest | 3.1% of the limit |
+
+What this does not show: Workers Builds clone, cold `npm ci` and container
+start-up times, and the builder's CPU, are all unmeasured. One build on Workers
+Builds itself (after G3 connects it) is the only measurement that settles the
+G3 criterion; these figures say the build is unlikely to be the limiting
+factor. Every evidence page embeds the whole build snapshot, so each gated page
+expires at the earliest feed deadline (here `sentimentPulse`, 30 hours after
+the build) and a hold on any feed switches every evidence page to its variant
+until the next build. The rebuild cadence is therefore set by the most
+short-lived feed, not by 4 builds/day by design.
