@@ -1,0 +1,6 @@
+# Cloudflare _redirects rules for the static edition (copied into the export by the
+# edition build, Task 14). Not under public/: OpenNext SSR must keep deciding 404s.
+# Same target as app/lib/publicMoneyRoute.ts redirectToDossier; ":" is %3A so the
+# placeholder parser does not read "buyer:publisher-id" as placeholders.
+/money/buyer/:id /money?dossier=buyer%3Apublisher-id%3A:id 302
+/money/supplier/:id /money?dossier=supplier%3Apublisher-id%3A:id 302

@@ -29,4 +29,20 @@ function validationLane(files) {
   return "full";
 }
 
-export { isDocumentationOnlyPath, validationLane };
+// Files whose change can break `output: "export"`; only these PRs pay for a second Next build.
+const STATIC_EXPORT_SURFACE = new Set([
+  "next.config.ts",
+  "scripts/build-edition-site.mjs",
+  "app/lib/editionManifest.ts",
+  "worker/asset-gate.js",
+  "worker/static-wrangler.toml",
+  "app/compare/page.tsx",
+  "app/measure/page.tsx",
+  "app/sources/[id]/page.tsx",
+]);
+
+function staticExportCheck(files) {
+  return files.some((file) => STATIC_EXPORT_SURFACE.has(file));
+}
+
+export { isDocumentationOnlyPath, staticExportCheck, validationLane };

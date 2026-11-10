@@ -1,4 +1,6 @@
-import { redirectToDossier } from "@/app/lib/publicMoneyRoute";
+import { moneyDossierStaticParams, redirectToDossier } from "@/app/lib/publicMoneyRoute";
+
+export const generateStaticParams = moneyDossierStaticParams;
 
 export default async function SupplierDossierPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

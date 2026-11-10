@@ -1,4 +1,3 @@
-import { METRICS_SNAPSHOT_PATH, REFRESH_INTERVAL_MS } from "./config";
 import { FEED_REGISTRY_VERSION } from "@/feeds/registry.js";
 import { filterCurrentSnapshot } from "@/contracts/evidence-policy";
 import type { MeasureCatalog } from "./measureCatalog";
@@ -66,11 +65,6 @@ export interface LoadedMetricsSnapshot {
   delivery: "snapshot";
 }
 
-let cachedSnapshot:
-  | { loaded: LoadedMetricsSnapshot; cachedAt: number }
-  | null = null;
-let pendingSnapshot: Promise<LoadedMetricsSnapshot> | null = null;
-
 export function isCompatibleMetricsSnapshot(
   value: unknown
 ): value is MetricsSnapshot {
@@ -112,52 +106,4 @@ export async function requestSnapshot(
   } finally {
     globalThis.clearTimeout(timeoutId);
   }
-}
-
-async function loadSnapshot(): Promise<LoadedMetricsSnapshot> {
-  const candidates: Array<{
-    url: string;
-    delivery: LoadedMetricsSnapshot["delivery"];
-  }> = [];
-  // The file is produced only by the static production build. The browser
-  // deliberately has no cross-origin API fallback.
-  if (process.env.NODE_ENV === "production" && METRICS_SNAPSHOT_PATH) {
-    candidates.push({ url: METRICS_SNAPSHOT_PATH, delivery: "snapshot" });
-  }
-  const errors: string[] = [];
-  for (const candidate of candidates) {
-    try {
-      return await requestSnapshot(candidate.url, candidate.delivery);
-    } catch (error) {
-      errors.push(error instanceof Error ? error.message : String(error));
-    }
-  }
-  throw new Error(errors.join("; ") || "No metrics snapshot is configured");
-}
-
-export async function fetchMetricsSnapshot(): Promise<LoadedMetricsSnapshot> {
-  if (
-    cachedSnapshot &&
-    Date.now() - cachedSnapshot.cachedAt < REFRESH_INTERVAL_MS
-  ) {
-    const current = filterCurrentSnapshot(cachedSnapshot.loaded.payload, new Date());
-    if (current) return { ...cachedSnapshot.loaded, payload: current as MetricsSnapshot };
-    cachedSnapshot = null;
-  }
-  if (!pendingSnapshot) {
-    pendingSnapshot = loadSnapshot()
-      .then((loaded) => {
-        cachedSnapshot = { loaded, cachedAt: Date.now() };
-        return loaded;
-      })
-      .finally(() => {
-        pendingSnapshot = null;
-      });
-  }
-  return pendingSnapshot;
-}
-
-export function resetMetricsSnapshotCache() {
-  cachedSnapshot = null;
-  pendingSnapshot = null;
 }

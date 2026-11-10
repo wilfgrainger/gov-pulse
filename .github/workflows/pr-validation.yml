@@ -3,6 +3,7 @@ name: Pull Request Validation
 on:
   pull_request:
     branches: ["main", "codex/hermes-v1"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -17,6 +18,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       lane: ${{ steps.lane.outputs.lane }}
+      static_export_check: ${{ steps.lane.outputs.static_export_check }}
     steps:
       - name: Checkout (shallow — diff against base only)
         uses: actions/checkout@v6
@@ -24,6 +26,7 @@ jobs:
           fetch-depth: 2
 
       - name: Ensure base ref is available for diffing
+        if: github.event_name == 'pull_request'
         run: git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
 
       - name: Select validation lane
@@ -51,6 +54,7 @@ jobs:
           fetch-depth: 2
 
       - name: Ensure base ref is available for diffing
+        if: github.event_name == 'pull_request'
         run: git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
 
       - name: Validate public data route boundaries
@@ -77,6 +81,12 @@ jobs:
 
       - name: Stage OpenNext adapter config
         run: cp worker/open-next.config.template open-next.config.ts
+
+      - name: Static export check (only when the static-export surface changed)
+        if: needs.classify.outputs.static_export_check == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          STATIC_EXPORT_CHECK: "1"
+        run: npx vitest run tests/unit/static-export-compat.test.ts
 
       - name: Lint, test and build in parallel
         shell: bash

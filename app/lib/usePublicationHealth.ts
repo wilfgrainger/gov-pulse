@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useInitialMetricsSnapshot } from "./MetricsSnapshotProvider";
+import type { MetricsSnapshot } from "./metricsSnapshot";
 
-// Shape of the Cloudflare data Worker's own health endpoint (served from
-// worker/public-data-entry.js), already used by the deploy bootstrap check
-// (scripts/bootstrap-cloudflare-publication.mjs, PR #106). The frontend reuses
-// this as the single source of truth for "data as of" rather than inventing a
-// second freshness signal.
+// Same shape as the data Worker health report, which stays for monitors.
+// Readers no longer poll it: the report is derived from the edition snapshot the
+// page was rendered with, so a static page never shows a time newer than its data.
 export interface PublicationHealthReport {
   status: "ok" | "degraded";
   healthy: boolean;
@@ -29,62 +28,35 @@ export interface PublicationHealthResult {
   isLive: boolean;
 }
 
-const HEALTH_PATH = "/data/health.json";
-// Same cadence the frontend already polls metrics on (app/lib/config.ts
-// REFRESH_INTERVAL_MS) — no new polling policy introduced for this indicator.
-const POLL_INTERVAL_MS = 60 * 60 * 1000;
-
-function isPublicationHealthReport(value: unknown): value is PublicationHealthReport {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Record<string, unknown>;
-  return (
-    (candidate.status === "ok" || candidate.status === "degraded") &&
-    typeof candidate.healthy === "boolean" &&
-    typeof candidate.generatedAt === "string" &&
-    (candidate.lastRefresh === null || typeof candidate.lastRefresh === "string") &&
-    typeof candidate.counts === "object" &&
-    candidate.counts !== null
-  );
+/** Derive the freshness report from the page's own edition snapshot (no network). */
+export function healthReportFromSnapshot(snapshot: MetricsSnapshot | null): PublicationHealthReport | null {
+  const entries = Object.entries(snapshot?.meta.sources ?? {});
+  if (!snapshot || entries.length === 0) return null;
+  const counts = { total: entries.length, ok: 0, stale: 0, expired: 0, missing: 0, error: 0 };
+  const sections: PublicationHealthReport["sections"] = {};
+  let lastRefresh: number | null = null;
+  for (const [id, source] of entries) {
+    if (source.status === "ok") counts.ok += 1;
+    else if (source.status === "stale") counts.stale += 1;
+    else counts.error += 1;
+    sections[id] = { status: String(source.status ?? "missing"), healthy: source.status === "ok" };
+    const fetched = typeof source.fetchedAt === "string" ? Date.parse(source.fetchedAt) : NaN;
+    if (Number.isFinite(fetched) && (lastRefresh === null || fetched > lastRefresh)) lastRefresh = fetched;
+  }
+  const healthy = counts.ok === counts.total;
+  const lastRefreshIso = lastRefresh === null ? null : new Date(lastRefresh).toISOString();
+  return {
+    status: healthy ? "ok" : "degraded",
+    healthy,
+    service: "edition-snapshot",
+    generatedAt: snapshot.meta.generatedAt ?? lastRefreshIso ?? "",
+    lastRefresh: lastRefreshIso,
+    counts,
+    sections,
+  };
 }
 
-/**
- * Reads the Cloudflare data Worker's `/data/health.json` endpoint — the same
- * endpoint the deploy pipeline's bootstrap/finalise check uses — so the UI's
- * "data as of" indicator can never drift from the real publication state.
- * Only runs in the browser in production; falls back to no report (indicator
- * renders nothing) rather than guessing a value.
- */
 export function usePublicationHealth(): PublicationHealthResult {
-  const [result, setResult] = useState<PublicationHealthResult>({
-    report: null,
-    isLive: false,
-  });
-  const activeRef = useRef(true);
-
-  useEffect(() => {
-    if (process.env.NODE_ENV !== "production") return;
-
-    activeRef.current = true;
-
-    const fetchHealth = async () => {
-      try {
-        const response = await fetch(HEALTH_PATH, { cache: "no-store" });
-        if (!response.ok) return;
-        const payload = (await response.json()) as unknown;
-        if (!isPublicationHealthReport(payload)) return;
-        if (activeRef.current) setResult({ report: payload, isLive: true });
-      } catch {
-        // Keep the previous report (or none) rather than showing a guess.
-      }
-    };
-
-    fetchHealth();
-    const interval = setInterval(fetchHealth, POLL_INTERVAL_MS);
-    return () => {
-      activeRef.current = false;
-      clearInterval(interval);
-    };
-  }, []);
-
-  return result;
+  const report = healthReportFromSnapshot(useInitialMetricsSnapshot());
+  return { report, isLive: report !== null };
 }

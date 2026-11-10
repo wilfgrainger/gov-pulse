@@ -15,7 +15,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import ChartExportButtons from "@/app/components/ChartExportButtons";
 import CountUpNumber from "@/app/components/CountUpNumber";
 import EvidenceFigure from "@/app/components/charts/EvidenceFigure";
-import { fetchMetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import {
   comparePoints,
   exploreMeasures,
@@ -645,7 +644,7 @@ function DataExplorerInner({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [snapshot, setSnapshot] = useState(initialSnapshot);
+  const snapshot = initialSnapshot;
   const [now, setNow] = useState(() => Date.now());
   const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [topic, setTopic] = useState(() => searchParams.get("topic") ?? "All topics");
@@ -665,24 +664,10 @@ function DataExplorerInner({
     () => rawCompareParam ?? "",
   );
 
+  // Clock tick only (no network): the edition data is the build's; expiry is re-evaluated.
   useEffect(() => {
-    let active = true;
-    const refresh = () => {
-      setNow(Date.now());
-      fetchMetricsSnapshot()
-        .then(({ payload }) => {
-          if (active) setSnapshot(payload);
-        })
-        .catch(() => {
-          /* Currentness still re-evaluates retained data. */
-        });
-    };
-    refresh();
-    const timer = setInterval(refresh, 60_000);
-    return () => {
-      active = false;
-      clearInterval(timer);
-    };
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(timer);
   }, []);
   const measures = useMemo(
     () => exploreMeasures(snapshot, new Date(now)),

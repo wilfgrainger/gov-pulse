@@ -22,11 +22,6 @@ vi.mock("@/app/components/ChartExportButtons", () => ({
   </>,
 }));
 
-vi.mock("@/app/lib/metricsSnapshot", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/app/lib/metricsSnapshot")>()),
-  fetchMetricsSnapshot: () => Promise.reject(new Error("offline test")),
-}));
-
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(NOW);
