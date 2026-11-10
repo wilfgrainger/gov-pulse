@@ -135,8 +135,8 @@ export function buildCountryChartMetadata(
 ): ChartMetadata {
   const years = result.rows.map(({ observationYear }) => observationYear).sort((left, right) => left - right);
   const includedRecords = result.rows.map((row) => ({ row, included: true as const, exclusionReason: null }));
-  // Export every exclusion the page lists, except countries the reader deselected.
-  const unavailableRecords = result.excluded.filter(({ reason }) => reason !== "Excluded by country filter")
+  // Export every exclusion the page lists, including countries the reader deselected.
+  const unavailableRecords = result.excluded
     .map((row) => ({ row, included: false as const, exclusionReason: countryComparisonExclusionLabel(row.reason) }));
   const records = [...includedRecords, ...unavailableRecords];
   const sourceReferences = (measure.sourceReferences ?? []).flatMap((source) => [source, ...(source.additionalSources ?? [])]);
@@ -194,4 +194,11 @@ export function buildCountryChartMetadata(
     }),
     caveats,
   };
+}
+
+/** Export metadata for a measure's displayed rank table: all countries, publisher ranks, null rows with reasons. */
+export function buildMeasureTableMetadata(measure: ComparisonMeasure): ChartMetadata {
+  const result = selectCountryFigure(measure, COUNTRY_IDS, VALUE_TYPES);
+  const shownRank = new Map(measure.countries.map((item) => [item.country, item.rank] as const));
+  return buildCountryChartMetadata(measure, { ...result, rows: result.rows.map((row) => ({ ...row, rank: shownRank.get(row.country) ?? row.rank })) });
 }

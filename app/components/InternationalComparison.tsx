@@ -1,4 +1,6 @@
 import { readServerInternationalComparison } from "@/app/lib/serverInternationalComparison";
+import MeasureTableExport from "@/app/components/MeasureTableExport";
+import { buildMeasureTableMetadata } from "@/app/lib/countryComparison";
 import CountryComparisonFigures from "@/app/components/CountryComparisonFigures";
 import {
   COMPARISON_COUNTRY_NAMES,
@@ -112,7 +114,7 @@ function sourceLifecycleLabel(measure: ComparisonMeasure) {
 }
 
 function strongestUkPosition(publication: InternationalComparisonPublication) {
-  return COMPARISON_MEASURE_ORDER.map((id) => publication.measures[id])
+  return COMPARISON_MEASURE_ORDER.map((id) => publication.measures[id]).filter(Boolean)
     .map((measure) => ({ measure, uk: ukObservation(measure) }))
     .filter(
       (entry): entry is { measure: ComparisonMeasure; uk: ComparisonObservation } =>
@@ -130,7 +132,31 @@ function strongestUkPosition(publication: InternationalComparisonPublication) {
     )[0] ?? null;
 }
 
-function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
+export function UkStandout({ publication }: { publication: InternationalComparisonPublication }) {
+  const standout = strongestUkPosition(publication);
+  if (!standout) return null;
+  const { measure, uk } = standout;
+  return (
+    <aside className="mt-6 border-l-4 border-[#1f5c8a] bg-[#f4f6f8] px-5 py-4" aria-label="UK comparison standout">
+      <p className="eyebrow">What jumps out</p>
+      <p className="mt-2 text-base leading-7 text-[#14243b]">
+        <strong>{measure.label} ({uk.observationYear}, {valueTypeLabel(uk.valueType)}):</strong>{" "}
+        UK rank {uk.rank} of {measure.comparableCountryCount} countries with a value. {comparisonSummary(measure, uk)}.
+      </p>
+      <p className="mt-2 text-xs leading-5 text-gray-600">
+        This is the measure where the UK has the best relative position. Measures differ in year and in how many countries have a value, so positions are not like-for-like across measures.
+      </p>
+    </aside>
+  );
+}
+
+export function ScorecardYearNote({ publication }: { publication: InternationalComparisonPublication }) {
+  const years = [...new Set(COMPARISON_MEASURE_ORDER.map((id) => publication.measures[id]?.observationYear).filter((year) => year !== undefined))].sort();
+  if (years.length < 2) return null;
+  return <p role="note" className="px-1 py-3 text-xs leading-5 text-gray-700">These measures do not share a year ({years.join(", ")}); compare ranks within a measure, not across rows.</p>;
+}
+
+export function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
   const ranked = rankedCountries(measure);
   const unavailable = unavailableCountries(measure);
   const uk = ukObservation(measure);
@@ -173,6 +199,7 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
         </aside>
       </div>
 
+      <MeasureTableExport chartMetadata={buildMeasureTableMetadata(measure)} />
       {ranked.length > 0 ? (
         <div className="mt-6 overflow-x-auto">
           <table className="w-full min-w-[36rem] border-collapse text-left">
@@ -240,7 +267,6 @@ function MeasureDetail({ measure }: { measure: ComparisonMeasure }) {
 
 export default async function InternationalComparison() {
   const publication = await readServerInternationalComparison();
-  const standout = publication ? strongestUkPosition(publication) : null;
 
   return (
     <div>
@@ -254,15 +280,7 @@ export default async function InternationalComparison() {
         </p>
       </div>
 
-      {standout ? (
-        <aside className="mt-6 border-l-4 border-[#1f5c8a] bg-[#f4f6f8] px-5 py-4" aria-label="UK comparison standout">
-          <p className="eyebrow">What jumps out</p>
-          <p className="mt-2 text-base leading-7 text-[#14243b]">
-            <strong>{standout.measure.label}:</strong>{" "}
-            {rankLabel(standout.measure, standout.uk)}. {comparisonSummary(standout.measure, standout.uk)}.
-          </p>
-        </aside>
-      ) : null}
+      {publication ? <UkStandout publication={publication} /> : null}
 
       {publication ? <CountryComparisonFigures measures={publication.measures} /> : null}
 
@@ -302,6 +320,7 @@ export default async function InternationalComparison() {
             </tbody>
           </table>
         </div>
+        {publication ? <ScorecardYearNote publication={publication} /> : null}
       </div>
 
       {!publication ? (
