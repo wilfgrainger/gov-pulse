@@ -76,7 +76,8 @@ describe("pollingTable", () => {
   });
 
   it("keeps correction notices as their own rows with original and corrected shares", () => {
-    const table = buildPollingTable([yougov], HISTORICAL_POLL_CORRECTIONS);
+    const gbCorrections = HISTORICAL_POLL_CORRECTIONS.map((c) => ({ ...c, geography: "Great Britain" }));
+    const table = buildPollingTable([yougov], gbCorrections);
     const correction = table.rows.find((row) => row.kind === "correction");
     expect(correction).toMatchObject({
       kind: "correction",
@@ -88,6 +89,12 @@ describe("pollingTable", () => {
     expect(correction.originalShares.snp).toBe(41);
     expect(correction.shares.labour).toBe(35);
     expect(correction.originalShares.labour).toBe(37);
+  });
+
+  it("keeps non-GB corrections (the 2013 Scottish Parliament notice) out of the GB table", () => {
+    const table = buildPollingTable([yougov], HISTORICAL_POLL_CORRECTIONS);
+    expect(table.rows.some((row) => row.kind === "correction")).toBe(false);
+    expect(table.omittedWithoutSource).toBe(0);
   });
 
   it("aligns party shares to the fixed column order and drops non-finite values", () => {
