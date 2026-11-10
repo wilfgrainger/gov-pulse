@@ -296,7 +296,7 @@ function MeasureDetail({
         </p>
       )}
       {canonicalMeasure ? (
-        <div className="mt-8 grid gap-8">
+        <div className="mt-8 grid grid-cols-1 gap-8">
           <EvidenceFigure
             measure={canonicalMeasure}
             title={canonicalMeasure.label}
@@ -647,9 +647,9 @@ function DataExplorerInner({
   const searchParams = useSearchParams();
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [now, setNow] = useState(() => Date.now());
-  const [query, setQuery] = useState("");
-  const [topic, setTopic] = useState("All topics");
-  const [showUnavailable, setShowUnavailable] = useState(false);
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
+  const [topic, setTopic] = useState(() => searchParams.get("topic") ?? "All topics");
+  const [showUnavailable, setShowUnavailable] = useState(() => searchParams.get("unavailable") === "1");
 
   const rawMeasureParam = searchParams.get("measure");
   const rawCompareParam = searchParams.get("compare");
@@ -690,10 +690,12 @@ function DataExplorerInner({
   );
   const available = measures.filter((m) => m.value !== null).length;
   const topics = [...new Set(measures.map((m) => m.topic))];
+  // An unknown topic (stale bookmark) falls back to all topics.
+  const activeTopic = topics.includes(topic) ? topic : "All topics";
   const filtered = measures
     .filter(
       (m) =>
-        (topic === "All topics" || m.topic === topic) &&
+        (activeTopic === "All topics" || m.topic === activeTopic) &&
         (available === 0 || showUnavailable || m.value !== null) &&
         `${m.label} ${m.topic} ${m.geography} ${m.note}`
           .toLowerCase()
@@ -738,6 +740,9 @@ function DataExplorerInner({
     if (!detail) return;
     const params = new URLSearchParams();
     params.set("measure", detail.id);
+    if (query) params.set("q", query);
+    if (activeTopic !== "All topics") params.set("topic", activeTopic);
+    if (showUnavailable) params.set("unavailable", "1");
     if (validCompareId) params.set("compare", validCompareId);
     if (years !== DEFAULT_WINDOW) params.set("window", years);
     const next = params.toString();
@@ -746,7 +751,7 @@ function DataExplorerInner({
     router.replace(next ? `${pathname}?${next}` : pathname, {
       scroll: false,
     });
-  }, [detail, validCompareId, years, pathname, router, searchParams]);
+  }, [detail, validCompareId, years, query, activeTopic, showUnavailable, pathname, router, searchParams]);
 
   const selectMeasure = useCallback((id: string) => {
     setSelected(id);
@@ -780,7 +785,7 @@ function DataExplorerInner({
         <label className="text-sm font-semibold">
           Topic
           <select
-            value={topic}
+            value={activeTopic}
             onChange={(e) => setTopic(e.target.value)}
             className="mt-2 block min-h-12 w-full border border-slate-400 bg-white px-3 py-2 text-base font-normal"
           >
@@ -834,7 +839,7 @@ function DataExplorerInner({
           </button>
         </div>
       ) : (
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.7fr)]">
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.7fr)]">
           <ul
             aria-label="Measures"
             className="max-h-[32rem] overflow-y-auto border border-slate-300 bg-white lg:max-h-[50rem]"

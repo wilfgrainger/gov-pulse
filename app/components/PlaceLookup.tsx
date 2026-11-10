@@ -113,7 +113,7 @@ export default function PlaceLookup() {
             onChange={(event) => setQuery(event.target.value)}
             placeholder="United Kingdom, England, GB…"
             autoComplete="off"
-            className="min-h-11 border border-foreground bg-white px-3 text-sm font-normal"
+            className="min-h-11 w-full min-w-0 border border-foreground bg-white px-3 text-sm font-normal"
           />
         </label>
         <button

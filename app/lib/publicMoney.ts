@@ -1,3 +1,8 @@
+import { isSupplierPlaceholder } from "@/contracts/government-contracts";
+
+export { isSupplierPlaceholder as isSupplierPlaceholderName };
+export const SUPPLIER_LIST_IN_NOTICE = "Supplier list published in the source notice";
+
 export type PublicMoneyValueBasis = "award-value" | "contract-value";
 
 export function valueBasisDescription(valueBasis: PublicMoneyValueBasis): string {
@@ -66,7 +71,7 @@ export type AwardDossier = {
   disclosedTotal: number;
   noticeCount: number;
   filteredDenominator: number;
-  noticeLinks: { releaseId: string; noticeUrl: string; procurementUrl: string; awardDate: string; amount: number; currency: "GBP" }[];
+  noticeLinks: { releaseId: string; noticeUrl: string; procurementUrl: string; awardDate: string; amount: number; currency: "GBP"; framework: boolean }[];
   caveats: string[];
 };
 
@@ -102,8 +107,8 @@ export function buildDossier(
       ? candidate.buyerId === identity
       : candidate.buyer === identity;
     return identityBasis === "publisher-id"
-      ? candidate.supplierIds?.includes(identity) === true
-      : candidate.suppliers.includes(identity);
+      ? candidate.suppliers.some((name, index) => candidate.supplierIds?.[index] === identity && !isSupplierPlaceholder(name))
+      : !isSupplierPlaceholder(identity) && candidate.suppliers.includes(identity);
   };
   const award = awards.find(matches);
   if (!award) return null;
@@ -131,7 +136,8 @@ export function buildDossier(
     aliases,
     award,
     awards: matchingAwards,
-    disclosedTotal: matchingAwards.reduce((total, item) => total + item.amount, 0),
+    // Framework maxima are ceilings, not award values, so they stay out of the total.
+    disclosedTotal: matchingAwards.reduce((total, item) => total + (item.framework ? 0 : item.amount), 0),
     noticeCount: matchingAwards.length,
     filteredDenominator: awards.length,
     noticeLinks: [...matchingAwards]
@@ -143,6 +149,7 @@ export function buildDossier(
         awardDate: item.awardDate,
         amount: item.amount,
         currency: item.currency,
+        framework: item.framework,
       })),
     caveats: [
       kind === "notice"
@@ -243,7 +250,7 @@ export function serializePublicAwardsCsv(
 ): string {
   const columns = [
     "Notice ID", "Title", "Buyer", "Buyer ID", "Suppliers", "Supplier IDs", "Supplier nations", "Award date", "Publication date",
-    "Recorded value", "Value basis", "Currency", "Procedure", "Framework", "Notice URL", "Procurement history URL",
+    "Recorded value", "Framework ceiling", "Value basis", "Currency", "Procedure", "Framework", "Notice URL", "Procurement history URL",
     "Source window", "Filtered row count", "Published top-ranked sample count", "Full source-window award count", "Window coverage", "Currency basis note",
   ];
   const listedSampleCount = Number.isSafeInteger(context.listedAwardSampleCount) &&
@@ -255,17 +262,20 @@ export function serializePublicAwardsCsv(
     ? context.sourceWindowAwardCount!
     : listedSampleCount;
   const windowCoverage = `${((sourceWindowAwardCount ? awards.length / sourceWindowAwardCount : 0) * 100).toFixed(1)}%`;
+  // A shared framework ceiling is shown once per notice so no column double counts it.
+  const ceilingShown = new Set<string>();
   const rows = awards.map((award) => [
     award.releaseId,
     award.title,
     award.buyer,
     award.buyerId ?? null,
-    award.suppliers.join(", "),
-    (award.supplierIds ?? []).filter((id): id is string => Boolean(id)).join(", ") || null,
+    award.suppliers.map((name) => isSupplierPlaceholder(name) ? SUPPLIER_LIST_IN_NOTICE : name).join(", "),
+    (award.supplierIds ?? []).filter((id, index): id is string => Boolean(id) && !isSupplierPlaceholder(award.suppliers[index])).join(", ") || null,
     [...new Set(award.supplierNations)].join(", "),
     award.awardDate,
     award.publishedAt,
-    award.amount,
+    award.framework ? null : award.amount,
+    award.framework && !ceilingShown.has(award.releaseId) && ceilingShown.add(award.releaseId) ? award.amount : null,
     valueBasisDescription(award.valueBasis),
     award.currency,
     award.procurementMethodDetails ?? award.procurementMethod ?? "Not disclosed",

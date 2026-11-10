@@ -138,7 +138,8 @@ describe("national evidence presentation", () => {
     const edition = selectNationalEvidenceEdition(snapshot());
     const rents = edition.signals.find((signal) => signal.id === "private-rents");
     expect(rents?.value).toBe("+5.1%");
-    expect(rents?.comparison).toContain("Average £1,352 a month");
+    expect(rents?.comparison).toContain("Average £1,352 a month in June 2026");
+    expect(rents?.comparison).toContain("previously +5.6% in the 12 months to May 2026");
     const contracts = edition.signals.find((signal) => signal.id === "government-contracts");
     expect(contracts?.value).toBe("881 awards");
     expect(contracts?.comparison).toContain("Notices updated, not money spent");

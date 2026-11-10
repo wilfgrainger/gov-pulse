@@ -4,6 +4,8 @@ import Link from "next/link";
 import {
   buildDossier,
   frameworkValueLabel,
+  isSupplierPlaceholderName as isSupplierPlaceholder,
+  SUPPLIER_LIST_IN_NOTICE,
   valueBasisDescription,
   type AwardDossier,
   type PublicAward,
@@ -63,6 +65,7 @@ export default function PublicMoneyDossierAside({
             {coverageLine ? (
               <p className="mt-3 text-sm">
                 Total {valueBasisDescription(selected.award.valueBasis)} for matched notices, not supplier revenue: <strong>{pounds(selected.disclosedTotal)}</strong>
+                {selected.noticeLinks.some((notice) => notice.framework) ? <span className="mt-1 block text-xs text-gray-600">Framework ceilings are listed below but not included in this total.</span> : null}
                 <span className="mt-1 block text-xs text-gray-600">{coverageLine}. Value basis: {valueBasisDescription(selected.award.valueBasis)}.</span>
               </p>
             ) : (
@@ -82,6 +85,7 @@ export default function PublicMoneyDossierAside({
               <button type="button" onClick={() => setSelected(buildDossier(visible, selected.award.key, "notice", "notice"))} aria-pressed={selected.kind === "notice"} className={`min-h-10 border px-3 text-xs font-bold ${selected.kind === "notice" ? "border-foreground bg-accent-soft" : "border-line bg-white"}`}>Single notice</button>
               <button type="button" onClick={() => openBuyerDossier(selected.award)} aria-pressed={selected.kind === "buyer"} className={`min-h-10 border px-3 text-xs font-bold ${selected.kind === "buyer" ? "border-foreground bg-accent-soft" : "border-line bg-white"}`}>{selected.award.buyerId ? `Buyer ID: ${selected.award.buyerId}` : "Exact buyer name"}</button>
               {selected.award.suppliers.map((supplier, index) => {
+                if (isSupplierPlaceholder(supplier)) return null;
                 const supplierId = selected.award.supplierIds?.[index] ?? null;
                 const active = selected.kind === "supplier" && (supplierId ? selected.entityId === supplierId : selected.label === supplier);
                 return (
@@ -93,7 +97,7 @@ export default function PublicMoneyDossierAside({
             </div>
             <dl className="mt-4 space-y-3 text-sm">
               <div><dt className="font-bold">Buyer disclosed on selected notice</dt><dd>{selected.award.buyer}</dd></div>
-              <div><dt className="font-bold">Supplier strings on selected notice</dt><dd>{selected.award.suppliers.join(", ")}</dd></div>
+              <div><dt className="font-bold">Supplier strings on selected notice</dt><dd>{selected.award.suppliers.map((name) => isSupplierPlaceholder(name) ? SUPPLIER_LIST_IN_NOTICE : name).join(", ")}</dd></div>
             </dl>
             {selected.noticeLinks.length > 0 && (
               <section aria-label="Award-value timeline" className="mt-4 border-t border-line pt-4">
@@ -104,7 +108,7 @@ export default function PublicMoneyDossierAside({
                       <a className="underline" href={notice.noticeUrl} target="_blank" rel="noreferrer">
                         Notice {notice.releaseId} · {new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/London" }).format(new Date(notice.awardDate))}
                       </a>
-                      <span className="font-mono tabular-nums">{pounds(notice.amount)}</span>
+                      <span className="font-mono tabular-nums">{pounds(notice.amount)}{notice.framework ? " ceiling" : ""}</span>
                     </li>
                   ))}
                 </ol>

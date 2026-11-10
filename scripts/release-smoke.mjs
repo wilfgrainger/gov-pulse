@@ -1,7 +1,16 @@
 import { pathToFileURL } from "node:url";
+import { MAX_PUBLIC_CACHE_LIFETIME_SECONDS, cacheLifetimeSeconds } from "./lib/cache-lifetime.mjs";
 
 const RELEASE_PROPAGATION_ATTEMPTS = 25;
 const RELEASE_PROPAGATION_RETRY_MS = 5000;
+
+function assertCacheLifetime(path, response) {
+  const lifetime = cacheLifetimeSeconds(response.headers.get("cache-control"));
+  if (lifetime > MAX_PUBLIC_CACHE_LIFETIME_SECONDS)
+    throw new Error(
+      `${path || "/"} is cacheable for ${lifetime} s, above the ${MAX_PUBLIC_CACHE_LIFETIME_SECONDS} s limit`,
+    );
+}
 
 // Code readiness and evidence readiness have different failure domains.
 // Bound the release probe; full source diagnostics remain test:live / verify-production.
@@ -29,6 +38,7 @@ export async function releaseSmoke({
           });
           if (!response.ok)
             throw new Error(`${path || "/"} returned ${response.status}`);
+          assertCacheLifetime(path, response);
           const html = await response.text();
           if (
             !new RegExp(
@@ -43,6 +53,15 @@ export async function releaseSmoke({
         }),
       );
       log.info(`Release revision verified on ${pages.length} reader routes.`);
+      // A held notice, the snapshot and the feed must leave every cache within the cap.
+      for (const path of ["section/nhs/", "data/metrics-snapshot.json", "feed.xml"]) {
+        const response = await fetchImpl(new URL(path, base), {
+          signal: AbortSignal.timeout(8000),
+          cache: "no-store",
+        });
+        assertCacheLifetime(path, response);
+        await response.body?.cancel();
+      }
       // Degradation is visible but does not hold a code release hostage to ONS/NHS.
       const health = await fetchImpl(new URL("data/health.json", base), {
         signal: AbortSignal.timeout(8000),

@@ -248,6 +248,7 @@ export default function HousePriceIndex() {
     valid && headline
       ? buildReleaseNote({
           measureLabel: "Annual house price change",
+        valueIsRate: true,
           latestValueDisplay: formatPercent(headline.changePercent),
           latestPeriod: headline.period,
           releaseDate: headline.releaseDate,

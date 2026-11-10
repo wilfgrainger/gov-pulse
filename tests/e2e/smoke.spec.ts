@@ -1,4 +1,10 @@
 import { expect, test } from "@playwright/test";
+import publicationConfig from "../../config/publications.json" with { type: "json" };
+
+// Expectations follow config/publications.json, so the same suite is truthful
+// locally and against production whatever is currently held.
+const published = (id: keyof typeof publicationConfig.publications) =>
+  publicationConfig.publications[id].state === "published";
 
 function trackConsole(page: Parameters<typeof test>[0]["page"]) {
   const errors: string[] = [];
@@ -104,16 +110,22 @@ test("topics panel exposes the complete evidence library and closes with Escape"
   const panel = page.locator("#all-topic-navigation");
   await expect(panel.getByRole("heading", { name: "Choose a public question." })).toBeVisible();
   await expect(panel.getByRole("link", { name: "Government receipts" })).toBeVisible();
-  await expect(panel.getByRole("link", { name: "UK in context" })).toBeVisible();
+  await expect(panel.getByRole("link", { name: "UK in context" })).toHaveCount(
+    published("internationalComparison") ? 1 : 0,
+  );
   await page.keyboard.press("Escape");
   await expect(panel).toHaveCount(0);
   await expect(topics).toBeFocused();
 });
 
 test("legacy evidence hashes land on the matching signal", async ({ page }) => {
-  await page.goto("./#gdp");
-  await expect(page.locator("#gdp").getByRole("heading", { name: "GDP" })).toBeVisible();
-  await expect(page.locator("#gdp").getByRole("link", { name: "GDP" })).toHaveAttribute("href", "/section/gdp/");
+  await page.goto("./#national-debt");
+  const signal = page.locator("#national-debt");
+  await expect(signal.getByRole("heading", { name: "National debt" })).toBeVisible();
+  await expect(signal.getByRole("link", { name: "National debt" }).first()).toHaveAttribute(
+    "href",
+    /^\/section\/national-debt\/?$/,
+  );
   await expect(page.locator("details#category-economy")).toHaveCount(0);
 });
 
@@ -151,9 +163,13 @@ test("all new publication routes render their honest server state without overfl
     ["/cost-of-living", "Cost of living"],
     ["/money", "Public money dossiers"],
     ["/editions", "Editions and revisions"],
-    ["/stories/household-budgets", "How to read the household pressure signals"],
-    ["/stories/public-finances", "Debt, receipts and economic output"],
-  ] as const;
+    ...(published("storyHouseholdBudgets")
+      ? [["/stories/household-budgets", "How to read the household pressure signals"]]
+      : []),
+    ...(published("storyPublicFinances")
+      ? [["/stories/public-finances", "Debt, receipts and economic output"]]
+      : []),
+  ];
 
   for (const [path, heading] of routes) {
     await page.goto(`.${path}`);
@@ -201,11 +217,12 @@ test("measure-library route keeps its truthful HTML available without JavaScript
   await page.close();
 });
 
-test("held GDP evidence remains unavailable without download links", async ({ page }) => {
-  await page.goto("./section/gdp");
-  await expect(page.getByRole("heading", { level: 1, name: "GDP" })).toBeVisible();
+test("held NHS evidence remains unavailable without download links", async ({ page }) => {
+  test.skip(published("nhsStats"), "NHS evidence is published");
+  await page.goto("./section/nhs");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByTestId("section-publication-held")).toContainText("held from public release");
-  await expect(page.getByLabel("GDP data downloads")).toHaveCount(0);
+  await expect(page.locator('[aria-label$="data downloads"]')).toHaveCount(0);
 });
 
 test("mobile journeys preserve touch targets and avoid horizontal overflow", async ({ page }, testInfo) => {

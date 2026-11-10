@@ -60,7 +60,7 @@ export default function OneIndicatorCompare({
               name="indicator"
               value={selectedId}
               onChange={(event) => setSelectedId(event.target.value)}
-              className="min-h-11 border border-foreground bg-white px-3 text-sm font-normal"
+              className="min-h-11 w-full min-w-0 border border-foreground bg-white px-3 text-sm font-normal"
             >
               {choices.map((measure) => (
                 <option key={measure.id} value={measure.id}>

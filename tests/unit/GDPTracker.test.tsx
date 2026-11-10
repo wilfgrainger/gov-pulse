@@ -72,7 +72,7 @@ describe("GDPTracker release note", () => {
 
     const note = screen.getByTestId("release-note");
     expect(note).toHaveTextContent("Release note");
-    expect(note).toHaveTextContent(/Monthly GDP growth rose to \+0\.2%, a change of \+100\.0% from the prior comparable period\./);
+    expect(note).toHaveTextContent(/Monthly GDP growth rose to \+0\.2%, a change of \+0\.1 percentage points from the prior comparable period\./);
     expect(note).not.toHaveTextContent("provisional");
   });
 

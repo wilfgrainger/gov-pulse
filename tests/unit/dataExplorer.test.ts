@@ -4,6 +4,7 @@ import {
   comparePoints,
   exploreMeasures,
   formatMeasure,
+  readablePeriod,
   measuresCsv,
 } from "@/app/lib/dataExplorer";
 import { MEASURES } from "@/app/lib/measureDefinitions";
@@ -135,6 +136,11 @@ describe("data explorer", () => {
     expect(formatMeasure(0.3, "percentage points")).toBe(
       "0.3 percentage points",
     );
+  });
+  it("formats periods and money units for display", () => {
+    expect(readablePeriod("2026 AUG")).toBe("August 2026");
+    expect(formatMeasure(1406, "GBP/month")).toBe("£1,406 a month");
+    expect(formatMeasure(4, "%")).toBe("4%");
   });
   it("exports provenance and preserves null separately from zero", () => {
     const measures = exploreMeasures(payload, now);

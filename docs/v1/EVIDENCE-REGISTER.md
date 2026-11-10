@@ -1,36 +1,42 @@
 # V1 evidence register
 
-**Observed:** 12 October 2026, 10:14–10:17 UTC.
+**Observed:** 10 November 2026, 07:50–10:30 UTC. The 12 October register this replaces is in git history.
 **Rule:** a local collector, historical checkbox, HTTP 200 shell or hidden value is not proof of public evidence. A held family remains held until source verification and explicit user authorization.
 
-This table covers the evidence families most directly tied to the ten V1 journeys; it is not an exhaustive switch inventory. The complete source-level publication configuration is `config/publications.json`. Other disabled families include GDP, employment, tax, real wages, betting odds, crime statistics and additional legacy measures. A disabled switch does not imply those datasets were fully source-audited for this record.
+The complete publication configuration is `config/publications.json`. Rows marked "reviewed 10 Nov" had values fetched independently from the publisher on that day; the others record only what production served.
 
 | Family | Primary-source evidence | Publication state and verified gap |
 |---|---|---|
-| National debt | ONS [HF6W](https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6w/pusf), [HF6X](https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6x/pusf), reconciled with [August 2026 bulletin](https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/bulletins/publicsectorfinances/august2026). | **Published.** End-August UK public sector net debt excluding public sector banks: £2,985.5bn; 93.8% of GDP. Year-on-year: +£78.5bn and −1.3 percentage points. ONS publication 22 Sep; next announced release 21 Oct. Snapshot generated 12 Oct 03:43 UTC. Catalog measure validity to 14 Nov exceeds the next scheduled release; recheck after that release or on collection failure. Snapshot catalog validity ended 13 Oct 15:18 UTC, earlier than the measure validity; reconcile clocks. |
-| NHS RTT | [NHS England RTT statistics](https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/rtt-data-2026-27/). | **Unavailable in production.** Health reports degraded/not ready with required `nhsStats` missing. Local direct-source reconciliation was recorded for July, but a permitted automated retrieval route remains unproved after WAF challenges. No deployed NHS source edition or source-to-screen proof. |
-| Release calendar | [ONS release calendar](https://www.ons.gov.uk/releasecalendar); [NHS statistics calendar](https://www.england.nhs.uk/statistics/12-months-statistics-calendar/). | **Held.** Calendar families are disabled. Page route loads, but no deployed current event payload, ICS, or watchlist reconciliation was verified. Historical local calendar checks do not constitute production evidence. |
-| Rents and housing | ONS [September 2026 private rent and house prices bulletin](https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/privaterentandhousepricesuk/september2026). | **Held.** Source figures checked: August rent £1,400/month, +3.8% annual; July house price £273,000, +1.4% annual; bulletin published 16 Sep. Provisional series and revision windows apply; bulletin notes estimated recent Northern Ireland rent inputs. Local normalization exists; live catalog does not publish housing. |
-| Polling | [YouGov publications](https://yougov.com/en-gb/articles); [More in Common polling tables](https://www.moreincommon.org.uk/polling-tables/?_polling_tables_type=voting-intention). | **Held.** More in Common archive lists 3–5 Oct fieldwork; this verifies an item, not a reconciled current site result. Two-pollster validation, 14-day validity, corrections and production history are not verified. |
-| Procurement | Cabinet Office [Find a Tender OCDS API](https://www.find-tender.service.gov.uk/apidocumentation/1.0/GET-ocdsReleasePackages). | **Held.** Public history route returned `503 publication_disabled`. Local checks cover complete 7-day windows, identities, awards vs spend, amendments/cancellations and bounded display; current complete-window counts, notice reconciliation and deployed dossier are unproved. |
-| International comparison | IMF/OECD/World Bank/WHO/SIPRI publisher families listed in `worker/feed-registry.js`; individual series require source-specific citations. | **Held.** Public comparison JSON returned `503 publication_disabled`. Historical local collection reportedly checked seven measures and 13 countries, including 2015–2025 defence history; there is no refreshed deployed edition or country/year/status/export reconciliation. Distinct periods, statuses and USD-per-resident bases must stay explicit. |
-| Archive and revisions | Public [edition archive](https://public-data.org/data/editions.json) and source publishers above. | **Published for debt only.** Three editions were listed: 15 Sep and two 22 Sep source publications. Latest catalog edition was archived 3 Oct 12:44 UTC; its debt difference was metadata-only, while the preceding debt edition recorded August as a new observation. Broad source lineage and other families' revision histories are not proven. |
+| Key indicators (`sentimentPulse`) | ONS CPI [D7G7](https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7g7/mm23) | **Published.** CPI 3.5%, September 2026, published 21 October; matches the ONS series (reviewed 10 Nov). Bank Rate and unemployment were not separately reconciled. |
+| Real wages | ONS labour market bulletin, October 2026 | **Published.** Regular pay real growth 0.6%, June to August 2026, Great Britain; matches the bulletin text (reviewed 10 Nov). |
+| Government receipts (`taxRevenue`) | ONS public sector finances, September 2026 | **Published.** Central government current receipts £90.1bn, September 2026; matches the bulletin (reviewed 10 Nov). |
+| GDP | ONS GDP monthly estimate, August 2026 | **Published.** Three-month growth 0.7%, monthly 0.1%, August 2026; matches the bulletin text (reviewed 10 Nov). |
+| National debt | ONS [HF6X](https://www.ons.gov.uk/economy/governmentpublicsectorandtaxes/publicsectorfinance/timeseries/hf6x/pusf) | **Published but one release behind.** Production shows 93.8% for August 2026 (published 22 September). ONS published September, 94.0%, on 21 October. The collector fix (#244) returned the September figure in a local run on 10 November; the stored record expires on 14 November. |
+| House prices and rents | ONS private rent and house prices bulletin, October 2026 | **Published.** Average private rent £1,406 a month and 3.8% annual change, September 2026, as served; not separately reconciled on 10 Nov. September house-price annual change has no published value yet. |
+| Employment, migration, crime | ONS | **Published.** Served and consistent across page, snapshot and section JSON; not separately reconciled on 10 Nov. |
+| Polling | [YouGov](https://yougov.com/en-gb/articles); [More in Common](https://www.moreincommon.org.uk/polling-tables/?_polling_tables_type=voting-intention) | **Published with one current pollster.** YouGov, fieldwork 1–2 November, n=2,355. More in Common's newest workbook (31 October–1 November, n=2,036 headline base) was rejected by a parser that could not read a month-crossing range; fixed in #253, not deployed. |
+| Procurement | Cabinet Office [Find a Tender OCDS API](https://www.find-tender.service.gov.uk/apidocumentation/1.0/GET-ocdsReleasePackages) | **Published.** Window 3–9 November 2026; 308 comparable awards of 422, 114 excluded for missing or non-comparable values. Notice-level reconciliation against the API was not done on 10 Nov. |
+| Release calendar | [ONS release calendar](https://www.ons.gov.uk/releasecalendar); [NHS statistics calendar](https://www.england.nhs.uk/statistics/12-months-statistics-calendar/) | **Held; source review passed (reviewed 10 Nov).** ONS: 81 events (71 confirmed, 10 provisional), all matching an independent parse of the five upcoming pages. NHS: 5 RTT releases, all matching the 2026-27 plan PDF, all provisional. No WAF block was met. Page fixes in #251. |
+| International comparison | IMF DataMapper, OECD DAC1/SOCX/Revenue Statistics, World Bank WDI, SIPRI | **Held; source review passed, page review failed (reviewed 10 Nov).** All 11 sources collected; UK and two other countries per measure reconciled with no mismatch. 2024 health figures were checked against the World Bank only (WHO has no 2024 rows). Page fixes in #250. |
+| Authored stories | The five measures they cite | **Held (`product-hold`).** No numbers in the prose; all five cited figures come from published families. Fixes in #249. |
+| NHS RTT, early years, betting markets | — | **Held.** Not reviewed on 10 Nov. NHS England served its pages and plan PDF without a block on that day, which bears on the earlier retrieval concern. |
+| Archive and revisions | Public [edition archive](https://public-data.org/data/editions.json) | **Published.** 8 editions listed; all 8 details loaded; one edition's 18 changes matched its page. |
 
 ## Public evidence consistency notes
 
-- `/data/health.json` returned degraded, `ready:false`, missing `nhsStats`.
-- `/data/metrics-snapshot.json` returned a debt-only snapshot, degraded, but with an empty missing-required list and no verified sections. Readers should use health for readiness until the public contract is made consistent.
-- The data Worker served debt at the observed time. The public Pages metrics snapshot returned `503 publication_disabled`; no current Pages seed payload was verified. A direct private KV read was not available because Cloudflare API credentials were not configured for this audit. No credential value was accessed or recorded.
-- Page routes that return an explanatory/offline shell are not evidence that their underlying families are published.
+- `/data/health.json` returned `ready: true` with `held: ["nhsStats"]`.
+- CPI, unemployment, GDP, private rents and debt agreed across the home page, section page, measure page, `/explore/`, the snapshot and the section JSON. The only disagreement was a period label on the home rents card (#254).
+- Pages intermittently returned 503 with Error 1102; see RELEASE-READINESS.md.
 
 ## Publication approval ledger
 
-The production configuration observed for this baseline enables `nationalDebt` and `editionArchive`. The candidate configuration additionally enables two authored-story routes; their numerical claims and evidence links await editorial review. Story routes are separate from dataset approval.
+This register records evidence, not permission. The eleven published families and the edition archive are published in `config/publications.json`; this review did not locate or re-record their authorizations.
 
 | Family | Evidence review | Explicit user authorization | Current public switch |
 |---|---|---|---|
-| National debt | Source values reconciled as above | Existing authorization is reflected in production | Published |
-| NHS, calendar, housing, polling, procurement, international | Incomplete for V1 production acceptance | None recorded for activation in this programme | Held/unavailable |
-| Authored stories | Numerical claims and evidence links require editorial review separate from dataset approval | No new story publication authorization recorded here | Candidate routes require review before integration |
+| Release calendar (ONS, NHS) | Passed 10 Nov; page fixes in #251 | None recorded | Held |
+| International comparison | Sources passed 10 Nov; page fixes in #250 | None recorded | Held |
+| Authored stories | Figures passed 10 Nov; page fixes in #249 | None recorded | Held |
+| NHS RTT, early years, betting markets | Not reviewed | None recorded | Held |
 
-This register records evidence, not permission. Reverify time-sensitive source validity and every publisher release before activation or launch.
+Reverify time-sensitive source validity and every publisher release before activation or launch.

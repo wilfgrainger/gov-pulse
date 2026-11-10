@@ -49,11 +49,14 @@ export default function SourcesPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:block focus:bg-white focus:p-4">
+        Skip to page content
+      </a>
       <div className="sticky top-0 z-50 bg-white">
         <SectionNav sections={SECTIONS} />
       </div>
 
-      <main data-production-route="sources">
+      <main id="main-content" data-production-route="sources">
         <PageHeader
           eyebrow="Sources"
           title="Sources and dates"

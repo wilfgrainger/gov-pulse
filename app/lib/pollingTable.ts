@@ -146,6 +146,8 @@ export function buildPollingTable(
   }
 
   for (const correction of corrections) {
+    // This is the GB voting-intention table; other geographies (e.g. Scotland) are listed in the correction history.
+    if (correction.geography !== "Great Britain") continue;
     if (!isHttpsSourceUrl(correction.sourceUrl)) {
       omittedWithoutSource += 1;
       continue;

@@ -1,7 +1,13 @@
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
+import publicationConfig from "../../config/publications.json" with { type: "json" };
 
 const publicBaseUrl = process.env.PLAYWRIGHT_BASE_URL;
+// These journeys need the international comparison to be published.
+test.skip(
+  publicationConfig.publications.internationalComparison.state !== "published",
+  "International comparison is held from public release",
+);
 
 function csvRows(content: string): string[][] {
   const rows: string[][] = [];

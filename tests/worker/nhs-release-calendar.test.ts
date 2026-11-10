@@ -91,4 +91,17 @@ describe("NHS England RTT release calendar collector", () => {
       : new Response(pdfWithText("Unrelated release dates"), { status: 200, headers: { "content-type": "application/pdf" } }));
     await expect(collectNhsReleaseCalendar(fetchImpl, now)).rejects.toThrow(/RTT release rows/i);
   });
+
+  it("keeps a release due today and uses the publisher's own row wording as the title", async () => {
+    const pdf = pdfWithText("03/10/2026 Referral to treatment waiting times statistics for consultant - led elective care for July 2026 Accredited Official");
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => String(input).includes("wp-json/wp/v2/pages")
+      ? new Response(JSON.stringify(scheduleApi(schedulePage())), { status: 200, headers: { "content-type": "application/json" } })
+      : new Response(pdf, { status: 200, headers: { "content-type": "application/pdf" } }));
+    const { data } = await collectNhsReleaseCalendar(fetchImpl, now);
+    expect(data.events).toEqual([expect.objectContaining({
+      date: "2026-10-03",
+      title: "Referral to treatment waiting times statistics for consultant-led elective care for July 2026",
+      planNote: "Publisher's proposed plan",
+    })]);
+  });
 });

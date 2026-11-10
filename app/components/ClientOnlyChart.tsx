@@ -44,8 +44,10 @@ export default function ClientOnlyChart({
     };
   }, []);
 
+  // Recharts paints at its initial 640px width before it measures the shell;
+  // overflow-hidden clips that first frame so narrow pages never scroll sideways.
   return (
-    <div ref={containerRef} className={`chart-shell min-w-0 ${heightClass}`}>
+    <div ref={containerRef} className={`chart-shell min-w-0 overflow-hidden ${heightClass}`}>
       {mounted && hasSize ? (
         children
       ) : fallbackContent ? (

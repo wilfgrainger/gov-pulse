@@ -101,6 +101,7 @@ export default function EmploymentStats() {
   const releaseNote = valid
     ? buildReleaseNote({
         measureLabel: "The unemployment rate",
+        valueIsRate: true,
         latestValueDisplay: `${data.headline.unemploymentRate.toFixed(1)}%`,
         latestPeriod: data.headline.period,
         releaseDate: data.headline.releaseDate,
