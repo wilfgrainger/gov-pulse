@@ -2,16 +2,13 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  fetchMetricsSnapshot,
   isCompatibleMetricsSnapshot,
   requestSnapshot,
-  resetMetricsSnapshotCache,
 } from "@/app/lib/metricsSnapshot";
 import { FEED_REGISTRY_VERSION } from "@/worker/feed-registry";
 
 describe("metrics snapshot compatibility", () => {
   afterEach(() => {
-    resetMetricsSnapshotCache();
     vi.unstubAllGlobals();
   });
 
@@ -27,16 +24,6 @@ describe("metrics snapshot compatibility", () => {
         meta: { registryVersion: "v10", sources: {} },
       })
     ).toBe(false);
-  });
-
-  it("does not request a production-only snapshot from a development server", async () => {
-    const fetchSpy = vi.fn();
-    vi.stubGlobal("fetch", fetchSpy);
-
-    await expect(fetchMetricsSnapshot()).rejects.toThrow(
-      "No metrics snapshot is configured"
-    );
-    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it("releases an unsuccessful response body", async () => {

@@ -2,13 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { filterCurrentSnapshot, sectionValidityDeadline, sourceHasUsableStatus } from "@/contracts/evidence-policy";
-import { DATA_SOURCES, REFRESH_INTERVAL_MS } from "./config";
+import { DATA_SOURCES } from "./config";
 import { useInitialMetricsSnapshot } from "./MetricsSnapshotProvider";
-import {
-  fetchMetricsSnapshot,
-  isCompatibleMetricsSnapshot,
-  type MetricsSnapshot,
-} from "./metricsSnapshot";
+import { isCompatibleMetricsSnapshot, type MetricsSnapshot } from "./metricsSnapshot";
 
 export type MetricsCacheState = "fresh" | "stale" | "expired" | "missing" | null;
 export type MetricsObservationStatus = "current" | "stale" | "unverified" | null;
@@ -244,7 +240,7 @@ export function useMetrics<T>(section: string, fallback: T): MetricsResult<T> {
   const initialSnapshot = useInitialMetricsSnapshot();
   const latestSnapshotRef = useRef<unknown>(initialSnapshot);
   const sourceMeta = DATA_SOURCES[section];
-  const shouldFetchLive = sourceMeta?.automation === "automated";
+  const reevaluateAtBrowserTime = sourceMeta?.automation === "automated";
   const [initialSnapshotResult] = useState<MetricsResult<T> | null>(() =>
     metricsResultFromSnapshot(
       initialSnapshot,
@@ -280,7 +276,7 @@ export function useMetrics<T>(section: string, fallback: T): MetricsResult<T> {
   }, [result.validUntil, section, sourceMeta?.freshnessWindowMs]);
 
   useEffect(() => {
-    if (!shouldFetchLive) return;
+    if (!reevaluateAtBrowserTime) return;
 
     let active = true;
     const readerInitialResult = currentMetricsResultFromSnapshot(
@@ -292,38 +288,10 @@ export function useMetrics<T>(section: string, fallback: T): MetricsResult<T> {
     queueMicrotask(() => {
       if (active) setResult(readerInitialResult ?? fallbackResult(fallbackRef.current));
     });
-
-    const fetchData = async () => {
-      try {
-        const loaded = await fetchMetricsSnapshot();
-        latestSnapshotRef.current = loaded.payload;
-        const currentResult = currentMetricsResultFromSnapshot(
-          loaded.payload,
-          section,
-          fallbackRef.current,
-          sourceMeta?.freshnessWindowMs,
-          Date.now(),
-        );
-        if (currentResult) {
-          setResult({ ...currentResult, source: loaded.delivery });
-          return;
-        }
-      } catch {
-        // Retain the request-time server snapshot below when refresh fails.
-      }
-
-      if (active) {
-        setResult(currentMetricsResultFromSnapshot(latestSnapshotRef.current, section, fallbackRef.current, sourceMeta?.freshnessWindowMs) ?? fallbackResult(fallbackRef.current));
-      }
-    };
-
-    fetchData();
-    const interval = setInterval(fetchData, REFRESH_INTERVAL_MS);
     return () => {
       active = false;
-      clearInterval(interval);
     };
-  }, [initialSnapshot, section, shouldFetchLive, sourceMeta?.freshnessWindowMs]);
+  }, [initialSnapshot, section, reevaluateAtBrowserTime, sourceMeta?.freshnessWindowMs]);
 
   return result;
 }

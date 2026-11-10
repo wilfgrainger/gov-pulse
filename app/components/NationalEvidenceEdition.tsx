@@ -2,11 +2,8 @@
 
 import Link from "next/link";
 import { routeServes } from "@/app/lib/gateRoute";
-import { useEffect, useState } from "react";
-import { fetchMetricsSnapshot } from "@/app/lib/metricsSnapshot";
 import {
   DIRECT_EVIDENCE_LINKS,
-  selectNationalEvidenceEdition,
   type NationalEvidenceEdition as Edition,
   type SignalPresentation,
 } from "@/app/lib/nationalEvidence";
@@ -89,21 +86,7 @@ function SignalCard({ signal, index = 0 }: { signal: SignalPresentation; index?:
 }
 
 export default function NationalEvidenceEdition({ initialEdition }: { initialEdition: Edition }) {
-  const [edition, setEdition] = useState(initialEdition);
-
-  useEffect(() => {
-    let active = true;
-    fetchMetricsSnapshot()
-      .then(({ payload }) => {
-        if (active) setEdition(selectNationalEvidenceEdition(payload));
-      })
-      .catch(() => {
-        // Keep the server-rendered edition when a browser refresh fails.
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const edition = initialEdition;
 
   return (
     <section id="national-signals" tabIndex={-1} aria-labelledby="national-evidence-title" className="scroll-mt-24 focus:outline-none">

@@ -150,26 +150,18 @@ describe("useMetrics", () => {
     });
   });
 
-  it("replaces request-time evidence with a newer valid same-origin snapshot", async () => {
+  it("never refetches in the browser: the build's edition snapshot stays authoritative", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: async () => snapshotWith() });
+    vi.stubGlobal("fetch", fetchSpy);
     const serverPayload = {
       ...completeLivePayload,
       economicData: [{ date: "Server", inflation: 3, bankRate: 4, unemployment: 5 }],
     };
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => snapshotWith() }));
     const { useMetrics } = await loadUseMetrics("production", snapshotWith(serverPayload, minutesAgo(10)));
     const { result } = renderHook(() => useMetrics("sentimentPulse", fallback));
-    expect(result.current.data.economicData[0].date).toBe("Server");
-    await waitFor(() => expect(result.current.data.economicData[0].date).toBe("Worker"));
-  });
-
-  it("uses the contract-checked same-origin snapshot in production", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => snapshotWith() }));
-    const { useMetrics } = await loadUseMetrics("production");
-    const { result } = renderHook(() => useMetrics("sentimentPulse", fallback));
     await waitFor(() => expect(result.current.source).toBe("snapshot"));
-    expect(result.current.isLive).toBe(true);
-    expect(result.current.observationStatus).toBe("current");
-    expect(result.current.data.economicData[0].date).toBe("Worker");
+    expect(result.current.data.economicData[0].date).toBe("Server");
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it("fails closed when no server or runtime snapshot is available", async () => {
