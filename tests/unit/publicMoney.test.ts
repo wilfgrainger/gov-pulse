@@ -51,7 +51,7 @@ describe("notice-level public-money dossiers", () => {
     expect(csv).toContain('"Support, ""phase two"""');
     expect(csv).toContain('"Department, Alpha"');
     expect(csv).toContain('"Supplier ""Quoted"", Partner Ltd"');
-    expect(csv).toContain("100,disclosed award value,GBP,open,false");
+    expect(csv).toContain("100,,disclosed award value,GBP,open,false");
     expect(csv).toContain(selected.noticeUrl);
     expect(csv).toContain(selected.procurementUrl);
   });
@@ -157,7 +157,7 @@ describe("notice-level public-money dossiers", () => {
     const contractValue = { ...award("ocds-h6vhtk-a1", 100), valueBasis: "contract-value" as const };
     const csv = serializePublicAwardsCsv([contractValue]);
 
-    expect(csv).toContain("100,value in one uniquely linked contract,GBP");
+    expect(csv).toContain("100,,value in one uniquely linked contract,GBP");
     expect(csv).toContain("GBP only; value in one uniquely linked contract is not confirmed expenditure");
     expect(buildDossier([contractValue], contractValue.key)?.caveats.join(" "))
       .toMatch(/value in one uniquely linked contract is not an invoice/i);

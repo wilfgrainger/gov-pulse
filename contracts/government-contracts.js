@@ -273,12 +273,22 @@ function normalizeAward(value, index) {
   };
 }
 
+// A supplier "name" that points at another document (for example "See Contracts
+// Finder Notice for full supplier list") is not an organisation.
+export function isSupplierPlaceholder(name) {
+  const text = String(name ?? "").trim();
+  return /^see\s/i.test(text) && /notice|supplier list|attached/i.test(text);
+}
+
 function aggregate(awards, field, allocation = false) {
   const values = new Map();
   for (const award of awards) {
     const parties = field === "buyer"
       ? [{ name: award.buyer, id: award.buyerId ?? null }]
-      : award.suppliers.map((name, index) => ({ name, id: award.supplierIds?.[index] ?? null }));
+      : award.suppliers
+        .map((name, index) => ({ name, id: award.supplierIds?.[index] ?? null }))
+        .filter((party) => !isSupplierPlaceholder(party.name));
+    if (parties.length === 0) continue;
     const allocated = allocation ? award.amount / parties.length : award.amount;
     for (const party of parties) {
       const key = party.id
@@ -322,10 +332,12 @@ function aggregate(awards, field, allocation = false) {
 // Equal-share scenario by publisher identity, kept explicitly separate from
 // any claim of actual supplier revenue. Each entry carries only source-owned
 // names, identifiers and nations from the included award records.
-function buildSupplierConcentration(awards) {
+function buildSupplierConcentration(allAwards) {
+  const awards = allAwards.filter((award) => !award.framework); // ceilings are not spend
   const nations = new Map();
   for (const award of awards) {
     award.suppliers.forEach((name, index) => {
+      if (isSupplierPlaceholder(name)) return;
       const id = award.supplierIds?.[index] ?? null;
       const key = id ? `publisher-id:${id}` : `exact-name:${name.toLocaleLowerCase("en-GB")}`;
       const values = nations.get(key) ?? new Set();
@@ -349,10 +361,12 @@ function buildSupplierConcentration(awards) {
 function buildSummary(awards) {
   const valueBases = new Set(awards.map((award) => award.valueBasis ?? "award-value"));
   if (valueBases.size > 1) throw new Error("Government contracts summary cannot mix value bases");
-  const total = round(awards.reduce((sum, award) => sum + award.amount, 0), 2);
-  const top10 = awards.slice(0, 10).reduce((sum, award) => sum + award.amount, 0);
-  const buyers = aggregate(awards, "buyer");
-  const suppliers = aggregate(awards, "suppliers", true);
+  // Framework maxima are ceilings, not award values: never summed or ranked with awards.
+  const spend = awards.filter((award) => !award.framework);
+  const total = round(spend.reduce((sum, award) => sum + award.amount, 0), 2);
+  const top10 = spend.slice(0, 10).reduce((sum, award) => sum + award.amount, 0);
+  const buyers = aggregate(spend, "buyer");
+  const suppliers = aggregate(spend, "suppliers", true);
   const direct = awards.filter((award) => {
     const method = `${award.procurementMethod ?? ""} ${award.procurementMethodDetails ?? ""}`;
     return /\bdirect\b/i.test(method);
@@ -360,7 +374,7 @@ function buildSummary(awards) {
   return {
     awardCount: awards.length,
     disclosedValueTotal: total,
-    largestAwardValue: awards[0]?.amount ?? 0,
+    largestAwardValue: spend[0]?.amount ?? 0,
     top10Share: total > 0 ? round((top10 / total) * 100, 1) : 0,
     distinctBuyers: buyers.length,
     distinctSuppliers: suppliers.length,
