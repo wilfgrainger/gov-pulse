@@ -249,6 +249,52 @@ target of about 16 writes per run applies only after the legacy keys are retired
 (Task 17a). Required before retirement, not done: at least 7 production days of
 dual-write with the daily divergence-log count recorded here.
 
+### Cron and Queue on the pipeline, legacy path kept (Task 10e, 10 November 2026)
+
+Wired in `worker/public-data-entry.js`: `scheduled` starts the daily and
+three-hourly runs with `createPipeline(createPipelineDeps()).scheduled`, retried
+up to three times (the run's write-ahead lease makes a retry resume, not
+duplicate). The Queue handler sends `collect`, `finalise`, `bootstrap` and any
+unknown shape to the pipeline (an unknown shape is retried, never acknowledged,
+and writes nothing) and every legacy type (`refresh-section`,
+`refresh-external-section`, `refresh-contracts`, `finalise-run`,
+`bootstrap-publication`, `refresh-international-comparison`,
+`finalise-international-comparison`) to the unchanged legacy dispatcher.
+
+Still on the legacy path until G4: the deploy bootstrap (the script still sends
+`bootstrap-publication`, whose run and terminal records it reads back), and
+international comparison end to end, including its refresh after a bootstrap
+finalises and the daily trigger, which runs only while comparison is published
+(it is held).
+
+Legacy writes continue: each pipeline collection also writes the shared
+`v12:publication:section:<id>` fragment, and the combined contracts record also
+writes `v12:section:governmentContracts`, so the previous revision has current
+evidence on rollback and the divergence log keeps comparing two copies. The
+publisher still writes `v14:publication:public`, `v12:publication:current` and
+`v12:publication:status`. Not written by pipeline runs: run-scoped fragments
+and terminal records (read only by the legacy finaliser of the same run).
+
+Counts from `tests/worker/kv-write-budget.test.ts` and
+`tests/worker/pipeline-cutover.test.ts` (fake KV and Queue, real config).
+**Test counts, not production measurements.**
+
+| Scenario | KV puts |
+| --- | --- |
+| Healthy daily run through the wired cron and Queue, new edition | 31 (3 run; 10 feed records + 10 legacy fragments; contracts shard, feed record, legacy record; public, current, status; edition content and index) |
+| Held feeds on cron | 0 puts, 0 sends |
+| Redelivered collect/finalise/cron after success | 0 puts, 0 sends |
+
+Rollback: the previous revision's dispatcher treats a `collect`, `finalise` or
+`bootstrap` message as an unknown job, writes nothing (no `jobId`), retries it
+and, after `max_retries` 3, moves it to `public-data-jobs-dlq`. A pipeline run
+in flight then never finalises; its day publishes nothing new and earlier
+evidence ages out within its own validity.
+
+Remaining for G4: seven recorded clean dual-write days; then stop the legacy
+writes above, move the bootstrap script to the `bootstrap` message (or retire
+it), port comparison, and delete the legacy modules (Task 17a).
+
 ### Pipeline dependencies (Task 10d, not wired)
 
 `worker/pipeline-deps.js` supplies the pipeline's real collectors and publisher:

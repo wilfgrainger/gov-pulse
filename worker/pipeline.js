@@ -5,10 +5,10 @@ import { BETTING_CRON } from "./publication-schedule.js";
 import { isRecord } from "../contracts/records.js";
 
 // Three-message publication pipeline: `collect`, `finalise` and `bootstrap`.
-// createPipeline() takes its collectors and publisher as injected dependencies,
-// so this module reaches no live code. It is NOT wired into the Worker entry:
-// the live path (public-data-entry.js) keeps the v12/v13 keys until gate G4
-// (seven clean dual-write days, then legacy writes stop).
+// createPipeline() takes its collectors and publisher as injected dependencies
+// (worker/pipeline-deps.js). public-data-entry.js runs cron and the three new
+// message types here; legacy message types keep the legacy dispatcher, and the
+// v12/v13 keys keep being written, until gate G4.
 
 const MIN_RUN_WINDOW_MS = 25 * 60 * 1000;
 const DEADLINE_MARGIN = 1.5;
@@ -127,7 +127,7 @@ function parseMessage(body) {
  *  - collectFeed(env, feedId, {runId, now}) -> SectionRecord (unsharded feeds)
  *  - shardKeysFor(feedId, now) -> string[] | null (null when the feed is not sharded)
  *  - collectShard(env, feedId, key, {runId, now}) -> shard payload
- *  - combineShards(feedId, payloads, {now}) -> SectionRecord
+ *  - combineShards(feedId, payloads, {env, now}) -> SectionRecord
  *  - publish(env, {runId, now}) -> {changed}
  *  - clock() and dueFeeds(now, scope, config) are optional overrides.
  */
@@ -175,7 +175,7 @@ function createPipeline(deps) {
       if (payload === null) return false;
       payloads[key] = payload;
     }
-    const record = await deps.combineShards(feedId, payloads, { now });
+    const record = await deps.combineShards(feedId, payloads, { env, now });
     await writeFeedAttempt(env, feedId, runId, { record }, now);
     return true;
   }

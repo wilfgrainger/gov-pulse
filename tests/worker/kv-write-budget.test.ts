@@ -1,9 +1,26 @@
 // @vitest-environment node
 
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+// Fixture collectors for the wired data Worker; the injected-deps tests below
+// never reach these modules.
+const collectors = vi.hoisted(() => ({ section: vi.fn(), external: vi.fn(), shard: vi.fn() }));
+vi.mock("@/worker/publication-entry", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/worker/publication-entry")>()),
+  refreshSectionPayload: (...args: unknown[]) => collectors.section(...args),
+}));
+vi.mock("@/worker/live-feed-collectors", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/worker/live-feed-collectors")>()),
+  collectExternalSection: (...args: unknown[]) => collectors.external(...args),
+}));
+vi.mock("@/feeds/government-contracts/parse.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/feeds/government-contracts/parse.js")>()),
+  collectShard: (...args: unknown[]) => collectors.shard(...args),
+}));
 
 import { createPipeline, runKey, shardKeyFor } from "@/worker/pipeline";
 import { BETTING_CRON, DAILY_CRON } from "@/worker/publication-schedule";
+import { collectorDefaults, runDaily, seededHarness } from "@/tests/fixtures/wired-pipeline";
 
 type Body = Record<string, unknown>;
 
@@ -153,5 +170,37 @@ describe("kv budget", () => {
     // Lease + dispatched + finalised (3), 50 feed writes, one publish.
     expect(env.METRICS_CACHE.put.mock.calls.length).toBe(54);
     expect(env.METRICS_CACHE.put.mock.calls.length).toBeLessThanOrEqual(60);
+  });
+});
+
+describe("kv budget, wired data Worker (dual-write window until G4)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("healthy daily run through cron and Queue with real config writes at most 50 keys", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("offline", { status: 503 })));
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    collectors.section.mockImplementation(collectorDefaults.section);
+    collectors.external.mockImplementation(collectorDefaults.external);
+    collectors.shard.mockImplementation(collectorDefaults.shard);
+    const h = seededHarness();
+
+    const { runId } = await runDaily(h);
+
+    expect(h.read(runKey(runId)).status).toBe("published");
+    const keys = h.putKeys();
+    // 3 run writes; 10 feed records + 10 legacy fragments; contracts: 1 shard,
+    // feed record and legacy record; publish: public, current, status; and the
+    // new archive edition (content, index). Test count, not a production one.
+    expect(keys.filter((key) => key.startsWith("v20:run:"))).toHaveLength(3);
+    expect(keys.filter((key) => /^v20:feed:[A-Za-z]+$/.test(key))).toHaveLength(11);
+    expect(keys.filter((key) => key.startsWith("v12:publication:section:"))).toHaveLength(10);
+    expect(keys.filter((key) => key.startsWith("v1:edition:"))).toHaveLength(2);
+    expect(keys.length).toBe(31);
+    expect(keys.length).toBeLessThanOrEqual(50);
   });
 });

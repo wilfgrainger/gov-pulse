@@ -70,3 +70,46 @@ describe("pipeline collector deps", () => {
     expect(() => createPipeline(createPipelineDeps())).not.toThrow();
   });
 });
+
+describe("pipeline legacy dual-write (until G4)", () => {
+  function kv(failPuts = false) {
+    const store = new Map<string, unknown>();
+    return {
+      store,
+      env: {
+        METRICS_CACHE: {
+          get: vi.fn(async (key: string) => store.get(key) ?? null),
+          put: vi.fn(async (key: string, value: string) => {
+            if (failPuts) throw new Error("KV unavailable");
+            store.set(key, JSON.parse(value));
+          }),
+        },
+      },
+    };
+  }
+
+  it("copies a collected section and the combined contracts record to their legacy keys", async () => {
+    const { env, store } = kv();
+    const d = createPipelineDeps({ collectSection: async (section: string) => record(section) });
+    await d.collectFeed(env, "gdpTracker", { runId: "r", now: NOW });
+    const shards = Object.fromEntries(DAYS.map((day, index) => [day, dayShard(day, index)]));
+    const combined = await d.combineShards("governmentContracts", shards, { env, now: NOW });
+
+    expect(store.get("v12:publication:section:gdpTracker")).toEqual(record("gdpTracker"));
+    expect(store.get("v12:section:governmentContracts")).toEqual(combined);
+  });
+
+  it("never copies a record for another feed, and a failed legacy write never fails collection", async () => {
+    const wrong = kv();
+    const d = createPipelineDeps({ collectSection: async () => record("realWages") });
+    await expect(d.collectFeed(wrong.env, "gdpTracker", { runId: "r", now: NOW })).resolves.toEqual(record("realWages"));
+    expect(wrong.store.size).toBe(0);
+
+    const failing = kv(true);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const ok = createPipelineDeps({ collectSection: async (section: string) => record(section) });
+    await expect(ok.collectFeed(failing.env, "gdpTracker", { runId: "r", now: NOW })).resolves.toEqual(record("gdpTracker"));
+    expect(warn).toHaveBeenCalledWith("Legacy fragment dual-write failed", expect.objectContaining({ section: "gdpTracker" }));
+    warn.mockRestore();
+  });
+});

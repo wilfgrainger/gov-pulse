@@ -1,7 +1,8 @@
-import queuedWorker, {
-  DAILY_CRON,
-  enqueueInternationalComparisonRefresh,
-} from "./queued-publication-entry.js";
+import { DAILY_CRON } from "./publication-schedule.js";
+import { enqueueInternationalComparisonRefresh } from "./publication-comparison-runner.js";
+import { dispatchPublicationMessage } from "./publication-queue-dispatcher.js";
+import { createPipeline } from "./pipeline.js";
+import { createPipelineDeps } from "./pipeline-deps.js";
 import { anyEvidencePublished } from "../contracts/publication-policy.js";
 import { PUBLICATION_CONFIG, publicationPublished, filterPublicationCatalog, filterPublicationSummary, isPublicationFilteredSnapshot, cacheLifetime, filterCurrentSnapshot, snapshotIsCurrentAsIs, snapshotValidityDeadline } from "../contracts/evidence-policy.js";
 import { isPublicArtifact } from "../contracts/public-artifact.js";
@@ -602,6 +603,37 @@ async function healthResponse(request, env) {
   );
 }
 
+// Message types of the legacy runner. Until gate G4 they keep their legacy
+// handler: messages already queued when this revision deploys (24 h retention),
+// the deploy bootstrap (scripts/bootstrap-cloudflare-publication.mjs) and every
+// international comparison step, which the pipeline does not handle.
+const LEGACY_MESSAGE_TYPES = new Set([
+  "refresh-section",
+  "refresh-external-section",
+  "refresh-contracts",
+  "finalise-run",
+  "bootstrap-publication",
+  "refresh-international-comparison",
+  "finalise-international-comparison",
+]);
+const pipeline = createPipeline(createPipelineDeps());
+const SCHEDULE_RETRY_DELAYS_MS = [1_000, 4_000];
+
+// The pipeline's write-ahead lease makes a retry resume the same run (same
+// scheduled time, same run id) and send only what did not go out. Three
+// attempts ride out a short Queue outage; a longer one leaves the day
+// unpublished and is logged by the caller.
+async function startScheduledRun(controller, env) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await pipeline.scheduled(controller, env);
+    } catch (error) {
+      if (attempt === SCHEDULE_RETRY_DELAYS_MS.length) throw error;
+      await new Promise((resolve) => setTimeout(resolve, SCHEDULE_RETRY_DELAYS_MS[attempt]));
+    }
+  }
+}
+
 const publicDataWorker = {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -633,7 +665,14 @@ const publicDataWorker = {
   },
 
   scheduled(controller, env, ctx) {
-    queuedWorker.scheduled(controller, env, ctx);
+    ctx.waitUntil(
+      startScheduledRun(controller, env).catch((error) => {
+        console.error("Cloudflare publication scheduling failed", {
+          cron: controller.cron,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      })
+    );
     if (controller.cron === DAILY_CRON && publicationPublished("internationalComparison")) {
       ctx.waitUntil(
         enqueueInternationalComparisonRefresh(env, {
@@ -647,8 +686,15 @@ const publicDataWorker = {
     }
   },
 
-  queue(batch, env, ctx) {
-    return queuedWorker.queue(batch, env, ctx);
+  async queue(batch, env, ctx) {
+    for (const message of batch.messages) {
+      if (LEGACY_MESSAGE_TYPES.has(message.body?.type)) {
+        await dispatchPublicationMessage(message, env, ctx);
+      } else {
+        // collect, finalise and bootstrap; any other shape is retried, never acked.
+        await pipeline.dispatch(message, env);
+      }
+    }
   },
 };
 

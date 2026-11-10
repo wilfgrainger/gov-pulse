@@ -16,6 +16,28 @@ function runSectionFragmentKey(runId, section) {
 }
 
 /**
+ * Write a record to a shared (monotonic) legacy key unless the stored copy is
+ * newer or more current. One get, at most one put.
+ *
+ * @returns {Promise<"written" | "kept-newer">}
+ */
+async function writeGlobalFragment(env, key, record, { now = new Date(), runId = null } = {}) {
+  const section = record?.section;
+  const stored = await kvGet(env, key);
+  if (storedFragmentWins(stored, record, section, now)) {
+    console.warn("Publication fragment kept newer stored evidence", {
+      section,
+      runId: typeof runId === "string" ? runId : null,
+      storedFetchedAt: stored?.source?.fetchedAt ?? stored?.fetchedAt ?? null,
+      candidateFetchedAt: record?.source?.fetchedAt ?? record?.fetchedAt ?? null,
+    });
+    return "kept-newer";
+  }
+  await kvPut(env, key, record);
+  return "written";
+}
+
+/**
  * Store a collected section record for one run and, when it does not regress
  * the shared evidence, as the global section fragment.
  *
@@ -36,20 +58,7 @@ async function writeSectionFragment(env, runId, section, record, options = {}) {
       expirationTtl: RUN_TTL_SECONDS,
     });
   }
-  const key = sectionFragmentKey(section);
-  const stored = await kvGet(env, key);
-  let result = "written";
-  if (storedFragmentWins(stored, record, section, now)) {
-    console.warn("Publication fragment kept newer stored evidence", {
-      section,
-      runId: typeof runId === "string" ? runId : null,
-      storedFetchedAt: stored?.source?.fetchedAt ?? stored?.fetchedAt ?? null,
-      candidateFetchedAt: record?.source?.fetchedAt ?? record?.fetchedAt ?? null,
-    });
-    result = "kept-newer";
-  } else {
-    await kvPut(env, key, record);
-  }
+  const result = await writeGlobalFragment(env, sectionFragmentKey(section), record, { now, runId });
   // Dual-write window: the per-feed record is written beside the legacy keys.
   // It must never fail a collection that the legacy path accepted.
   try {
@@ -92,5 +101,6 @@ export {
   sectionFragmentKey,
   storeExternalSection,
   storeSectionFragment,
+  writeGlobalFragment,
   writeSectionFragment,
 };
