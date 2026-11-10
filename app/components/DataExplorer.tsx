@@ -296,7 +296,7 @@ function MeasureDetail({
         </p>
       )}
       {canonicalMeasure ? (
-        <div className="mt-8 grid gap-8">
+        <div className="mt-8 grid grid-cols-1 gap-8">
           <EvidenceFigure
             measure={canonicalMeasure}
             title={canonicalMeasure.label}
@@ -834,7 +834,7 @@ function DataExplorerInner({
           </button>
         </div>
       ) : (
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.7fr)]">
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.7fr)]">
           <ul
             aria-label="Measures"
             className="max-h-[32rem] overflow-y-auto border border-slate-300 bg-white lg:max-h-[50rem]"

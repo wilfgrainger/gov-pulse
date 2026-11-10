@@ -182,7 +182,7 @@ test("deployed source history opens its immutable edition and primary publicatio
 
   await page.goto(new URL("editions/", base).toString(), { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { level: 1, name: "Editions and revisions" })).toBeVisible();
-  await expect(page.locator(`a[href^="/editions/${id}"]`)).toBeVisible();
+  await expect(page.locator(`a[href^="/editions/${id}"]`).first()).toBeVisible();
 
   const previousEditionId = archive.summary.previousEditionId;
   expect(previousEditionId).toBeTruthy();
@@ -198,7 +198,7 @@ test("deployed source history opens its immutable edition and primary publicatio
     { period: change.period!, observedAt: change.observedAt! },
   )).toBe(false);
 
-  const baselineLink = page.locator(`a[href^="/editions/${previousEditionId}"]`);
+  const baselineLink = page.locator(`a[href^="/editions/${previousEditionId}"]`).first();
   await expect(baselineLink).toBeVisible();
   await baselineLink.click();
   await expect(page.getByRole("heading", { level: 1, name: `Edition ${previousEditionId}` })).toBeVisible();
