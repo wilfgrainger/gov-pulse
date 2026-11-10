@@ -71,7 +71,9 @@ describe("edge evidence hardening", () => {
     expect(openNext).toMatch(/static-assets-incremental-cache/);
     expect(openNext).not.toMatch(/r2-incremental-cache/);
     expect(webWrangler).toMatch(/name\s*=\s*"public-data-web"/);
-    expect(webWrangler).toMatch(/main\s*=\s*"\.\.\/\.open-next\/worker\.js"/);
+    // The entry wraps the OpenNext handler in the short-lived page cache.
+    expect(webWrangler).toMatch(/main\s*=\s*"web-entry\.js"/);
+    expect(fs.readFileSync("worker/web-entry.js", "utf8")).toMatch(/from "\.\.\/\.open-next\/worker\.js"/);
     expect(webWrangler).toMatch(/directory\s*=\s*"\.\.\/\.open-next\/assets"/);
     expect(webWrangler).toMatch(/nodejs_compat/);
     expect(webWrangler).toMatch(/global_fetch_strictly_public/);
