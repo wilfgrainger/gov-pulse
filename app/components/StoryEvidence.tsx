@@ -23,8 +23,14 @@ export default function StoryEvidence({ measureIds, catalog }: { measureIds: str
       evidenceHeld,
     };
   });
+  // The catalog's editionId is the id /editions/[id] resolves; no link without it.
+  const editionId = (catalog as { editionId?: unknown } | null)?.editionId;
+  const editionHref = typeof editionId === "string" && editionId ? `/editions/${encodeURIComponent(editionId)}` : null;
+  const records = measures.flatMap(({ record }) => record ? [record] : []);
+  const mixed = new Set(records.map((record) => record.observationPeriod.label)).size > 1 || new Set(records.map((record) => record.geography.code)).size > 1;
   return <section className="mx-auto max-w-7xl px-4 pb-10 md:px-6" aria-labelledby="story-evidence-heading">
     <h2 id="story-evidence-heading" className="text-2xl font-black">Referenced measures in the accepted edition</h2>
+    {mixed ? <p className="mt-3 text-sm text-gray-700">These figures cover different periods and/or geographies and are not directly comparable.</p> : null}
     <ul className="mt-4 grid list-none gap-px border border-line-strong bg-line-strong p-0 sm:grid-cols-2 lg:grid-cols-3">
       {measures.map(({ id, definition, record, valueAvailable, evidenceHeld }) => <li key={id} className="bg-white p-5">
         <p className="font-bold">{record?.label ?? definition?.label ?? id}</p>
@@ -32,7 +38,7 @@ export default function StoryEvidence({ measureIds, catalog }: { measureIds: str
         <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-gray-600">{evidenceHeld ? "Source evidence held from publication" : valueAvailable && record?.availability === "current" ? "Current accepted observation" : valueAvailable && record?.availability === "historical" ? "Historical edition · not a current headline" : record ? "Source evidence expired; value unavailable" : "No verified observation in this edition"}</p>
         <p className="mt-2 text-sm text-gray-700">{record?.basis ?? definition?.basis ?? "The published measure definition is unavailable."}</p>
         <p className="mt-2 text-xs text-gray-600">{record ? `${record.observationPeriod.label} · ${record.geography.label} · ${record.unit}` : definition ? `${definition.geography} · ${definition.unit} · ${definition.cadence}` : "No verified observation period."}</p>
-        {record ? <p className="mt-1 text-xs text-gray-600">Published {record.publishedAt.slice(0, 10)} · source edition {record.sourceEditionId}</p> : <p className="mt-1 text-xs text-gray-600">The value, period and publication date are unavailable for this edition.</p>}
+        {record ? <p className="mt-1 text-xs text-gray-600">Published {record.publishedAt.slice(0, 10)}{record.publisher ? ` by ${record.publisher}` : ""} · {editionHref ? <Link className="underline" href={editionHref}>source edition {record.sourceEditionId}</Link> : `source edition ${record.sourceEditionId}`}</p> : <p className="mt-1 text-xs text-gray-600">The value, period and publication date are unavailable for this edition.</p>}
         {record?.sourceUrl ? <p className="mt-1 text-xs"><a className="break-all underline" href={record.sourceUrl}>Primary publication</a></p> : null}
         <p className="mt-2 text-xs leading-5 text-gray-700">{record?.caveats.length ? record.caveats.join(" ") : "No material caveat is available in this edition."}</p>
         <Link className="mt-3 inline-block text-sm font-semibold underline" href={`/measure/${encodeURIComponent(id)}/`}>Inspect source and history →</Link>
