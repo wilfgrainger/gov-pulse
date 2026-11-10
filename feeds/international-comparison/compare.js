@@ -36,6 +36,7 @@ const COMPARISON_MEASURES = Object.freeze([
     definition: "Official development assistance supplied by comparable providers, expressed in current US dollars per resident.",
     unit: UNIT_USD_PER_RESIDENT,
     rankDirection: "highest-first",
+    caveat: "The per-resident value is the publisher total for official development assistance divided by World Bank population, giving current US dollars per resident; it is not a per-resident figure published by the donor.",
   }),
   Object.freeze({
     id: "defenceSpending",
@@ -43,6 +44,7 @@ const COMPARISON_MEASURES = Object.freeze([
     definition: "Military expenditure expressed in current US dollars per resident.",
     unit: UNIT_USD_PER_RESIDENT,
     rankDirection: "highest-first",
+    caveat: "The per-resident value is the SIPRI military expenditure total divided by World Bank population, giving current US dollars per resident. SIPRI figures include estimates for some countries.",
   }),
   Object.freeze({
     id: "publicSocialExpenditure",
@@ -58,7 +60,7 @@ const COMPARISON_MEASURES = Object.freeze([
     definition: "Current health expenditure, public plus private, expressed in current US dollars per resident.",
     unit: UNIT_USD_PER_RESIDENT,
     rankDirection: "highest-first",
-    caveat: "This is total current health expenditure, not NHS spending or government-only health expenditure.",
+    caveat: "This is total current health expenditure, not NHS spending or government-only health expenditure. Some countries have no publisher value for the comparison year, so ranks cover only the countries with a value.",
   }),
   Object.freeze({
     id: "taxRevenue",

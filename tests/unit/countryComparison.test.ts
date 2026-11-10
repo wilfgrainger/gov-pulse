@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { serializeChartMetadataCsv } from "@/app/lib/chartExport";
-import { buildCountryChartMetadata, canShareCountryAxis, countryComparisonPreset, defaultCountryComparisonMeasureId, parseCountryComparisonUrlState, selectCountryFigure, serializeCountryComparisonUrlState } from "@/app/lib/countryComparison";
+import { buildCountryChartMetadata, buildMeasureTableMetadata, canShareCountryAxis, countryComparisonPreset, defaultCountryComparisonMeasureId, parseCountryComparisonUrlState, selectCountryFigure, serializeCountryComparisonUrlState } from "@/app/lib/countryComparison";
 import type { ComparisonMeasure } from "@/app/lib/internationalComparison";
 
 function measure(overrides: Partial<ComparisonMeasure> = {}): ComparisonMeasure {
@@ -59,6 +59,24 @@ describe("interactive country comparison", () => {
     expect(result.rows.map(({ country, rank }) => [country, rank])).toEqual([["GBR", 1], ["USA", 1], ["DEU", 3]]);
     expect(result.excluded[0].country).toBe("FRA");
     expect(result.excluded[0].reason).toBe("publisher-reported-no-value");
+  });
+
+  it("exports deselected countries with the reason the page lists", () => {
+    const data = measure();
+    const selected = selectCountryFigure(data, ["GBR", "DEU"], ["estimate"]);
+    const metadata = buildCountryChartMetadata(data, selected);
+    const usa = metadata.observations.find((o) => o.details?.country === "USA");
+    expect(usa?.details).toMatchObject({ includedInDenominator: "no", exclusionReason: "Excluded by country filter" });
+    expect(metadata.series.map(({ key }) => key)).toEqual(expect.arrayContaining(["GBR", "DEU", "USA", "FRA"]));
+  });
+
+  it("exports the displayed measure table including null rows with reasons and displayed ranks", () => {
+    const metadata = buildMeasureTableMetadata(measure());
+    const byCountry = Object.fromEntries(metadata.observations.map((o) => [o.details?.country, o]));
+    expect(byCountry.GBR.details).toMatchObject({ rank: 1, includedInDenominator: "yes" });
+    expect(byCountry.DEU.details).toMatchObject({ rank: 3 });
+    expect(byCountry.FRA.values.FRA).toBeNull();
+    expect(byCountry.FRA.details).toMatchObject({ includedInDenominator: "no", exclusionReason: "The publisher reports no value" });
   });
 
   it("exports readable source exclusion explanations instead of machine codes", () => {
