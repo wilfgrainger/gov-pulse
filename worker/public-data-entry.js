@@ -33,6 +33,7 @@ const COMPARISON_PATH = "/data/international-comparison.json";
 const EDITIONS_PATH = "/data/editions.json";
 const EDITION_PATH = "/data/edition.json";
 const CONTRACT_HISTORY_PATH = "/data/contracts/history.json";
+const MAX_PUBLIC_CACHE_LIFETIME_SECONDS = 300;
 const PUBLIC_CACHE_FRESH_SECONDS = 300;
 const COMPARISON_CACHE_FRESH_SECONDS = 300;
 const CONTRACT_HISTORY_CACHE_SECONDS = 300;
@@ -46,7 +47,8 @@ function cacheControlFor(validUntil, now = new Date(), maxFreshSeconds = PUBLIC_
   const remaining = cacheLifetime(validUntil, now);
   if (remaining <= 0) return "no-store";
   const fresh = Math.min(remaining, maxFreshSeconds);
-  const staleWhileRevalidate = Math.max(0, remaining - fresh);
+  // Total lifetime (fresh + stale) is capped, so a hold or expiry reaches every cache within the cap.
+  const staleWhileRevalidate = Math.max(0, Math.min(remaining, MAX_PUBLIC_CACHE_LIFETIME_SECONDS) - fresh);
   return `public, max-age=${fresh}, s-maxage=${fresh}, stale-while-revalidate=${staleWhileRevalidate}`;
 }
 

@@ -8,7 +8,7 @@ export function GET() {
   return new Response(renderRssFeed(BUILD_METRICS_SNAPSHOT), {
     headers: {
       "content-type": "application/rss+xml; charset=utf-8",
-      "cache-control": "public, max-age=3600",
+      "cache-control": "public, max-age=300",
     },
   });
 }

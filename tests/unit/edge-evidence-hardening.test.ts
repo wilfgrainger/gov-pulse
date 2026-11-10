@@ -84,7 +84,8 @@ describe("edge evidence hardening", () => {
     const combined = `${nextConfig}\n${staticHeaders}`;
 
     expect(nextConfig).toMatch(/no-transform/);
-    expect(nextConfig).toMatch(/text\/html/);
+    // The rule covers every Next-rendered response, not only Accept: text/html.
+    expect(nextConfig).toContain('source: "/((?!_next/).*)"');
     expect(combined).not.toMatch(/cloudflareinsights/i);
     expect(staticHeaders).toMatch(/connect-src 'self'/);
     expect(staticHeaders).toMatch(/script-src 'self' 'unsafe-inline'/);

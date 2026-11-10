@@ -137,3 +137,32 @@ it("requires the revision on the revision meta tag itself", async () => {
     }),
   ).rejects.toThrow("expected revision");
 });
+it.each([
+  ["a year-long held notice", "section/nhs/", "s-maxage=31536000, stale-while-revalidate=2592000"],
+  ["a long-stale snapshot", "metrics-snapshot.json", "public, max-age=300, s-maxage=300, stale-while-revalidate=110871"],
+  ["an hour-long feed", "feed.xml", "public, max-age=3600"],
+])("fails when any evidence or held HTML response lifetime exceeds 300 s: %s", async (_name, path, cacheControl) => {
+  await expect(
+    releaseSmoke({
+      url: "https://public-data.org/",
+      revision,
+      attempts: 1,
+      fetchImpl: async (url: URL) =>
+        new Response(url.pathname.endsWith("health.json") ? '{"ready":true}' : html, {
+          headers: url.pathname.endsWith(path) ? { "cache-control": cacheControl } : {},
+        }),
+    }),
+  ).rejects.toThrow(/cacheable for .* above the 300 s limit/);
+});
+it("accepts responses whose cache lifetime is within 300 s", async () => {
+  await releaseSmoke({
+    url: "https://public-data.org/",
+    revision,
+    attempts: 1,
+    log: { info: vi.fn(), warn: vi.fn() },
+    fetchImpl: async (url: URL) =>
+      new Response(url.pathname.endsWith("health.json") ? '{"ready":true}' : html, {
+        headers: { "cache-control": "public, max-age=300, s-maxage=300, stale-while-revalidate=0" },
+      }),
+  });
+});

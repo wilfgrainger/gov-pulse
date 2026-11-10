@@ -31,14 +31,10 @@ const deliveryMode: Partial<NextConfig> = staticExport
         return [
           { source: "/:path*", headers: securityHeaders },
           {
-            source: "/:path*",
-            has: [
-              {
-                type: "header" as const,
-                key: "accept",
-                value: ".*text/html.*",
-              },
-            ],
+            // Every Next-rendered response (HTML, RSC payloads, feeds), whatever
+            // the Accept header: prerendered held notices otherwise go out with
+            // a year-long s-maxage. Hashed /_next/ assets carry no evidence.
+            source: "/((?!_next/).*)",
             headers: [
               {
                 key: "Cache-Control",
