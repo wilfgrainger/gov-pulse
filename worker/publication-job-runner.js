@@ -9,10 +9,7 @@ import {
   storeExternalSection,
   storeSectionFragment,
 } from "./publication-collection-runner.js";
-
-function isRecord(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
+import { isRecord } from "../contracts/records.js";
 
 async function processQueueJob(job, env, ctx, options = {}) {
   if (job?.type === "refresh-international-comparison") {

@@ -2,6 +2,7 @@ import { readFeedRecord, writeFeedAttempt } from "./feed-store.js";
 import { refreshJobs } from "./publication-plan.js";
 import { RUN_TTL_SECONDS, kvGet, kvPut, runIdFor } from "./publication-run-store.js";
 import { BETTING_CRON } from "./publication-schedule.js";
+import { isRecord } from "../contracts/records.js";
 
 // Three-message publication pipeline: `collect`, `finalise` and `bootstrap`.
 // createPipeline() takes its collectors and publisher as injected dependencies,
@@ -27,10 +28,6 @@ const FEED_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 const RUN_ID_PATTERN = /^[A-Za-z0-9._-]{1,100}$/;
 const SHARD_KEY_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
 const BOOTSTRAP_RUN_PATTERN = /^bootstrap-[0-9a-f]{40}$/;
-
-function isRecord(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 function validId(value, pattern) {
   return typeof value === "string" && pattern.test(value);

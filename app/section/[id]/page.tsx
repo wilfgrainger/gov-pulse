@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ownEntry } from "@/app/lib/ownEntry";
 import Link from "next/link";
 import PageHeader from "../../components/PageHeader";
 import Reveal from "../../components/Reveal";
@@ -34,7 +35,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   if (gateRoute(`/section/${id}/`).access === "not-found") return {};
-  const discovery = SECTION_DISCOVERY[id];
+  const discovery = ownEntry(SECTION_DISCOVERY, id);
   if (!discovery) return {};
 
   const canonical = sectionPath(id);
@@ -76,14 +77,14 @@ export default async function SectionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const section = SECTION_CONTENT[id as keyof typeof SECTION_CONTENT];
+  const section = ownEntry(SECTION_CONTENT, id);
 
   if (!section) notFound();
   if (gateRoute(`/section/${id}/`).access === "not-found") notFound();
 
   const SectionComponent = section.component;
   const dataSection = "dataSection" in section ? section.dataSection : null;
-  const evidenceHeld = SECTION_DISCOVERY[id]?.kind === "dataset" && routeEvidenceHeld(`/section/${id}/`);
+  const evidenceHeld = ownEntry(SECTION_DISCOVERY, id)?.kind === "dataset" && routeEvidenceHeld(`/section/${id}/`);
   const structuredData = evidenceHeld ? null : structuredDataForSection(id);
   const snapshot = dataSection && !evidenceHeld ? await readServerMetricsSnapshot() : null;
   const current = snapshot && filterCurrentSnapshot(snapshot, new Date()) as MetricsSnapshot | null;

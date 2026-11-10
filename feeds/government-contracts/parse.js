@@ -26,7 +26,8 @@ const SHARD_TTL_SECONDS = 10 * 24 * 60 * 60;
 const SLICES_PER_DAY = 4;
 const PAGE_LIMIT = 100;
 const MAX_PAGES_PER_SLICE = 8;
-const MAX_PAGES_PER_REFRESH = 64;
+// shortcut: 40 pages leaves room under the 50-subrequest budget for other calls in the same run; raise only after that limit is measured.
+const MAX_PAGES_PER_REFRESH = 40;
 const MAX_RELEASES_PER_SLICE = MAX_PAGES_PER_SLICE * PAGE_LIMIT;
 const MAX_RELEASES_PER_REFRESH = MAX_PAGES_PER_REFRESH * PAGE_LIMIT;
 const MAX_CONTRACT_PAGE_BYTES = 2 * 1024 * 1024;

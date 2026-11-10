@@ -147,10 +147,10 @@ counted as 2 fetches), and listed in `STATIC_FETCHES` in the script.
 | taxRevenue | no-fixture (fixtures are inline test strings) | n/a | 3 (code-read) | within |
 | employmentStats | no-fixture | n/a | 6 (code-read) | within |
 | migrationStats | no-fixture | n/a | 3 (code-read) | within |
-| governmentContracts | no-fixture (sharded: collectShard/combine) | n/a | ceiling 64 (MAX_PAGES_PER_REFRESH), usual use unmeasured | **ceiling above 50** |
+| governmentContracts | no-fixture (sharded: collectShard/combine) | n/a | ceiling 40 (MAX_PAGES_PER_REFRESH), usual use unmeasured | **ceiling below 50** |
 | nhsStats (held) | no-fixture | n/a | 4 (code-read) | within |
 | bettingOdds (held) | no-fixture | n/a | 3 (code-read) | within |
-| releaseCalendar, nhsReleaseCalendar (held) | no-fixture | n/a | 2 and 2 (code-read) | within |
+| releaseCalendar, nhsReleaseCalendar (held) | no-fixture | n/a | ceiling 11 (10 upcoming pages + 1 cancelled; 6 in November 2026) and 2 (code-read) | within |
 | internationalComparison (held) | no-fixture (sharded batches) | n/a | not derived | unknown |
 | earlyYears | static feed, no collector | n/a | 0 | n/a |
 
@@ -212,7 +212,7 @@ Against Workers Free limits:
 | limit | measured | verdict |
 | --- | --- | --- |
 | Queue consumer CPU, default 30,000 ms | max 605 ms | within, about 2% |
-| Subrequests per invocation, 50 | `refresh-contracts` 28 in this run; other counts not reported by tail | within in this run; the 64-page ceiling (`MAX_PAGES_PER_REFRESH`) is still above 50 |
+| Subrequests per invocation, 50 | `refresh-contracts` 28 in this run; other counts not reported by tail | within in this run; the 40-page ceiling (`MAX_PAGES_PER_REFRESH`) is below 50 |
 | CPU per request/cron trigger, 10 ms | queue accept 4 ms; 8 of 14 data-route requests measured 11-18 ms, all outcome `ok` | **over on measured cpuTime for data routes**; whether this is enforced is not established here |
 | Cron `scheduled` handler CPU | not captured | unmeasured |
 | Queues, 10,000 ops/day | not derivable from tail (21 messages this run) | not measured here |

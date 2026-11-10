@@ -135,7 +135,8 @@ export function buildCountryChartMetadata(
 ): ChartMetadata {
   const years = result.rows.map(({ observationYear }) => observationYear).sort((left, right) => left - right);
   const includedRecords = result.rows.map((row) => ({ row, included: true as const, exclusionReason: null }));
-  const unavailableRecords = (result.rows.length ? [] : result.excluded.filter(({ reason }) => reason !== "Excluded by country filter"))
+  // Export every exclusion the page lists, except countries the reader deselected.
+  const unavailableRecords = result.excluded.filter(({ reason }) => reason !== "Excluded by country filter")
     .map((row) => ({ row, included: false as const, exclusionReason: countryComparisonExclusionLabel(row.reason) }));
   const records = [...includedRecords, ...unavailableRecords];
   const sourceReferences = (measure.sourceReferences ?? []).flatMap((source) => [source, ...(source.additionalSources ?? [])]);

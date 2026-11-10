@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ownEntry } from "@/app/lib/ownEntry";
 import SectionNav from "@/app/components/SectionNav";
 import SiteFooter from "@/app/components/SiteFooter";
 import { SECTIONS } from "@/app/lib/sections";
@@ -108,8 +109,6 @@ const TRUST_PAGES = {
   },
 } as const;
 
-type TrustPage = keyof typeof TRUST_PAGES;
-
 export function generateStaticParams() {
   return Object.keys(TRUST_PAGES).map((trust) => ({ trust }));
 }
@@ -120,7 +119,7 @@ export async function generateMetadata({
   params: Promise<{ trust: string }>;
 }): Promise<Metadata> {
   const { trust } = await params;
-  const page = TRUST_PAGES[trust as TrustPage];
+  const page = ownEntry(TRUST_PAGES, trust);
   if (!page) return {};
   return {
     title: page.title,
@@ -135,7 +134,7 @@ export default async function TrustPageRoute({
   params: Promise<{ trust: string }>;
 }) {
   const { trust } = await params;
-  const page = TRUST_PAGES[trust as TrustPage];
+  const page = ownEntry(TRUST_PAGES, trust);
   if (!page) notFound();
 
   return (

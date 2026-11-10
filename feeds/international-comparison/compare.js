@@ -1,3 +1,4 @@
+import { isRecord } from "../../contracts/records.js";
 const COMPARISON_SET_ID = "uk-context-13-v2";
 const COMPARISON_SCHEMA_VERSION = 1;
 const UNIT_USD_PER_RESIDENT = "USD per resident";
@@ -80,10 +81,6 @@ const COMPARISON_MEASURES = Object.freeze([
 const COUNTRY_IDS = new Set(COMPARISON_COUNTRIES.map(({ id }) => id));
 const MEASURE_BY_ID = new Map(COMPARISON_MEASURES.map((measure) => [measure.id, measure]));
 const VALUE_TYPES = new Set(["historical", "estimate", "projection"]);
-
-function isRecord(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 function validHttpsUrl(value) {
   if (typeof value !== "string") return false;

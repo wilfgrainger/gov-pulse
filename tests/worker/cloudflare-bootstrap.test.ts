@@ -567,4 +567,21 @@ describe("Cloudflare publication bootstrap", () => {
       retryDelaySeconds: BOOTSTRAP_FINALISE_RETRY_SECONDS,
     });
   });
+
+  it("checks the last expected job first, so an early completion reads one terminal", async () => {
+    const { env, store } = environment();
+    const runId = bootstrapRunId(SHA);
+    store.set(`${RUN_PREFIX}${runId}`, {
+      runId, scope: "bootstrap", finalisedAt: null,
+      expectedJobIds: ["section:a", "section:b", "section:c", "section:d"],
+    });
+    for (const jobId of ["section:a", "section:b", "section:c"]) {
+      store.set(`${RUN_PREFIX}${runId}:terminal:${jobId}`, { jobId, status: "success" });
+    }
+    env.METRICS_CACHE.get.mockClear();
+
+    expect(await enqueueCompletedBootstrapFinaliser(runId, env)).toBe(false);
+    const terminalReads = env.METRICS_CACHE.get.mock.calls.filter(([key]) => String(key).includes(":terminal:"));
+    expect(terminalReads).toHaveLength(1);
+  });
 });

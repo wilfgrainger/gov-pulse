@@ -2,7 +2,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import publicWorker, {
-  currentPublicSnapshot,
+  currentPublicArtifact,
   cacheControlFor,
   isCompleteSnapshot,
   preparedMetadataIsCurrent,
@@ -276,7 +276,7 @@ describe("Cloudflare public data route", () => {
         headers: { "Content-Type": "application/json" },
       })
     );
-    const result = await currentPublicSnapshot(environment(null), {
+    const result = await currentPublicArtifact(environment(null), {
       now,
       fetchImpl,
     });
@@ -295,7 +295,7 @@ describe("Cloudflare public data route", () => {
       })
     );
 
-    const result = await currentPublicSnapshot(environment(null), {
+    const result = await currentPublicArtifact(environment(null), {
       now,
       fetchImpl,
     });
@@ -331,7 +331,7 @@ describe("Cloudflare public data route", () => {
           headers: { "Content-Type": "application/json" },
         })
       );
-      const result = await currentPublicSnapshot(environment(null), { now, fetchImpl });
+      const result = await currentPublicArtifact(environment(null), { now, fetchImpl });
       expect(result?.delivery).toBe("pages-fallback");
       expect((result?.snapshot as Record<string, unknown>).taxRevenue).toBeUndefined();
       expect((result?.snapshot.meta.sources as Record<string, unknown>).taxRevenue).toBeUndefined();
@@ -358,7 +358,7 @@ describe("Cloudflare public data route", () => {
           headers: { "Content-Type": "application/json" },
         })
       );
-      const result = await currentPublicSnapshot(environment(null), { now, fetchImpl });
+      const result = await currentPublicArtifact(environment(null), { now, fetchImpl });
       expect(result).toBeNull();
     } finally {
       for (const [id, state] of Object.entries(originalConfig)) {

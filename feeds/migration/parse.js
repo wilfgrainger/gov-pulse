@@ -84,10 +84,8 @@ function optionalInteger(value) {
   return trimmed ? integer(trimmed, "migration history value") : null;
 }
 
-const HISTORY_SERIES = {
-  dec: { name: "December", monthIndex: 11 },
-  jun: { name: "June", monthIndex: 5 },
-};
+// The history CSV labels years ending December or June by short month name.
+const HISTORY_MONTH_NAMES = { dec: "December", jun: "June" };
 
 function parseMigrationHistoryCsv(text, referenceMonth = "December") {
   const rows = String(text).trim().split(/\r?\n/);
@@ -112,8 +110,8 @@ function parseMigrationHistoryCsv(text, referenceMonth = "December") {
     const period = columns[index.date]?.trim();
     const match = /^YE (Dec|Jun) (\d{2})$/i.exec(period ?? "");
     if (!match) continue;
-    const series = HISTORY_SERIES[match[1].toLowerCase()];
-    if (series.name !== referenceMonth) continue;
+    const monthName = HISTORY_MONTH_NAMES[match[1].toLowerCase()];
+    if (monthName !== referenceMonth) continue;
     const netMigration =
       optionalInteger(columns[index.Net_estimate]) ??
       optionalInteger(columns[index["Net migration"]]);
@@ -129,8 +127,8 @@ function parseMigrationHistoryCsv(text, referenceMonth = "December") {
     }
     const year = 2000 + Number(match[2]);
     history.push({
-      period: `YE ${series.name} ${year}`,
-      observedAt: Date.UTC(year, series.monthIndex + 1, 0),
+      period: `YE ${monthName} ${year}`,
+      observedAt: Date.UTC(year, MONTHS[monthName.toLowerCase()] + 1, 0),
       immigration,
       emigration,
       netMigration,

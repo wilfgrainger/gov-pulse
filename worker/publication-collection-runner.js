@@ -3,12 +3,9 @@ import { collectExternalSection } from "./live-feed-collectors.js";
 import { collectionPlanFor } from "./publication-plan.js";
 import { fragmentRetrievalTime, storedFragmentWins, writeFeedAttempt } from "./feed-store.js";
 import { RUN_PREFIX, RUN_TTL_SECONDS, kvGet, kvPut } from "./publication-run-store.js";
+import { isRecord } from "../contracts/records.js";
 
 const PUBLICATION_SECTION_PREFIX = "v12:publication:section:";
-
-function isRecord(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 function sectionFragmentKey(section) {
   return `${PUBLICATION_SECTION_PREFIX}${String(section)}`;

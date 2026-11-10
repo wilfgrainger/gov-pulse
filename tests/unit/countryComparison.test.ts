@@ -39,10 +39,13 @@ describe("interactive country comparison", () => {
     expect(metadata.sourceCitation).toContain("publisher data last updated 2026-07-13");
     expect(metadata.sourceCitation).toContain("https://example.org/uk");
     expect(metadata.sourceCitation).toContain("Visible denominator: 2 of 3");
+    // The page lists France as excluded, so the export carries it too, marked as excluded.
     expect(metadata.series).toEqual([
       { key: "GBR", label: "United Kingdom · 100 USD per resident · 2024 · estimate · rank 1" },
       { key: "DEU", label: "Germany · 75 USD per resident · 2024 · estimate · rank 2" },
+      { key: "FRA", label: "France · unavailable · 2024 · estimate · excluded: Publisher reports no value" },
     ]);
+    expect(metadata.observations.at(-1)?.details).toMatchObject({ country: "FRA", includedInDenominator: "no", exclusionReason: "Publisher reports no value" });
     expect(metadata.caveats).toEqual(expect.arrayContaining(["Purchasing power adjusted; estimates may be revised.", "Publisher reports no value"]));
     expect(metadata.observations[0].details).toMatchObject({ input_percentGdp: 23, input_gdpPerResidentUsd: 48_000 });
     expect(serializeChartMetadataCsv(metadata)).toContain('""input_percentGdp"":23');

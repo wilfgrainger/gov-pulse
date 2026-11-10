@@ -285,6 +285,9 @@ describe("international comparison publication", () => {
       source: { publisher: "SIPRI", additionalSources: [{ publisher: "World Bank World Development Indicators" }] },
     });
     expect(publication.measures.defenceSpending.countryHistory?.find((row) => row.country === "GBR" && row.observationYear === 2025)?.valueType).toBe("estimate");
+    // Rebuilding defence with its history must keep the measure-level citations.
+    expect(publication.measures.defenceSpending.sourceReferences?.map((source) => source.url))
+      .toEqual(expect.arrayContaining([expect.stringContaining("sipri")]));
   });
 });
 

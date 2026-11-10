@@ -190,12 +190,17 @@ export function comparePoints(points: Measure["history"], unit: string) {
     percent: first.value > 0 ? (delta / first.value) * 100 : null,
   };
 }
+const FORMULA_PREFIX = /^[=+@\t\r]/;
+// A leading minus is a formula only when the cell is not a plain number.
+const PLAIN_NEGATIVE_NUMBER = /^-\d+(\.\d+)?(e[+-]?\d+)?$/i;
+
 export function measuresCsv(measures: Measure[]): string {
   // Quote every cell and neutralise spreadsheet formula prefixes.
-  const cell = (v: unknown) =>
-    `"${String(v ?? "")
-      .replace(/^[=+@\t\r]/, "'$&")
-      .replaceAll('"', '""')}"`;
+  const cell = (v: unknown) => {
+    const text = String(v ?? "");
+    const formula = FORMULA_PREFIX.test(text) || (text.startsWith("-") && !PLAIN_NEGATIVE_NUMBER.test(text));
+    return `"${(formula ? `'${text}` : text).replaceAll('"', '""')}"`;
+  };
   const rows = [
     [
       "Measure",

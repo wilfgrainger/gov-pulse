@@ -1,13 +1,10 @@
 import { validateMeasureRecord, type MeasureCatalog, type MeasureRecord } from "@/app/lib/measureCatalog";
+import { isRecord } from "@/contracts/records.js";
 
 export type Watchlist = { version: 1; measureIds: string[] };
 export type WatchEvidenceReference = { signature: string; sourceEditionId: string };
 export type WatchEvidenceState = "first-visit" | "changed" | "edition-only" | "unchanged" | "unavailable";
 export type WatchEvidenceBaselines = { version: 1; measures: Record<string, WatchEvidenceReference> };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 export async function buildWatchEvidenceReference(record: MeasureRecord | null | undefined): Promise<WatchEvidenceReference | null> {
   if (!record) return null;

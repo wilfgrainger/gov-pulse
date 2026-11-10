@@ -22,15 +22,12 @@ import {
   FINALISE_RETRY_SECONDS,
   recordTerminal,
 } from "./publication-run-lifecycle.js";
+import { isRecord } from "../contracts/records.js";
 
 const PUBLICATION_QUEUE_MAX_RETRIES = 3;
 const COMPARISON_FINALISE_INITIAL_DELAY_SECONDS = 60;
 const COMPARISON_FINALISE_TIMEOUT_SECONDS =
   (PUBLICATION_QUEUE_MAX_RETRIES + 2) * FINALISE_RETRY_SECONDS;
-
-function isRecord(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 function comparisonBatchManifestKey(runId) {
   return `${RUN_PREFIX}${runId}:comparison-batches`;

@@ -1,14 +1,11 @@
 import { FEED_REGISTRY_VERSION } from "../../feeds/registry.js";
 import { validatePublicArtifact } from "../../contracts/public-artifact.js";
+import { isRecord } from "../../contracts/records.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function finite(value) {
   return typeof value === "number" && Number.isFinite(value);
-}
-
-function isRecord(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 export function validateSnapshot(

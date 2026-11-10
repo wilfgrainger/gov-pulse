@@ -1,7 +1,4 @@
-function isRecord(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
+import { isRecord } from "./records.js";
 const PRIVATE_META_FIELDS = Object.freeze([
   "publicationDiagnostics",
   "measureCatalogDiagnostics",

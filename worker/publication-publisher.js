@@ -33,10 +33,7 @@ import {
 } from "./publication-collection-runner.js";
 import { fragmentRetrievalTime, readFeedRecord } from "./feed-store.js";
 import { fetchPublicationSeedSnapshot } from "./publication-recovery.js";
-
-function isRecord(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
+import { isRecord } from "../contracts/records.js";
 
 // Section records for one publication. A run reads its own run-scoped record
 // and the shared (monotonic) global fragment, and uses whichever current one

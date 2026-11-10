@@ -1,4 +1,5 @@
 import { SITE_DISCOVERY } from "@/app/lib/discovery";
+import { isRecord } from "@/contracts/records.js";
 import { filterPublicationCatalog, filterPublicationSummary, publicationPublished } from "@/contracts/evidence-policy";
 import { validateMeasureRecord } from "@/app/lib/measureCatalog";
 import type { MeasureCatalog } from "@/app/lib/measureCatalog";
@@ -9,10 +10,6 @@ export type ListedEditionSummary = EditionSummary & { asOf?: string };
 export type ArchivedEdition = { edition: string; asOf: string; availability: "historical"; measureCatalog: MeasureCatalog; summary: EditionSummary };
 
 function safeEditionId(value: string) { return /^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/.test(value); }
-
-function object(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 function validInstant(value: unknown): value is string {
   return typeof value === "string" && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
@@ -49,14 +46,14 @@ function validOptionalFieldList(value: unknown): boolean {
 
 function validSummaryCorrection(value: unknown, editionId: string, previousEditionId: unknown): boolean {
   if (value === undefined) return true;
-  return object(value) && value.kind === "baseline-reconciliation" &&
+  return isRecord(value) && value.kind === "baseline-reconciliation" &&
     typeof value.baselineEditionId === "string" && safeEditionId(value.baselineEditionId) &&
     value.baselineEditionId !== editionId && value.baselineEditionId === previousEditionId &&
     typeof value.note === "string" && Boolean(value.note.trim()) && value.note.length <= 500;
 }
 
 function validEditionSummary(value: unknown, id?: string): value is EditionSummary {
-  if (!object(value) || typeof value.id !== "string" || !safeEditionId(value.id) || (id && value.id !== id) ||
+  if (!isRecord(value) || typeof value.id !== "string" || !safeEditionId(value.id) || (id && value.id !== id) ||
     !validInstant(value.publishedAt) || value.asOf !== undefined && !validInstant(value.asOf) || !(value.previousEditionId === undefined || value.previousEditionId === null ||
       typeof value.previousEditionId === "string" && safeEditionId(value.previousEditionId)) ||
     !validSummaryCorrection(value.summaryCorrection, value.id, value.previousEditionId) ||
@@ -68,7 +65,7 @@ function validEditionSummary(value: unknown, id?: string): value is EditionSumma
     sourceIds.add(sourceId);
   }
   for (const change of value.changes) {
-    if (!object(change) || typeof change.measureId !== "string" || !change.measureId.trim() || change.measureId.length > 160 ||
+    if (!isRecord(change) || typeof change.measureId !== "string" || !change.measureId.trim() || change.measureId.length > 160 ||
       !["new-observation", "revision", "method-change", "metadata-change"].includes(String(change.kind)) || !validDateOrNull(change.observedAt) ||
       !validTextOrNull(change.period) || !validTextOrNull(change.previousSourceEditionId) ||
       typeof change.nextSourceEditionId !== "string" || !change.nextSourceEditionId.trim() || change.nextSourceEditionId.length > 200 ||
@@ -87,10 +84,10 @@ function validEditionSummary(value: unknown, id?: string): value is EditionSumma
 }
 
 function validArchivedEdition(value: unknown, id: string): value is ArchivedEdition {
-  if (!object(value) || value.availability !== "historical" || value.edition !== id || !validInstant(value.asOf) ||
-    !object(value.measureCatalog) || value.measureCatalog.schemaVersion !== 2 || value.measureCatalog.editionId !== id ||
+  if (!isRecord(value) || value.availability !== "historical" || value.edition !== id || !validInstant(value.asOf) ||
+    !isRecord(value.measureCatalog) || value.measureCatalog.schemaVersion !== 2 || value.measureCatalog.editionId !== id ||
     !validInstant(value.measureCatalog.generatedAt) || value.asOf !== value.measureCatalog.generatedAt ||
-    !(value.measureCatalog.validUntil === null || validInstant(value.measureCatalog.validUntil)) || !object(value.measureCatalog.measures) ||
+    !(value.measureCatalog.validUntil === null || validInstant(value.measureCatalog.validUntil)) || !isRecord(value.measureCatalog.measures) ||
     !validEditionSummary(value.summary, id)) return false;
   const measures: Record<string, ReturnType<typeof validateMeasureRecord>> = {};
   try {
@@ -111,7 +108,7 @@ export async function readEditionSummaries(): Promise<ListedEditionSummary[] | n
     const response = await fetch(new URL("/data/editions.json", SITE_DISCOVERY.origin), { cache: "no-store", signal: AbortSignal.timeout(8_000) });
     if (!response.ok) return null;
     const payload = await response.json() as unknown;
-    if (!object(payload) || !Array.isArray(payload.editions) || typeof payload.retention !== "number" ||
+    if (!isRecord(payload) || !Array.isArray(payload.editions) || typeof payload.retention !== "number" ||
       !Number.isInteger(payload.retention) || payload.retention !== payload.editions.length || payload.retention > 60 ||
       !payload.editions.every((edition) => validEditionSummary(edition))) return null;
     return (payload.editions as ListedEditionSummary[]).map((edition) => ({
