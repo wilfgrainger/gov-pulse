@@ -90,8 +90,10 @@ describe("canonical evidence figure model", () => {
     expect(pkg.measures[0].observations).toEqual(measure.points);
     expect(serializeMeasureExportCsv(pkg)).toContain("December to February 2026");
     expect(serializeMeasureExportCsv(pkg)).toContain(
-      '"2026-05-19T06:00:00.000Z","published","January to March 2026","2026-03-31","January to March 2026","4.8","estimate"',
+      '"2026-05-19T06:00:00.000Z","published","2026-03-31","January to March 2026","4.8","estimate"',
     );
+    // Per-row `period` already carries each row's observation period; no repeated latest-period column.
+    expect(serializeMeasureExportCsv(pkg)).not.toContain("observation_period");
   });
 
   it("records comparison mode and axis transformation in machine-readable exports", () => {

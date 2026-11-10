@@ -197,6 +197,26 @@ describe("public data explorer", () => {
     expect(options).toEqual({ scroll: false });
   });
 
+  it("round-trips search, topic and the unavailable toggle through the URL", () => {
+    currentSearch = "q=receipts&topic=Public%20finances&unavailable=1";
+    const { unmount } = render(<DataExplorer initialSnapshot={snapshot} />);
+    expect(screen.getByRole("searchbox")).toHaveValue("receipts");
+    expect(screen.getByRole("checkbox", { name: "Show unavailable measures" })).toBeChecked();
+    unmount();
+    currentSearch = "q=zzz&topic=Nonsense";
+    render(<DataExplorer initialSnapshot={snapshot} />);
+    expect(screen.getByRole("combobox", { name: "Topic" })).toHaveValue("All topics");
+    cleanup();
+    currentSearch = "";
+    render(<DataExplorer initialSnapshot={snapshot} />);
+    replace.mockClear();
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "rent" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: "Show unavailable measures" }));
+    const [url] = replace.mock.calls.at(-1)!;
+    expect(url).toContain("q=rent");
+    expect(url).toContain("unavailable=1");
+  });
+
   it("updates the URL when the history window changes, omitting the default window", () => {
     render(<DataExplorer initialSnapshot={snapshot} />);
     replace.mockClear();

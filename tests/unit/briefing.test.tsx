@@ -33,6 +33,19 @@ describe("edition briefing and guided story contracts", () => {
     expect(markup).toContain('href="https://www.ons.gov.uk/prices"');
   });
 
+  it("links each change to the catalog edition that recorded it and states a null new period plainly", () => {
+    const hpi = { ...measure, id: "housePriceChange", label: "House prices: annual change", availability: "current", value: 0.9, observationPeriod: { start: "2026-08-01", end: "2026-08-31", label: "Aug 2026" } };
+    const base = { measureId: "housePriceChange", kind: "new-observation", observedAt: "2026-09-30", period: "Sep 2026", previousSourceEditionId: null, nextSourceEditionId: "october2026", previousRevisionId: null, nextRevisionId: "r1", previous: null, next: null };
+    const snapshot = { meta: {
+      registryVersion: "test", sources: {}, measureCatalog: { schemaVersion: 2, editionId: "catalog-1", generatedAt: "2026-02-19T00:00:00.000Z", validUntil: null, measures: { housePriceChange: hpi } },
+      editionSummary: { id: "catalog-abc", publishedAt: "2026-02-19T00:00:00.000Z", sourceEditionIds: ["october2026"], changes: [base] },
+    } } as unknown as MetricsSnapshot;
+    const markup = renderToStaticMarkup(<BriefingEdition snapshot={snapshot}/>);
+    expect(markup).toContain('href="/editions/catalog-abc"');
+    expect(markup).toContain("Sep 2026 has no published value yet; the latest value is 0.9 % for Aug 2026");
+    expect(markup).not.toContain("not previously reported → unavailable");
+  });
+
   it("keeps missing story measures visible and labels their values unavailable", () => {
     const catalog = { schemaVersion: 2, editionId: "catalog-1", generatedAt: "2026-02-19T00:00:00.000Z", validUntil: null, measures: { inflation: measure } };
     const markup = renderToStaticMarkup(<StoryEvidence measureIds={["inflation", "unemployment"]} catalog={catalog}/>);

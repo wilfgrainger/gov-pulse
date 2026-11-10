@@ -144,6 +144,16 @@ describe("RSS publication feed", () => {
     expect(edition?.querySelector("description")?.textContent).toMatch(expected);
   });
 
+  it("links the edition item to its immutable page and sets lastBuildDate to the newest item pubDate", () => {
+    const document = new DOMParser().parseFromString(renderRssFeed(rssSnapshot(), NOW), "application/xml");
+    const edition = [...document.querySelectorAll("channel > item")].find((item) => item.querySelector("category")?.textContent === "Evidence edition");
+    expect(edition?.querySelector("link")?.textContent).toBe(`${SITE_DISCOVERY.origin}/editions/catalog-rss-test/`);
+    expect(edition?.querySelector("guid")?.textContent).toBe("urn:public-data:edition:catalog-rss-test");
+    const newest = Math.max(...[...document.querySelectorAll("channel > item > pubDate")].map((node) => Date.parse(node.textContent!)));
+    expect(document.querySelector("channel > lastBuildDate")?.textContent).toBe(new Date(newest).toUTCString());
+    expect(renderRssFeed(rssSnapshot(), NOW)).toBe(renderRssFeed(rssSnapshot(), new Date(NOW.getTime())));
+  });
+
   it("does not describe an edition as its own previous catalog", () => {
     const snapshot = rssSnapshot();
     snapshot.meta.editionSummary = {

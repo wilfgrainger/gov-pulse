@@ -222,12 +222,12 @@ export function safeCsvCell(value: string | number | boolean | null): string {
 }
 
 export function serializeMeasureExportCsv(pkg: ExportPackage): string {
-  const columns = ["chart_title", "window_start", "window_end", "display_mode", "transformations", "measure_id", "measure", "evidence_class", "geography", "unit", "basis", "cadence", "publisher", "source_id", "source_edition_id", "source_revision_id", "source_url", "published_at", "publication_date_status", "observation_period", "observed_at", "period", "value", "value_status", "point_revision_id", "source_availability", "caveats", "poll_id", "pollster", "party", "party_share_percent", "sample_size", "sample_size_basis", "poll_title", "question_text", "commissioner", "headline_method", "population", "geography_sample", "mode", "fieldwork_start", "fieldwork_end", "methodology_url", "disclosures"];
+  const columns = ["chart_title", "window_start", "window_end", "display_mode", "transformations", "measure_id", "measure", "evidence_class", "geography", "unit", "basis", "cadence", "publisher", "source_id", "source_edition_id", "source_revision_id", "source_url", "published_at", "publication_date_status", "observed_at", "period", "value", "value_status", "point_revision_id", "source_availability", "caveats", "poll_id", "pollster", "party", "party_share_percent", "sample_size", "sample_size_basis", "poll_title", "question_text", "commissioner", "headline_method", "population", "geography_sample", "mode", "fieldwork_start", "fieldwork_end", "methodology_url", "disclosures"];
   const measureRows = pkg.measures.flatMap((measure) => measure.observations.map((point) => [
     pkg.title, pkg.dateWindow.start, pkg.dateWindow.end, pkg.comparison?.displayMode ?? "", pkg.comparison?.transformations.join("; ") ?? "", measure.id, measure.label, measure.evidenceClass,
     measure.geography.label, measure.unit, measure.basis, measure.cadence, measure.publisher ?? measure.sourceId,
     measure.sourceId, measure.sourceEditionId, measure.sourceRevisionId, measure.sourceUrl, measure.publishedAt, "published",
-    measure.observationPeriod.label, point.observedAt, point.period, point.value, point.valueStatus,
+    point.observedAt, point.period, point.value, point.valueStatus,
     point.revisionId, measure.sourceAvailability, measure.caveats.join(" "),
   ].map(safeCsvCell).join(",")));
   const publicationRows = pkg.publications.flatMap((publication) => Object.entries(publication.partyResults)
@@ -239,7 +239,7 @@ export function serializeMeasureExportCsv(pkg: ExportPackage): string {
       return [
         pkg.title, pkg.dateWindow.start, pkg.dateWindow.end, "", "", "", "", "polling", publication.geography, "%",
         "Publisher-reported voting intention", "poll publication", publication.publisher, "", publication.id, "",
-        publication.sourceUrl, publication.publishedAt, publication.publicationDateStatus, `${publication.fieldworkStart} to ${publication.fieldworkEnd}`,
+        publication.sourceUrl, publication.publishedAt, publication.publicationDateStatus,
         midpoint, `${publication.fieldworkStart} to ${publication.fieldworkEnd}`, "", "published", "",
         "source publication", pkg.caveats.join(" "), publication.id, publication.publisher, party, share,
         publication.sampleSize, publication.sampleSizeNote, publication.title, publication.questionText, publication.commissioner, publication.headlineMethod,
