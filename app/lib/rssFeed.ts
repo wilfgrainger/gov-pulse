@@ -87,7 +87,7 @@ export function renderRssFeed(input: unknown, now: Date = new Date()) {
   const summaryEntry = summary ? [
     "<item>",
     `<title>${escapeXml(summaryTitle)}</title>`,
-    `<link>${escapeXml(absoluteUrl("/briefing/"))}</link>`,
+    `<link>${escapeXml(absoluteUrl(`/editions/${encodeURIComponent(summary.id)}/`))}</link>`,
     `<guid isPermaLink="false">${escapeXml(`urn:public-data:edition:${summary.id}`)}</guid>`,
     `<description>${escapeXml(summaryDescription)}</description>`,
     summaryDate ? `<pubDate>${escapeXml(summaryDate.toUTCString())}</pubDate>` : "",
@@ -110,6 +110,11 @@ export function renderRssFeed(input: unknown, now: Date = new Date()) {
     ].filter(Boolean).join("");
   }).join("");
 
+  // Deterministic: newest item pubDate, never the build clock.
+  const newest = [...(summaryEntry + storyEntries + datasetEntries).matchAll(/<pubDate>([^<]+)<\/pubDate>/g)]
+    .map((match) => Date.parse(match[1])).filter(Number.isFinite).sort((a, b) => b - a)[0];
+  const lastBuildDate = newest === undefined ? "" : `<lastBuildDate>${new Date(newest).toUTCString()}</lastBuildDate>`;
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
@@ -117,6 +122,7 @@ export function renderRssFeed(input: unknown, now: Date = new Date()) {
     <link>${escapeXml(SITE_DISCOVERY.origin)}</link>
     <description>${escapeXml(SITE_DISCOVERY.description)}</description>
     <language>en-gb</language>
+    ${lastBuildDate}
     ${summaryEntry}
     ${storyEntries}
     ${datasetEntries}
