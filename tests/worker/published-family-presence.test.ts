@@ -382,3 +382,39 @@ describe("publisher under the three-message pipeline", () => {
     expect(await contractsRecordFor(kvEnv().env)).toBeNull();
   });
 });
+
+describe("a published family whose collector failed but whose older evidence is still shown", () => {
+  it("is named in the status record and in health, without degrading readiness", async () => {
+    const startedAt = new Date("2026-07-18T03:17:00.000Z");
+    const finalisedAt = new Date("2026-07-18T03:43:00.000Z");
+    const { env, store } = kvEnv({ [PUBLICATION_CURRENT_KEY]: snapshotWithout([]) });
+    const { run } = await createRun(env, startedAt);
+    for (const jobId of run.expectedJobIds) {
+      store.set(`${RUN_PREFIX}${run.runId}:terminal:${jobId}`, {
+        runId: run.runId,
+        jobId,
+        status: jobId === "section:nationalDebt" ? "failure" : "success",
+        result: jobId === "section:nationalDebt" ? { error: "bulletin wording changed" } : null,
+      });
+    }
+
+    await finaliseRun(run.runId, env, { now: finalisedAt });
+
+    const status = await env.METRICS_CACHE.get(PUBLICATION_STATUS_KEY, "json");
+    expect(status.failingSections).toEqual(["nationalDebt"]);
+
+    vi.useFakeTimers();
+    vi.setSystemTime(finalisedAt);
+    const health = await publicWorker.fetch(new Request("https://public-data.org/data/health.json"), env);
+    const body = await health.json();
+    expect(body.failing).toEqual(["nationalDebt"]);
+    // Ids only: no collector error text, keys or run ids.
+    expect(JSON.stringify(body)).not.toMatch(/wording|v1[23]:|terminal|error/i);
+  });
+
+  it("drops ids that are not published families from a stored failing list", async () => {
+    const { publicFailingSections } = await import("@/worker/publication-availability");
+    expect(publicFailingSections({ failingSections: ["nationalDebt", "nhsStats", "<script>", 7] })).toEqual(["nationalDebt"]);
+    expect(publicFailingSections(null)).toEqual([]);
+  });
+});

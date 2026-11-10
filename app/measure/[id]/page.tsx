@@ -76,6 +76,8 @@ function comparablePointChange(measure: NonNullable<Awaited<ReturnType<typeof fi
 
 export default async function MeasureDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  // An unknown id is a real 404; the gate would otherwise answer it with the "offline" page.
+  if (!MEASURES.some((item) => item.id === id)) notFound();
   const gate = gateRoute(`/measure/${id}/`);
   if (gate.access !== "serve") return <PublicationOffline heldFeeds={gate.heldFeeds} />;
   const { definition, measure, reason, editionId } = await findMeasure(id);
