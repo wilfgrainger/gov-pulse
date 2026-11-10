@@ -18,6 +18,23 @@
 | Candidate deployment | Not performed | Candidate is not the production revision. No release is claimed. |
 | Data-family activation | Not authorized | Holds remain in place. |
 
+## 10 November 2026 verification
+
+Against production revision `c925856`. Details and the capability table are in [RELEASE-READINESS.md](RELEASE-READINESS.md).
+
+| Check | Result | Evidence / limitation |
+|---|---|---|
+| Deployment | Pass | `deploy.yml` passed every step for `c925856`; health `ready: true`, `held: ["nhsStats"]`. |
+| Browser suite against production | Partial | 26 passed, 12 failed, 4 skipped. Failures: phone-width overflow, chart first frame, missing skip links, held international journeys, two test locator faults. The suite had assumed the October publication state; #247 makes it follow `config/publications.json`. |
+| Independent live audit | Partial | About 150 page loads. P06 pass; P01, P02, P03, P04, P08, P10 pass with defects; P07 fail. Broken-link crawl, no-JavaScript check beyond the home page and public-money release history were not completed because of Error 1102. |
+| Source review: release calendar | Pass | 81 ONS and 5 NHS events reconciled against the publishers. |
+| Source review: international comparison | Pass for data, fail for pages | Seven measures reconciled for the UK and two other countries each. |
+| Fact-check: authored stories | Pass for figures, fail for links and dates | Four of five figures matched ONS; debt was one release behind. |
+| Security headers | Pass | CSP, HSTS, `X-Frame-Options: DENY`, `nosniff`, referrer and permissions policies on HTML responses. |
+| Cache lifetimes | Fail | Snapshot, feed and prerendered held notices exceeded the 300-second cap (#248). |
+| Stability | Fail | Intermittent 503, Error 1102, from Worker CPU (#252 stopgap). |
+| Rollback exercise, A14 sign-off | Not done | — |
+
 ## Known defects and acceptance gaps
 
 | Severity | Finding | Status / Closure evidence |

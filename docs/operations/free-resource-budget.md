@@ -285,3 +285,28 @@ publisher is rewritten and the legacy writes stop (G4).
 Queue consumer, read with `npx wrangler queues consumer worker list
 public-data-jobs` on 6 November 2026: `dead_letter_queue` is
 `public-data-jobs-dlq`, `max_retries` 3, `retry_delay` 300 seconds.
+
+### Web Worker CPU per page (10 November 2026)
+
+Measured with `wrangler tail --format json` on `public-data-web` at production
+revision `c925856`, one request at a time. This is a small sample, not a
+percentile.
+
+| Page | Outcome | CPU (ms) |
+|---|---|---|
+| `/explore/` | ok | 166, 370, 425 |
+| `/explore/` | exceededCpu (503, Error 1102) | 10 |
+| `/section/gdp/` | ok | 69, 123, 142 |
+| `/briefing/` | ok | 35, 104 |
+| `/measure/inflation/` | ok | 52 |
+| `/` | exceededCpu (503, Error 1102) | 10, 10 |
+| `/about/` (prerendered) | ok | 2, 2 |
+
+Every per-visitor rendered evidence page costs several times the 10 ms
+free-plan CPU limit. Cloudflare tolerated the overrun on some requests and
+killed others at 10 ms. During an audit of about 150 sequential page loads
+plus two browser-suite runs, 9 of 12 sampled pages returned 503 in one pass and
+recovered within minutes. This is the CPU attribution the static-first plan's
+gate G9 asks for (criterion 2); the seven-day traffic figures (criterion 1) are
+still not recorded.
+
