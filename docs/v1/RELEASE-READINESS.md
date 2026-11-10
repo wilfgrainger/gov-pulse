@@ -14,9 +14,9 @@
 | P03 Comparison studio | Pass with defects | Published | Redundant `observation_period` export column | #255 |
 | P04 Briefings, stories, RSS | Pass with defects (briefing, RSS); stories held | Stories held (`product-hold`) | Briefing changes and the feed did not link to their edition; stories lacked the cited-edition link and honest dates | #255, #249 |
 | P05 Calendar and watchlist | Held | `releaseCalendar`, `nhsReleaseCalendar` held | Source review passed (81 ONS and 5 NHS dates reconciled). ICS dropped announced times; no cross-edition date-change notice | #251 |
-| P06 Cost of living | Pass | Published | None found | — |
+| P06 Cost of living | Pass | Published | None found; economy-page change labels corrected separately | #254 |
 | P07 Polling | **Fail** | Published | Only one current pollster live; More in Common rejected for fieldwork that crosses a month | #253 |
-| P08 Public money | Pass with defects | Published | Placeholder treated as a supplier; CSV repeats a notice value per supplier; amendments and cancellations not seen (history load failed during 1102 errors) | in progress |
+| P08 Public money | Pass with defects | Published | Placeholder treated as a supplier; CSV repeats a notice value per supplier; a £9.5bn framework ceiling summed into the £11.7bn disclosed total; amendments and cancellations not seen (history load failed during 1102 errors) | #256 |
 | P09 International | Held | `internationalComparison` held | Source review reconciled all seven measures. `/compare/` did not link to it; table export, year disclosure and caveats missing | #250 |
 | P10 Provenance and archive | Pass with defects | Published (8 editions) | Trace from topic page to measure, source record and edition works; edition pages hit by 1102 errors | #252 |
 
