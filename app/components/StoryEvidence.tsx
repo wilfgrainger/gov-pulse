@@ -1,3 +1,4 @@
+import { formatMeasure, readablePeriod } from "@/app/lib/dataExplorer";
 import Link from "next/link";
 import { routeEvidenceHeld } from "@/app/lib/gateRoute";
 import { measureForDisplay, validateMeasureRecord } from "@/app/lib/measureCatalog";
@@ -28,10 +29,10 @@ export default function StoryEvidence({ measureIds, catalog }: { measureIds: str
     <ul className="mt-4 grid list-none gap-px border border-line-strong bg-line-strong p-0 sm:grid-cols-2 lg:grid-cols-3">
       {measures.map(({ id, definition, record, valueAvailable, evidenceHeld }) => <li key={id} className="bg-white p-5">
         <p className="font-bold">{record?.label ?? definition?.label ?? id}</p>
-        <p className="mt-2 text-2xl font-black">{valueAvailable && record?.value !== null ? `${record?.value} ${record?.unit}` : "Unavailable"}</p>
+        <p className="mt-2 text-2xl font-black">{valueAvailable && record?.value !== null ? formatMeasure(record!.value!, record!.unit) : "Unavailable"}</p>
         <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-gray-600">{evidenceHeld ? "Source evidence held from publication" : valueAvailable && record?.availability === "current" ? "Current accepted observation" : valueAvailable && record?.availability === "historical" ? "Historical edition · not a current headline" : record ? "Source evidence expired; value unavailable" : "No verified observation in this edition"}</p>
         <p className="mt-2 text-sm text-gray-700">{record?.basis ?? definition?.basis ?? "The published measure definition is unavailable."}</p>
-        <p className="mt-2 text-xs text-gray-600">{record ? `${record.observationPeriod.label} · ${record.geography.label} · ${record.unit}` : definition ? `${definition.geography} · ${definition.unit} · ${definition.cadence}` : "No verified observation period."}</p>
+        <p className="mt-2 text-xs text-gray-600">{record ? `${readablePeriod(record.observationPeriod.label)} · ${record.geography.label} · ${record.unit}` : definition ? `${definition.geography} · ${definition.unit} · ${definition.cadence}` : "No verified observation period."}</p>
         {record ? <p className="mt-1 text-xs text-gray-600">Published {record.publishedAt.slice(0, 10)} · source edition {record.sourceEditionId}</p> : <p className="mt-1 text-xs text-gray-600">The value, period and publication date are unavailable for this edition.</p>}
         {record?.sourceUrl ? <p className="mt-1 text-xs"><a className="break-all underline" href={record.sourceUrl}>Primary publication</a></p> : null}
         <p className="mt-2 text-xs leading-5 text-gray-700">{record?.caveats.length ? record.caveats.join(" ") : "No material caveat is available in this edition."}</p>

@@ -131,4 +131,20 @@ describe("buildReleaseNote", () => {
 
     expect(note.sentences.some((s) => s.includes("change of"))).toBe(false);
   });
+
+  it("states changes in a percentage rate in percentage points, not relative percent", () => {
+    const note = buildReleaseNote({
+      measureLabel: "Monthly GDP growth",
+      latestValueDisplay: "+0.1%",
+      latestPeriod: "March 2026",
+      releaseDate: "2026-05-14",
+      history: [
+        { observedAt: Date.UTC(2026, 1, 1), value: 0.4 },
+        { observedAt: Date.UTC(2026, 2, 1), value: 0.1 },
+      ],
+      valueIsRate: true,
+      now: NOW,
+    });
+    expect(note.sentences).toContain("Monthly GDP growth fell to +0.1%, a change of -0.3 percentage points from the prior comparable period.");
+  });
 });

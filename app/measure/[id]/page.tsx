@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import EvidenceFigure from "@/app/components/charts/EvidenceFigure";
 import PageHeader from "@/app/components/PageHeader";
-import { formatMeasure } from "@/app/lib/dataExplorer";
+import { formatMeasure, readablePeriod } from "@/app/lib/dataExplorer";
 import SectionNav from "@/app/components/SectionNav";
 import SiteFooter from "@/app/components/SiteFooter";
 import { measureForDisplay } from "@/app/lib/measureCatalog";
@@ -57,7 +57,7 @@ function MethodFacts({ measure }: { measure: NonNullable<Awaited<ReturnType<type
     ["Unit", measure.unit],
     ["Geography", measure.geography.label],
     ["Frequency", measure.cadence],
-    ["Observation period", measure.observationPeriod.label],
+    ["Observation period", readablePeriod(measure.observationPeriod.label)],
     ["Source edition", measure.sourceEditionId],
     ["Published", measure.publishedAt.slice(0, 10)],
     ["Retrieved", measure.fetchedAt.slice(0, 10)],

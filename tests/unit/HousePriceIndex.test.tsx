@@ -101,7 +101,7 @@ describe("HousePriceIndex evidence integrity", () => {
 
     const note = screen.getByTestId("release-note");
     expect(note).toHaveTextContent("Release note");
-    expect(note).toHaveTextContent(/Annual house price change fell to 1\.4%, a change of -\d+(\.\d+)?% from the prior comparable period\./);
+    expect(note).toHaveTextContent(/Annual house price change fell to 1\.4%, a change of -0\.1 percentage points from the prior comparable period\./);
   });
 
   it("includes the ONS bulletin, history file, publication date, period, and caveat in chart exports", () => {

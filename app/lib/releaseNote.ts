@@ -42,6 +42,8 @@ export type ReleaseNoteInput = {
    * then skipped rather than guessed.
    */
   provisional?: boolean;
+  /** True when the value is itself a percentage rate: change is then stated in percentage points. */
+  valueIsRate?: boolean;
   /** "now" injection point for day-count arithmetic, defaults to the real clock. Testing hook only. */
   now?: Date;
 };
@@ -133,15 +135,18 @@ export function buildReleaseNote(input: ReleaseNoteInput): ReleaseNote {
     );
   }
 
-  if (latest && previous && previous.value !== 0) {
+  if (latest && previous && (input.valueIsRate || previous.value !== 0)) {
     const direction = directionOf(latest.value, previous.value);
-    const changePercent = ((latest.value - previous.value) / Math.abs(previous.value)) * 100;
-    const roundedChange = Math.abs(changePercent) < 0.05 ? "0.0" : Math.abs(changePercent).toFixed(1);
+    const change = input.valueIsRate
+      ? latest.value - previous.value
+      : ((latest.value - previous.value) / Math.abs(previous.value)) * 100;
+    const unit = input.valueIsRate ? " percentage points" : "%";
+    const roundedChange = Math.abs(change) < 0.05 ? "0.0" : Math.abs(change).toFixed(1);
     if (direction === "unchanged") {
       sentences.push(`${input.measureLabel} was unchanged from the prior comparable period, at ${input.latestValueDisplay}.`);
     } else {
       sentences.push(
-        `${input.measureLabel} ${direction} to ${input.latestValueDisplay}, a change of ${direction === "rose" ? "+" : "-"}${roundedChange}% from the prior comparable period.`
+        `${input.measureLabel} ${direction} to ${input.latestValueDisplay}, a change of ${direction === "rose" ? "+" : "-"}${roundedChange}${unit} from the prior comparable period.`
       );
     }
   }
