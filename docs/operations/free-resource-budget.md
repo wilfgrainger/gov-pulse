@@ -249,6 +249,18 @@ target of about 16 writes per run applies only after the legacy keys are retired
 (Task 17a). Required before retirement, not done: at least 7 production days of
 dual-write with the daily divergence-log count recorded here.
 
+### Pipeline dependencies (Task 10d, not wired)
+
+`worker/pipeline-deps.js` supplies the pipeline's real collectors and publisher:
+section and external feeds through their existing collectors, and
+`governmentContracts` as seven UTC day shards combined into one per-feed record.
+The publisher now reads the contracts record from `v20:feed:governmentContracts`
+or the legacy key, whichever was retrieved later, and takes a run's collector
+failure from the feed's last attempt when no legacy terminal record exists (one
+extra KV read per absent published family). The Worker entry still does not
+import the pipeline, so cron and Queue behaviour are unchanged. International
+comparison batches stay on the legacy runner.
+
 ### Pipeline handlers and write budget (Task 10c, not wired)
 
 `worker/pipeline.js` now has `collect`, `finalise` and `bootstrap` handlers,

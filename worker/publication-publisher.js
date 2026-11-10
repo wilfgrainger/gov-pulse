@@ -92,6 +92,17 @@ async function publicationFragments(env, now = new Date(), runId = null, current
   return records;
 }
 
+// The pipeline stores contracts as a per-feed record; the legacy runner writes
+// its own key. Whichever has the newer retrieval clock is the candidate.
+async function contractsRecordFor(env) {
+  const feed = (await readFeedRecord(env, "governmentContracts"))?.record ?? null;
+  const legacy = await kvGet(env, CONTRACT_CURRENT_RECORD_KEY);
+  if (!feed || !legacy) return feed ?? legacy ?? null;
+  return (fragmentRetrievalTime(legacy) ?? -Infinity) > (fragmentRetrievalTime(feed) ?? -Infinity)
+    ? legacy
+    : feed;
+}
+
 function preserveEditionClock(candidate, current) {
   if (!current || !samePublicationEvidence(candidate, current)) return candidate;
   const preserved = structuredClone(candidate);
@@ -173,7 +184,7 @@ async function publishFromCaches(env, options = {}) {
   const seed = current ?? (await fetchPublicationSeedSnapshot(env, options.fetchImpl ?? fetch));
   const repairedPublic = await repairPublicRecordAgainstCurrent(env, current, now);
   const fragments = await publicationFragments(env, now, options.runId ?? null, current);
-  const contractsRecord = await kvGet(env, CONTRACT_CURRENT_RECORD_KEY);
+  const contractsRecord = await contractsRecordFor(env);
   const merged = mergePublication(seed, fragments, contractsRecord, now);
   const currentCandidate = filterCurrentSnapshot(merged, now);
   if (!currentCandidate || !isSnapshot(currentCandidate)) {
@@ -228,7 +239,16 @@ async function publishFromCaches(env, options = {}) {
   const runId = typeof options.runId === "string" && options.runId.trim() ? options.runId : null;
   const unavailableSections = await unavailableSectionsFor(
     publication,
-    async (jobId) => (runId ? kvGet(env, terminalKey(runId, jobId)) : null),
+    async (jobId) => {
+      if (!runId) return null;
+      const terminal = await kvGet(env, terminalKey(runId, jobId));
+      if (terminal) return terminal;
+      // The three-message pipeline writes no terminal records: this run's
+      // outcome for the family is the feed's last attempt.
+      const feedId = jobId === "contracts" ? "governmentContracts" : jobId.split(":")[1];
+      const attempt = (await readFeedRecord(env, feedId))?.lastAttempt;
+      return attempt?.runId === runId ? { status: attempt.status } : null;
+    },
   );
 
   const status = {
@@ -308,6 +328,7 @@ async function publishFromCaches(env, options = {}) {
 }
 
 export {
+  contractsRecordFor,
   missingRequiredSections,
   publicationFragments,
   publishFromCaches,
