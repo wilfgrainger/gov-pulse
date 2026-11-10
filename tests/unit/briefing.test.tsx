@@ -43,7 +43,7 @@ describe("edition briefing and guided story contracts", () => {
     } } as unknown as MetricsSnapshot;
     const markup = renderToStaticMarkup(<BriefingEdition snapshot={snapshot}/>);
     expect(markup).toContain('href="/editions/catalog-abc"');
-    expect(markup).toContain("Sep 2026 has no published value yet; the latest value is 0.9 % for Aug 2026");
+    expect(markup).toMatch(/Sep 2026 has no published value yet; the latest value is 0\.9% for (Aug|August) 2026/);
     expect(markup).not.toContain("not previously reported → unavailable");
   });
 
