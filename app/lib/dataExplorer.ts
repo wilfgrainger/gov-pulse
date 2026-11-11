@@ -4,7 +4,9 @@ import {
   type MetricsSnapshot,
 } from "./metricsSnapshot";
 import { hasNewerRelatedRelease } from "./nationalEvidence";
-import { selectMeasure, type MeasureCatalog } from "./measureCatalog";
+import { readablePeriod, selectMeasure, type MeasureCatalog } from "./measureCatalog";
+
+export { readablePeriod };
 import { MEASURES, type Measure, type MeasureDefinition } from "./measureDefinitions";
 
 export { MEASURES } from "./measureDefinitions";
@@ -32,12 +34,6 @@ const finite = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 const text = (value: unknown) =>
   typeof value === "string" && value.trim() ? value : null;
-export function readablePeriod(value: string | null): string | null {
-  const match = value?.match(/^(\d{4})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$/i);
-  if (!match) return value;
-  const month = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"].indexOf(match[2].toUpperCase());
-  return new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(Number(match[1]), month, 1)));
-}
 function sourceLink(
   data: unknown,
   definition: MeasureDefinition,

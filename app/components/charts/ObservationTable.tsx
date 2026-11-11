@@ -1,5 +1,6 @@
 import type { MeasurePoint, MeasureRecord } from "@/app/lib/measureCatalog";
 import type { DateWindow } from "@/app/lib/chartModel";
+import { readablePeriod } from "@/app/lib/measureCatalog";
 
 type GenericRow = { observedAt: number; period: string; [key: string]: string | number | null };
 type GenericSeries = { key: string; label: string };
@@ -32,7 +33,7 @@ export default function ObservationTable(props: MeasureTableProps | GenericTable
               {props.series.map((series) => <th key={series.key} scope="col" className="py-2 pr-4">{series.label}</th>)}
             </tr></thead>
             <tbody>{props.rows.map((row) => <tr key={row.observedAt} className="border-b border-black/10">
-              <th scope="row" className="py-2 pr-4 font-medium">{row.period}</th>
+              <th scope="row" className="py-2 pr-4 font-medium">{readablePeriod(row.period)}</th>
               <td className="py-2 pr-4 tabular-nums">{new Date(row.observedAt).toISOString().slice(0, 10)}</td>
               {props.series.map((series) => {
                 const value = row[series.key];
@@ -67,7 +68,7 @@ export default function ObservationTable(props: MeasureTableProps | GenericTable
           <tbody>
             {points.map((point) => (
               <tr key={`${point.observedAt}-${point.revisionId}`} className="border-b border-black/10">
-                <th scope="row" className="py-2 pr-4 font-medium">{point.period}</th>
+                <th scope="row" className="py-2 pr-4 font-medium">{readablePeriod(point.period)}</th>
                 <td className="py-2 pr-4 tabular-nums">{point.observedAt}</td>
                 <td className="py-2 pr-4 tabular-nums">{valueText(point.value, measure.unit)}</td>
                 <td className="py-2 pr-4">{point.valueStatus}</td>

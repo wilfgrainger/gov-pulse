@@ -22,7 +22,8 @@ export async function redirectToDossier(kind: "buyer" | "supplier", rawId: strin
   redirect(dossierHref({ kind, basis: "publisher-id", identity: id }));
 }
 
-/** `output: "export"` needs a param list; one placeholder page, real ids go through the redirect rules. */
-export function moneyDossierStaticParams(): { id: string }[] {
-  return process.env.STATIC_EXPORT === "true" ? [{ id: "_" }] : [];
-}
+// `output: "export"` needs a param list: one placeholder page, real ids go through the redirect rules.
+// Outside the export it must be absent: with it, Next treats the route as static and the
+// request-time evidence read fails every id with DYNAMIC_SERVER_USAGE (HTTP 500).
+export const moneyDossierStaticParams: (() => { id: string }[]) | undefined =
+  process.env.STATIC_EXPORT === "true" ? () => [{ id: "_" }] : undefined;
