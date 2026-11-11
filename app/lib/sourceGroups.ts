@@ -48,12 +48,6 @@ export const SOURCE_GROUPS = [
         cadence: "Monthly or periodic, according to the named release",
         publishers: [{ name: "Office for National Statistics", url: "https://www.ons.gov.uk/" }],
       },
-      {
-        name: "Bank of England",
-        use: "Official Bank Rate in the key economic indicators evidence.",
-        cadence: "At Monetary Policy Committee decisions",
-        publishers: [{ name: "Bank of England statistics", url: "https://www.bankofengland.co.uk/statistics" }],
-      },
     ],
   },
   {

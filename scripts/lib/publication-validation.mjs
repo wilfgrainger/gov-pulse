@@ -61,7 +61,7 @@ export function validateSnapshot(
 
 export function hasRequiredHistoryShape(section, data, now = Date.now()) {
   if (section === "sentimentPulse") {
-    return ["inflation", "bankRate", "unemployment"].every(
+    return ["inflation", "unemployment"].every(
       (id) =>
         Array.isArray(data?.series?.[id]?.history) &&
         data.series[id].history.length >= 2 &&

@@ -15,7 +15,12 @@ const DAY_MS = 24 * HOUR_MS;
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
 const ISO_UTC_INSTANT = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/;
 // sentimentPulse validity is independent per measure.
-const SENTIMENT_MEASURE_IDS = Object.freeze(["inflation", "bankRate", "unemployment"]);
+const SENTIMENT_MEASURE_IDS = Object.freeze(["inflation", "unemployment"]);
+// Measures removed from the site. A stored snapshot or archived edition can
+// still carry them; they are never public (Bank Rate, removed 11 November 2026:
+// the Bank of England does not license its content for re-use).
+const REMOVED_MEASURE_IDS = new Set(["bankRate"]);
+const REMOVED_UPSTREAM_SERIES_IDS = new Set(["IUDBEDR"]);
 const PUBLICATION_STATES = Object.freeze(["published", "held", "retired"]);
 
 /**
@@ -313,7 +318,9 @@ function filterPublicationCatalog(catalog, config = PUBLICATION_CONFIG) {
   return {
     ...catalog,
     measures: Object.fromEntries(
-      Object.entries(catalog.measures).filter(([, measure]) => publicationPublished(measure.sourceId, config)),
+      Object.entries(catalog.measures).filter(
+        ([id, measure]) => !REMOVED_MEASURE_IDS.has(id) && publicationPublished(measure.sourceId, config),
+      ),
     ),
   };
 }
@@ -321,6 +328,7 @@ function filterPublicationCatalog(catalog, config = PUBLICATION_CONFIG) {
 /** @param {any} summary @param {PublicationConfig} config @param {any} catalog */
 function filterPublicationSummary(summary, config = PUBLICATION_CONFIG, catalog = null) {
   const changes = (summary?.changes ?? []).filter((change) =>
+    !REMOVED_MEASURE_IDS.has(change.measureId) &&
     publicationPublished(
       catalog?.measures?.[change.measureId]?.sourceId ??
         definitions.measures.find((measure) => measure.id === change.measureId)?.section ??
@@ -369,7 +377,63 @@ function filterPublicationSnapshot(input, config = PUBLICATION_CONFIG) {
   for (const id of publishedSections) {
     if (Object.hasOwn(input, id)) snapshot[id] = structuredClone(input[id]);
   }
+  if (isRecord(snapshot.sentimentPulse)) withoutRetiredSentimentSeries(snapshot.sentimentPulse);
+  if (isRecord(sources.sentimentPulse) && hasRemovedUpstream(sources.sentimentPulse)) {
+    snapshot.meta.sources = { ...sources, sentimentPulse: withoutRemovedUpstreams(sources.sentimentPulse) };
+  }
   return snapshot;
+}
+
+/** True when a stored source entry still names a removed upstream (Bank Rate). */
+function hasRemovedUpstream(source) {
+  return (
+    (typeof source?.source === "string" && [...REMOVED_UPSTREAM_SERIES_IDS].some((id) => source.source.includes(id))) ||
+    (Array.isArray(source?.provenance?.upstreams) &&
+      source.provenance.upstreams.some((upstream) => REMOVED_UPSTREAM_SERIES_IDS.has(upstream?.seriesId)))
+  );
+}
+
+/** A copy of a stored source entry without removed upstreams. */
+function withoutRemovedUpstreams(source) {
+  const removed = (text) => [...REMOVED_UPSTREAM_SERIES_IDS].some((id) => text.includes(id));
+  const copy = structuredClone(source);
+  if (typeof copy.source === "string") copy.source = copy.source.split(" + ").filter((part) => !removed(part)).join(" + ");
+  if (Array.isArray(copy.provenance?.upstreams)) {
+    copy.provenance.upstreams = copy.provenance.upstreams.filter((upstream) => !REMOVED_UPSTREAM_SERIES_IDS.has(upstream?.seriesId));
+  }
+  return copy;
+}
+
+/** True when a stored key-indicators record carries a series no longer published. */
+function hasRetiredSentimentSeries(data) {
+  return ["series", "__measureValidity"].some(
+    (key) => isRecord(data?.[key]) && Object.keys(data[key]).some((id) => !SENTIMENT_MEASURE_IDS.includes(id)),
+  ) || (Array.isArray(data?.order) && data.order.some((id) => !SENTIMENT_MEASURE_IDS.includes(id))) ||
+    hasRemovedUpstream({ provenance: data?.__provenance });
+}
+
+/** Drops removed series from a (copied) key-indicators record in place. */
+function withoutRetiredSentimentSeries(data) {
+  if (hasRemovedUpstream({ provenance: data.__provenance })) {
+    data.__provenance = withoutRemovedUpstreams({ provenance: data.__provenance }).provenance;
+  }
+  for (const key of ["series", "__measureValidity"]) {
+    if (!isRecord(data[key])) continue;
+    for (const id of Object.keys(data[key])) {
+      if (!SENTIMENT_MEASURE_IDS.includes(id)) delete data[key][id];
+    }
+  }
+  if (!Array.isArray(data.order) || data.order.every((id) => SENTIMENT_MEASURE_IDS.includes(id))) return;
+  const retired = data.order.filter((id) => !SENTIMENT_MEASURE_IDS.includes(id));
+  data.order = data.order.filter((id) => SENTIMENT_MEASURE_IDS.includes(id));
+  // The stored period summary joins one "<shortLabel> <period>" part per series.
+  if (typeof data.__observation?.period === "string") {
+    const labels = retired.map((id) => (id === "bankRate" ? "Bank Rate " : `${id} `));
+    data.__observation.period = data.__observation.period
+      .split(" · ")
+      .filter((part) => !labels.some((label) => part.startsWith(label)))
+      .join(" · ");
+  }
 }
 
 const FILTERED_SNAPSHOT_META_FIELDS = new Set([
@@ -410,6 +474,7 @@ function isPublicationFilteredSnapshot(snapshot, config = PUBLICATION_CONFIG) {
   for (const key of Object.keys(snapshot)) {
     if (key !== "meta" && !Object.hasOwn(meta.sources, key)) return false;
   }
+  if (hasRetiredSentimentSeries(snapshot.sentimentPulse) || hasRemovedUpstream(meta.sources.sentimentPulse)) return false;
   const sourceIds = Object.keys(meta.sources);
   if (sourceIds.length === 0 || sourceIds.some((id) => !publicationPublished(id, config))) return false;
   if (!Array.isArray(meta.verifiedSections) || meta.verifiedSections.some((id) => !Object.hasOwn(meta.sources, id))) {
@@ -418,7 +483,9 @@ function isPublicationFilteredSnapshot(snapshot, config = PUBLICATION_CONFIG) {
   const catalog = meta.measureCatalog;
   if (catalog !== null) {
     if (!catalog?.measures || typeof catalog.measures !== "object") return false;
-    if (Object.values(catalog.measures).some((measure) => !publicationPublished(measure?.sourceId, config))) {
+    if (Object.entries(catalog.measures).some(
+      ([id, measure]) => REMOVED_MEASURE_IDS.has(id) || !publicationPublished(measure?.sourceId, config),
+    )) {
       return false;
     }
   }
@@ -427,6 +494,7 @@ function isPublicationFilteredSnapshot(snapshot, config = PUBLICATION_CONFIG) {
     if (!publicationPublished("editionArchive", config) || !summary || !Array.isArray(summary.changes)) return false;
     if (Object.keys(summary).some((key) => !FILTERED_SUMMARY_FIELDS.has(key))) return false;
     const changesPublished = summary.changes.every((change) =>
+      !REMOVED_MEASURE_IDS.has(change?.measureId) &&
       publicationPublished(
         catalog?.measures?.[change?.measureId]?.sourceId ??
           definitions.measures.find((measure) => measure.id === change?.measureId)?.section ??

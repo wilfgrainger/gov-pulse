@@ -7,7 +7,7 @@ The complete publication configuration is `config/publications.json`. Rows marke
 
 | Family | Primary-source evidence | Publication state and verified gap |
 |---|---|---|
-| Key indicators (`sentimentPulse`) | ONS CPI [D7G7](https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7g7/mm23) | **Published.** CPI 3.5%, September 2026, published 21 October; matches the ONS series (reviewed 10 Nov). Bank Rate and unemployment were not separately reconciled. |
+| Key indicators (`sentimentPulse`) | ONS CPI [D7G7](https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7g7/mm23) | **Published.** CPI 3.5%, September 2026, published 21 October; matches the ONS series (reviewed 10 Nov). Unemployment was not separately reconciled. Bank of England Bank Rate was removed from collection and display on 11 November 2026 (licensing review: the Bank's content is its copyright and re-use needs permission); the section now carries CPI and unemployment only. |
 | Real wages | ONS labour market bulletin, October 2026 | **Published.** Regular pay real growth 0.6%, June to August 2026, Great Britain; matches the bulletin text (reviewed 10 Nov). |
 | Government receipts (`taxRevenue`) | ONS public sector finances, September 2026 | **Published.** Central government current receipts £90.1bn, September 2026; matches the bulletin (reviewed 10 Nov). |
 | GDP | ONS GDP monthly estimate, August 2026 | **Published.** Three-month growth 0.7%, monthly 0.1%, August 2026; matches the bulletin text (reviewed 10 Nov). |

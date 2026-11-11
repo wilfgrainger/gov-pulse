@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import publicationConfig from "../../config/publications.json" with { type: "json" };
+import measureDefinitions from "../../contracts/measure-definitions.json" with { type: "json" };
 
 // Expectations follow config/publications.json, so the same suite is truthful
 // locally and against production whatever is currently held.
@@ -213,7 +214,7 @@ test("measure-library route keeps its truthful HTML available without JavaScript
   const page = await browser.newPage({ baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173", javaScriptEnabled: false });
   await page.goto("./measure");
   await expect(page.getByRole("heading", { level: 1, name: "Measure library" })).toBeVisible();
-  await expect(page.getByRole("status")).toContainText("Showing 38 of 38 measures");
+  await expect(page.getByRole("status")).toContainText(`Showing ${measureDefinitions.measures.length} of ${measureDefinitions.measures.length} measures`);
   await page.close();
 });
 

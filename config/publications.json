@@ -36,7 +36,7 @@
     "sentimentPulse": {
       "state": "published",
       "reasonCode": "published-verified",
-      "reason": "Verified ONS CPI, ONS unemployment and Bank of England Bank Rate sources are approved for public release.",
+      "reason": "Verified ONS CPI and ONS unemployment sources are approved for public release.",
       "sections": [
         "economy"
       ]

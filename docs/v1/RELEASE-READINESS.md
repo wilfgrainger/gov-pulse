@@ -26,6 +26,7 @@ Counts at audit time: 0 of 10 have named independent sign-off. 1 passed outright
 
 - **Deployed revision:** the `deploy.yml` run for `c925856` passed every step, including the deployed-revision, reader-route and publication-control checks. `/data/health.json` returned `{"status":"ready","ready":true,"held":["nhsStats"]}`.
 - **Published families (10 plus the edition archive, from 11 November 2026):** `nationalDebt`, `gdpTracker`, `sentimentPulse`, `taxRevenue`, `governmentContracts`, `employmentStats`, `crimeStatistics`, `migrationStats`, `housePriceIndex`, `realWages`, `editionArchive`.
+- **Removed (11 November 2026):** Bank of England Bank Rate, from collection and display (the Bank's legal terms require permission for re-use). Key indicators publish CPI and unemployment.
 - **Held (never collected, including on a deploy bootstrap, from 11 November 2026):** `electionPolling` (licence permission required: YouGov terms prohibit automated collection without written permission; More in Common publishes no reuse terms), `bettingOdds`, `nhsStats`, `earlyYears`, `releaseCalendar`, `nhsReleaseCalendar`, `internationalComparison`, `storyHouseholdBudgets`, `storyPublicFinances`.
 - **Browser suite against production:** 26 passed, 12 failed, 4 skipped before the fixes above. The failures are the P01 defects, the held international journeys and two test-only locator faults.
 - **Same-figure consistency:** CPI, unemployment, GDP, private rents and debt agreed across the home page, section page, measure page, `/explore/`, the snapshot and the section JSON.

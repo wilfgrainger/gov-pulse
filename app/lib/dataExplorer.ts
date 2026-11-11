@@ -62,7 +62,6 @@ function sourceLink(
         url.protocol === "https:" &&
         [
           "www.ons.gov.uk",
-          "www.bankofengland.co.uk",
           "www.england.nhs.uk",
         ].includes(url.hostname)
       )

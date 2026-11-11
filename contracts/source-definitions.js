@@ -43,18 +43,6 @@ export const SOURCE_CATALOG = deepFreeze({
     seriesId: "D7G7",
     datasetId: "MM23",
   }),
-  "boe-bank-rate-iudbedr": defineSource({
-    id: "boe-bank-rate-iudbedr",
-    name: "Official Bank Rate IUDBEDR / IADB",
-    publisher: "Bank of England",
-    evidenceClass: "official-policy",
-    geography: { code: "UK", label: "United Kingdom" },
-    primaryUrls: ["https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp"],
-    cadence: "event-driven",
-    caveats: ["Bank Rate is event-dated and remains current until a later Monetary Policy Committee decision changes it."],
-    seriesId: "IUDBEDR",
-    datasetId: "IADB",
-  }),
   "ons-unemployment-mgsx": defineSource({
     id: "ons-unemployment-mgsx",
     name: "Unemployment rate MGSX / LMS",

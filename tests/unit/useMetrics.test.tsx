@@ -2,24 +2,21 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const fallback = {
-  economicData: [{ date: "Fallback", inflation: 1, bankRate: 1, unemployment: 1 }],
+  economicData: [{ date: "Fallback", inflation: 1, unemployment: 1 }],
   metricConfig: {
     inflation: { label: "CPI INFLATION", unit: "%", color: "#FF3B00", current: "1%", target: "target" },
-    bankRate: { label: "BANK OF ENGLAND RATE", unit: "%", color: "#000000", current: "1%", target: "target" },
     unemployment: { label: "UNEMPLOYMENT RATE", unit: "%", color: "#666666", current: "1%", target: "target" },
   },
 };
 
 const completeLivePayload = {
-  economicData: [{ date: "Worker", inflation: 3.1, bankRate: 4, unemployment: 5 }],
+  economicData: [{ date: "Worker", inflation: 3.1, unemployment: 5 }],
   metricConfig: {
     inflation: { label: "CPI INFLATION", unit: "%", color: "#FF3B00", current: "3.1%", target: "2.0% target" },
-    bankRate: { label: "BANK OF ENGLAND RATE", unit: "%", color: "#000000", current: "4.0%", target: "Monetary policy" },
     unemployment: { label: "UNEMPLOYMENT RATE", unit: "%", color: "#666666", current: "5.0%", target: "ONS LFS" },
   },
   series: {
     inflation: { status: "current", value: 3.1 },
-    bankRate: { status: "current", value: 4 },
     unemployment: { status: "current", value: 5 },
   },
 };
@@ -45,7 +42,7 @@ function snapshotWith(data = completeLivePayload, fetchedAt = minutesAgo(5), dea
         maxAgeDays: 40,
       },
       __measureValidity: Object.fromEntries(
-        ["inflation", "bankRate", "unemployment"].map((id) => [
+        ["inflation", "unemployment"].map((id) => [
           id,
           { validUntil: typeof deadline === "string" ? deadline : deadline[id] },
         ])
@@ -137,7 +134,7 @@ describe("useMetrics", () => {
   it("renders the request-time snapshot immediately and retains it when browser refresh fails", async () => {
     const serverPayload = {
       ...completeLivePayload,
-      economicData: [{ date: "Server", inflation: 3, bankRate: 4, unemployment: 5 }],
+      economicData: [{ date: "Server", inflation: 3, unemployment: 5 }],
     };
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("snapshot unavailable")));
     const { useMetrics } = await loadUseMetrics("production", snapshotWith(serverPayload));
@@ -155,7 +152,7 @@ describe("useMetrics", () => {
     vi.stubGlobal("fetch", fetchSpy);
     const serverPayload = {
       ...completeLivePayload,
-      economicData: [{ date: "Server", inflation: 3, bankRate: 4, unemployment: 5 }],
+      economicData: [{ date: "Server", inflation: 3, unemployment: 5 }],
     };
     const { useMetrics } = await loadUseMetrics("production", snapshotWith(serverPayload, minutesAgo(10)));
     const { result } = renderHook(() => useMetrics("sentimentPulse", fallback));
@@ -198,8 +195,7 @@ describe("useMetrics", () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("snapshot unavailable")));
     const { useMetrics } = await loadUseMetrics("production", snapshotWith(completeLivePayload, minutesAgo(5), {
       inflation: later,
-      bankRate: near,
-      unemployment: later,
+      unemployment: near,
     }));
     const { result } = renderHook(() => useMetrics("sentimentPulse", fallback));
 
@@ -208,7 +204,7 @@ describe("useMetrics", () => {
     });
 
     expect(result.current.isLive).toBe(true);
-    expect(result.current.data.series.bankRate).toMatchObject({ value: null, status: "expired" });
+    expect(result.current.data.series.unemployment).toMatchObject({ value: null, status: "expired" });
     expect(result.current.data.series.inflation.value).toBe(3.1);
   });
 });
