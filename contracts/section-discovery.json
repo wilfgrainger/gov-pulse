@@ -48,14 +48,13 @@
       ]
     },
     "economy": {
-      "title": "UK inflation, Bank Rate and unemployment",
-      "description": "Latest CPI inflation, Bank Rate and unemployment evidence, each retaining its own period and publication date.",
+      "title": "UK inflation and unemployment",
+      "description": "Latest CPI inflation and unemployment evidence, each retaining its own period and publication date.",
       "category": "Economy",
       "kind": "dataset",
       "sourceKey": "sentimentPulse",
       "sameAs": [
         "https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7g7/mm23",
-        "https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp",
         "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/unemployment/timeseries/mgsx/lms"
       ]
     },

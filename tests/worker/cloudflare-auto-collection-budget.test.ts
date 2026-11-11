@@ -19,7 +19,7 @@ afterEach(() => {
 });
 
 describe("Cloudflare automatic collection budget", () => {
-  it("keeps explicit bootstrap coverage while scheduling only published publications", () => {
+  it("schedules and bootstraps only published publications", () => {
     for (const item of Object.values(PUBLICATION_CONFIG.publications)) item.state = "held";
     PUBLICATION_CONFIG.publications.nationalDebt.state = "published";
     PUBLICATION_CONFIG.publications.editionArchive.state = "published";
@@ -33,8 +33,8 @@ describe("Cloudflare automatic collection budget", () => {
       },
     ]);
     expect(refreshJobs("betting", "betting", { publishedOnly: true })).toEqual([]);
-    expect(refreshJobs("bootstrap", "bootstrap").length).toBeGreaterThan(1);
-    expect(refreshJobs("manual", "daily").some((job) => job.section === "bettingOdds")).toBe(true);
+    // A deploy bootstrap never collects a held publication either.
+    expect(refreshJobs("bootstrap", "bootstrap").map((job) => job.section)).toEqual(["nationalDebt"]);
   });
 
   it("does no Queue or KV work for an inactive three-hour cron", async () => {

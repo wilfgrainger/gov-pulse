@@ -12,14 +12,15 @@ entitlement. It is derived from `config/publications.json`, the collection plan 
 The deployment still receives nine cron invocations daily: one national run and
 eight three-hour betting checks. **Only published evidence generates scheduled
 work**; held feeds do not write KV or enqueue Queue jobs. On 6 November 2026
-`config/publications.json` publishes 11 collected sources: ten section
+`config/publications.json` publishes 10 collected sources: nine section
 collectors (gdpTracker, sentimentPulse, employmentStats, taxRevenue,
-nationalDebt, migrationStats, housePriceIndex, realWages, crimeStatistics,
-electionPolling) and governmentContracts. (The file also publishes
+nationalDebt, migrationStats, housePriceIndex, realWages, crimeStatistics)
+and governmentContracts. electionPolling is held from 11 November 2026 and,
+like every held source, is not collected by cron or by a deploy bootstrap. (The file also publishes
 `editionArchive`, which is an archive gate, not a collected source.)
-`refreshJobs("x", "daily", { publishedOnly: true })` returns exactly 11 jobs:
-10 `refresh-section`/`refresh-external-section` plus one `refresh-contracts`.
-With the finaliser that is **12 Queue deliveries/day**. bettingOdds is held, so
+`refreshJobs("x", "daily", { publishedOnly: true })` returns exactly 10 jobs:
+9 `refresh-section`/`refresh-external-section` plus one `refresh-contracts`.
+With the finaliser that is **11 Queue deliveries/day**. bettingOdds is held, so
 the eight betting cron invocations return without Queue or KV calls, and the
 international-comparison refresh also skips while held.
 These are deterministic projections from code/config, **not measured Cloudflare
@@ -27,11 +28,10 @@ usage or proof of plan headroom**. Manual bootstraps, replay and account-wide
 workload are separate.
 
 The planning factor of three Queue operations per delivery makes the current
-twelve-delivery schedule 36 project operations/day. This is a conservative
+eleven-delivery schedule 33 project operations/day. This is a conservative
 estimate, not the platform's billing definition. When another source is
 published its daily collection automatically resumes; update the projection.
-Stored held-source evidence remains private and manual recovery remains
-available. (`scripts/audit-free-budget.mjs` models the legacy
+Stored held-source evidence remains private. (`scripts/audit-free-budget.mjs` models the legacy
 `feeds/registry.js` operational status and still reports 30 messages/day; it
 does not read `config/publications.json` and over-counts held feeds.)
 
@@ -67,13 +67,13 @@ limits; those published limits describe the platform, not the account's
 remaining headroom ([pricing](https://developers.cloudflare.com/workers/platform/pricing/),
 [KV limits](https://developers.cloudflare.com/kv/platform/limits/)).
 
-The queue allows three retries. If the twelve projected daily deliveries each
-exhaust all three retries, their modeled upper bound is 48 deliveries/day,
+The queue allows three retries. If the eleven projected daily deliveries each
+exhaust all three retries, their modeled upper bound is 44 deliveries/day,
 not including new jobs explicitly enqueued by application retry handling or
 the finaliser's own pending re-sends. The former 120-delivery/day failure
 projection applied only to the old 30-job all-source schedule. Bootstrap, manual recovery and re-sends are separate.
-The scheduled collection tests cover disabled-feed no-ops and preserve the
-ability to force a verified bootstrap. Measure actual Queue deliveries,
+The scheduled collection tests cover disabled-feed no-ops, and a bootstrap
+collects only published feeds. Measure actual Queue deliveries,
 retries and KV writes before trusting either estimate.
 
 This model describes the current Cloudflare deployment only. It is not a

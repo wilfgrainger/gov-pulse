@@ -88,10 +88,13 @@ describe("publication decisions", () => {
     expect(publicationPublished("nationalDebt")).toBe(true);
     expect(publicationPublished("gdpTracker")).toBe(true);
     expect(publicationPublished("housePriceIndex")).toBe(true);
-    expect(publicationPublished("electionPolling")).toBe(true);
     expect(publicationPublished("editionArchive")).toBe(true);
     expect(publicationHeld("nhsStats")).toBe(true);
     expect(publicationHeld("bettingOdds")).toBe(true);
+    expect(publicationDecision("electionPolling")).toMatchObject({
+      state: "held",
+      reasonCode: "licence-permission-required",
+    });
     // Retired products are removed from the active policy (see docs/history/2026-10-07-retired-product-ledger.md).
     expect(publicationState("pmApproval")).toBeNull();
     expect(publicationRetired("pmApproval")).toBe(false);
@@ -110,7 +113,6 @@ describe("publication decisions", () => {
       "migrationStats",
       "housePriceIndex",
       "realWages",
-      "electionPolling",
       "crimeStatistics",
       "governmentContracts",
       "editionArchive",

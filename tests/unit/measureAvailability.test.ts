@@ -6,11 +6,11 @@ const nhsMeasure = MEASURES.find(({ id }) => id === "waitingPathwaysEstimate")!;
 
 describe("measure availability explanation", () => {
   it("keeps series-level publishers distinct inside a multi-source section", () => {
-    const bankRate = MEASURES.find(({ id }) => id === "bankRate")!;
-    expect(measurePublisher(bankRate, {
+    const seriesLevel = { ...MEASURES.find(({ id }) => id === "inflation")!, publisher: "Series publisher" };
+    expect(measurePublisher(seriesLevel, {
       status: "ok",
       provenance: { upstreams: [{ publisher: "Office for National Statistics" }] },
-    })).toBe("Bank of England");
+    })).toBe("Series publisher");
   });
 
   it("names the official publisher when its section is absent", () => {

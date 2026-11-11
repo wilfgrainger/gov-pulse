@@ -15,7 +15,14 @@ describe("cost-of-living lens", () => {
     expect(markup).toContain("Real regular pay growth: published observations");
     expect(markup).toContain("Verified private-rent evidence unavailable");
     expect(markup).not.toContain("household rent estimate");
-    expect(markup).toContain("Bank Rate history is unavailable or expired");
+    expect(markup).not.toMatch(/bank rate|policy rate|interest rate/i);
+  });
+
+  it("never shows a stored Bank Rate series", () => {
+    const bankRate = { id: "bankRate", label: "Official Bank Rate", value: 3.75, unit: "%", status: "current", period: "18 December 2025", sourceUrl: "https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp", publisher: "Bank of England", publishedAt: "2025-12-18T00:00:00.000Z", revisionStatus: "Event-dated.", history: [{ period: "7 August 2025", observedAt: "2025-08-07T00:00:00.000Z", value: 4 }, { period: "18 December 2025", observedAt: "2025-12-18T00:00:00.000Z", value: 3.75 }] };
+    const snapshot = { meta: { registryVersion: "test", sources: {}, measureCatalog: null }, sentimentPulse: { series: { bankRate } } } as unknown as MetricsSnapshot;
+    const markup = renderToStaticMarkup(<CostOfLivingLens snapshot={snapshot}/>);
+    expect(markup).not.toMatch(/bank rate|bank of england|3\.75/i);
   });
 
   it("shows current ONS rent level and its separate annual-change history with provenance", () => {

@@ -3,11 +3,9 @@ import { SENTIMENT_MEASURE_IDS } from "../../contracts/evidence-policy.js";
 
 const ONS_ORIGIN = "https://www.ons.gov.uk";
 const ONS_GENERATOR = `${ONS_ORIGIN}/generator?format=csv&uri=`;
-const BOE_BANK_RATE_URL = "https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp";
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
 const TEN_YEARS_MONTHLY = 120;
 const ONS_MAX_PUBLICATION_AGE_MS = 75 * 24 * 60 * 60 * 1000;
-const TEN_YEARS_MS = 10 * 365.25 * 24 * 60 * 60 * 1000;
 
 const MONTHS = Object.freeze({
   jan: 0,
@@ -56,21 +54,6 @@ const SERIES_DEFINITIONS = Object.freeze({
     revisionStatus:
       "The latest CPI estimate can be revised under the ONS consumer price inflation revision policy.",
     periodType: "monthly",
-  }),
-  bankRate: Object.freeze({
-    id: "bankRate",
-    label: "Official Bank Rate",
-    shortLabel: "Bank Rate",
-    unit: "%",
-    color: "#111111",
-    publisher: "Bank of England",
-    seriesId: "IUDBEDR",
-    datasetId: "IADB",
-    sourceUrl: BOE_BANK_RATE_URL,
-    frequency: "Changed by Monetary Policy Committee decision",
-    revisionStatus:
-      "The official rate history is event-dated rather than statistically revised.",
-    periodType: "event",
   }),
   unemployment: Object.freeze({
     id: "unemployment",
@@ -203,64 +186,6 @@ function rollingThreeMonthPeriod(point) {
   return `${start} to ${end}`;
 }
 
-function parseBoeDate(value) {
-  const match = String(value).trim().match(/^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{2}|\d{4})$/);
-  if (!match) {
-    throw new Error(`Unable to parse Bank Rate date '${value}'`);
-  }
-  const month = monthIndex(match[2], "Bank Rate");
-  const yearValue = Number(match[3]);
-  const year = match[3].length === 2 ? (yearValue >= 70 ? 1900 + yearValue : 2000 + yearValue) : yearValue;
-  const date = new Date(Date.UTC(year, month, Number(match[1])));
-  if (
-    date.getUTCFullYear() !== year ||
-    date.getUTCMonth() !== month ||
-    date.getUTCDate() !== Number(match[1])
-  ) {
-    throw new Error(`Unable to parse Bank Rate date '${value}'`);
-  }
-  return date.toISOString();
-}
-
-function parseBankRateHtml(html) {
-  const text = String(html);
-  const bodyMatch = text.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
-  const rows = [...(bodyMatch?.[1] ?? "").matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)];
-  const points = [];
-  const seen = new Set();
-
-  for (const row of rows) {
-    const cells = [...row[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(
-      (cell) => decodeHtml(cell[1])
-    );
-    if (cells.length < 2 || !/^\d{1,2}\s+[A-Za-z]{3}\s+(?:\d{2}|\d{4})$/.test(cells[0])) {
-      continue;
-    }
-
-    const observedAt = parseBoeDate(cells[0]);
-    if (seen.has(observedAt)) {
-      throw new Error(`Bank Rate history contains duplicate date '${cells[0]}'`);
-    }
-    seen.add(observedAt);
-    points.push({
-      period: new Intl.DateTimeFormat("en-GB", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        timeZone: "UTC",
-      }).format(new Date(observedAt)),
-      observedAt,
-      value: parseNumber(cells[1], `${cells[0]} Bank Rate`),
-    });
-  }
-
-  points.sort((left, right) => left.observedAt.localeCompare(right.observedAt));
-  if (points.length === 0) {
-    throw new Error("Bank of England page did not expose Bank Rate history");
-  }
-  return points;
-}
-
 async function fetchOfficialText(url, fetchImpl = fetch) {
   return fetchSourceText(url, {
     fetchImpl,
@@ -313,43 +238,6 @@ function buildOnsSeries(definition, points, publication, retrievedAt) {
   };
 }
 
-function buildBankRateSeries(points, retrievedAt) {
-  const definition = SERIES_DEFINITIONS.bankRate;
-  const latest = points.at(-1);
-  const cutoff = Date.parse(latest.observedAt) - TEN_YEARS_MS;
-  const history = points.filter((point) => Date.parse(point.observedAt) >= cutoff);
-  const comparisonDate = new Date(latest.observedAt);
-  comparisonDate.setUTCFullYear(comparisonDate.getUTCFullYear() - 1);
-  const priorYear = points
-    .filter((point) => Date.parse(point.observedAt) <= comparisonDate.getTime())
-    .at(-1);
-  return {
-    id: definition.id,
-    label: definition.label,
-    shortLabel: definition.shortLabel,
-    value: latest.value,
-    unit: definition.unit,
-    color: definition.color,
-    period: latest.period,
-    observedAt: latest.observedAt,
-    publishedAt: latest.observedAt,
-    retrievedAt,
-    publisher: definition.publisher,
-    sourceUrl: definition.sourceUrl,
-    seriesId: definition.seriesId,
-    datasetId: definition.datasetId,
-    frequency: definition.frequency,
-    revisionStatus: definition.revisionStatus,
-    evidenceClass: "official-data",
-    status: "current",
-    nextRelease: null,
-    annualDelta:
-      priorYear === undefined ? null : Number((latest.value - priorYear.value).toFixed(2)),
-    annualDeltaUnit: "percentage points",
-    history,
-  };
-}
-
 async function buildEconomicIndicators(fetchImpl = fetch, nowProvider = () => new Date()) {
   const now = nowProvider();
   const nowMs = now.getTime();
@@ -360,41 +248,18 @@ async function buildEconomicIndicators(fetchImpl = fetch, nowProvider = () => ne
 
   const inflationDefinition = SERIES_DEFINITIONS.inflation;
   const unemploymentDefinition = SERIES_DEFINITIONS.unemployment;
-  const [onsPublications, bankRatePage] = await Promise.all([
-    (async () => {
-      // Keep requests to the same publisher sequential. Start pacing alone does
-      // not prevent overlapping responses, and live burst requests returned 429.
-      const inflationCsv = await fetchOfficialText(
-        `${ONS_GENERATOR}${inflationDefinition.topicPath}`,
-        fetchImpl
-      );
-      const inflationPage = await fetchOfficialText(
-        inflationDefinition.sourceUrl,
-        fetchImpl
-      );
-      const unemploymentCsv = await fetchOfficialText(
-        `${ONS_GENERATOR}${unemploymentDefinition.topicPath}`,
-        fetchImpl
-      );
-      const unemploymentPage = await fetchOfficialText(
-        unemploymentDefinition.sourceUrl,
-        fetchImpl
-      );
-      return {
-        inflationCsv,
-        inflationPage,
-        unemploymentCsv,
-        unemploymentPage,
-      };
-    })(),
-    fetchOfficialText(BOE_BANK_RATE_URL, fetchImpl),
-  ]);
-  const {
-    inflationCsv,
-    inflationPage,
-    unemploymentCsv,
-    unemploymentPage,
-  } = onsPublications;
+  // Keep requests to the same publisher sequential. Start pacing alone does
+  // not prevent overlapping responses, and live burst requests returned 429.
+  const inflationCsv = await fetchOfficialText(
+    `${ONS_GENERATOR}${inflationDefinition.topicPath}`,
+    fetchImpl
+  );
+  const inflationPage = await fetchOfficialText(inflationDefinition.sourceUrl, fetchImpl);
+  const unemploymentCsv = await fetchOfficialText(
+    `${ONS_GENERATOR}${unemploymentDefinition.topicPath}`,
+    fetchImpl
+  );
+  const unemploymentPage = await fetchOfficialText(unemploymentDefinition.sourceUrl, fetchImpl);
 
   const series = {
     inflation: buildOnsSeries(
@@ -403,7 +268,6 @@ async function buildEconomicIndicators(fetchImpl = fetch, nowProvider = () => ne
       parseOnsPublicationPage(inflationPage),
       retrievedAt
     ),
-    bankRate: buildBankRateSeries(parseBankRateHtml(bankRatePage), retrievedAt),
     unemployment: buildOnsSeries(
       unemploymentDefinition,
       parseOnsMonthlyCsv(unemploymentCsv),
@@ -479,10 +343,12 @@ function isEconomicIndicatorsPayload(data, now = new Date()) {
     return false;
   }
   const order = Object.keys(SERIES_DEFINITIONS);
+  // A record stored before Bank Rate was removed (11 November 2026) still lists
+  // it; that series is ignored here and dropped from every public projection.
+  const ownOrder = Array.isArray(data.order) ? data.order.filter((id) => id !== "bankRate") : null;
   return (
     data.available === true &&
-    Array.isArray(data.order) &&
-    JSON.stringify(data.order) === JSON.stringify(order) &&
+    JSON.stringify(ownOrder) === JSON.stringify(order) &&
     data.series &&
     typeof data.series === "object" &&
     !Array.isArray(data.series) &&
@@ -530,14 +396,12 @@ async function collect(ctx) {
 }
 
 export {
-  BOE_BANK_RATE_URL,
   ONS_MAX_PUBLICATION_AGE_MS,
   SERIES_DEFINITIONS,
   buildCurrentEconomicIndicators,
   buildEconomicIndicators,
   collect,
   isEconomicIndicatorsPayload,
-  parseBankRateHtml,
   parseOnsMonthlyCsv,
   parseOnsPublicationPage,
   publicationCurrent,

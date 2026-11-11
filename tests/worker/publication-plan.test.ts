@@ -38,7 +38,7 @@ describe("publication collection plan", () => {
     expect(jobs.at(-1)).toEqual({ type: "refresh-contracts" });
   });
 
-  it("limits bootstrap to required evidence and makes contracts explicitly opt-in", () => {
+  it("limits bootstrap to required published evidence and makes contracts explicitly opt-in", () => {
     const jobs = refreshJobs("bootstrap-run", "bootstrap");
     expect(jobs.map((job) => job.section)).toEqual([
       "gdpTracker",
@@ -49,8 +49,6 @@ describe("publication collection plan", () => {
       "migrationStats",
       "housePriceIndex",
       "realWages",
-      "electionPolling",
-      "nhsStats",
     ]);
     expect(jobs.some((job) => job.type === "refresh-contracts")).toBe(false);
 

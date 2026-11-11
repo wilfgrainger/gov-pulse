@@ -43,11 +43,6 @@ export const CHART_EVENTS: ChartEvent[] = [
     label: "Energy Price Guarantee introduced",
   },
   {
-    id: "bank-rate-peak-2023",
-    date: "2023-08-03",
-    label: "Bank Rate reached 5.25%",
-  },
-  {
     id: "general-election-2024",
     date: "2024-07-04",
     label: "UK general election",

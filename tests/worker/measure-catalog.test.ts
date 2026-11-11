@@ -133,7 +133,7 @@ describe("Worker measure catalog", () => {
         ...source.provenance,
         upstreams: [
           { url: "https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7g7/mm23" },
-          { url: "https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp" },
+          { url: "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/unemployment/timeseries/mgsx/lms" },
         ],
       },
     };
@@ -161,44 +161,21 @@ describe("Worker measure catalog", () => {
     });
   });
 
-  it("publishes Bank Rate with its event history and series-specific validity", () => {
+  it("does not catalogue a stored Bank Rate series", () => {
     const value = snapshot();
-    value.meta.sources.sentimentPulse = {
-      ...source,
-      fetchedAt: "2026-10-01T12:00:00.000Z",
-      provenance: { ...source.provenance, upstreams: [{ url: "https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp" }] },
-    };
+    value.meta.sources.sentimentPulse = { ...source, fetchedAt: "2026-10-01T12:00:00.000Z" };
     value.sentimentPulse = {
       series: {
         bankRate: {
-          value: 3.75,
-          period: "18 December 2025",
-          observedAt: "2025-12-18T00:00:00.000Z",
-          publishedAt: "2025-12-18T00:00:00.000Z",
-          sourceUrl: "https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp",
-          history: [
-            { period: "7 August 2025", observedAt: "2025-08-07T00:00:00.000Z", value: 4 },
-            { period: "18 December 2025", observedAt: "2025-12-18T00:00:00.000Z", value: 3.75 },
-          ],
+          value: 3.75, period: "18 December 2025", observedAt: "2025-12-18T00:00:00.000Z",
+          publishedAt: "2025-12-18T00:00:00.000Z", sourceUrl: "https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp",
+          history: [{ period: "18 December 2025", observedAt: "2025-12-18T00:00:00.000Z", value: 3.75 }],
         },
       },
       __measureValidity: { bankRate: { validUntil: "2026-10-03T00:00:00.000Z" } },
     };
 
-    const measure = buildMeasureCatalog(value, new Date("2026-10-02T12:00:00.000Z")).measures.bankRate;
-    expect(measure).toMatchObject({
-      availability: "current",
-      evidenceClass: "official-policy",
-      publisher: "Bank of England",
-      value: 3.75,
-      sourceUrl: "https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp",
-      validUntil: "2026-10-03T00:00:00.000Z",
-      observationPeriod: { start: "2025-12-18", end: "2025-12-18" },
-      points: [
-        { observedAt: "2025-08-07", value: 4 },
-        { observedAt: "2025-12-18", value: 3.75 },
-      ],
-    });
+    expect(buildMeasureCatalog(value, new Date("2026-10-02T12:00:00.000Z")).measures).not.toHaveProperty("bankRate");
   });
 
   it("keeps Crime Survey, police-recorded and court measures as separately sourced one-point records", () => {
@@ -284,21 +261,21 @@ describe("Worker measure catalog", () => {
     value.meta.sources.sentimentPulse = {
       ...source,
       fetchedAt: "2026-10-01T12:00:00.000Z",
-      provenance: { ...source.provenance, upstreams: [{ url: "https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp" }] },
+      provenance: { ...source.provenance, upstreams: [{ url: "https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7g7/mm23" }] },
     };
     value.sentimentPulse = {
-      series: { bankRate: {
-        value: 3.75, period: "18 December 2025", observedAt: "2025-12-18T00:00:00.000Z",
-        publishedAt: "2025-12-18T00:00:00.000Z", sourceUrl: "https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp",
-        history: [{ period: "18 December 2025", observedAt: "2025-12-18T00:00:00.000Z", value: 3.75 }],
+      series: { inflation: {
+        value: 3.1, period: "August 2026", observedAt: "2026-08-31T00:00:00.000Z",
+        publishedAt: "2026-09-16T00:00:00.000Z", sourceUrl: "https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7g7/mm23",
+        history: [{ period: "August 2026", observedAt: "2026-08-31T00:00:00.000Z", value: 3.1 }],
       } },
-      __measureValidity: { bankRate: { validUntil: "2026-10-01T00:00:00.000Z" } },
+      __measureValidity: { inflation: { validUntil: "2026-10-01T00:00:00.000Z" } },
     };
     const diagnostics: { measureId: string; reason: string; category: string; availability: string }[] = [];
     const catalog = buildMeasureCatalog(value, new Date("2026-10-02T12:00:00.000Z"), { onDiagnostic: (item) => diagnostics.push(item as never) });
-    expect(catalog.measures.bankRate).toBeUndefined();
+    expect(catalog.measures.inflation).toBeUndefined();
     expect(diagnostics).toContainEqual({
-      measureId: "bankRate", reason: "expired-value", category: "freshness", availability: "unavailable",
+      measureId: "inflation", reason: "expired-value", category: "freshness", availability: "unavailable",
     });
   });
 

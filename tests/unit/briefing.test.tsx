@@ -142,8 +142,9 @@ describe("edition briefing and guided story contracts", () => {
     expect(noId).not.toContain("/editions/");
   });
 
-  it("cites a measure for every topic the household story discusses", () => {
-    expect(householdStory.measureIds).toContain("bankRate");
+  it("cites a measure for every topic the household story discusses, and no removed measure", () => {
+    expect(householdStory.measureIds).toEqual(["inflation", "regularPayRealGrowth"]);
+    expect(JSON.stringify(householdStory)).not.toMatch(/bank ?rate|central bank|mortgage/i);
   });
 });
 

@@ -29,7 +29,8 @@ vi.mock("recharts", () => ({
 
 const retrievedAt = "2026-07-14T12:00:00.000Z";
 
-const data = {
+// The stored production record still carries the retired Bank Rate series.
+const legacyData = {
   available: true,
   order: ["inflation", "bankRate", "unemployment"],
   series: {
@@ -145,6 +146,12 @@ const data = {
   },
 };
 
+const data = {
+  ...legacyData,
+  order: ["inflation", "unemployment"],
+  series: { inflation: legacyData.series.inflation, unemployment: legacyData.series.unemployment },
+};
+
 function result(overrides: Record<string, unknown> = {}) {
   return {
     data,
@@ -165,37 +172,43 @@ afterEach(() => {
 });
 
 describe("SentimentPulse series-level evidence", () => {
-  it("shows three independent values, periods and publishers", () => {
+  it("shows two independent ONS values, periods and publishers", () => {
     useMetrics.mockReturnValue(result());
 
     render(<SentimentPulse />);
 
     expect(
-      screen.getByRole("heading", {
-        name: "Inflation is 3.4%, Bank Rate is 3.75% and unemployment is 4.9%.",
-      })
+      screen.getByRole("heading", { name: "Inflation is 3.4% and unemployment is 4.9%." })
     ).toBeInTheDocument();
     expect(screen.getAllByText("May 2026").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("18 December 2025").length).toBeGreaterThan(0);
     expect(screen.getAllByText("January 2026 to March 2026").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Office for National Statistics").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Bank of England").length).toBeGreaterThan(0);
     expect(
       screen.getByRole("heading", { name: "Freshness and provenance for each indicator" })
     ).toBeInTheDocument();
-    expect(screen.getAllByText("14 Jul 2026, 12:00 UTC").length).toBe(3);
+    expect(screen.getAllByText("14 Jul 2026, 12:00 UTC").length).toBe(2);
+  });
+
+  it("shows a stored record that still carries Bank Rate without any Bank Rate value", () => {
+    useMetrics.mockReturnValue(result({ data: legacyData }));
+
+    const { container } = render(<SentimentPulse />);
+
+    expect(
+      screen.getByRole("heading", { name: "Inflation is 3.4% and unemployment is 4.9%." })
+    ).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/bank rate|bank of england|3\.75/i);
   });
 
   it("switches the chart to the selected series without aligning dates", () => {
     useMetrics.mockReturnValue(result());
 
     render(<SentimentPulse />);
-    fireEvent.click(screen.getAllByRole("button", { name: /Bank Rate/i }).at(-1)!);
+    fireEvent.click(screen.getAllByRole("button", { name: /Unemployment/i }).at(-1)!);
 
     expect(
-      screen.getByRole("heading", { name: "Official Bank Rate: published history" })
+      screen.getByRole("heading", { name: "Unemployment rate: published history" })
     ).toBeInTheDocument();
-    expect(screen.getByText("7 August 2025 to 18 December 2025")).toBeInTheDocument();
   });
 
   it("keeps source values current when retrieval health is stale", () => {
@@ -222,7 +235,6 @@ describe("SentimentPulse series-level evidence", () => {
 
     expect(screen.getByRole("heading", { name: /Inflation is Unavailable/i })).toBeInTheDocument();
     expect(screen.getByText("Latest value expired; history remains available.")).toBeInTheDocument();
-    expect(screen.getByText("3.75%")).toBeInTheDocument();
     expect(screen.getAllByText("4.9%").length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "CPI inflation: published history" })).toBeInTheDocument();
   });

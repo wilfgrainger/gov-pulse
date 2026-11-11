@@ -52,9 +52,10 @@ function sectionRefreshJobs(runId, sections) {
 }
 
 function refreshJobs(runId, scope = "daily", options = {}) {
-  // Recurring collection is narrower than bootstrap: held publications stay
-  // available for recovery but do not burn KV writes every day.
-  const publishedOnly = options.publishedOnly === true && scope !== "bootstrap";
+  // A held publication is never collected by cron or by a deploy bootstrap:
+  // some holds exist because the publisher's terms do not permit automated
+  // collection. Publishing a feed makes the next bootstrap collect it.
+  const publishedOnly = options.publishedOnly === true || scope === "bootstrap";
   const dueForCollection = (section) => !publishedOnly || publicationPublished(section);
 
   if (scope === "betting") {

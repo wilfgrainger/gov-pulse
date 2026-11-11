@@ -2,11 +2,9 @@
 
 import { describe, expect, it, vi } from "vitest";
 import {
-  BOE_BANK_RATE_URL,
   SERIES_DEFINITIONS,
   buildEconomicIndicators,
   isEconomicIndicatorsPayload,
-  parseBankRateHtml,
   parseOnsMonthlyCsv,
   parseOnsPublicationPage,
   rollingThreeMonthPeriod,
@@ -34,12 +32,6 @@ const UNEMPLOYMENT_PAGE = `
     <p>Next release: 16 July 2026</p>
   </main>`;
 
-const BANK_RATE_PAGE = `
-  <table><tbody>
-    <tr><td>07 Aug 25</td><td>4.00</td></tr>
-    <tr><td>18 Dec 25</td><td>3.75</td></tr>
-  </tbody></table>`;
-
 function fetchFixture(input: RequestInfo | URL) {
   const url = String(input);
   if (url.includes("generator") && url.includes("d7g7")) {
@@ -53,9 +45,6 @@ function fetchFixture(input: RequestInfo | URL) {
   }
   if (url === SERIES_DEFINITIONS.unemployment.sourceUrl) {
     return Promise.resolve(new Response(UNEMPLOYMENT_PAGE, { status: 200 }));
-  }
-  if (url === BOE_BANK_RATE_URL) {
-    return Promise.resolve(new Response(BANK_RATE_PAGE, { status: 200 }));
   }
   return Promise.resolve(new Response("missing", { status: 404 }));
 }
@@ -100,34 +89,22 @@ describe("series-level economic indicators", () => {
     });
   });
 
-  it("parses Bank Rate as event-dated history", () => {
-    expect(parseBankRateHtml(BANK_RATE_PAGE)).toEqual([
-      {
-        period: "7 August 2025",
-        observedAt: "2025-08-07T00:00:00.000Z",
-        value: 4,
-      },
-      {
-        period: "18 December 2025",
-        observedAt: "2025-12-18T00:00:00.000Z",
-        value: 3.75,
-      },
-    ]);
-  });
-
   it("formats rolling three-month periods across year boundaries", () => {
     expect(
       rollingThreeMonthPeriod({ year: 2026, month: 0 })
     ).toBe("December 2025 to February 2026");
   });
 
-  it("builds three independent official series with separate clocks", async () => {
+  it("builds two independent ONS series with separate clocks and never contacts the Bank of England", async () => {
     const now = new Date("2026-07-14T12:00:00.000Z");
     const fetchImpl = vi.fn(fetchFixture);
     const data = await buildEconomicIndicators(fetchImpl, () => now);
 
-    expect(fetchImpl).toHaveBeenCalledTimes(5);
-    expect(data.order).toEqual(["inflation", "bankRate", "unemployment"]);
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+    for (const [input] of fetchImpl.mock.calls) expect(new URL(String(input)).hostname).toBe("www.ons.gov.uk");
+    expect(data.order).toEqual(["inflation", "unemployment"]);
+    expect(Object.keys(data.series)).toEqual(["inflation", "unemployment"]);
+    expect(Object.keys(SERIES_DEFINITIONS)).toEqual(["inflation", "unemployment"]);
     expect(data.series.inflation).toMatchObject({
       value: 3.4,
       period: "May 2026",
@@ -137,14 +114,6 @@ describe("series-level economic indicators", () => {
       publisher: "Office for National Statistics",
       seriesId: "D7G7",
       datasetId: "MM23",
-    });
-    expect(data.series.bankRate).toMatchObject({
-      value: 3.75,
-      period: "18 December 2025",
-      observedAt: "2025-12-18T00:00:00.000Z",
-      publishedAt: "2025-12-18T00:00:00.000Z",
-      publisher: "Bank of England",
-      seriesId: "IUDBEDR",
     });
     expect(data.series.unemployment).toMatchObject({
       value: 4.9,
@@ -158,6 +127,19 @@ describe("series-level economic indicators", () => {
     expect(data).not.toHaveProperty("economicData");
     expect(data).not.toHaveProperty("metricConfig");
     expect(isEconomicIndicatorsPayload(data, now)).toBe(true);
+  });
+
+  it("still accepts a stored record that carries the retired Bank Rate series", async () => {
+    const now = new Date("2026-07-14T12:00:00.000Z");
+    const data = await buildEconomicIndicators(vi.fn(fetchFixture), () => now);
+    const stored = {
+      ...data,
+      order: ["inflation", "bankRate", "unemployment"],
+      series: { ...data.series, bankRate: { id: "bankRate", value: 3.75, publisher: "Bank of England" } },
+    };
+    expect(isEconomicIndicatorsPayload(stored, now)).toBe(true);
+    expect(isEconomicIndicatorsPayload({ ...data, order: ["unemployment", "inflation"] }, now)).toBe(false);
+    expect(isEconomicIndicatorsPayload({ ...data, order: ["inflation", "mystery", "unemployment"] }, now)).toBe(false);
   });
 
   it("fails closed when any official source is unavailable", async () => {

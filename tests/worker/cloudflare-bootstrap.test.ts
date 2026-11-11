@@ -11,6 +11,23 @@ import queuedWorker, {
   refreshJobs,
 } from "@/worker/queued-publication-entry";
 
+// Comparison batch queueing and finalising need a published family to
+// exercise; the real config holds it (tests/worker/held-source-collection.test.ts).
+vi.mock("@/config/publications.json", async (importOriginal) => {
+  const { default: config } = await importOriginal<{
+    default: { publications: Record<string, { state: string }> };
+  }>();
+  return {
+    default: {
+      ...config,
+      publications: {
+        ...config.publications,
+        internationalComparison: { ...config.publications.internationalComparison, state: "published" },
+      },
+    },
+  };
+});
+
 const SHA = "b".repeat(40);
 
 function environment() {
@@ -74,9 +91,9 @@ describe("Cloudflare publication bootstrap", () => {
     }), expect.any(Object));
   });
 
-  it("schedules only required national sections", () => {
+  it("schedules only required published national sections", () => {
     const jobs = refreshJobs("bootstrap-run", "bootstrap");
-    expect(jobs).toHaveLength(10);
+    expect(jobs).toHaveLength(8);
     expect(jobs.map((job) => job.section)).toEqual([
       "gdpTracker",
       "sentimentPulse",
@@ -86,27 +103,26 @@ describe("Cloudflare publication bootstrap", () => {
       "migrationStats",
       "housePriceIndex",
       "realWages",
-      "electionPolling",
-      "nhsStats",
     ]);
     expect(jobs.some((job) => job.type === "refresh-contracts")).toBe(false);
     expect(jobs.some((job) => job.section === "bettingOdds")).toBe(false);
     expect(jobs.some((job) => job.section === "crimeStatistics")).toBe(false);
-    expect(jobs.some((job) => job.section === "nhsStats")).toBe(true);
+    expect(jobs.some((job) => job.section === "nhsStats")).toBe(false);
+    expect(jobs.some((job) => job.section === "electionPolling")).toBe(false);
     expect(jobs.some((job) => job.type === "refresh-international-comparison")).toBe(false);
   });
 
   it("includes the contracts collector only when bootstrap explicitly requests it", () => {
     const jobs = refreshJobs("bootstrap-run", "bootstrap", { includeContracts: true });
 
-    expect(jobs).toHaveLength(11);
+    expect(jobs).toHaveLength(9);
     expect(jobs.at(-1)).toEqual({
       type: "refresh-contracts",
       runId: "bootstrap-run",
       jobId: "contracts",
       force: true,
     });
-    expect(refreshJobs("bootstrap-run", "bootstrap")).toHaveLength(10);
+    expect(refreshJobs("bootstrap-run", "bootstrap")).toHaveLength(8);
   });
 
   it("keeps comparison work out of the queue until national finalisation", async () => {
@@ -117,7 +133,7 @@ describe("Cloudflare publication bootstrap", () => {
     expect(first.ack).toHaveBeenCalledOnce();
     expect(first.retry).not.toHaveBeenCalled();
     expect(sendBatch).toHaveBeenCalledOnce();
-    expect(sendBatch.mock.calls[0][0]).toHaveLength(10);
+    expect(sendBatch.mock.calls[0][0]).toHaveLength(8);
     expect(send).toHaveBeenCalledWith(
       {
         type: "finalise-run",
@@ -137,7 +153,7 @@ describe("Cloudflare publication bootstrap", () => {
     };
     expect(run.scope).toBe("bootstrap");
     expect(run.dispatchedAt).toBeTruthy();
-    expect(run.expectedJobIds).toHaveLength(10);
+    expect(run.expectedJobIds).toHaveLength(8);
     expect(run.comparisonRefreshRequested).toBe(true);
     expect(run.comparisonRefreshForce).toBe(false);
     expect(run.expectedJobIds).not.toContain("refresh-international-comparison");
@@ -179,7 +195,7 @@ describe("Cloudflare publication bootstrap", () => {
 
     expect(message.ack).toHaveBeenCalledOnce();
     expect(sendBatch).toHaveBeenCalledOnce();
-    expect(sendBatch.mock.calls[0][0]).toHaveLength(11);
+    expect(sendBatch.mock.calls[0][0]).toHaveLength(9);
     expect(sendBatch.mock.calls[0][0]).toContainEqual({
       body: {
         type: "refresh-contracts",

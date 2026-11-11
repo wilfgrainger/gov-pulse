@@ -85,13 +85,9 @@ function observationFor(data) {
 }
 
 function measureValidityFor(data) {
-  const retrievalFreshness = FEED_REGISTRY.sentimentPulse.retrievalMaxAgeMs;
-  const onsFreshness = ONS_MAX_PUBLICATION_AGE_MS;
   return Object.fromEntries(data.order.map((id) => {
-    const series = data.series[id];
-    const referenceTime = Date.parse(id === "bankRate" ? series.retrievedAt : series.publishedAt);
-    const validity = id === "bankRate" ? retrievalFreshness : onsFreshness;
-    return [id, { validUntil: new Date(referenceTime + validity).toISOString() }];
+    const referenceTime = Date.parse(data.series[id].publishedAt);
+    return [id, { validUntil: new Date(referenceTime + ONS_MAX_PUBLICATION_AGE_MS).toISOString() }];
   }));
 }
 

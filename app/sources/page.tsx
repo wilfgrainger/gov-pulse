@@ -3,6 +3,7 @@ import SectionNav from "@/app/components/SectionNav";
 import SiteFooter from "@/app/components/SiteFooter";
 import { SECTIONS } from "@/app/lib/sections";
 
+import { publicationPublished } from "@/contracts/evidence-policy";
 import { SOURCE_GROUPS, type PublisherLink, type SourceEntry } from "@/app/lib/sourceGroups";
 
 function PublisherAnchor({ publisher }: { publisher: PublisherLink }) {
@@ -44,7 +45,10 @@ function SourceEntryCard({ entry, gap = false, wide = false }: { entry: SourceEn
 }
 
 export default function SourcesPage() {
-  const currentGroups = SOURCE_GROUPS.filter((group) => group.kind === "current");
+  // A publisher is listed as a current source only while its publication is published.
+  const currentGroups = SOURCE_GROUPS.filter((group) => group.kind === "current")
+    .map((group) => ({ ...group, entries: (group.entries as readonly SourceEntry[]).filter((entry) => !entry.publication || publicationPublished(entry.publication)) }))
+    .filter((group) => group.entries.length > 0);
   const evidenceGaps = SOURCE_GROUPS.find((group) => group.kind === "gap")?.entries ?? [];
 
   return (

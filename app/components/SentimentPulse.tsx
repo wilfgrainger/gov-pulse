@@ -22,7 +22,7 @@ const FALLBACK = {
   },
 };
 
-type Metric = "inflation" | "bankRate" | "unemployment";
+type Metric = "inflation" | "unemployment";
 
 type HistoryPoint = {
   period: string;
@@ -61,7 +61,7 @@ type EconomicPayload = typeof FALLBACK & {
   series: Partial<Record<Metric, EconomicSeries>>;
 };
 
-const EXPECTED_ORDER: Metric[] = ["inflation", "bankRate", "unemployment"];
+const EXPECTED_ORDER: Metric[] = ["inflation", "unemployment"];
 
 function validTimestamp(value: unknown) {
   return typeof value === "string" && Number.isFinite(Date.parse(value));
@@ -113,7 +113,8 @@ function validPayload(value: EconomicPayload) {
   return (
     value?.available === true &&
     Array.isArray(value.order) &&
-    JSON.stringify(value.order) === JSON.stringify(EXPECTED_ORDER) &&
+    // A record stored before Bank Rate was removed still lists it; it is never shown.
+    JSON.stringify(value.order.filter((id: string) => id !== "bankRate")) === JSON.stringify(EXPECTED_ORDER) &&
     EXPECTED_ORDER.every((id) => validSeries(value.series?.[id], id)) &&
     EXPECTED_ORDER.some((id) => value.series?.[id]?.status === "current") &&
     !("economicData" in value) &&
@@ -142,18 +143,12 @@ function definitionFor(series: EconomicSeries) {
   if (series.id === "inflation") {
     return "The 12-month percentage change in the Consumer Prices Index.";
   }
-  if (series.id === "bankRate") {
-    return "The official interest rate set by the Bank of England Monetary Policy Committee.";
-  }
   return "The share of the economically active population who are unemployed, estimated from the Labour Force Survey over a rolling three-month period.";
 }
 
 function interpretationFor(series: EconomicSeries) {
   if (series.id === "inflation") {
     return "A positive rate means the CPI basket cost more than one year earlier; the number does not describe every household's personal inflation rate.";
-  }
-  if (series.id === "bankRate") {
-    return "Bank Rate influences borrowing and saving rates but is not the rate every household or business receives.";
   }
   return "The rate is a survey estimate of labour-market slack, not a count of every person without work.";
 }
@@ -179,7 +174,7 @@ export default function SentimentPulse() {
   const evidence = useMemo<SeriesEvidenceItem[]>(
     () =>
       valid
-        ? data.order.map((id) => {
+        ? EXPECTED_ORDER.map((id) => {
             const series = data.series[id] as EconomicSeries;
             return {
               id,
@@ -192,11 +187,9 @@ export default function SentimentPulse() {
               revisionStatus: series.revisionStatus,
               evidenceClass: "Official data",
               note:
-                id === "bankRate"
-                  ? "Bank Rate remains current until the Monetary Policy Committee changes it; its observation date is not a monthly reference period."
-                  : id === "unemployment"
-                    ? "This is a rolling three-month Labour Force Survey estimate, not a single-month count."
-                    : undefined,
+                id === "unemployment"
+                  ? "This is a rolling three-month Labour Force Survey estimate, not a single-month count."
+                  : undefined,
             };
           })
         : [],
@@ -207,10 +200,9 @@ export default function SentimentPulse() {
     if (!valid) return [];
     const colors: Record<string, string> = {
       inflation: "#dc2626",
-      bankRate: "#2563eb",
       unemployment: "#b45309",
     };
-    return (data.order as Metric[])
+    return EXPECTED_ORDER
       .map((id) => {
         const item = data.series[id];
         if (!item) return null;
@@ -237,12 +229,12 @@ export default function SentimentPulse() {
       {valid && selected ? (
         <>
           <section aria-labelledby="indicator-briefing-title" className="border-y border-foreground py-6">
-            <p className="text-sm font-semibold text-accent">Three official series, three publication clocks</p>
+            <p className="text-sm font-semibold text-accent">Two official series, two publication clocks</p>
             <h3
               id="indicator-briefing-title"
               className="mt-2 max-w-4xl text-3xl font-semibold leading-tight tracking-[-0.03em] md:text-5xl"
             >
-              Inflation is {formatValue(data.series.inflation!.value, "%")}, Bank Rate is {formatValue(data.series.bankRate!.value, "%")} and unemployment is {formatValue(data.series.unemployment!.value, "%")}.
+              Inflation is {formatValue(data.series.inflation!.value, "%")} and unemployment is {formatValue(data.series.unemployment!.value, "%")}.
             </h3>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-gray-700">
               These figures do not describe the same month. Each value below keeps its own observation period, publication date, date last checked and revision status.
@@ -259,11 +251,11 @@ export default function SentimentPulse() {
                 Latest official readings, kept on separate clocks
               </h4>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">
-                Select a series to inspect its own published history. public-data.org does not carry Bank Rate or unemployment forward onto the CPI timeline.
+                Select a series to inspect its own published history. public-data.org does not carry unemployment forward onto the CPI timeline.
               </p>
             </div>
-            <div className="grid gap-3 md:grid-cols-3">
-              {data.order.map((id) => {
+            <div className="grid gap-3 md:grid-cols-2">
+              {EXPECTED_ORDER.map((id) => {
                 const entry = data.series[id] as EconomicSeries;
                 const active = metric === id;
                 return (
@@ -318,7 +310,7 @@ export default function SentimentPulse() {
                 key: "value",
                 label: selected.label,
                 color: selected.color,
-                lineType: selected.id === "bankRate" ? "stepAfter" : "linear",
+                lineType: "linear",
               },
             ]}
             valueFormatter={(value) => `${value.toFixed(1)}%`}
@@ -331,7 +323,7 @@ export default function SentimentPulse() {
             idPrefix="indicator"
             why={
               <p>
-                Inflation, Bank Rate and unemployment are widely watched signals for prices, monetary policy and labour-market conditions. They should be read together carefully, not treated as one composite score.
+                Inflation and unemployment are widely watched signals for prices and labour-market conditions. They should be read together carefully, not treated as one composite score.
               </p>
             }
             definition={<p>{definitionFor(selected)}</p>}
@@ -340,7 +332,7 @@ export default function SentimentPulse() {
             interpretation={<p>{interpretationFor(selected)}</p>}
             caveat={
               <p>
-                {selected.revisionStatus} The three indicators use different periods and frequencies, so a change in one does not automatically explain a change in another.
+                {selected.revisionStatus} The two indicators use different periods and frequencies, so a change in one does not automatically explain a change in another.
               </p>
             }
             sourceLabel={`${selected.publisher}: ${selected.label}`}
@@ -354,7 +346,7 @@ export default function SentimentPulse() {
         <section role="status" className="border border-black/20 bg-white p-6">
           <h3 className="text-xl font-semibold">Current economic indicators unavailable</h3>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">
-            public-data.org could not verify all three official series with their own periods and provenance, so it is not showing the old embedded values or carrying one series across another series&apos; timeline.
+            public-data.org could not verify both official series with their own periods and provenance, so it is not showing the old embedded values or carrying one series across another series&apos; timeline.
           </p>
         </section>
       )}
