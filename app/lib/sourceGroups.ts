@@ -8,6 +8,8 @@ export type SourceEntry = {
   use: string;
   cadence: string;
   publishers: readonly PublisherLink[];
+  /** Publication this entry belongs to; the directory lists it as current only while that is published. */
+  publication?: string;
 };
 
 type SourceGroup = {
@@ -23,6 +25,7 @@ export const SOURCE_GROUPS = [
     entries: [
       {
         name: "Verified primary poll publications",
+        publication: "electionPolling",
         use: "Individual Great Britain voting-intention publications. public-data.org does not calculate a synthetic polling average.",
         cadence: "As published; evidence expires after 14 days",
         publishers: [
@@ -32,6 +35,7 @@ export const SOURCE_GROUPS = [
       },
       {
         name: "Oddschecker public politics markets",
+        publication: "bettingOdds",
         use: "Three named commercial markets with raw decimal odds and unnormalised reciprocal percentages. They appear only when the complete observation is inside its four-hour window.",
         cadence: "Checked every three hours; unavailable after four hours",
         publishers: [{ name: "Oddschecker politics", url: "https://www.oddschecker.com/politics" }],
@@ -56,6 +60,7 @@ export const SOURCE_GROUPS = [
     entries: [
       {
         name: "NHS England",
+        publication: "nhsStats",
         use: "Monthly referral-to-treatment waiting-time publication. A&E, GP waits, workforce and life expectancy are not part of this measure.",
         cadence: "Monthly; evidence expires after 45 days",
         publishers: [{ name: "NHS England RTT statistics", url: "https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/" }],
@@ -68,6 +73,7 @@ export const SOURCE_GROUPS = [
     entries: [
       {
         name: "UK in context comparison sources",
+        publication: "internationalComparison",
         use: "Cross-country per-resident comparisons for debt, official development assistance, defence, public social expenditure, total health spending, tax revenue and debt interest. Each measure keeps its own observation year and comparison coverage.",
         cadence: "Checked weekly; missing publisher coverage remains unavailable",
         publishers: [
