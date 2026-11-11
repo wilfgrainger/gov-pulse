@@ -55,7 +55,7 @@ describe("edge evidence hardening", () => {
     const openNext = fs.readFileSync("worker/open-next.config.template", "utf8");
     const rootPackage = JSON.parse(fs.readFileSync("package.json", "utf8"));
 
-    expect(rootPackage.devDependencies?.["@opennextjs/cloudflare"]).toBe("1.20.7");
+    expect(rootPackage.devDependencies?.["@opennextjs/cloudflare"]).toBe("1.20.16");
     expect(fs.existsSync("worker/package.json")).toBe(false);
     expect(fs.existsSync("worker/package-lock.json")).toBe(false);
 
