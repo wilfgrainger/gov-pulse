@@ -225,6 +225,20 @@ test("held NHS evidence remains unavailable without download links", async ({ pa
   await expect(page.locator('[aria-label$="data downloads"]')).toHaveCount(0);
 });
 
+test("published contracts evidence renders on its section page and dossier links resolve", async ({ page }) => {
+  test.skip(!published("governmentContracts"), "Government contracts are held");
+  await page.goto("./section/government-contracts");
+  await expect(page.getByRole("heading", { level: 1, name: "Government contracts" })).toBeVisible();
+  // Skip when the live record itself is unavailable; the assertion is about the page, not the source.
+  test.skip(await page.getByText("No complete current award universe").count() > 0, "No current contracts record");
+  await expect(page.getByText("evidence temporarily unavailable")).toHaveCount(0);
+  const dossier = page.locator('a[href^="/money/buyer/"], a[href^="/money/supplier/"]').first();
+  if (await dossier.count()) {
+    const response = await page.request.get(await dossier.getAttribute("href") as string, { maxRedirects: 0 });
+    expect(response.status()).toBeLessThan(400);
+  }
+});
+
 test("mobile journeys preserve touch targets and avoid horizontal overflow", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-chrome", "Pixel 7 audit runs only in the mobile project");
 

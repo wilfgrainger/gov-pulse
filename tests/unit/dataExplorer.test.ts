@@ -139,6 +139,8 @@ describe("data explorer", () => {
   });
   it("formats periods and money units for display", () => {
     expect(readablePeriod("2026 AUG")).toBe("August 2026");
+    expect(readablePeriod("2026 JUN-AUG")).toBe("June to August 2026");
+    expect(readablePeriod("Q3 2026")).toBe("Q3 2026");
     expect(formatMeasure(1406, "GBP/month")).toBe("£1,406 a month");
     expect(formatMeasure(4, "%")).toBe("4%");
   });
