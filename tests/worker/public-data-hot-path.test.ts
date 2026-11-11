@@ -179,10 +179,25 @@ describe("free-tier public read path", () => {
       value: null,
       annualDelta: null,
     });
-    expect(served.sentimentPulse.series.bankRate).toMatchObject({ status: "current", value: 1 });
+    expect(served.sentimentPulse.series.unemployment).toMatchObject({ status: "current", value: 1 });
+    expect(served.sentimentPulse.series).not.toHaveProperty("bankRate");
     // Redaction is a fixed point: a second read serves the same body.
     store.set(PUBLIC_SNAPSHOT_KEY, prepared!.body);
     expect((await readPreparedPublicArtifact(env, READ_AT))!.body).toBe(prepared!.body);
+  });
+
+  it("a stored snapshot that still carries Bank Rate publishes key indicators without it", async () => {
+    // internalSnapshot() is the pre-removal shape: sentimentPulse lists bankRate.
+    const { env, store } = await publishedEnv();
+    const stored = JSON.parse(String(store.get(PUBLIC_SNAPSHOT_KEY)));
+    expect(stored.meta.publicProjection.publishedSections).toContain("sentimentPulse");
+    expect(stored.sentimentPulse.order).toEqual(["inflation", "unemployment"]);
+    expect(Object.keys(stored.sentimentPulse.series)).toEqual(["inflation", "unemployment"]);
+    vi.useFakeTimers();
+    vi.setSystemTime(READ_AT);
+    const text = await (await get("/data/metrics-snapshot.json", env)).text();
+    expect(text).not.toMatch(/bankRate/);
+    expect(JSON.parse(text).sentimentPulse.series.inflation).toMatchObject({ status: "current", value: 1 });
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- free-form tampering of parsed JSON
@@ -340,7 +355,7 @@ describe("free-tier public read path", () => {
     expect(await response.json()).toMatchObject({
       status: "ready",
       ready: true,
-      held: ["nhsStats"],
+      held: ["electionPolling", "nhsStats"],
     });
   });
 

@@ -98,7 +98,7 @@ const FIXTURE_FEEDS = {
 export const STATIC_FETCHES = {
   electionPolling: { count: 16, note: "YouGov 3 + More in Common archive 1 + up to 12 workbooks (MORE_IN_COMMON_POLL_HISTORY_LIMIT)" },
   gdpTracker: { count: 6, note: "bulletin 2 + 4 ONS series" },
-  sentimentPulse: { count: 5, note: "4 sequential ONS + 1 Bank of England" },
+  sentimentPulse: { count: 4, note: "4 sequential ONS" },
   taxRevenue: { count: 3, note: "bulletin 2 + 1 series (matches tests/worker/feeds/tax.test.ts)" },
   employmentStats: { count: 6, note: "bulletin 2 + 4 ONS series" },
   nhsStats: { count: 4, note: "landing, data page, timeseries workbook, press-notice PDF" },

@@ -129,23 +129,20 @@ describe("publication currentness", () => {
       },
       sentimentPulse: {
         available: true,
-        order: ["inflation", "bankRate", "unemployment"],
+        order: ["inflation", "unemployment"],
         series: {
           inflation: series("inflation"),
-          bankRate: series("bankRate"),
           unemployment: series("unemployment"),
         },
         __measureValidity: {
           inflation: { validUntil: "2026-08-10T00:00:00.000Z" },
-          bankRate: { validUntil: "2026-08-01T10:30:00.000Z" },
-          unemployment: { validUntil: "2026-08-10T00:00:00.000Z" },
+          unemployment: { validUntil: "2026-08-01T10:30:00.000Z" },
         },
       },
     };
     const filtered = filterCurrentSnapshot(snapshot, new Date("2026-08-01T11:00:00.000Z"));
     expect(filtered?.sentimentPulse.series.inflation.value).toBe(3.1);
-    expect(filtered?.sentimentPulse.series.bankRate).toMatchObject({ value: null, status: "expired" });
-    expect(filtered?.sentimentPulse.series.unemployment.value).toBe(4.0);
+    expect(filtered?.sentimentPulse.series.unemployment).toMatchObject({ value: null, status: "expired" });
   });
 
   it("uses explicit evidence expiry as the snapshot deadline after retrieval health is stale", () => {

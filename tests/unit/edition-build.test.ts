@@ -99,7 +99,7 @@ describe("edition build", () => {
     const { manifest } = await build();
     // The explorer declares every feed: nationalDebt expires first.
     expect(manifest.files["/explore/index.html"]).toMatchObject({ validUntil: "2026-11-14T00:00:00.000Z" });
-    expect(manifest.files["/explore/index.html"].feeds).toEqual(["electionPolling", "gdpTracker", "nationalDebt"]);
+    expect(manifest.files["/explore/index.html"].feeds).toEqual(["gdpTracker", "nationalDebt"]);
     // A page lists only the feeds its route declares, so it expires with them alone.
     expect(manifest.files["/index.html"].feeds).toEqual(["nationalDebt"]);
     expect(manifest.files["/section/gdp/index.html"]).toMatchObject({ validUntil: "2026-12-24T00:00:00.000Z", feeds: ["gdpTracker"] });

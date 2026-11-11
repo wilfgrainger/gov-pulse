@@ -23,6 +23,7 @@ import {
   recordTerminal,
 } from "./publication-run-lifecycle.js";
 import { isRecord } from "../contracts/records.js";
+import { publicationPublished } from "../contracts/evidence-policy.js";
 
 const PUBLICATION_QUEUE_MAX_RETRIES = 3;
 const COMPARISON_FINALISE_INITIAL_DELAY_SECONDS = 60;
@@ -119,6 +120,8 @@ async function enqueueComparisonRefreshBatches(env, runId, options = {}) {
   if (typeof env?.DATA_JOBS?.send !== "function") {
     throw new Error("DATA_JOBS Queue binding is required");
   }
+  // Held: no request is made to IMF, OECD, World Bank or SIPRI, including on a deploy bootstrap.
+  if (!publicationPublished("internationalComparison")) return { queued: 0, reason: "held" };
   const parentJobId = `comparison:${runId}`;
   const parentTerminal = await kvGet(env, terminalKey(runId, parentJobId));
   if (parentTerminal?.status === "success") {

@@ -16,6 +16,23 @@ vi.mock("@/feeds/international-comparison/parse.js", async () => {
   };
 });
 
+// Comparison batch queueing and finalising need a published family to
+// exercise; the real config holds it (tests/worker/held-source-collection.test.ts).
+vi.mock("@/config/publications.json", async (importOriginal) => {
+  const { default: config } = await importOriginal<{
+    default: { publications: Record<string, { state: string }> };
+  }>();
+  return {
+    default: {
+      ...config,
+      publications: {
+        ...config.publications,
+        internationalComparison: { ...config.publications.internationalComparison, state: "published" },
+      },
+    },
+  };
+});
+
 import queuedWorker, {
   RUN_PREFIX,
   enqueueInternationalComparisonRefresh,

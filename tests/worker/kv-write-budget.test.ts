@@ -121,11 +121,12 @@ describe("kv budget", () => {
 
     expect(run.status).toBe("published");
     expect(run.expectedFeeds).not.toContain("nhsStats");
-    // Lease + dispatched + finalised (3 run writes), one write per feed (10),
+    expect(run.expectedFeeds).not.toContain("electionPolling");
+    // Lease + dispatched + finalised (3 run writes), one write per feed (9),
     // contracts as one shard plus one combined feed record (2), and one publish.
-    expect(run.expectedFeeds).toHaveLength(11);
+    expect(run.expectedFeeds).toHaveLength(10);
     expect(env.METRICS_CACHE.put.mock.calls.length).toBeLessThanOrEqual(16);
-    expect(env.METRICS_CACHE.put.mock.calls.length).toBe(16);
+    expect(env.METRICS_CACHE.put.mock.calls.length).toBe(15);
   });
 
   it("held feeds produce zero writes and zero sends on cron", async () => {

@@ -5,7 +5,6 @@
       "id": "sentimentPulse",
       "sourceIds": [
         "ons-cpi-d7g7",
-        "boe-bank-rate-iudbedr",
         "ons-unemployment-mgsx"
       ],
       "registry": "feed",
@@ -21,16 +20,16 @@
       "frequency": "series-specific",
       "retrieval": "scheduled-publication-check",
       "refreshCadence": "daily",
-      "publicationCadence": "series-specific: monthly and event-driven",
+      "publicationCadence": "series-specific: monthly",
       "retrievalMaxAgeMs": 129600000,
       "publicationRequirement": "required",
       "freshnessWindow": "Checked within 36 hours",
-      "freshnessRationale": "CPI, Bank Rate and unemployment keep separate observation periods, publication dates and revision status.",
+      "freshnessRationale": "CPI and unemployment keep separate observation periods, publication dates and revision status.",
       "editorial": {
-        "publicationPeriod": "Separate latest periods for CPI, Bank Rate and unemployment",
+        "publicationPeriod": "Separate latest periods for CPI and unemployment",
         "unit": "Percentage for each named series",
-        "revisionStatus": "CPI and Labour Force Survey estimates may be revised; Bank Rate is event-dated",
-        "caveat": "CPI is monthly, unemployment is a rolling three-month estimate and Bank Rate changes after Monetary Policy Committee decisions. Their observation periods, publication dates, check dates and revision status stay separate."
+        "revisionStatus": "CPI and Labour Force Survey estimates may be revised",
+        "caveat": "CPI is monthly and unemployment is a rolling three-month estimate. Their observation periods, publication dates, check dates and revision status stay separate."
       }
     },
     "gdpTracker": {
@@ -680,14 +679,13 @@
       ]
     },
     "economy": {
-      "title": "UK inflation, Bank Rate and unemployment",
-      "description": "Latest CPI inflation, Bank Rate and unemployment evidence, each retaining its own period and publication date.",
+      "title": "UK inflation and unemployment",
+      "description": "Latest CPI inflation and unemployment evidence, each retaining its own period and publication date.",
       "category": "Economy",
       "kind": "dataset",
       "sourceKey": "sentimentPulse",
       "sameAs": [
         "https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7g7/mm23",
-        "https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp",
         "https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/unemployment/timeseries/mgsx/lms"
       ]
     },
@@ -889,35 +887,6 @@
       "note": "Lower inflation means prices rise more slowly, not that they have fallen.",
       "caveats": [
         "CPI does not describe every household's personal inflation rate."
-      ]
-    },
-    {
-      "id": "bankRate",
-      "label": "Official Bank Rate",
-      "topic": "Economy",
-      "section": "sentimentPulse",
-      "route": "/section/economy/",
-      "geography": {
-        "code": "UK",
-        "label": "United Kingdom"
-      },
-      "unit": "%",
-      "valuePath": "series.bankRate.value",
-      "periodPath": "series.bankRate.period",
-      "publishedPath": "series.bankRate.publishedAt",
-      "historyPath": "series.bankRate.history",
-      "historyValue": "value",
-      "sourceUrlPath": "series.bankRate.sourceUrl",
-      "validityPath": "__measureValidity.bankRate.validUntil",
-      "cadence": "MPC decision",
-      "comparisonKey": "uk-bank-of-england-official-bank-rate",
-      "valueStatus": "observed",
-      "evidenceClass": "official-policy",
-      "publisher": "Bank of England",
-      "basis": "The Bank of England's official Bank Rate set by the Monetary Policy Committee",
-      "note": "Event-dated policy rate; it remains in force until a later decision changes it.",
-      "caveats": [
-        "This is a policy rate, not a household or market borrowing rate."
       ]
     },
     {
@@ -2429,14 +2398,6 @@
     },
     {
       "path": "/measure/inflation/",
-      "kind": "evidence",
-      "feeds": [
-        "sentimentPulse"
-      ],
-      "gate": "any-published"
-    },
-    {
-      "path": "/measure/bankRate/",
       "kind": "evidence",
       "feeds": [
         "sentimentPulse"

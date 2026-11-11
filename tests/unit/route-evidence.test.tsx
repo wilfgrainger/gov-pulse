@@ -81,7 +81,7 @@ describe("snapshotForRoute", () => {
 
   it("keeps every published feed for an all-feeds route", () => {
     const projected = snapshotForRoute(withChanges(), "/explore/") as Loose;
-    expect(Object.keys(projected.meta.sources).sort()).toEqual(["electionPolling", "gdpTracker", "nationalDebt"]);
+    expect(Object.keys(projected.meta.sources).sort()).toEqual(["gdpTracker", "nationalDebt"]);
     expect((projected.meta.editionSummary as { changes: unknown[] }).changes).toHaveLength(2);
   });
 

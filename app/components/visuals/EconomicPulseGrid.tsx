@@ -193,7 +193,7 @@ export default function EconomicPulseGrid({ series }: EconomicPulseGridProps) {
 
       <div className="mt-4 flex flex-wrap items-center justify-between border-t border-slate-100 pt-3 text-[11px] text-slate-500">
         <span>Units: Percentage (%) as officially published</span>
-        <span>Independent time series: ONS CPI D7G7, BoE IUDBEDR, ONS MGSX, ONS A3WW</span>
+        <span>Independent time series: ONS CPI D7G7, ONS MGSX, ONS A3WW</span>
       </div>
     </div>
   );

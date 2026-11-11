@@ -29,13 +29,13 @@
     "test:release": "node scripts/release-smoke.mjs"
   },
   "dependencies": {
-    "next": "^16.3.8",
+    "next": "^16.4.5",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "recharts": "^3.9.2"
   },
   "devDependencies": {
-    "@opennextjs/cloudflare": "1.20.7",
+    "@opennextjs/cloudflare": "1.20.16",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/jest-dom": "^6.9.1",
@@ -50,7 +50,7 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^5",
     "vitest": "^4.1.10",
-    "wrangler": "^4.111.0"
+    "wrangler": "^4.160.0"
   },
   "overrides": {
     "@babel/core": "^7.29.7",
