@@ -195,7 +195,8 @@ describe("projection parity with the legacy hand-written registries", () => {
   });
 
   it("route manifest equals the manifest captured before the migration", () => {
-    expect(plain(routeManifest())).toEqual(legacy.routeManifest);
+    // `evidence` (per-page evidence feeds, app/lib/routeEvidence.js) was added after the migration capture.
+    expect(plain(routeManifest()).map((entry) => Object.fromEntries(Object.entries(entry).filter(([key]) => key !== "evidence")))).toEqual(legacy.routeManifest);
     expect(reExportedManifest).toBe(routeManifest);
   });
 });

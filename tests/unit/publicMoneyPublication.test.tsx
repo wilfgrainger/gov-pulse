@@ -121,7 +121,8 @@ function currentContractsPayload() {
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-05T12:00:00.000Z"));
-  snapshotState.value = { governmentContracts: currentContractsPayload() };
+  // The shape readServerMetricsSnapshot returns: a publication-filtered snapshot.
+  snapshotState.value = { meta: { registryVersion: "test", sources: { governmentContracts: { status: "ok" } } }, governmentContracts: currentContractsPayload() };
 });
 
 afterEach(() => {

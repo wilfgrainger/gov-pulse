@@ -16,6 +16,7 @@ import {
 import { SECTIONS } from "../../lib/sections";
 import { SECTION_CONTENT } from "../../lib/sectionContent";
 import { readServerMetricsSnapshot } from "../../lib/serverMetricsSnapshot";
+import { snapshotForRoute } from "@/app/lib/routeEvidence";
 import { MetricsSnapshotProvider } from "../../lib/MetricsSnapshotProvider";
 import { createClientMetricsSnapshot } from "../../lib/metricsSnapshot";
 import { sectionDistribution } from "../../lib/sectionDownloads";
@@ -87,9 +88,9 @@ export default async function SectionPage({
   const dataset = ownEntry(SECTION_DISCOVERY, id)?.kind === "dataset";
   const evidenceHeld = dataset && routeEvidenceHeld(`/section/${id}/`);
   const structuredData = evidenceHeld ? null : structuredDataForSection(id);
-  // Every dataset section renders from the server snapshot: components no longer fetch it in the browser,
-  // so a section without downloads (government contracts) needs it too.
-  const snapshot = (dataSection || dataset) && !evidenceHeld ? await readServerMetricsSnapshot() : null;
+  // Every dataset section renders from the server snapshot, projected to the feeds this route declares:
+  // components no longer fetch it in the browser, so a section without downloads (government contracts) needs it too.
+  const snapshot = (dataSection || dataset) && !evidenceHeld ? snapshotForRoute(await readServerMetricsSnapshot(), `/section/${id}/`) : null;
   const current = snapshot && filterCurrentSnapshot(snapshot, new Date()) as MetricsSnapshot | null;
   const hasDownload = Boolean(dataSection && current && sectionDistribution(current, dataSection));
 

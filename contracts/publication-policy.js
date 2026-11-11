@@ -1,4 +1,5 @@
 import PRODUCT_CAPABILITIES from "../config/product-capabilities.json" with { type: "json" };
+import PRODUCT_ROUTES from "./routes.json" with { type: "json" };
 import { FEED_CATALOG } from "./source-catalog.js";
 import { PUBLICATION_CONFIG, publicationPublished } from "./evidence-policy.js";
 
@@ -24,8 +25,8 @@ function anyPublicationEnabled(config = PUBLICATION_CONFIG) {
   return Object.keys(config.publications ?? {}).some((id) => publicationPublished(id, config));
 }
 
-// The sections the cost-of-living lens reads: prices, house prices and earnings.
-const COST_OF_LIVING_SECTIONS = Object.freeze(["sentimentPulse", "housePriceIndex", "realWages"]);
+// The sections the cost-of-living lens reads (prices, house prices and earnings), as declared for its route.
+const COST_OF_LIVING_SECTIONS = Object.freeze(PRODUCT_ROUTES.routes.find((route) => route.path === "/cost-of-living/").evidence);
 
 /** @param {PublicationConfig} config */
 function costOfLivingEvidencePublished(config = PUBLICATION_CONFIG) {

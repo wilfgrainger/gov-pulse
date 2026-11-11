@@ -352,4 +352,48 @@ factor. Every evidence page embeds the whole build snapshot, so each gated page
 expires at the earliest feed deadline (here `sentimentPulse`, 30 hours after
 the build) and a hold on any feed switches every evidence page to its variant
 until the next build. The rebuild cadence is therefore set by the most
-short-lived feed, not by 4 builds/day by design.
+short-lived feed, not by 4 builds/day by design. *Superseded by per-page
+evidence, next section.*
+
+### Per-page evidence in the edition build (11 November 2026)
+
+Each page now carries only the feeds it renders (`app/lib/routeEvidence.js`):
+the snapshot is projected per route (`snapshotForRoute`) before any server or
+client component sees it, and `edition-manifest.json` lists for each gated file
+its route's declared feeds, verified by a per-feed value scan that fails the
+build when a file carries a value identifying an undeclared feed.
+
+**Measured on a local machine, not on Workers Builds**: Apple M4 Pro (`sysctl -n
+machdep.cpu.brand_string`), 14 cores, Node `v24.17.0` (`node -v`). Same command
+as above, three clean runs each (`rm -rf out .next` before each), on one public
+`/data/metrics-snapshot.json` fetched 11 November 2026 (edition
+`catalog-467a7fc45f6ea4f3`, 610,926 bytes, 11 current published feeds, none
+held). "Before" is `origin/main` at the start of the change; "after" is
+branch `feat/per-page-evidence`.
+
+| Measure | Before | After |
+|---|---|---|
+| Wall clock per edition build (3 runs) | 17.3 s, 16.0 s, 15.9 s; **median 16.0 s** | 16.8 s, 22.4 s, 17.1 s; **median 17.1 s** (the 22.4 s run coincided with other local load) |
+| Files in `out/` | 705 | 705 |
+| Total bytes | 44,440,079 (42.4 MiB) | 33,048,096 (31.5 MiB), −25.6% |
+| Gated files | 250 | 250 |
+| Feeds per gated file | 11 feeds: 230 files; 1 feed: 20 (downloads) | 1 feed: 216; 2: 4; 3: 4; 6: 4; 11: 22 |
+| Gated files expiring at the earliest feed deadline (`sentimentPulse`, 2026-11-12T15:18Z) | 232 | 44 |
+| Gated files a `gdpTracker` hold would switch to their variant | 232 | 40 |
+| Largest files | `compare/index.html` 817,688 B; `calendar/index.html` 810,534 B; `explore/index.html` 714,731 B | unchanged within 3 B: these routes declare every feed |
+| `index.html` (home) / `index.txt` | 381,020 B / 299,826 B | 86,983 B / 32,286 B |
+| `section/gdp/index.html` / `index.txt` | 416,113 B / 291,582 B | 141,464 B / 41,571 B |
+| `section/national-debt/index.html` | 405,940 B | 127,035 B |
+
+The 11-feed files are `/explore/`, `/measure/`, `/compare/`, `/briefing/`,
+`/calendar/` (4 files each), `/feed.xml` and `/sitemap.xml`: they show every
+published measure or list every section, so they still expire at the earliest
+deadline and follow every hold. The 6-feed files are the home page (its six
+headline signals' feeds; `nhsStats` is held). Visible markup (HTML with
+`<script>` payloads removed) of all 80 pages present in both builds is
+identical apart from the position of one empty `next-size-adjust` meta tag in
+`<head>`.
+
+The added build time is the per-feed scan; it is about one second against the
+20-minute Workers Builds timeout. The section on Workers Builds above still
+applies: none of these figures were taken on the builder.

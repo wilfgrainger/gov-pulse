@@ -11,6 +11,7 @@ import SiteFooter from "@/app/components/SiteFooter";
 import { measureForDisplay } from "@/app/lib/measureCatalog";
 import { MEASURES } from "@/app/lib/measureDefinitions";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
+import { snapshotForRoute } from "@/app/lib/routeEvidence";
 import { SECTIONS } from "@/app/lib/sections";
 import { workspaceUrl } from "@/app/lib/comparisonWorkspace";
 import { segmentPoints } from "@/app/lib/chartModel";
@@ -18,7 +19,7 @@ import { sourceHistoryHref } from "@/app/lib/sourceHistory";
 
 async function findMeasure(id: string) {
   const definition = MEASURES.find((item) => item.id === id) ?? null;
-  const snapshot = await readServerMetricsSnapshot();
+  const snapshot = snapshotForRoute(await readServerMetricsSnapshot(), `/measure/${id}/`);
   const measure = snapshot?.meta.measureCatalog
     ? measureForDisplay(snapshot.meta.measureCatalog, id, new Date())
     : null;

@@ -1,4 +1,5 @@
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
+import { snapshotForRoute } from "@/app/lib/routeEvidence";
 import { SECTION_DOWNLOAD_IDS, sectionCsv, sectionDistribution } from "@/app/lib/sectionDownloads";
 import { filterCurrentSnapshot } from "@/contracts/evidence-policy";
 import { gateRoute } from "@/app/lib/gateRoute";
@@ -19,7 +20,7 @@ export async function GET(_request: Request, context: { params: Promise<{ file: 
     return new Response("Unknown section or format", { status: 404 });
   }
   if (gateRoute(`/data/sections/${file}`).access !== "serve") return new Response("Data publication is offline for verification", { status: 503, headers: { "Cache-Control": "no-store", "Content-Type": "text/plain; charset=utf-8" } });
-  const candidate = await readServerMetricsSnapshot();
+  const candidate = snapshotForRoute(await readServerMetricsSnapshot(), `/data/sections/${file}`);
   const current = candidate && filterCurrentSnapshot(candidate, new Date()) as MetricsSnapshot | null;
   const distribution = current ? sectionDistribution(current, section) : null;
   if (!distribution) {

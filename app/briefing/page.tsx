@@ -6,6 +6,7 @@ import BriefingEdition from "@/app/components/BriefingEdition";
 import SectionNav from "@/app/components/SectionNav";
 import SiteFooter from "@/app/components/SiteFooter";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
+import { snapshotForRoute } from "@/app/lib/routeEvidence";
 import { SECTIONS } from "@/app/lib/sections";
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
 export default async function BriefingPage() {
   const gate = gateRoute("/briefing/");
   if (gate.access !== "serve") return <PublicationOffline heldFeeds={gate.heldFeeds} />;
-  const snapshot = await readServerMetricsSnapshot();
+  const snapshot = snapshotForRoute(await readServerMetricsSnapshot(), "/briefing/");
   return <div className="min-h-screen bg-background text-foreground">
     <a href="#briefing" className="sr-only focus:not-sr-only focus:block focus:bg-white focus:p-4">Skip to latest briefing</a>
     <SectionNav sections={SECTIONS}/>

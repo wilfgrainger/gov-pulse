@@ -6,6 +6,7 @@ import PageHeader from "@/app/components/PageHeader";
 import SectionNav from "@/app/components/SectionNav";
 import SiteFooter from "@/app/components/SiteFooter";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
+import { snapshotForRoute } from "@/app/lib/routeEvidence";
 import { SECTIONS } from "@/app/lib/sections";
 import { isCurrentGovernmentContractsPayload } from "@/contracts/government-contracts";
 import { sumContractExclusions, type PublicAward } from "@/app/lib/publicMoney";
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
 
 export default async function PublicMoneyPage() {
   const publicationIsEnabled = !routeEvidenceHeld("/money/");
-  const snapshot = publicationIsEnabled ? await readServerMetricsSnapshot() : null;
+  const snapshot = publicationIsEnabled ? snapshotForRoute(await readServerMetricsSnapshot(), "/money/") : null;
   const candidate = snapshot?.governmentContracts;
   const available = isCurrentGovernmentContractsPayload(candidate, new Date());
   const data = available

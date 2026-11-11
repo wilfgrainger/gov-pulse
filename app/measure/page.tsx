@@ -9,6 +9,7 @@ import { measureAvailabilityReason, measurePublisher } from "@/app/lib/measureAv
 import { measureForDisplay } from "@/app/lib/measureCatalog";
 import { MEASURES } from "@/app/lib/measureDefinitions";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
+import { snapshotForRoute } from "@/app/lib/routeEvidence";
 import { SECTIONS } from "@/app/lib/sections";
 
 export const metadata: Metadata = {
@@ -27,7 +28,7 @@ export default async function MeasureIndexPage({ searchParams }: { searchParams:
     if (typeof first === "string") queryEntries.push([key, first]);
   }
   const initialSearch = new URLSearchParams(queryEntries).toString();
-  const snapshot = await readServerMetricsSnapshot();
+  const snapshot = snapshotForRoute(await readServerMetricsSnapshot(), "/measure/");
   const catalog = snapshot?.meta.measureCatalog;
   const now = new Date();
   const measures: MeasureLibraryItem[] = MEASURES.map((definition) => {

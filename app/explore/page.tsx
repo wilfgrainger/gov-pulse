@@ -7,6 +7,7 @@ import SectionNav from "@/app/components/SectionNav";
 import SiteFooter from "@/app/components/SiteFooter";
 import { SECTIONS } from "@/app/lib/sections";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
+import { snapshotForRoute } from "@/app/lib/routeEvidence";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 export default async function ExplorePage() {
   const gate = gateRoute("/explore/");
   if (gate.access !== "serve") return <PublicationOffline heldFeeds={gate.heldFeeds} />;
-  const snapshot = await readServerMetricsSnapshot();
+  const snapshot = snapshotForRoute(await readServerMetricsSnapshot(), "/explore/");
   return (
     <div className="min-h-screen bg-background text-foreground">
       <a

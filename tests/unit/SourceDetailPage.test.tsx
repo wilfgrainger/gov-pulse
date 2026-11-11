@@ -9,6 +9,12 @@ const { readServerMetricsSnapshot, readEditionSummaries } = vi.hoisted(() => ({
 
 vi.mock("@/app/lib/serverMetricsSnapshot", () => ({ readServerMetricsSnapshot }));
 vi.mock("@/app/lib/serverEditionArchive", () => ({ readEditionSummaries }));
+// These tests cover how a shared collection is grouped, using a two-publisher fixture;
+// per-route filtering has its own tests in route-evidence.test.tsx.
+vi.mock("@/app/lib/routeEvidence", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  snapshotForRoute: (snapshot: unknown) => snapshot,
+}));
 
 afterEach(() => {
   cleanup();

@@ -15,10 +15,13 @@ import { PUBLICATION_CONFIG, decisionFor, projectPublic, sectionValidityDeadline
 import {
   classifyEmittedFiles,
   evidenceValues,
+  evidenceValuesByFeed,
   feedEmbedding,
   recordFeedEmbedding,
   resetFeedEmbedding,
+  undeclaredFeedEvidence,
 } from "../app/lib/editionManifest.ts";
+import { embeddedFeedsForRoute, routeEvidenceFeeds, routeForEmittedFile } from "../app/lib/routeEvidence.js";
 import { generate } from "./generate-build-snapshot-module.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -158,13 +161,23 @@ export async function buildEditionSite({
     if (originalModule && nextBuild === runNextBuild) fs.writeFileSync(modulePath, originalModule);
   }
 
-  // Embedding record, by construction: a file whose bytes change when the build
-  // input is removed serialises that input. Section downloads carry one section.
+  // Embedding record: a file whose bytes change when the build input is removed
+  // serialises evidence (by construction); which feeds is its route's declaration
+  // (app/lib/routeEvidence.js), the same one pages project their snapshot with.
+  // The per-feed scan below verifies it. A route whose declared feeds are all
+  // absent from this edition differs only by edition metadata ("section
+  // unavailable in this edition") and is not gated; the scans still check it.
   resetFeedEmbedding();
+  const undeclared = [];
   for (const file of walk(target)) {
     if (sameBytes(path.join(target, file), path.join(variant, file))) continue;
-    const download = /^data\/sections\/([^/.]+)\.(json|csv)$/.exec(file);
-    recordFeedEmbedding(file, download ? [download[1]].filter((id) => feeds.includes(id)) : feeds);
+    const route = routeForEmittedFile(file);
+    const declared = routeEvidenceFeeds(route, config);
+    if (declared !== "all" && declared.length === 0) undeclared.push(file);
+    recordFeedEmbedding(file, embeddedFeedsForRoute(route, feeds, config));
+  }
+  if (undeclared.length > 0) {
+    throw new Error(`Refusing to emit: files change with the build input but their route declares no feed: ${undeclared.sort().join(", ")}`);
   }
   const embedding = feedEmbedding();
 
@@ -194,6 +207,10 @@ export async function buildEditionSite({
   const { unexplained } = classifyEmittedFiles(target, embedding, evidenceValues(snapshot));
   if (unexplained.length > 0) {
     throw new Error(`Refusing to emit: unexplained evidence-bearing files: ${unexplained.join(", ")}`);
+  }
+  const leaks = undeclaredFeedEvidence(target, embedding, evidenceValuesByFeed(snapshot));
+  if (leaks.length > 0) {
+    throw new Error(`Refusing to emit: files embed evidence from feeds their route does not declare: ${leaks.map(({ file, feeds: extra }) => `${file} (${extra.join(", ")})`).join(", ")}`);
   }
   assertAssetBudget(target);
 

@@ -8,6 +8,7 @@ import { publicationPublished } from "@/contracts/evidence-policy";
 import SectionNav from "@/app/components/SectionNav";
 import SiteFooter from "@/app/components/SiteFooter";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
+import { snapshotForRoute } from "@/app/lib/routeEvidence";
 import { SECTIONS } from "@/app/lib/sections";
 import { availableMeasures } from "@/app/lib/measureCatalog";
 import type { MeasureCatalog } from "@/app/lib/measureCatalog";
@@ -18,7 +19,7 @@ export const metadata: Metadata = { title: "Compare UK public measures | public-
 export default async function ComparePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const gate = gateRoute("/compare/");
   if (gate.access !== "serve") return <PublicationOffline heldFeeds={gate.heldFeeds} />;
-  const snapshot = await readServerMetricsSnapshot();
+  const snapshot = snapshotForRoute(await readServerMetricsSnapshot(), "/compare/");
   const catalog = snapshot?.meta.measureCatalog as MeasureCatalog | undefined;
   const params = process.env.STATIC_EXPORT === "true" ? {} : await searchParams;
   const query = new URLSearchParams();
