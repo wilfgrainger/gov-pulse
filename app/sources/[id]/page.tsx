@@ -9,6 +9,7 @@ import SectionNav from "@/app/components/SectionNav";
 import SiteFooter from "@/app/components/SiteFooter";
 import { availableMeasures } from "@/app/lib/measureCatalog";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
+import { snapshotForRoute } from "@/app/lib/routeEvidence";
 import { readEditionSummaries } from "@/app/lib/serverEditionArchive";
 import { SECTIONS } from "@/app/lib/sections";
 import { selectSourceRecordMeasures } from "@/app/lib/sourceHistory";
@@ -85,7 +86,7 @@ export function generateStaticParams() {
 }
 
 async function sourceData(id: string, measureId?: string) {
-  const snapshot = await readServerMetricsSnapshot();
+  const snapshot = snapshotForRoute(await readServerMetricsSnapshot(), `/sources/${id}/`);
   if (!snapshot) return { snapshot: null, measures: [], status: null, invalidMeasureSelection: false };
   const allMeasures = availableMeasures(snapshot.meta.measureCatalog);
   const selectedMeasures = selectSourceRecordMeasures(allMeasures, id, measureId);

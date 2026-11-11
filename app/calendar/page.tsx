@@ -8,6 +8,7 @@ import SiteFooter from "@/app/components/SiteFooter";
 import { buildReleaseEvents } from "@/app/lib/releaseCalendar";
 import { availableMeasures, type MeasureCatalog } from "@/app/lib/measureCatalog";
 import { readServerMetricsSnapshot } from "@/app/lib/serverMetricsSnapshot";
+import { snapshotForRoute } from "@/app/lib/routeEvidence";
 import { SECTIONS } from "@/app/lib/sections";
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CalendarPage() {
-  const snapshot = await readServerMetricsSnapshot();
+  const snapshot = snapshotForRoute(await readServerMetricsSnapshot(), "/calendar/");
   const catalog = snapshot?.meta.measureCatalog as MeasureCatalog | undefined;
   const calendarHeld = routeEvidenceHeld("/calendar/");
   const generatedAt = snapshot?.meta.generatedAt;

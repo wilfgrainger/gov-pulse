@@ -41,8 +41,9 @@ describe("edge evidence hardening", () => {
     const section = fs.readFileSync("app/section/[id]/page.tsx", "utf8");
     expect(layout).not.toMatch(/readServerMetricsSnapshot/);
     expect(layout).toContain("MetricsSnapshotProvider snapshot={null}");
-    expect(page).toContain("MetricsSnapshotProvider snapshot={createClientMetricsSnapshot(snapshot)}");
+    expect(page).toContain("MetricsSnapshotProvider snapshot={publicationStatusSnapshot(snapshot)}");
     expect(section).toContain("MetricsSnapshotProvider snapshot={createClientMetricsSnapshot(snapshot)}");
+    expect(section).toContain("snapshotForRoute(await readServerMetricsSnapshot(), `/section/${id}/`)");
     expect(hook).toMatch(/useInitialMetricsSnapshot/);
     expect(hook).not.toMatch(/BUILD_METRICS_SNAPSHOT/);
     expect(serverReader).toMatch(/await connection\(\)/);

@@ -5,16 +5,17 @@ import SiteFooter from "./components/SiteFooter";
 import SocialShare from "./components/SocialShare";
 import { selectNationalEvidenceEdition } from "./lib/nationalEvidence";
 import { MetricsSnapshotProvider } from "./lib/MetricsSnapshotProvider";
-import { createClientMetricsSnapshot } from "./lib/metricsSnapshot";
 import { readServerMetricsSnapshot } from "./lib/serverMetricsSnapshot";
+import { publicationStatusSnapshot, snapshotForRoute } from "./lib/routeEvidence";
 import { SECTIONS } from "./lib/sections";
 
 export default async function Home() {
   const snapshot = await readServerMetricsSnapshot();
-  const initialEdition = selectNationalEvidenceEdition(snapshot);
+  const initialEdition = selectNationalEvidenceEdition(snapshotForRoute(snapshot, "/"));
 
+  // The provider feeds only the navigation freshness indicator: feed status and check times, no evidence values.
   return (
-    <MetricsSnapshotProvider snapshot={createClientMetricsSnapshot(snapshot)}>
+    <MetricsSnapshotProvider snapshot={publicationStatusSnapshot(snapshot)}>
     <div className="min-h-screen bg-background text-foreground">
       <a href="#national-signals" className="sr-only z-[100] bg-[var(--accent)] px-4 py-3 text-white focus:not-sr-only focus:fixed focus:left-3 focus:top-3">
         Skip to the latest evidence

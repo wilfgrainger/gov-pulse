@@ -16,6 +16,7 @@ import {
 import { SECTIONS } from "../../lib/sections";
 import { SECTION_CONTENT } from "../../lib/sectionContent";
 import { readServerMetricsSnapshot } from "../../lib/serverMetricsSnapshot";
+import { snapshotForRoute } from "@/app/lib/routeEvidence";
 import { MetricsSnapshotProvider } from "../../lib/MetricsSnapshotProvider";
 import { createClientMetricsSnapshot } from "../../lib/metricsSnapshot";
 import { sectionDistribution } from "../../lib/sectionDownloads";
@@ -86,7 +87,7 @@ export default async function SectionPage({
   const dataSection = "dataSection" in section ? section.dataSection : null;
   const evidenceHeld = ownEntry(SECTION_DISCOVERY, id)?.kind === "dataset" && routeEvidenceHeld(`/section/${id}/`);
   const structuredData = evidenceHeld ? null : structuredDataForSection(id);
-  const snapshot = dataSection && !evidenceHeld ? await readServerMetricsSnapshot() : null;
+  const snapshot = dataSection && !evidenceHeld ? snapshotForRoute(await readServerMetricsSnapshot(), `/section/${id}/`) : null;
   const current = snapshot && filterCurrentSnapshot(snapshot, new Date()) as MetricsSnapshot | null;
   const hasDownload = Boolean(dataSection && current && sectionDistribution(current, dataSection));
 

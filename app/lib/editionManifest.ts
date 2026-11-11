@@ -69,6 +69,19 @@ export function evidenceValues(snapshot: unknown): string[] {
   return [...values].sort();
 }
 
+/**
+ * evidenceValues per feed: the feed's section plus the catalogue measures it
+ * sources, so values a page shows from either place are attributed to the feed.
+ */
+export function evidenceValuesByFeed(snapshot: unknown): Record<string, string[]> {
+  const record = snapshot as { meta?: { sources?: Record<string, unknown>; measureCatalog?: { measures?: Record<string, { sourceId?: string }> } } } & Record<string, unknown>;
+  const measures = Object.values(record?.meta?.measureCatalog?.measures ?? {});
+  return Object.fromEntries(Object.keys(record?.meta?.sources ?? {}).map((id) => [id, evidenceValues({
+    meta: { sources: { [id]: {} } },
+    [id]: [record[id], measures.filter((measure) => measure?.sourceId === id)],
+  })]));
+}
+
 /** Every rendering the scan accepts for a value: fixed-decimal roundings and bn/m/k scalings. */
 function renderings(text: string): string[] {
   const value = Number(text);
@@ -88,6 +101,51 @@ function renderings(text: string): string[] {
 /** Strips thousands separators, currency signs and minus variants before tokenising. */
 function normalise(text: string): string {
   return text.replace(/(\d),(?=\d{3}(?!\d))/g, "$1").replace(/[£$€]/g, " ").replace(/[−–]/g, "-");
+}
+
+function feedsIn(text: string, owner: Map<string, string>): Set<string> {
+  const found = new Set<string>();
+  for (const match of normalise(text).matchAll(TOKEN)) {
+    const feed = owner.get(`${match[1]}|${match[2] ? SCALES[match[2].toLowerCase()] : 1}`);
+    if (feed) found.add(feed);
+  }
+  return found;
+}
+
+/**
+ * Verifies the per-route record: a file that carries a value, at full
+ * precision, that identifies one feed while its record does not list that feed
+ * embeds undeclared evidence (the serialised-payload leak this guards against
+ * keeps full precision). Identifying values have at least four significant
+ * digits and match no rendering (rounding or scaling) of another feed's values,
+ * so a page's own rounded figures and chart geometry are not mistaken for
+ * another feed.
+ */
+export function undeclaredFeedEvidence(
+  outDir: string,
+  embeddingRecord: Record<string, string[]>,
+  valuesByFeed: Record<string, string[]>,
+): { file: string; feeds: string[] }[] {
+  const owner = new Map<string, string>();
+  const renderedBy = new Map<string, Set<string>>();
+  for (const [feed, values] of Object.entries(valuesByFeed)) {
+    for (const key of values.flatMap(renderings)) renderedBy.set(key, (renderedBy.get(key) ?? new Set()).add(feed));
+  }
+  for (const [feed, values] of Object.entries(valuesByFeed)) {
+    for (const text of values) {
+      const key = `${text}|1`;
+      if (significantDigits(text) >= 4 && renderedBy.get(key)?.size === 1) owner.set(key, feed);
+    }
+  }
+  const leaks: { file: string; feeds: string[] }[] = [];
+  if (owner.size === 0) return leaks;
+  for (const file of walk(outDir).sort()) {
+    if (BINARY.test(file) || SCAN_EXEMPT.test(file)) continue;
+    const declared = new Set(embeddingRecord[file] ?? []);
+    const extra = [...feedsIn(fs.readFileSync(path.join(outDir, file), "utf8"), owner)].filter((feed) => !declared.has(feed));
+    if (extra.length > 0) leaks.push({ file, feeds: extra.sort() });
+  }
+  return leaks;
 }
 
 function containsValue(text: string, wanted: Set<string>): boolean {

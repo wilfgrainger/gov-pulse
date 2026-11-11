@@ -10,7 +10,8 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import fixture from "../fixtures/publication/current-snapshot.json";
 import { securityHeaders } from "../../contracts/security-headers.js";
-import { classifyEmittedFiles, evidenceValues, type EditionManifest } from "@/app/lib/editionManifest";
+import { classifyEmittedFiles, evidenceValues, evidenceValuesByFeed, undeclaredFeedEvidence, type EditionManifest } from "@/app/lib/editionManifest";
+import { snapshotForRoute } from "@/app/lib/routeEvidence";
 import { buildEditionSite, MAX_ASSET_BYTES, MAX_ASSET_FILES } from "../../scripts/build-edition-site.mjs";
 
 const FIXTURE_ID = fixture.meta.editionSummary.id;
@@ -40,21 +41,35 @@ function walk(root: string, dir = root): string[] {
 
 type Snapshot = Record<string, unknown> & { meta: { sources: Record<string, unknown> } };
 
+/** A page and its RSC payload, each serialising the route's projected snapshot as pages do. */
+function writePage(outDir: string, dir: string, snapshot: Snapshot | null) {
+  const projected = snapshotForRoute(snapshot, `/${dir}`) as Snapshot | null;
+  const feeds = projected ? Object.keys(projected.meta.sources) : [];
+  const prefix = dir ? `${dir}/` : "";
+  write(outDir, `${prefix}index.html`, feeds.length > 0
+    ? `<main>${feeds.map((id) => `<pre>${JSON.stringify(projected![id])}</pre>`).join("")}</main>`
+    : projected ? "<main><p>Section unavailable in this edition</p></main>" : "<main><p>Evidence unavailable</p></main>");
+  write(outDir, `${prefix}${dir ? "__next.section.$d$id.__PAGE__.txt" : "index.txt"}`, `0:${JSON.stringify(feeds.map((id) => projected![id]))}`);
+}
+
 /** Stand-in for `next build`: serialises the build input the way pages and RSC payloads do. */
 async function fakeNextBuild({ snapshot, outDir }: { snapshot: Snapshot | null; outDir: string }) {
   const feeds = snapshot ? Object.keys(snapshot.meta.sources) : [];
   write(outDir, "about/index.html", "<h1>About this publication</h1>");
   write(outDir, "_next/static/chunks/main.js", "console.log('hydrate')");
-  write(outDir, "index.html", snapshot
-    ? `<main>${feeds.map((id) => `<pre>${JSON.stringify(snapshot[id])}</pre>`).join("")}</main>`
-    : "<main><p>Evidence unavailable</p></main>");
-  write(outDir, "index.txt", `0:${JSON.stringify(snapshot ? feeds.map((id) => snapshot[id]) : null)}`);
-  write(outDir, "section/gdp/index.html", snapshot?.gdpTracker
-    ? `<pre>${JSON.stringify(snapshot.gdpTracker)}</pre>` : "<p>GDP evidence unavailable</p>");
-  write(outDir, "section/gdp/__next.section.$d$id.__PAGE__.txt", `0:${JSON.stringify(snapshot?.gdpTracker ?? null)}`);
+  // measure/inflation/ declares sentimentPulse, which the fixture edition lacks.
+  for (const dir of ["", "explore/", "section/gdp/", "section/national-debt/", "measure/debt-ratio/", "measure/inflation/"]) writePage(outDir, dir, snapshot);
   write(outDir, "feed.xml", `<rss>${feeds.map((id) => `<item>${id}</item>`).join("")}</rss>`);
   write(outDir, "sitemap.xml", `<urlset>${feeds.map((id) => `<url>/x/${id}</url>`).join("")}</urlset>`);
   for (const id of feeds) write(outDir, `data/sections/${id}.json`, JSON.stringify(snapshot![id]));
+}
+
+/** What the static gate (plan Task 15) would serve: unavailable when a listed feed is held or validity has ended. */
+function unavailableFiles(manifest: EditionManifest, held: string[], now: Date): string[] {
+  return Object.entries(manifest.files)
+    .filter(([, entry]) => entry.feeds.some((id) => held.includes(id)) || (entry.validUntil !== null && now.getTime() >= Date.parse(entry.validUntil)))
+    .map(([file]) => file)
+    .sort();
 }
 
 function okFetch(body: unknown): typeof fetch {
@@ -82,9 +97,12 @@ describe("edition build", () => {
 
   it("route validUntil is the minimum of embedded feeds", async () => {
     const { manifest } = await build();
-    // index.html embeds all three fixture feeds: nationalDebt expires first.
-    expect(manifest.files["/index.html"]).toMatchObject({ validUntil: "2026-11-14T00:00:00.000Z" });
-    expect(manifest.files["/index.html"].feeds.sort()).toEqual(["electionPolling", "gdpTracker", "nationalDebt"]);
+    // The explorer declares every feed: nationalDebt expires first.
+    expect(manifest.files["/explore/index.html"]).toMatchObject({ validUntil: "2026-11-14T00:00:00.000Z" });
+    expect(manifest.files["/explore/index.html"].feeds).toEqual(["electionPolling", "gdpTracker", "nationalDebt"]);
+    // A page lists only the feeds its route declares, so it expires with them alone.
+    expect(manifest.files["/index.html"].feeds).toEqual(["nationalDebt"]);
+    expect(manifest.files["/section/gdp/index.html"]).toMatchObject({ validUntil: "2026-12-24T00:00:00.000Z", feeds: ["gdpTracker"] });
     // A section download embeds only its own feed.
     expect(manifest.files["/data/sections/gdpTracker.json"]).toEqual({
       validUntil: "2026-12-24T00:00:00.000Z", feeds: ["gdpTracker"], unavailable: { status: 503 },
@@ -121,6 +139,69 @@ describe("edition build", () => {
       write(args.outDir, "about/stale.html", `<p>Debt ${(fixture.nationalDebt.baseDebt / 1e9).toFixed(1)}bn</p>`);
     };
     await expect(build({ nextBuild: leaky })).rejects.toThrow(/unexplained.*about\/stale\.html/i);
+  });
+
+  it("fails the build when a page embeds a feed its route does not declare", async () => {
+    const leaky = async (args: { snapshot: Snapshot | null; outDir: string }) => {
+      await fakeNextBuild(args);
+      // The national-debt page also serialises GDP evidence (it differs between variants, so it is recorded).
+      if (args.snapshot) write(args.outDir, "section/national-debt/index.html", `<pre>${JSON.stringify([args.snapshot.nationalDebt, args.snapshot.gdpTracker])}</pre>`);
+    };
+    await expect(build({ nextBuild: leaky })).rejects.toThrow(/section\/national-debt\/index\.html \(gdpTracker\)/);
+  });
+
+  it("fails the build when a file embeds evidence but its route declares no feed", async () => {
+    const leaky = async (args: { snapshot: Snapshot | null; outDir: string }) => {
+      await fakeNextBuild(args);
+      write(args.outDir, "about/index.html", args.snapshot ? "<h1>About</h1><p>edition data</p>" : "<h1>About</h1>");
+    };
+    await expect(build({ nextBuild: leaky })).rejects.toThrow(/declares no feed.*about\/index\.html/);
+  });
+
+  it("a page whose declared feeds are absent from the edition builds, ungated, without evidence", async () => {
+    const { outDir, manifest } = await build();
+    expect(fs.readFileSync(path.join(outDir, "measure/inflation/index.html"), "utf8")).toContain("Section unavailable in this edition");
+    expect(manifest.files["/measure/inflation/index.html"]).toBeUndefined();
+  });
+
+  it("a hold on one feed makes only the files of routes declaring it unavailable", async () => {
+    const { manifest } = await build();
+    const before = NOW;
+    expect(unavailableFiles(manifest, [], before)).toEqual([]);
+    const held = unavailableFiles(manifest, ["gdpTracker"], before);
+    expect(held).toEqual([
+      "/data/sections/gdpTracker.json",
+      "/explore/__next.section.$d$id.__PAGE__.txt", "/explore/index.html",
+      "/feed.xml",
+      "/section/gdp/__next.section.$d$id.__PAGE__.txt", "/section/gdp/index.html",
+      "/sitemap.xml",
+    ]);
+    for (const file of ["/section/national-debt/index.html", "/index.html", "/index.txt", "/measure/debt-ratio/index.html"]) {
+      expect(manifest.files[file], file).toBeDefined();
+      expect(held).not.toContain(file);
+    }
+  });
+
+  it("one feed expiring affects only the files of its routes", async () => {
+    const { manifest } = await build();
+    // nationalDebt is the earliest deadline in the fixture.
+    const expired = unavailableFiles(manifest, [], new Date("2026-11-14T00:00:00.000Z"));
+    expect(expired).toContain("/section/national-debt/index.html");
+    expect(expired).toContain("/index.html");
+    expect(expired).toContain("/explore/index.html");
+    expect(expired).not.toContain("/section/gdp/index.html");
+    expect(expired).not.toContain("/data/sections/gdpTracker.json");
+    expect(expired.every((file) => manifest.files[file].feeds.includes("nationalDebt"))).toBe(true);
+  });
+
+  it("no emitted page carries evidence from a feed its route does not declare", async () => {
+    const { outDir, manifest } = await build();
+    const embedding = Object.fromEntries(Object.entries(manifest.files).map(([file, entry]) => [file.slice(1), entry.feeds]));
+    expect(undeclaredFeedEvidence(outDir, embedding, evidenceValuesByFeed(fixture))).toEqual([]);
+    // And the check is not vacuous: with no record, every gated page is reported with its own feeds.
+    const unrecorded = undeclaredFeedEvidence(outDir, {}, evidenceValuesByFeed(fixture));
+    expect(unrecorded.find(({ file }) => file === "section/national-debt/index.html")?.feeds).toEqual(["nationalDebt"]);
+    expect(unrecorded.find(({ file }) => file === "section/gdp/index.html")?.feeds).toEqual(["gdpTracker"]);
   });
 
   it("reformatted values are caught by the normalised scan backstop", () => {
