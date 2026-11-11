@@ -85,9 +85,12 @@ export default async function SectionPage({
 
   const SectionComponent = section.component;
   const dataSection = "dataSection" in section ? section.dataSection : null;
-  const evidenceHeld = ownEntry(SECTION_DISCOVERY, id)?.kind === "dataset" && routeEvidenceHeld(`/section/${id}/`);
+  const dataset = ownEntry(SECTION_DISCOVERY, id)?.kind === "dataset";
+  const evidenceHeld = dataset && routeEvidenceHeld(`/section/${id}/`);
   const structuredData = evidenceHeld ? null : structuredDataForSection(id);
-  const snapshot = dataSection && !evidenceHeld ? snapshotForRoute(await readServerMetricsSnapshot(), `/section/${id}/`) : null;
+  // Every dataset section renders from the server snapshot, projected to the feeds this route declares:
+  // components no longer fetch it in the browser, so a section without downloads (government contracts) needs it too.
+  const snapshot = (dataSection || dataset) && !evidenceHeld ? snapshotForRoute(await readServerMetricsSnapshot(), `/section/${id}/`) : null;
   const current = snapshot && filterCurrentSnapshot(snapshot, new Date()) as MetricsSnapshot | null;
   const hasDownload = Boolean(dataSection && current && sectionDistribution(current, dataSection));
 
