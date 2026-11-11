@@ -82,9 +82,9 @@ describe("edition build", () => {
 
   it("route validUntil is the minimum of embedded feeds", async () => {
     const { manifest } = await build();
-    // index.html embeds all three fixture feeds: nationalDebt expires first.
+    // index.html embeds the published fixture feeds (electionPolling is held): nationalDebt expires first.
     expect(manifest.files["/index.html"]).toMatchObject({ validUntil: "2026-11-14T00:00:00.000Z" });
-    expect(manifest.files["/index.html"].feeds.sort()).toEqual(["electionPolling", "gdpTracker", "nationalDebt"]);
+    expect(manifest.files["/index.html"].feeds.sort()).toEqual(["gdpTracker", "nationalDebt"]);
     // A section download embeds only its own feed.
     expect(manifest.files["/data/sections/gdpTracker.json"]).toEqual({
       validUntil: "2026-12-24T00:00:00.000Z", feeds: ["gdpTracker"], unavailable: { status: 503 },

@@ -51,9 +51,9 @@ function feedIdOf(job) {
 }
 
 /**
- * Feed ids due for collection under a scope. Recurring scopes cover published
+ * Feed ids due for collection under a scope. Every scope covers published
  * feeds only (held feeds cause no writes and no sends); bootstrap covers the
- * required feeds, plus contracts when `config.includeContracts` is true.
+ * required published feeds, plus contracts when `config.includeContracts` is true.
  */
 function dueFeeds(_now, scope, config = {}) {
   if (!SCOPES.includes(scope)) throw new Error(`Unknown pipeline scope '${String(scope)}'`);

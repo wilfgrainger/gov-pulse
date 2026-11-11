@@ -15,7 +15,7 @@
 | P04 Briefings, stories, RSS | Pass with defects (briefing, RSS); stories held | Stories held (`product-hold`) | Briefing changes and the feed did not link to their edition; stories lacked the cited-edition link and honest dates | #255, #249 |
 | P05 Calendar and watchlist | Held | `releaseCalendar`, `nhsReleaseCalendar` held | Source review passed (81 ONS and 5 NHS dates reconciled). ICS dropped announced times; no cross-edition date-change notice | #251 |
 | P06 Cost of living | Pass | Published | None found; economy-page change labels corrected separately | #254 |
-| P07 Polling | **Fail** | Published | Only one current pollster live; More in Common rejected for fieldwork that crosses a month | #253 |
+| P07 Polling | **Held** (11 Nov 2026) | `electionPolling` held (`licence-permission-required`) | Held on the owner's instruction after the 11 November licensing review: YouGov's terms prohibit automated collection without written permission; More in Common publishes no reuse terms. Not collected; the section shows a held notice. Before the hold: one current pollster, More in Common rejected for month-crossing fieldwork | #253 |
 | P08 Public money | Pass with defects | Published | Placeholder treated as a supplier; CSV repeats a notice value per supplier; a £9.5bn framework ceiling summed into the £11.7bn disclosed total; amendments and cancellations not seen (history load failed during 1102 errors) | #256 |
 | P09 International | Held | `internationalComparison` held | Source review reconciled all seven measures. `/compare/` did not link to it; table export, year disclosure and caveats missing | #250 |
 | P10 Provenance and archive | Pass with defects | Published (8 editions) | Trace from topic page to measure, source record and edition works; edition pages hit by 1102 errors | #252 |
@@ -25,8 +25,8 @@ Counts at audit time: 0 of 10 have named independent sign-off. 1 passed outright
 ## Release evidence
 
 - **Deployed revision:** the `deploy.yml` run for `c925856` passed every step, including the deployed-revision, reader-route and publication-control checks. `/data/health.json` returned `{"status":"ready","ready":true,"held":["nhsStats"]}`.
-- **Published families (11 plus the edition archive):** `electionPolling`, `nationalDebt`, `gdpTracker`, `sentimentPulse`, `taxRevenue`, `governmentContracts`, `employmentStats`, `crimeStatistics`, `migrationStats`, `housePriceIndex`, `realWages`, `editionArchive`.
-- **Held:** `bettingOdds`, `nhsStats`, `earlyYears`, `releaseCalendar`, `nhsReleaseCalendar`, `internationalComparison`, `storyHouseholdBudgets`, `storyPublicFinances`.
+- **Published families (10 plus the edition archive, from 11 November 2026):** `nationalDebt`, `gdpTracker`, `sentimentPulse`, `taxRevenue`, `governmentContracts`, `employmentStats`, `crimeStatistics`, `migrationStats`, `housePriceIndex`, `realWages`, `editionArchive`.
+- **Held (never collected, including on a deploy bootstrap, from 11 November 2026):** `electionPolling` (licence permission required: YouGov terms prohibit automated collection without written permission; More in Common publishes no reuse terms), `bettingOdds`, `nhsStats`, `earlyYears`, `releaseCalendar`, `nhsReleaseCalendar`, `internationalComparison`, `storyHouseholdBudgets`, `storyPublicFinances`.
 - **Browser suite against production:** 26 passed, 12 failed, 4 skipped before the fixes above. The failures are the P01 defects, the held international journeys and two test-only locator faults.
 - **Same-figure consistency:** CPI, unemployment, GDP, private rents and debt agreed across the home page, section page, measure page, `/explore/`, the snapshot and the section JSON.
 - **Hosted `quality`:** passed on #243, #244 and #245, which make up `c925856`.

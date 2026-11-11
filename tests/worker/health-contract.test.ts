@@ -138,7 +138,7 @@ describe("health", () => {
     expect(publicationPublished("nhsStats")).toBe(false);
     const { env, store } = await publishedEnv();
     const body = await health(env);
-    expect(body).toMatchObject({ status: "ready", ready: true, held: ["nhsStats"] });
+    expect(body).toMatchObject({ status: "ready", ready: true, held: ["electionPolling", "nhsStats"] });
     expect(body).not.toHaveProperty("degraded");
     expect(body).not.toHaveProperty("missingRequiredSections");
     // Held evidence stays unavailable: not a public section, not an unavailable-by-failure entry.
@@ -148,12 +148,12 @@ describe("health", () => {
     const status = JSON.parse(String(store.get(PUBLICATION_STATUS_KEY)));
     status.sectionValidUntil.nhsStats = "2026-07-18T03:35:00.000Z";
     store.set(PUBLICATION_STATUS_KEY, JSON.stringify(status));
-    expect(await health(env)).toMatchObject({ status: "ready", ready: true, held: ["nhsStats"] });
+    expect(await health(env)).toMatchObject({ status: "ready", ready: true, held: ["electionPolling", "nhsStats"] });
   });
 
   it("held feed absent from the publication entirely does not degrade", async () => {
     const { env } = await publishedEnv(["nhsStats"]);
-    expect(await health(env)).toMatchObject({ status: "ready", ready: true, held: ["nhsStats"] });
+    expect(await health(env)).toMatchObject({ status: "ready", ready: true, held: ["electionPolling", "nhsStats"] });
   });
 
   it("published required feed without current observation degrades", async () => {
@@ -164,7 +164,7 @@ describe("health", () => {
       ready: false,
       degraded: true,
       missingRequiredSections: ["housePriceIndex"],
-      held: ["nhsStats"],
+      held: ["electionPolling", "nhsStats"],
     });
     expect(body.unavailableSections).toContainEqual({ id: "housePriceIndex", reason: "no-current-observation" });
   });
@@ -179,7 +179,7 @@ describe("health", () => {
       status: "degraded",
       ready: false,
       degraded: true,
-      held: ["nhsStats"],
+      held: ["electionPolling", "nhsStats"],
     });
     expect(body.missingRequiredSections).toContain("housePriceIndex");
     expect(body.missingRequiredSections).not.toContain("nhsStats");

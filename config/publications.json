@@ -2,9 +2,9 @@
   "version": 2,
   "publications": {
     "electionPolling": {
-      "state": "published",
-      "reasonCode": "published-verified",
-      "reason": "Verified primary pollster publication contract is approved for public release.",
+      "state": "held",
+      "reasonCode": "licence-permission-required",
+      "reason": "Held on the owner's instruction of 11 November 2026: YouGov's terms prohibit automated collection without written permission and More in Common publishes no reuse terms.",
       "sections": [
         "election-polls"
       ]

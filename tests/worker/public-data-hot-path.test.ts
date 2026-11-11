@@ -340,7 +340,7 @@ describe("free-tier public read path", () => {
     expect(await response.json()).toMatchObject({
       status: "ready",
       ready: true,
-      held: ["nhsStats"],
+      held: ["electionPolling", "nhsStats"],
     });
   });
 
