@@ -23,7 +23,6 @@ const PARTY_LABELS = Object.freeze({
   yourParty: "Your Party",
   restoreBritain: "Restore Britain",
   other: "Other",
-  other: "Other",
 });
 
 function parseDateOnly(value, label) {

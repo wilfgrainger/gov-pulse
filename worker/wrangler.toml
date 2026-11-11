@@ -15,6 +15,11 @@ preview_urls = false
 enabled = true
 cross_version_cache = false
 
+# Workers Logs (free plan: 200,000 events a day, 3-day retention). Kept so the
+# dual-write divergence warnings that gate G4 can be counted each day.
+[observability]
+enabled = true
+
 [vars]
 STATIC_SNAPSHOT_SEED_URL = "https://public-data-org.pages.dev/data/metrics-snapshot.json"
 
