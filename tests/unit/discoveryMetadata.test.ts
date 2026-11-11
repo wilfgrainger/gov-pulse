@@ -67,6 +67,10 @@ describe("section discovery contract", () => {
     expect(serialized).toContain("\\u003c/script>");
   });
 
+  it("asserts no reuse licence over pollsters' copyright tables", () => {
+    expect(structuredDataForSection("election-polls")).not.toHaveProperty("license");
+  });
+
   it("publishes Dataset and Article structured data by evidence kind", () => {
     expect(structuredDataForSection("gdp")).toMatchObject({
       "@context": "https://schema.org",

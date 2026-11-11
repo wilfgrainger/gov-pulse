@@ -22,7 +22,7 @@ const OGL = {
 const POLLING_TERMS = {
   name: "No reuse licence asserted by public-data.org",
   url: "https://yougov.co.uk/about/terms-combined",
-  attribution: "YouGov primary publication; reuse is subject to YouGov's terms.",
+  attribution: "Source: YouGov plc, © All rights reserved; More in Common UK, © All rights reserved. Not public sector information: reuse is subject to each pollster's terms.",
 };
 
 export type SectionDistribution = {

@@ -192,7 +192,10 @@ export function structuredDataForSection(id: string) {
   return {
     ...common,
     "@type": "Dataset",
-    license: "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+    // Polling tables are the pollsters' copyright, not public sector information: no licence is asserted for them.
+    ...(section.sourceKey === "electionPolling"
+      ? {}
+      : { license: "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" }),
     spatialCoverage: source?.geographicCoverage,
     temporalCoverage: publication?.temporalCoverage,
     dateModified: publication?.dateModified,
