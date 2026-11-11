@@ -4,6 +4,8 @@ import Link from "next/link";
 import {
   dossierHref,
   frameworkValueLabel,
+  isSupplierPlaceholderName,
+  SUPPLIER_LIST_IN_NOTICE,
   valueBasisDescription,
 } from "@/app/lib/publicMoney";
 
@@ -89,6 +91,10 @@ function LeadNoticeCard({ award }: { award: Award }) {
           <dt className="font-semibold">Supplier{award.suppliers.length === 1 ? "" : "s"}</dt>
           <dd className="mt-1 text-gray-700">
             {award.suppliers.map((name, index) => {
+              // A placeholder ("See … notice") is not an organisation, so it has no dossier to link.
+              if (isSupplierPlaceholderName(name)) {
+                return <span key={`${name}:${index}`} className="block">{SUPPLIER_LIST_IN_NOTICE}</span>;
+              }
               const id = award.supplierIds?.[index] ?? null;
               const href = id
                 ? `/money/supplier/${encodeURIComponent(id)}`
