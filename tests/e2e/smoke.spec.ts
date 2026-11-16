@@ -265,6 +265,36 @@ test("mobile journeys preserve touch targets and avoid horizontal overflow", asy
   }
 });
 
+test("the government data directory lists, searches and filters publisher links", async ({ page }) => {
+  const errors = trackConsole(page);
+  await page.goto("./find-data");
+  await expect(page.getByRole("heading", { level: 1, name: "Find UK government data" })).toBeVisible();
+  const entries = page.locator("[data-directory-entry]");
+  const total = await entries.count();
+  expect(total).toBeGreaterThan(50);
+  await expect(page.getByRole("link", { name: /^data\.gov\.uk/ })).toHaveAttribute("href", "https://www.data.gov.uk/");
+  await assertNoHorizontalOverflow(page);
+
+  await page.getByLabel("Search the directory").fill("schools");
+  await expect(page.getByRole("link", { name: /Get information about schools/ })).toBeVisible();
+  expect(await entries.count()).toBeLessThan(total);
+
+  await page.getByRole("button", { name: "Scotland" }).click();
+  await expect(page.getByRole("button", { name: "Scotland" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("link", { name: /Get information about schools/ })).toHaveCount(0);
+  await expect(page.getByRole("status")).toContainText("covering Scotland");
+
+  await page.getByLabel("Search the directory").fill("");
+  await page.getByRole("button", { name: "All" }).click();
+  await expect(entries).toHaveCount(total);
+  await assertNoHorizontalOverflow(page);
+
+  await page.goto("./");
+  await page.getByRole("link", { name: "Find data", exact: true }).first().click();
+  await expect(page).toHaveURL(/\/find-data\/?$/);
+  expect(errors).toEqual([]);
+});
+
 test("all section pages render cleanly without global feed telemetry", async ({ page }) => {
   const errors = trackConsole(page);
   await assertPulseApp(page);
