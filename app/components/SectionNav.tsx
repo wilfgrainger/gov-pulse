@@ -107,6 +107,7 @@ export default function SectionNav({ sections: configuredSections }: { sections:
             <Link href="/" prefetch={false} aria-current={pathname === "/" ? "page" : undefined} className={`edition-door ${focusClasses}`}>Latest</Link>
             <Link href="/explore/" prefetch={false} aria-current={pathname?.replace(/\/$/, "") === "/explore" ? "page" : undefined} className={`edition-door ${focusClasses}`}>Look up</Link>
             <Link href="/compare/" prefetch={false} aria-current={pathname?.replace(/\/$/, "") === "/compare" ? "page" : undefined} className={`edition-door ${focusClasses}`}>Compare</Link>
+            <Link href="/find-data/" prefetch={false} aria-current={pathname?.replace(/\/$/, "") === "/find-data" ? "page" : undefined} className={`edition-door ${focusClasses}`}>Find data</Link>
           </div>
 
           <div className="ml-auto flex items-center gap-1 justify-self-end sm:gap-2">

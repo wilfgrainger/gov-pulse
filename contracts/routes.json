@@ -21,6 +21,7 @@
     { "path": "/feed.xml", "kind": "api", "feeds": [], "evidence": "all", "gate": "none" },
     { "path": "/sitemap.xml", "kind": "api", "feeds": [], "evidence": "all", "gate": "none" },
     { "path": "/robots.txt", "kind": "api", "feeds": [], "gate": "none" },
+    { "path": "/find-data/", "kind": "static", "feeds": [], "gate": "none" },
     { "path": "/about/", "kind": "static", "feeds": [], "gate": "none" },
     { "path": "/editorial-policy/", "kind": "static", "feeds": [], "gate": "none" },
     { "path": "/independence/", "kind": "static", "feeds": [], "gate": "none" },

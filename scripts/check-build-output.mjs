@@ -57,6 +57,7 @@ if (process.env.STATIC_EXPORT === "true") {
     "out/independence/index.html",
     "out/contact/index.html",
     "out/corrections/index.html",
+    "out/find-data/index.html",
     "out/section/gdp/index.html",
     "out/sitemap.xml",
     "out/robots.txt",

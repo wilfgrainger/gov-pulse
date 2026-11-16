@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 const HOME_LINKS = [
+  ["Find data", "/find-data/", "Find UK government data"],
   ["Look up", "/explore/", "Look up a measure or place"],
   ["Compare", "/compare/", "Compare"],
   ["Editions", "/editions/", "Edition archive"],
@@ -22,7 +23,8 @@ export default function HomepageIntro() {
           <p className="mt-5 max-w-[36rem] text-sm leading-6 text-[var(--muted)] md:text-base md:leading-7">
             What changed, what it means, and the{" "}
             <Link
-              href="https://www.ons.gov.uk/"
+              href="/find-data/"
+              prefetch={false}
               className="font-semibold text-[var(--foreground)] underline decoration-[var(--accent)] underline-offset-4"
             >
               official sources
