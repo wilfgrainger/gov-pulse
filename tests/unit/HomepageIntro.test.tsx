@@ -10,7 +10,7 @@ describe("HomepageIntro", () => {
 
     expect(screen.getByRole("heading", { level: 1, name: "Britain, in evidence." })).toBeInTheDocument();
     expect(screen.getByText(/What changed, what it means/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "official sources" })).toHaveAttribute("href", "https://www.ons.gov.uk/");
+    expect(screen.getByRole("link", { name: "official sources" })).toHaveAttribute("href", "/find-data");
     expect(screen.queryByText(/how to read a figure/i)).not.toBeInTheDocument();
   });
 

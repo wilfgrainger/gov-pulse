@@ -40,6 +40,11 @@ export function buildSitemap(
       priority: 1,
     },
     {
+      url: absoluteUrl("/find-data/"),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
       url: absoluteUrl("/sources/"),
       changeFrequency: "weekly",
       priority: 0.7,

@@ -4,6 +4,7 @@ import { SECTIONS } from "../lib/sections";
 import BrandLogo from "./BrandLogo";
 
 const publicationLinks = [
+  ["Find UK government data", "/find-data/"],
   ["Measure library", "/measure/"],
   ["Comparison studio", "/compare/"],
   ["Latest briefing", "/briefing/"],
@@ -36,6 +37,9 @@ export default function SiteFooter() {
           <div className="flex flex-wrap gap-3">
             <Link href="/" prefetch={false} className="inline-flex min-h-11 items-center border border-white bg-white px-4 py-2 text-sm font-semibold !text-[#14243b] hover:!bg-[#8fc2e6]">
               Latest edition
+            </Link>
+            <Link href="/find-data/" prefetch={false} className="inline-flex min-h-11 items-center border border-white/50 px-4 py-2 text-sm font-semibold text-white hover:border-white">
+              Find government data
             </Link>
             <Link href="/sources" prefetch={false} className="inline-flex min-h-11 items-center border border-white/50 px-4 py-2 text-sm font-semibold text-white hover:border-white">
               Sources and methods

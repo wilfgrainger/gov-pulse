@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("trust, source and section pages provide a keyboard path past the shared navigation", async ({ page }) => {
-  for (const path of ["/about", "/editorial-policy", "/independence", "/contact", "/corrections", "/sources", "/section/economy", "/section/nhs"]) {
+  for (const path of ["/about", "/editorial-policy", "/independence", "/contact", "/corrections", "/sources", "/find-data", "/section/economy", "/section/nhs"]) {
     await page.goto(`.${path}`);
     const skipLink = page.getByRole("link", { name: "Skip to page content" });
     await page.keyboard.press("Tab");

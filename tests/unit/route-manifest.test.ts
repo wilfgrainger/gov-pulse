@@ -146,7 +146,7 @@ describe("gateRoute parity with the legacy route resolver", () => {
   const sections = publicationIds.flatMap((id) => (PUBLICATION_CONFIG.publications as Record<string, { sections?: string[] }>)[id].sections ?? []);
   const paths = [
     "/", "/explore/", "/measure/", "/compare/", "/briefing/", "/cost-of-living/", "/sources/", "/calendar/", "/money/", "/editions/",
-    "/feed.xml", "/about/", "/editorial-policy/", "/independence/", "/contact/", "/corrections/",
+    "/feed.xml", "/about/", "/editorial-policy/", "/independence/", "/contact/", "/corrections/", "/find-data/",
     "/editions/some-id/", "/money/buyer/x/", "/money/supplier/x/",
     "/stories/household-budgets/", "/stories/public-finances/", "/stories/unknown/",
     "/measure/unknown-measure/", "/sources/unknown-source/",
