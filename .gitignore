@@ -56,3 +56,6 @@ build-output.log
 
 # generated at build time from current evidence; never committed
 /app/generated/
+
+# Static directory site build output
+directory/dist/
