@@ -22,6 +22,18 @@ npx wrangler pages deploy directory/dist --project-name public-data-org --branch
 ```
 
 Needs `CLOUDFLARE_API_TOKEN` (Pages edit) and `CLOUDFLARE_ACCOUNT_ID`.
+
+Where static asset upload is unavailable (it needs a short-lived upload JWT in
+the `Authorization` header, which a credential-injecting proxy overwrites),
+deploy `directory/dist-worker/_worker.js` instead. The build writes it
+alongside `dist/`; it embeds every page and applies the same `_headers` and
+`_redirects` (tested in `tests/unit/directoryWorker.test.ts`). Send it as the
+`_worker.js` part of a `POST /accounts/:id/pages/projects/public-data-org/deployments`
+multipart request with `manifest` `{}` and `branch` `main`. Deploy to a
+preview branch first and check `https://<branch>.public-data-org.pages.dev`.
+
+A manifest that lists file hashes without uploading them deploys
+"successfully" but serves HTTP 500 for every path. Never do that to `main`.
 Roll back by promoting an earlier deployment in the Pages dashboard.
 
 ## Adding a source
